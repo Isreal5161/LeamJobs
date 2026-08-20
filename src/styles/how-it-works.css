@@ -1,0 +1,570 @@
+.how-page {
+  display: grid;
+  gap: 22px;
+  padding: 24px 0 42px;
+}
+
+.how-hero,
+.how-step-card,
+.how-stat,
+.how-cta {
+  border: 1px solid rgba(15, 23, 42, 0.07);
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: 0 14px 34px rgba(15, 23, 42, 0.04);
+}
+
+.how-hero {
+  display: grid;
+  grid-template-columns: minmax(360px, 0.82fr) minmax(0, 1.18fr);
+  align-items: center;
+  gap: clamp(28px, 5vw, 72px);
+  min-height: 330px;
+  padding: clamp(32px, 4vw, 70px);
+  border: 0;
+  background: linear-gradient(100deg, #e7f0e4 0%, #eef6f3 54%, #edf4ff 100%);
+  overflow: hidden;
+}
+
+.how-hero h1 {
+  margin: 0;
+  color: #020617;
+  font-size: clamp(2.75rem, 4.7vw, 4.8rem);
+  line-height: 1.02;
+  font-weight: 800;
+}
+
+.how-hero__content > p {
+  max-width: 560px;
+  margin: 1rem 0 0;
+  color: #475569;
+  font-size: clamp(1rem, 1.25vw, 1.18rem);
+  line-height: 1.55;
+}
+
+.how-hero__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin-top: 2rem;
+}
+
+.how-hero__actions .button {
+  min-height: 48px;
+  padding-inline: 1.35rem;
+}
+
+.how-hero__steps {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 24px;
+  align-items: end;
+}
+
+.how-hero-step {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  gap: 12px;
+  min-width: 0;
+  text-align: center;
+}
+
+.how-hero-step + .how-hero-step::before {
+  content: '>';
+  position: absolute;
+  top: 28px;
+  left: calc(-50% + 38px);
+  color: #8db7ee;
+  font-size: 3rem;
+  line-height: 1;
+  font-weight: 800;
+}
+
+.how-hero-step__number,
+.how-step-card__number {
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  color: #0e4ae1;
+  font-weight: 800;
+}
+
+.how-hero-step__number {
+  width: 72px;
+  height: 72px;
+  border: 2px solid #c5d9f7;
+  background: #ffffff;
+  font-size: 2.2rem;
+}
+
+.how-hero-step p {
+  margin: 0;
+  color: #0f172a;
+  font-weight: 800;
+}
+
+.how-steps {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 22px;
+}
+
+.how-step-card {
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr) minmax(120px, 0.92fr);
+  gap: 16px;
+  align-items: center;
+  min-height: 210px;
+  padding: 24px;
+}
+
+.how-step-card__number {
+  width: 44px;
+  height: 44px;
+  border: 2px solid #c5d9f7;
+  background: #ffffff;
+  font-size: 1.25rem;
+}
+
+.how-step-card h2,
+.how-cta h2 {
+  margin: 0 0 0.55rem;
+  color: #0f172a;
+  font-size: 1.1rem;
+  line-height: 1.25;
+}
+
+.how-step-card p,
+.how-cta p {
+  margin: 0;
+  color: #475569;
+  line-height: 1.55;
+}
+
+.how-illustration {
+  position: relative;
+  min-height: 132px;
+  overflow: hidden;
+}
+
+.how-hero-step .how-illustration {
+  width: min(100%, 210px);
+  min-height: 142px;
+}
+
+.how-person {
+  position: absolute;
+  right: 4%;
+  bottom: 0;
+  width: 78px;
+  height: 128px;
+}
+
+.how-person__hair,
+.how-person__face,
+.how-person__body {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.how-person__hair {
+  top: 4px;
+  width: 48px;
+  height: 48px;
+  border-radius: 50% 50% 44% 44%;
+  background: #111827;
+}
+
+.how-person__face {
+  top: 20px;
+  width: 40px;
+  height: 44px;
+  border-radius: 44%;
+  background: #f5b78f;
+}
+
+.how-person__body {
+  bottom: 0;
+  width: 70px;
+  height: 76px;
+  border-radius: 34px 34px 8px 8px;
+  background: #7fb389;
+}
+
+.how-device {
+  position: absolute;
+  left: 0;
+  top: 16px;
+  width: 118px;
+  min-height: 112px;
+  padding: 14px;
+  border: 2px solid #dbe4f2;
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: 0 12px 26px rgba(15, 23, 42, 0.06);
+}
+
+.how-device__avatar {
+  display: block;
+  width: 28px;
+  height: 28px;
+  margin-bottom: 8px;
+  border-radius: 50%;
+  background: #dbeafe;
+}
+
+.how-device i {
+  display: block;
+  width: 66px;
+  height: 7px;
+  margin: 8px 0 0 38px;
+  border-radius: 999px;
+  background: #cbd5e1;
+}
+
+.how-device b {
+  display: inline-grid;
+  place-items: center;
+  width: 19px;
+  height: 19px;
+  margin: 10px 7px 0 0;
+  border-radius: 50%;
+  background: #0e4ae1;
+  color: #ffffff;
+  font-size: 0.65rem;
+}
+
+.how-device span {
+  display: block;
+  color: #64748b;
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.how-device strong {
+  display: grid;
+  place-items: center;
+  width: 66px;
+  height: 66px;
+  margin: 0.65rem auto 0;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at center, #ffffff 0 55%, transparent 56%),
+    conic-gradient(#0e4ae1 0 92%, #e7edf6 92% 100%);
+  color: #0f172a;
+  font-size: 1rem;
+}
+
+.how-device small {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 0.8rem;
+  color: #159157;
+  font-size: 0.7rem;
+  font-weight: 800;
+}
+
+.how-illustration--match .how-person__body,
+.how-illustration--apply .how-person__body {
+  background: #0e4ae1;
+}
+
+.how-illustration--match .how-device {
+  top: 24px;
+}
+
+.how-illustration--apply .how-device {
+  width: 104px;
+  min-height: 124px;
+}
+
+.how-illustration--apply .how-device strong {
+  width: 46px;
+  height: 46px;
+  background: #7ecb8f;
+  color: #ffffff;
+}
+
+.how-illustration--apply .how-device i {
+  width: 72px;
+  margin-left: 0;
+}
+
+.how-illustration--apply .how-device i:last-child {
+  width: 82px;
+  height: 5px;
+  background: #0e4ae1;
+}
+
+.how-illustration__laptop,
+.how-illustration__accent,
+.how-illustration__mail {
+  position: absolute;
+  color: #0e4ae1;
+}
+
+.how-illustration__laptop {
+  right: 34px;
+  bottom: 8px;
+  font-size: 2rem;
+  color: #9aa7bd;
+}
+
+.how-illustration__accent {
+  left: 58px;
+  bottom: 28px;
+  color: #f6c244;
+  font-size: 1.05rem;
+}
+
+.how-illustration__mail {
+  right: 42px;
+  top: 28px;
+  font-size: 2.2rem;
+  color: #8db7ee;
+}
+
+.how-stats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  border: 1px solid rgba(15, 23, 42, 0.07);
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: 0 14px 34px rgba(15, 23, 42, 0.04);
+}
+
+.how-stat {
+  display: grid;
+  grid-template-columns: auto minmax(0, auto);
+  justify-content: center;
+  align-items: center;
+  gap: 18px;
+  min-height: 110px;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.how-stat + .how-stat {
+  border-left: 1px solid rgba(15, 23, 42, 0.08);
+}
+
+.how-stat span {
+  display: inline-flex;
+  color: #0e4ae1;
+  font-size: 2rem;
+}
+
+.how-stat strong {
+  display: block;
+  color: #0f172a;
+  font-size: clamp(1.45rem, 2vw, 2rem);
+  line-height: 1;
+}
+
+.how-stat p {
+  margin: 0.35rem 0 0;
+  color: #64748b;
+}
+
+.how-cta {
+  display: grid;
+  grid-template-columns: 62px minmax(0, 1fr) auto;
+  gap: 20px;
+  align-items: center;
+  padding: 24px 28px;
+  border: 0;
+  background: linear-gradient(100deg, #e7f0e4 0%, #edf4ff 100%);
+}
+
+.how-cta__icon {
+  display: inline-grid;
+  place-items: center;
+  width: 54px;
+  height: 54px;
+  border-radius: 8px;
+  background: #dff3e4;
+  color: #159157;
+  font-size: 1.4rem;
+}
+
+.how-cta .button {
+  min-height: 48px;
+  padding-inline: 1.45rem;
+  white-space: nowrap;
+}
+
+@media (min-width: 768px) and (max-width: 1180px) {
+  .how-hero {
+    grid-template-columns: 1fr;
+    padding: 36px 32px;
+  }
+
+  .how-steps {
+    grid-template-columns: 1fr;
+  }
+
+  .how-step-card {
+    grid-template-columns: 54px minmax(0, 1fr) minmax(220px, 0.7fr);
+  }
+
+  .how-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .how-stat:nth-child(3) {
+    border-left: 0;
+    border-top: 1px solid rgba(15, 23, 42, 0.08);
+  }
+
+  .how-stat:nth-child(4) {
+    border-top: 1px solid rgba(15, 23, 42, 0.08);
+  }
+}
+
+@media (max-width: 767px) {
+  .public-layout--how .mobile-bottom-nav {
+    display: none;
+  }
+
+  .public-layout--how main,
+  .public-layout--how main.container {
+    padding-bottom: 0;
+  }
+
+  .how-page {
+    width: min(100% - 1rem, 520px);
+    margin: 0 auto;
+    gap: 14px;
+    padding: 28px 0;
+  }
+
+  .how-hero {
+    display: block;
+    min-height: 0;
+    padding: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+
+  .how-hero h1 {
+    font-size: clamp(2.15rem, 10vw, 3.1rem);
+  }
+
+  .how-hero__content > p {
+    margin-top: 0.85rem;
+    font-size: 1rem;
+  }
+
+  .how-hero__actions,
+  .how-hero__steps {
+    display: none;
+  }
+
+  .how-steps {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+
+  .how-step-card {
+    grid-template-columns: 58px minmax(0, 1fr) minmax(120px, 0.68fr);
+    gap: 14px;
+    min-height: 178px;
+    padding: 20px;
+  }
+
+  .how-step-card__number {
+    align-self: start;
+    width: 48px;
+    height: 48px;
+    background: #eff5ff;
+    border-color: #eff5ff;
+    font-size: 1.35rem;
+  }
+
+  .how-step-card h2 {
+    font-size: 1.18rem;
+  }
+
+  .how-step-card p {
+    font-size: 0.98rem;
+  }
+
+  .how-step-card .how-illustration {
+    min-height: 132px;
+  }
+
+  .how-step-card .how-person {
+    transform: scale(0.82);
+    transform-origin: right bottom;
+  }
+
+  .how-step-card .how-device {
+    transform: scale(0.82);
+    transform-origin: left top;
+  }
+
+  .how-stats {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .how-stat {
+    display: grid;
+    grid-template-columns: 1fr;
+    justify-items: center;
+    gap: 8px;
+    min-height: 118px;
+    padding: 16px 8px;
+    text-align: center;
+  }
+
+  .how-stat:nth-child(4) {
+    display: none;
+  }
+
+  .how-stat strong {
+    font-size: 1.55rem;
+  }
+
+  .how-cta {
+    grid-template-columns: 62px minmax(0, 1fr);
+    gap: 14px;
+    padding: 20px;
+  }
+
+  .how-cta .button {
+    grid-column: 2;
+    justify-self: start;
+    min-width: 190px;
+  }
+}
+
+@media (max-width: 520px) {
+  .how-step-card {
+    grid-template-columns: 58px minmax(0, 1fr);
+  }
+
+  .how-step-card .how-illustration {
+    grid-column: 1 / -1;
+    min-height: 150px;
+  }
+
+  .how-step-card .how-device {
+    left: 44%;
+    transform: translateX(-50%) scale(0.92);
+  }
+
+  .how-step-card .how-person {
+    right: 16%;
+    transform: scale(0.88);
+  }
+
+  .how-cta .button {
+    grid-column: 1 / -1;
+    width: 100%;
+  }
+}

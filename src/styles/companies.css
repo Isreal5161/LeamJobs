@@ -1,0 +1,606 @@
+.companies-page {
+  display: grid;
+  gap: 22px;
+  padding: 24px 0 42px;
+}
+
+.companies-hero,
+.company-card,
+.companies-stats,
+.companies-cta {
+  border: 1px solid rgba(15, 23, 42, 0.07);
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: 0 14px 34px rgba(15, 23, 42, 0.04);
+}
+
+.companies-hero {
+  display: grid;
+  grid-template-columns: minmax(360px, 0.82fr) minmax(0, 1.18fr);
+  align-items: center;
+  gap: clamp(28px, 5vw, 72px);
+  min-height: 260px;
+  padding: clamp(32px, 4vw, 56px);
+  border: 0;
+  background: linear-gradient(100deg, #e7f0e4 0%, #eef6f3 48%, #edf4ff 100%);
+  overflow: hidden;
+}
+
+.companies-hero h1 {
+  margin: 0;
+  color: #020617;
+  font-size: clamp(2.6rem, 4.6vw, 4.2rem);
+  line-height: 1.04;
+  font-weight: 800;
+}
+
+.companies-hero p {
+  max-width: 560px;
+  margin: 1rem 0 0;
+  color: #475569;
+  font-size: clamp(1rem, 1.25vw, 1.18rem);
+  line-height: 1.55;
+}
+
+.companies-hero__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin-top: 2rem;
+}
+
+.companies-hero__actions .button {
+  min-height: 48px;
+  padding-inline: 1.35rem;
+}
+
+.companies-hero-art {
+  position: relative;
+  min-height: 210px;
+  overflow: hidden;
+}
+
+.companies-skyline {
+  position: absolute;
+  left: 18%;
+  right: 10%;
+  bottom: 14px;
+  height: 170px;
+  opacity: 0.68;
+}
+
+.companies-skyline span {
+  position: absolute;
+  bottom: 0;
+  width: 18%;
+  border-radius: 8px 8px 0 0;
+  background:
+    linear-gradient(rgba(255, 255, 255, 0.42) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.42) 1px, transparent 1px),
+    linear-gradient(180deg, #b7dcf8, #6aa8d2);
+  background-size: 22px 24px, 22px 24px, auto;
+}
+
+.companies-skyline span:nth-child(1) {
+  left: 0;
+  height: 90px;
+}
+
+.companies-skyline span:nth-child(2) {
+  left: 17%;
+  height: 130px;
+}
+
+.companies-skyline span:nth-child(3) {
+  left: 38%;
+  height: 166px;
+}
+
+.companies-skyline span:nth-child(4) {
+  left: 61%;
+  height: 116px;
+}
+
+.companies-skyline span:nth-child(5) {
+  left: 80%;
+  height: 78px;
+}
+
+.companies-trees {
+  position: absolute;
+  left: 8%;
+  right: 4%;
+  bottom: 0;
+  height: 72px;
+  border-bottom: 5px solid #3b7f69;
+}
+
+.companies-trees span {
+  position: absolute;
+  bottom: 0;
+  width: 46px;
+  height: 58px;
+  border-radius: 50% 50% 8px 8px;
+  background: #6fae89;
+}
+
+.companies-trees span::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: -8px;
+  width: 5px;
+  height: 30px;
+  border-radius: 999px;
+  background: #3b7f69;
+  transform: translateX(-50%);
+}
+
+.companies-trees span:nth-child(1) {
+  left: 12%;
+}
+
+.companies-trees span:nth-child(2) {
+  left: 44%;
+}
+
+.companies-trees span:nth-child(3) {
+  left: 68%;
+}
+
+.companies-logo-bubble {
+  position: absolute;
+  display: grid;
+  place-items: center;
+  width: 72px;
+  height: 72px;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #0e4ae1;
+  font-size: 2rem;
+  box-shadow: 0 18px 30px rgba(15, 23, 42, 0.09);
+}
+
+.companies-logo-bubble--google {
+  left: 6%;
+  top: 12px;
+  color: #4285f4;
+}
+
+.companies-logo-bubble--slack {
+  left: 0;
+  top: 104px;
+  color: #36c5f0;
+}
+
+.companies-logo-bubble--dropbox {
+  right: 28%;
+  top: 18px;
+  color: #0061ff;
+}
+
+.companies-logo-bubble--figma {
+  right: 8%;
+  top: 34px;
+  color: #ff7262;
+}
+
+.companies-logo-bubble--spotify {
+  right: 16%;
+  bottom: 12px;
+  color: #1ed760;
+}
+
+.companies-filters {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 18px;
+}
+
+.companies-filter {
+  min-width: 86px;
+  min-height: 42px;
+  padding: 0 1.25rem;
+  border: 1px solid rgba(15, 23, 42, 0.1);
+  border-radius: 999px;
+  background: #ffffff;
+  color: #334155;
+  font-weight: 700;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.035);
+}
+
+.companies-filter--active {
+  border-color: #0e4ae1;
+  background: #0e4ae1;
+  color: #ffffff;
+}
+
+.companies-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.company-card {
+  display: grid;
+  grid-template-columns: 68px minmax(0, 1fr);
+  gap: 18px;
+  align-items: start;
+  min-height: 144px;
+  padding: 20px;
+}
+
+.company-card__logo {
+  display: grid;
+  place-items: center;
+  width: 58px;
+  height: 58px;
+  border: 1px solid rgba(15, 23, 42, 0.07);
+  border-radius: 8px;
+  background: #ffffff;
+  font-size: 2rem;
+  box-shadow: 0 12px 24px rgba(15, 23, 42, 0.05);
+}
+
+.company-card__logo--google {
+  color: #4285f4;
+}
+
+.company-card__logo--slack {
+  background: #3d143c;
+  color: #36c5f0;
+}
+
+.company-card__logo--dropbox {
+  background: #eaf3ff;
+  color: #0061ff;
+}
+
+.company-card__logo--figma {
+  background: #111827;
+  color: #ff7262;
+}
+
+.company-card__logo--spotify {
+  background: #1ed760;
+  color: #ffffff;
+}
+
+.company-card__logo--stripe {
+  background: #635bff;
+  color: #ffffff;
+}
+
+.company-card__logo--airbnb {
+  background: #ff385c;
+  color: #ffffff;
+}
+
+.company-card__logo--notion {
+  color: #111827;
+}
+
+.company-card h2 {
+  margin: 0;
+  color: #0f172a;
+  font-size: 1.15rem;
+  line-height: 1.25;
+}
+
+.company-card__content > span {
+  display: inline-flex;
+  margin: 0.35rem 0 0.7rem;
+  padding: 0.18rem 0.52rem;
+  border-radius: 999px;
+  background: #eff5ff;
+  color: #25569b;
+  font-size: 0.76rem;
+  font-weight: 800;
+}
+
+.company-card p {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin: 0.1rem 0;
+  color: #475569;
+  font-size: 0.86rem;
+}
+
+.company-card a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 32px;
+  margin-top: 0.55rem;
+  padding: 0 1rem;
+  border: 1px solid rgba(14, 74, 225, 0.42);
+  border-radius: 999px;
+  color: #0e4ae1;
+  font-size: 0.84rem;
+  font-weight: 800;
+}
+
+.companies-stats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.companies-stat {
+  display: grid;
+  grid-template-columns: auto minmax(0, auto);
+  justify-content: center;
+  align-items: center;
+  gap: 18px;
+  min-height: 96px;
+}
+
+.companies-stat + .companies-stat {
+  border-left: 1px solid rgba(15, 23, 42, 0.08);
+}
+
+.companies-stat span {
+  display: inline-grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: #eff5ff;
+  color: #0e4ae1;
+  font-size: 1.45rem;
+}
+
+.companies-stat strong {
+  display: block;
+  color: #0f172a;
+  font-size: clamp(1.35rem, 2vw, 1.85rem);
+  line-height: 1;
+}
+
+.companies-stat p {
+  margin: 0.35rem 0 0;
+  color: #64748b;
+}
+
+.companies-cta {
+  display: grid;
+  grid-template-columns: 62px minmax(0, 1fr) auto;
+  gap: 20px;
+  align-items: center;
+  padding: 24px 28px;
+  border: 0;
+  background: linear-gradient(100deg, #e7f0e4 0%, #edf4ff 100%);
+}
+
+.companies-cta__icon {
+  display: inline-grid;
+  place-items: center;
+  width: 54px;
+  height: 54px;
+  border-radius: 8px;
+  background: #dff3e4;
+  color: #159157;
+  font-size: 1.4rem;
+}
+
+.companies-cta h2 {
+  margin: 0 0 0.35rem;
+  color: #0f172a;
+  font-size: 1.25rem;
+  line-height: 1.25;
+}
+
+.companies-cta p {
+  margin: 0;
+  color: #475569;
+  line-height: 1.55;
+}
+
+.companies-cta .button {
+  min-height: 48px;
+  padding-inline: 1.45rem;
+  white-space: nowrap;
+}
+
+@media (min-width: 768px) and (max-width: 1180px) {
+  .companies-hero {
+    grid-template-columns: minmax(300px, 0.9fr) minmax(320px, 1.1fr);
+    padding: 36px 32px;
+  }
+
+  .companies-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .companies-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .companies-stat:nth-child(3) {
+    border-left: 0;
+    border-top: 1px solid rgba(15, 23, 42, 0.08);
+  }
+
+  .companies-stat:nth-child(4) {
+    border-top: 1px solid rgba(15, 23, 42, 0.08);
+  }
+}
+
+@media (max-width: 767px) {
+  .public-layout--companies .mobile-bottom-nav {
+    display: none;
+  }
+
+  .public-layout--companies main,
+  .public-layout--companies main.container {
+    padding-bottom: 0;
+  }
+
+  .companies-page {
+    width: min(100% - 1rem, 520px);
+    margin: 0 auto;
+    gap: 14px;
+    padding: 14px 0 28px;
+  }
+
+  .companies-hero {
+    grid-template-columns: 1fr;
+    gap: 18px;
+    min-height: 0;
+    padding: 24px 20px 18px;
+  }
+
+  .companies-hero h1 {
+    font-size: clamp(2.15rem, 10vw, 3.1rem);
+  }
+
+  .companies-hero p {
+    font-size: 1rem;
+  }
+
+  .companies-hero__actions {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 10px;
+    width: 100%;
+    margin-top: 1.25rem;
+  }
+
+  .companies-hero__actions .button {
+    width: 100%;
+    min-height: 48px;
+  }
+
+  .companies-hero-art {
+    min-height: 138px;
+    opacity: 0.62;
+  }
+
+  .companies-logo-bubble {
+    display: none;
+  }
+
+  .companies-skyline {
+    left: 34%;
+    right: 0;
+    height: 120px;
+  }
+
+  .companies-trees {
+    left: 48%;
+  }
+
+  .companies-filters {
+    justify-content: flex-start;
+    flex-wrap: nowrap;
+    gap: 12px;
+    overflow-x: auto;
+    padding: 6px 2px;
+    scrollbar-width: none;
+  }
+
+  .companies-filters::-webkit-scrollbar {
+    display: none;
+  }
+
+  .companies-filter {
+    flex: 0 0 auto;
+    min-width: 82px;
+  }
+
+  .companies-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0;
+  }
+
+  .company-card {
+    grid-template-columns: 76px minmax(0, 1fr);
+    gap: 14px;
+    min-height: 178px;
+    padding: 20px;
+    border-radius: 8px;
+  }
+
+  .company-card__logo {
+    width: 66px;
+    height: 66px;
+    font-size: 2.35rem;
+  }
+
+  .company-card h2 {
+    font-size: 1.12rem;
+  }
+
+  .company-card p {
+    font-size: 0.8rem;
+  }
+
+  .companies-stats {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .companies-stat {
+    grid-template-columns: 1fr;
+    justify-items: center;
+    gap: 8px;
+    min-height: 116px;
+    padding: 14px 6px;
+    text-align: center;
+  }
+
+  .companies-stat span {
+    width: auto;
+    height: auto;
+    background: transparent;
+    font-size: 1.7rem;
+  }
+
+  .companies-stat strong {
+    font-size: 1.35rem;
+  }
+
+  .companies-stat p {
+    font-size: 0.82rem;
+  }
+
+  .companies-cta {
+    grid-template-columns: 62px minmax(0, 1fr);
+    gap: 14px;
+    padding: 20px;
+  }
+
+  .companies-cta .button {
+    grid-column: 2;
+    justify-self: start;
+    min-width: 160px;
+  }
+}
+
+@media (max-width: 520px) {
+  .companies-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .company-card {
+    min-height: 150px;
+  }
+
+  .companies-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .companies-stat:nth-child(3) {
+    border-left: 0;
+    border-top: 1px solid rgba(15, 23, 42, 0.08);
+  }
+
+  .companies-stat:nth-child(4) {
+    border-top: 1px solid rgba(15, 23, 42, 0.08);
+  }
+
+  .companies-cta .button {
+    grid-column: 1 / -1;
+    width: 100%;
+  }
+}
