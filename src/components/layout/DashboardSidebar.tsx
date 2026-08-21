@@ -28,8 +28,8 @@ const sidebarLinks = {
     { label: 'Jobs', to: '/seeker/jobs', icon: FaBriefcase },
     { label: 'Applications', to: '/seeker/applications', icon: FaClipboardList },
     { label: 'Messages', to: '/seeker/messages', icon: FaComments },
-    { label: 'Profile', to: '/seeker/profile', icon: FaUser },
     { label: 'Payments', to: '/seeker/payments', icon: FaMoneyBillWave },
+    { label: 'Profile', to: '/seeker/profile', icon: FaUser },
   ],
   employer: [
     { label: 'Dashboard', to: '/employer/dashboard', icon: FaHome },

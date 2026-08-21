@@ -134,14 +134,14 @@ function MobileBottomNav() {
         <FaComments />
         <span>Messages</span>
       </Link>
-      <Link to={profilePath} className={`mobile-bottom-nav__item ${pathname.startsWith(profilePath) ? 'mobile-bottom-nav__item--active' : ''}`}>
-        <FaUser />
-        <span>Profile</span>
-      </Link>
       {seekerMode || employerMode ? <Link to={paymentsPath} className={`mobile-bottom-nav__item ${pathname.startsWith(paymentsPath) ? 'mobile-bottom-nav__item--active' : ''}`}>
         <FaMoneyBillWave />
         <span>Payments</span>
       </Link> : null}
+      <Link to={profilePath} className={`mobile-bottom-nav__item ${pathname.startsWith(profilePath) ? 'mobile-bottom-nav__item--active' : ''}`}>
+        <FaUser />
+        <span>Profile</span>
+      </Link>
     </nav>
   );
 }
