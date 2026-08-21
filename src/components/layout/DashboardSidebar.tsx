@@ -12,6 +12,7 @@ import {
   FaHome,
   FaMoneyBillWave,
   FaStar,
+  FaCrown,
   FaUser,
 } from 'react-icons/fa';
 
@@ -48,6 +49,7 @@ const sidebarLinks = {
     { label: 'Users', to: '/admin/users', icon: FaUser },
     { label: 'Companies', to: '/admin/companies', icon: FaBuilding },
     { label: 'Payments', to: '/admin/payments', icon: FaMoneyBillWave },
+    { label: 'Subscriptions', to: '/admin/subscriptions', icon: FaCrown },
   ],
 };
 

@@ -12,11 +12,14 @@ import {
 } from 'react-icons/fa';
 import SeekerJobCard from '../../components/jobs/SeekerJobCard';
 import { useJobStore } from '../../context/JobStoreContext';
+import { useSubscriptions } from '../../context/SubscriptionContext';
 
 const filters = ['Remote', 'Full-time', 'Design', 'New York', '$100k+'];
 
 function JobsPage() {
   const { visibleJobs } = useJobStore();
+  const { getVisibilityBoost } = useSubscriptions();
+  const visibilityBoost = getVisibilityBoost('sarah-johnson');
   const [sortBy, setSortBy] = useState('relevant');
 
   const sortedJobs = useMemo(() => {
@@ -103,6 +106,7 @@ function JobsPage() {
           <span>Profile match</span>
           <strong>{visibleJobs.length} roles available</strong>
           <p>{visibleJobs.filter((job) => job.workArrangement === 'Remote').length} remote-friendly roles prioritized</p>
+          <small className="seeker-jobs-profile-match__boost">Your profile visibility boost: +{visibilityBoost}%</small>
         </div>
         <div className="seeker-jobs-profile-match__progress" aria-hidden="true"><span style={{ width: `${visibleJobs.length ? 78 : 0}%` }} /></div>
       </aside>

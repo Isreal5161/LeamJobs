@@ -216,6 +216,184 @@
   flex-wrap: wrap;
 }
 
+.seeker-cv-upload-control {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.55rem;
+  min-height: 42px;
+  padding: 0 1rem;
+  border: 1px solid rgba(14, 74, 225, 0.22);
+  border-radius: 8px;
+  background: #ffffff;
+  color: #0e4ae1;
+  cursor: pointer;
+  font-weight: 800;
+}
+
+.seeker-cv-upload-control input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+}
+
+.seeker-cv-workspace {
+  display: grid;
+  gap: 1rem;
+}
+
+.seeker-cv-workspace__heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.seeker-cv-workspace__heading h2,
+.seeker-cv-workspace__heading p {
+  margin: 0;
+}
+
+.seeker-cv-workspace__heading h2 {
+  margin-top: 0.7rem;
+  color: #0f172a;
+  font-size: 1.35rem;
+}
+
+.seeker-cv-workspace__heading p {
+  margin-top: 0.35rem;
+  color: #64748b;
+}
+
+.seeker-cv-mode-grid,
+.seeker-cv-template-choices {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.seeker-cv-mode-card,
+.seeker-cv-template-choice {
+  display: grid;
+  justify-items: start;
+  gap: 0.4rem;
+  padding: 1rem;
+  border: 1px solid rgba(15, 23, 42, 0.12);
+  border-radius: 10px;
+  background: #ffffff;
+  color: #334155;
+  text-align: left;
+  cursor: pointer;
+}
+
+.seeker-cv-mode-card svg {
+  color: #0e4ae1;
+  font-size: 1.25rem;
+}
+
+.seeker-cv-mode-card strong,
+.seeker-cv-template-choice span {
+  color: #0f172a;
+  font-weight: 800;
+}
+
+.seeker-cv-mode-card span,
+.seeker-cv-template-choice small {
+  color: #64748b;
+  line-height: 1.4;
+}
+
+.seeker-cv-mode-card--active,
+.seeker-cv-template-choice--active {
+  border-color: #0e4ae1;
+  background: #f7faff;
+  box-shadow: 0 0 0 3px rgba(14, 74, 225, 0.1);
+}
+
+.seeker-cv-template-choices {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.seeker-cv-template-choice {
+  min-height: 88px;
+}
+
+.seeker-cv-upload-box {
+  display: grid;
+  justify-items: center;
+  gap: 0.65rem;
+  padding: 2rem 1rem;
+  border: 1px dashed rgba(14, 74, 225, 0.4);
+  border-radius: 10px;
+  background: #f7faff;
+  color: #64748b;
+  text-align: center;
+}
+
+.seeker-cv-upload-box > svg {
+  color: #0e4ae1;
+  font-size: 1.6rem;
+}
+
+.seeker-cv-upload-box strong {
+  color: #0f172a;
+}
+
+.seeker-cv-upload-control {
+  margin-top: 0.35rem;
+}
+
+.seeker-cv-file-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  max-width: 280px;
+  padding: 0.5rem 0.75rem;
+  border-radius: 999px;
+  background: #ecfdf5;
+  color: #047857;
+  font-size: 0.85rem;
+  font-weight: 800;
+  overflow-wrap: anywhere;
+}
+
+.seeker-cv-rendered-preview {
+  max-height: 680px;
+  overflow: auto;
+  border: 1px solid rgba(15, 23, 42, 0.1);
+  border-radius: 8px;
+  background: #f8fafc;
+}
+
+.seeker-cv-workspace__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.seeker-cv-workspace__actions button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.55rem;
+  min-height: 42px;
+  padding: 0 1rem;
+  border: 1px solid rgba(14, 74, 225, 0.22);
+  border-radius: 8px;
+  background: #ffffff;
+  color: #0e4ae1;
+  font-weight: 800;
+}
+
+.seeker-cv-workspace__actions button:last-child {
+  border-color: #0e4ae1;
+  background: #0e4ae1;
+  color: #ffffff;
+}
+
 .seeker-cv-steps {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
@@ -299,6 +477,151 @@
 .seeker-profile-form {
   display: grid;
   gap: 1rem;
+}
+
+.seeker-form-item {
+  display: grid;
+  gap: 1rem;
+  padding: 1.1rem;
+  border: 1px solid rgba(15, 23, 42, 0.1);
+  border-radius: 10px;
+  background: #fbfcfe;
+}
+
+.seeker-form-item + .seeker-form-item {
+  margin-top: 0.9rem;
+}
+
+.seeker-form-item__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  color: #334155;
+}
+
+.seeker-delete-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  flex: 0 0 34px;
+  padding: 0;
+  border: 1px solid rgba(185, 28, 28, 0.18);
+  border-radius: 8px;
+  background: #fff7f7;
+  color: #b91c1c;
+  cursor: pointer;
+  transition: background-color 160ms ease, border-color 160ms ease, color 160ms ease;
+}
+
+.seeker-delete-button:hover,
+.seeker-delete-button:focus-visible {
+  border-color: rgba(185, 28, 28, 0.4);
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.seeker-delete-button:focus-visible {
+  outline: 3px solid rgba(185, 28, 28, 0.16);
+  outline-offset: 2px;
+}
+
+.seeker-form-item--inline {
+  display: flex;
+  align-items: center;
+}
+
+.seeker-add-panel {
+  display: grid;
+  gap: 0.85rem;
+  margin-bottom: 1rem;
+  padding: 1rem;
+  border: 1px solid rgba(14, 74, 225, 0.2);
+  border-radius: 8px;
+  background: #f7faff;
+}
+
+.seeker-add-panel__header,
+.seeker-add-panel__input-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.seeker-add-panel__header > div {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.seeker-add-panel__header strong {
+  color: #0f172a;
+}
+
+.seeker-add-panel__header span {
+  color: #64748b;
+  font-size: 0.88rem;
+}
+
+.seeker-add-panel__header button {
+  border: 0;
+  background: transparent;
+  color: #64748b;
+  font-weight: 800;
+}
+
+.seeker-add-panel__input-row input {
+  flex: 1;
+  min-height: 46px;
+  padding: 0 0.9rem;
+  border: 1px solid rgba(15, 23, 42, 0.14);
+  border-radius: 8px;
+  background: #ffffff;
+  color: #0f172a;
+}
+
+.seeker-add-panel__input-row input:focus {
+  outline: none;
+  border-color: #0e4ae1;
+  box-shadow: 0 0 0 4px rgba(14, 74, 225, 0.12);
+}
+
+.seeker-add-panel__input-row button {
+  min-height: 46px;
+  padding: 0 1.1rem;
+  border: 0;
+  border-radius: 8px;
+  background: #0e4ae1;
+  color: #ffffff;
+  font-weight: 800;
+}
+
+.seeker-add-panel__input-row button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.seeker-add-panel__suggestions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.seeker-add-panel__suggestions button {
+  padding: 0.45rem 0.7rem;
+  border: 1px solid rgba(14, 74, 225, 0.18);
+  border-radius: 999px;
+  background: #ffffff;
+  color: #0e4ae1;
+  font-weight: 700;
+}
+
+.seeker-add-panel__suggestions button:hover,
+.seeker-add-panel__suggestions button:focus-visible {
+  border-color: #0e4ae1;
+  background: #eff5ff;
 }
 
 .seeker-profile-form label {
@@ -526,6 +849,15 @@
   .seeker-cv-tools {
     display: grid;
     grid-template-columns: 1fr;
+  }
+
+  .seeker-cv-mode-grid,
+  .seeker-cv-template-choices {
+    grid-template-columns: 1fr;
+  }
+
+  .seeker-cv-workspace__heading {
+    flex-direction: column;
   }
 
   .seeker-cv-steps {

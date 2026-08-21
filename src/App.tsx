@@ -28,12 +28,15 @@ import { PaymentProvider } from './context/PaymentContext';
 import SeekerPaymentsPage from './pages/seeker/PaymentsPage';
 import EmployerPaymentsPage from './pages/employer/PaymentsPage';
 import AdminPaymentsPage from './pages/admin/AdminPaymentsPage';
+import AdminSubscriptionsPage from './pages/admin/AdminSubscriptionsPage';
+import { SubscriptionProvider } from './context/SubscriptionContext';
 
 function App() {
   return (
     <JobStoreProvider>
       <SiteContentProvider>
         <PaymentProvider>
+          <SubscriptionProvider>
         <Routes>
           <Route path="/" element={<PublicLayout />}>
             <Route index element={<WelcomePage />} />
@@ -82,8 +85,10 @@ function App() {
             <Route path="users" element={<AdminDashboardPage />} />
             <Route path="companies" element={<AdminDashboardPage />} />
             <Route path="payments" element={<AdminPaymentsPage />} />
+            <Route path="subscriptions" element={<AdminSubscriptionsPage />} />
           </Route>
         </Routes>
+          </SubscriptionProvider>
         </PaymentProvider>
       </SiteContentProvider>
     </JobStoreProvider>

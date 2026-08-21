@@ -74,7 +74,7 @@ function ModernTemplate({ data }: { data: CVData }) {
 
         {data.certifications.length > 0 && (
           <section className="cv-modern__section">
-            <h3>Certifications</h3>
+            <h3>Qualifications</h3>
             {data.certifications.map((cert, idx) => (
               <div key={idx}>
                 <strong>{cert.name}</strong>
@@ -268,7 +268,7 @@ function CreativeTemplate({ data }: { data: CVData }) {
 
           {data.certifications.length > 0 && (
             <section className="cv-creative__section">
-              <h3>Certifications</h3>
+              <h3>Qualifications</h3>
               {data.certifications.map((cert, idx) => (
                 <div key={idx}>
                   <strong>{cert.name}</strong>
