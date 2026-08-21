@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { FaChevronDown } from 'react-icons/fa';
 import JobCard, { RecommendedJob } from './JobCard';
+import { useJobStore } from '../../context/JobStoreContext';
 
 const SORT_OPTIONS = [
   { value: 'relevance', label: 'Relevance' },
@@ -10,100 +11,6 @@ const SORT_OPTIONS = [
 ] as const;
 
 type SortOption = (typeof SORT_OPTIONS)[number]['value'];
-
-const JOBS: RecommendedJob[] = [
-  {
-    id: 'google',
-    company: 'Google',
-    logoText: 'G',
-    logoClass: 'brand-logo--google',
-    featured: true,
-    role: 'Senior Product Designer',
-    salary: '$150k - $190k',
-    location: 'New York, NY',
-    workArrangement: 'Remote',
-    workType: 'Full-time',
-    level: 'Senior-level',
-    description: 'Design delightful products used by billions worldwide.',
-    postedAt: 6,
-    salaryHigh: 190,
-  },
-  {
-    id: 'amazon',
-    company: 'Amazon',
-    logoText: 'a',
-    logoClass: 'brand-logo--amazon',
-    role: 'Senior UI/UX Designer',
-    salary: '$130k - $160k',
-    location: 'Seattle, WA',
-    workArrangement: 'Hybrid',
-    workType: 'Full-time',
-    level: 'Senior-level',
-    description: 'Craft user experiences that make a global impact.',
-    postedAt: 5,
-    salaryHigh: 160,
-  },
-  {
-    id: 'figma',
-    company: 'Figma',
-    logoText: 'F',
-    logoClass: 'brand-logo--figma',
-    role: 'Product Designer',
-    salary: '$120k - $150k',
-    location: 'San Francisco, CA',
-    workArrangement: 'Remote',
-    workType: 'Full-time',
-    level: 'Mid-level',
-    description: 'Empower teams to build better products together.',
-    postedAt: 4,
-    salaryHigh: 150,
-  },
-  {
-    id: 'spotify',
-    company: 'Spotify',
-    logoText: 'S',
-    logoClass: 'brand-logo--spotify',
-    role: 'Senior Product Designer',
-    salary: '$140k - $180k',
-    location: 'Stockholm, Sweden',
-    workArrangement: 'Remote',
-    workType: 'Full-time',
-    level: 'Senior-level',
-    description: 'Create intuitive experiences for millions of listeners.',
-    postedAt: 3,
-    salaryHigh: 180,
-  },
-  {
-    id: 'microsoft',
-    company: 'Microsoft',
-    logoText: 'M',
-    logoClass: 'brand-logo--microsoft',
-    role: 'UX Designer',
-    salary: '$125k - $155k',
-    location: 'Redmond, WA',
-    workArrangement: 'Hybrid',
-    workType: 'Full-time',
-    level: 'Mid-level',
-    description: 'Design accessible experiences for users around the world.',
-    postedAt: 2,
-    salaryHigh: 155,
-  },
-  {
-    id: 'airbnb',
-    company: 'Airbnb',
-    logoText: 'A',
-    logoClass: 'brand-logo--airbnb',
-    role: 'Product Designer',
-    salary: '$135k - $175k',
-    location: 'San Francisco, CA',
-    workArrangement: 'Hybrid',
-    workType: 'Full-time',
-    level: 'Senior-level',
-    description: 'Create meaningful experiences for travelers and hosts.',
-    postedAt: 1,
-    salaryHigh: 175,
-  },
-];
 
 function sortJobs(jobs: RecommendedJob[], sortKey: SortOption) {
   const sorted = [...jobs];
@@ -121,10 +28,11 @@ function sortJobs(jobs: RecommendedJob[], sortKey: SortOption) {
 }
 
 function RecommendedJobs() {
+  const { visibleJobs } = useJobStore();
   const [sortOption, setSortOption] = useState<SortOption>('relevance');
   const [savedIds, setSavedIds] = useState<string[]>([]);
 
-  const sortedJobs = useMemo(() => sortJobs(JOBS, sortOption), [sortOption]);
+  const sortedJobs = useMemo(() => sortJobs(visibleJobs, sortOption), [sortOption, visibleJobs]);
 
   const handleBookmarkToggle = (jobId: string) => {
     setSavedIds((current) =>

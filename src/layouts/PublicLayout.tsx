@@ -10,6 +10,8 @@ function PublicLayout() {
   const isFeaturesPage = pathname === '/features';
   const isHowPage = pathname === '/how-it-works';
   const isCompaniesPage = pathname === '/companies';
+  const isAuthPage = pathname === '/login' || pathname === '/register' || pathname.startsWith('/employers/');
+  const isJobDetailsPage = pathname.startsWith('/jobs/');
   const layoutClasses = [
     'public-layout',
     isWelcomePage ? 'public-layout--welcome' : '',
@@ -17,6 +19,8 @@ function PublicLayout() {
     isFeaturesPage ? 'public-layout--features' : '',
     isHowPage ? 'public-layout--how' : '',
     isCompaniesPage ? 'public-layout--companies' : '',
+    isAuthPage ? 'public-layout--auth' : '',
+    isJobDetailsPage ? 'public-layout--job-detail' : '',
   ]
     .filter(Boolean)
     .join(' ');
@@ -28,7 +32,7 @@ function PublicLayout() {
         <Outlet />
       </main>
       <Footer />
-      {!isWelcomePage && !isAboutPage && !isFeaturesPage && !isHowPage && !isCompaniesPage && <MobileBottomNav />}
+      {!isWelcomePage && !isAboutPage && !isFeaturesPage && !isHowPage && !isCompaniesPage && !isAuthPage && !isJobDetailsPage && <MobileBottomNav />}
     </div>
   );
 }

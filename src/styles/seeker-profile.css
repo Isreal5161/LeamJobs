@@ -1,0 +1,565 @@
+.seeker-profile-page {
+  display: grid;
+  gap: 1rem;
+  min-width: 0;
+}
+
+.seeker-profile-hero {
+  min-width: 0;
+  padding: 2rem;
+  overflow: hidden;
+  border-radius: 8px;
+  background: #0e4ae1;
+  color: #ffffff;
+}
+
+.seeker-profile-hero__top {
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr) 48px;
+  align-items: center;
+  gap: 1rem;
+}
+
+.seeker-profile-hero h1,
+.seeker-profile-hero p {
+  margin: 0;
+}
+
+.seeker-profile-hero h1 {
+  font-size: clamp(2rem, 4vw, 3rem);
+  line-height: 1;
+}
+
+.seeker-profile-hero p {
+  margin-top: 0.4rem;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.seeker-profile-icon-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border: 1px solid rgba(255, 255, 255, 0.38);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.14);
+  color: #ffffff;
+  font-size: 1.1rem;
+}
+
+.seeker-profile-content {
+  display: grid;
+  gap: 1rem;
+  min-width: 0;
+}
+
+.seeker-cv-summary {
+  display: grid;
+  grid-template-columns: 190px minmax(0, 1fr);
+  gap: 1.3rem;
+  align-items: center;
+}
+
+.seeker-cv-preview {
+  display: grid;
+  grid-template-columns: 42% 58%;
+  min-height: 230px;
+  overflow: hidden;
+  border: 1px solid rgba(15, 23, 42, 0.1);
+  border-radius: 8px;
+  background: #fffdf7;
+  box-shadow: 0 14px 28px rgba(15, 23, 42, 0.08);
+}
+
+.seeker-cv-preview__side {
+  display: grid;
+  align-content: start;
+  gap: 0.7rem;
+  padding: 1rem 0.75rem;
+  background: #0f2d57;
+}
+
+.seeker-cv-preview__side span,
+.seeker-cv-preview__body i {
+  display: block;
+  height: 6px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.seeker-cv-preview__body {
+  display: grid;
+  align-content: start;
+  gap: 0.6rem;
+  padding: 1rem;
+}
+
+.seeker-cv-preview__body strong {
+  color: #0f172a;
+  font-size: 0.95rem;
+}
+
+.seeker-cv-preview__body span {
+  color: #64748b;
+  font-size: 0.75rem;
+}
+
+.seeker-cv-preview__body i {
+  height: 8px;
+  background: #dbeafe;
+}
+
+.seeker-cv-summary__content {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.seeker-cv-summary__eyebrow {
+  width: max-content;
+  padding: 0.3rem 0.7rem;
+  border-radius: 999px;
+  background: #eff5ff;
+  color: #0e4ae1;
+  font-weight: 800;
+}
+
+.seeker-cv-summary h2,
+.seeker-cv-summary p {
+  margin: 0;
+}
+
+.seeker-cv-summary h2 {
+  color: #0f172a;
+  font-size: clamp(1.7rem, 3vw, 2.4rem);
+}
+
+.seeker-cv-summary p {
+  color: #475569;
+}
+
+.seeker-cv-progress {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.seeker-cv-progress div {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.seeker-cv-progress strong {
+  color: #0f172a;
+}
+
+.seeker-cv-progress span {
+  color: #64748b;
+}
+
+.seeker-cv-progress__bar {
+  height: 10px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #e8eefc;
+}
+
+.seeker-cv-progress__bar i {
+  display: block;
+  width: 82%;
+  height: 100%;
+  border-radius: inherit;
+  background: #0e4ae1;
+}
+
+.seeker-cv-summary__actions,
+.seeker-cv-tools,
+.seeker-editor-card__tools,
+.seeker-profile-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.seeker-cv-summary__actions button,
+.seeker-cv-tools button,
+.seeker-editor-card__tools button,
+.seeker-section-heading button,
+.seeker-profile-actions button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.55rem;
+  min-height: 42px;
+  padding: 0 1rem;
+  border-radius: 8px;
+  font-weight: 800;
+}
+
+.seeker-cv-summary__actions button,
+.seeker-cv-tools button,
+.seeker-editor-card__tools button,
+.seeker-section-heading button,
+.seeker-profile-actions button:first-child {
+  border: 1px solid rgba(14, 74, 225, 0.22);
+  background: #ffffff;
+  color: #0e4ae1;
+}
+
+.seeker-profile-actions button:last-child {
+  border: 0;
+  background: #0e4ae1;
+  color: #ffffff;
+}
+
+.seeker-cv-tools {
+  flex-wrap: wrap;
+}
+
+.seeker-cv-steps {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+
+.seeker-cv-steps button {
+  display: grid;
+  justify-items: center;
+  gap: 0.45rem;
+  min-width: 0;
+  border: 0;
+  background: transparent;
+  color: #64748b;
+  font-weight: 800;
+}
+
+.seeker-cv-steps button span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: #f1f5f9;
+  color: #475569;
+}
+
+.seeker-cv-steps .seeker-cv-step--done span,
+.seeker-cv-steps .seeker-cv-step--active span {
+  background: #0e4ae1;
+  color: #ffffff;
+}
+
+.seeker-cv-steps .seeker-cv-step--active {
+  color: #0f172a;
+}
+
+.seeker-profile-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: 1rem;
+  align-items: start;
+}
+
+.seeker-profile-main,
+.seeker-profile-side {
+  display: grid;
+  gap: 1rem;
+  min-width: 0;
+}
+
+.seeker-editor-card__heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.seeker-editor-card h2,
+.seeker-editor-card p {
+  margin: 0;
+}
+
+.seeker-editor-card h2 {
+  color: #0f172a;
+  font-size: 1.25rem;
+}
+
+.seeker-editor-card p {
+  margin-top: 0.35rem;
+  color: #64748b;
+}
+
+.seeker-editor-card__tools button {
+  width: 42px;
+  padding: 0;
+}
+
+.seeker-profile-form {
+  display: grid;
+  gap: 1rem;
+}
+
+.seeker-profile-form label {
+  display: grid;
+  gap: 0.45rem;
+  color: #0f172a;
+  font-weight: 800;
+}
+
+.seeker-profile-form input,
+.seeker-rich-editor textarea {
+  width: 100%;
+  border: 1px solid rgba(15, 23, 42, 0.12);
+  border-radius: 8px;
+  background: #ffffff;
+  color: #0f172a;
+}
+
+.seeker-profile-form input {
+  min-height: 48px;
+  padding: 0 0.9rem;
+}
+
+.seeker-profile-form input:focus,
+.seeker-rich-editor textarea:focus {
+  outline: none;
+  border-color: #0e4ae1;
+  box-shadow: 0 0 0 4px rgba(14, 74, 225, 0.12);
+}
+
+.seeker-profile-form__split {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.seeker-date-input {
+  position: relative;
+}
+
+.seeker-date-input svg {
+  position: absolute;
+  top: 50%;
+  right: 0.9rem;
+  color: #64748b;
+  transform: translateY(-50%);
+}
+
+.seeker-profile-check {
+  display: inline-flex !important;
+  grid-template-columns: auto auto;
+  align-items: center;
+  width: max-content;
+  color: #475569 !important;
+  font-weight: 700 !important;
+}
+
+.seeker-profile-check input {
+  width: 18px;
+  min-height: 18px;
+  accent-color: #0e4ae1;
+}
+
+.seeker-rich-editor {
+  overflow: hidden;
+  border: 1px solid rgba(15, 23, 42, 0.12);
+  border-radius: 8px;
+}
+
+.seeker-rich-editor__toolbar {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  min-height: 44px;
+  padding: 0 0.9rem;
+  border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+  color: #0f172a;
+}
+
+.seeker-rich-editor textarea {
+  min-height: 170px;
+  padding: 0.9rem;
+  border: 0;
+  resize: vertical;
+}
+
+.seeker-profile-details {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
+  gap: 0.75rem;
+}
+
+.seeker-profile-details span,
+.seeker-qualification-list p {
+  display: inline-flex;
+  align-items: flex-start;
+  gap: 0.55rem;
+  min-width: 0;
+  margin: 0;
+  color: #475569;
+  font-weight: 700;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
+.seeker-profile-details svg,
+.seeker-qualification-list svg {
+  flex: 0 0 auto;
+  margin-top: 0.12rem;
+  color: #0e4ae1;
+}
+
+.seeker-profile-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+  margin-top: 1rem;
+}
+
+.seeker-profile-tags span {
+  padding: 0.4rem 0.75rem;
+  border-radius: 999px;
+  background: #eff5ff;
+  color: #0e4ae1;
+  font-weight: 800;
+}
+
+.seeker-qualification-list {
+  display: grid;
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.seeker-profile-actions {
+  position: sticky;
+  bottom: 0;
+  z-index: 30;
+  justify-content: center;
+  padding: 0.9rem;
+  border-top: 1px solid rgba(15, 23, 42, 0.08);
+  background: rgba(255, 255, 255, 0.94);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+
+.seeker-profile-actions button {
+  min-width: 180px;
+  min-height: 50px;
+}
+
+@media (max-width: 1024px) {
+  .seeker-profile-grid,
+  .seeker-cv-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .seeker-cv-preview {
+    max-width: 360px;
+  }
+
+  .seeker-profile-actions {
+    bottom: 64px;
+  }
+}
+
+@media (max-width: 767px) {
+  .seeker-profile-page {
+    gap: 0;
+    width: 100%;
+    max-width: 100vw;
+    overflow-x: hidden;
+  }
+
+  .seeker-profile-hero {
+    width: 100%;
+    max-width: 100vw;
+    padding: 1.45rem 1rem 5.8rem;
+    border-radius: 0 0 22px 22px;
+  }
+
+  .seeker-profile-hero__top {
+    grid-template-columns: 42px minmax(0, 1fr) 42px;
+  }
+
+  .seeker-profile-icon-button {
+    width: 42px;
+    height: 42px;
+  }
+
+  .seeker-profile-content {
+    width: calc(100vw - 2rem);
+    max-width: 520px;
+    margin: -4.8rem auto 0;
+  }
+
+  .seeker-cv-summary {
+    gap: 1rem;
+  }
+
+  .seeker-cv-preview {
+    width: 100%;
+    max-width: none;
+    min-height: 210px;
+  }
+
+  .seeker-cv-progress div,
+  .seeker-editor-card__heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .seeker-cv-summary__actions,
+  .seeker-profile-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .seeker-cv-summary__actions button,
+  .seeker-profile-actions button {
+    min-width: 0;
+    width: 100%;
+    padding: 0 0.75rem;
+  }
+
+  .seeker-cv-tools {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .seeker-cv-steps {
+    display: flex;
+    gap: 1rem;
+    overflow-x: auto;
+    padding: 0.25rem 0 0.4rem;
+    scrollbar-width: none;
+  }
+
+  .seeker-cv-steps::-webkit-scrollbar {
+    display: none;
+  }
+
+  .seeker-cv-steps button {
+    flex: 0 0 94px;
+    font-size: 0.82rem;
+  }
+
+  .seeker-profile-form__split,
+  .seeker-profile-details {
+    grid-template-columns: 1fr;
+  }
+
+  .seeker-editor-card__tools {
+    width: 100%;
+  }
+
+  .seeker-editor-card__tools button {
+    flex: 1;
+  }
+
+  .seeker-profile-actions {
+    bottom: 64px;
+    width: 100%;
+  }
+}

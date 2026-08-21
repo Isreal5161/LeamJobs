@@ -9,38 +9,7 @@ import {
   FaShieldAlt,
   FaUsers,
 } from 'react-icons/fa';
-
-const values = [
-  {
-    icon: <FaUsers />,
-    title: 'People first',
-    text: 'We put people at the center of everything we do.',
-  },
-  {
-    icon: <FaShieldAlt />,
-    title: 'Trust & transparency',
-    text: 'Honest, open, and fair in every interaction.',
-  },
-  {
-    icon: <FaRocket />,
-    title: 'Growth mindset',
-    text: 'We learn, adapt, and keep improving together.',
-  },
-  {
-    icon: <FaHeart />,
-    title: 'Impact',
-    text: 'We build with purpose to create real, positive change.',
-  },
-];
-
-const stats = [
-  { icon: <FaBriefcase />, value: '120k+', label: 'Open roles' },
-  { icon: <FaBuilding />, value: '18k+', label: 'Companies' },
-  { icon: <FaUsers />, value: '2.4M', label: 'Hired members' },
-  { icon: <FaGlobe />, value: '150+', label: 'Countries' },
-];
-
-const team = ['SA', 'JM', 'NK', 'AL', 'RP'];
+import { useSiteContent } from '../../context/SiteContentContext';
 
 function AboutIllustration() {
   return (
@@ -91,19 +60,19 @@ function AboutIllustration() {
 }
 
 function AboutPage() {
+  const { content } = useSiteContent();
+  const { eyebrow, title, description, primaryCta, secondaryCta, values, stats, team } = content.about;
+
   return (
     <div className="about-page">
       <section className="about-hero">
         <div className="about-hero__content">
-          <p className="about-page__eyebrow">About LeamJobs</p>
-          <h1>About LeamJobs</h1>
-          <p>
-            We're on a mission to connect great people with meaningful opportunities and help
-            companies build teams that drive the future.
-          </p>
+          <p className="about-page__eyebrow">{eyebrow}</p>
+          <h1>{title}</h1>
+          <p>{description}</p>
           <div className="about-hero__actions">
-            <Button variant="primary">Create free account</Button>
-            <Button variant="outline">I already have one</Button>
+            <Button variant="primary">{primaryCta}</Button>
+            <Button variant="outline">{secondaryCta}</Button>
           </div>
         </div>
         <AboutIllustration />
@@ -126,9 +95,9 @@ function AboutPage() {
         <article className="about-card about-values-card">
           <h2>Our values</h2>
           <div className="about-values-grid">
-            {values.map((value) => (
+            {values.map((value, index) => (
               <div className="about-value" key={value.title}>
-                <div className="about-icon">{value.icon}</div>
+                <div className="about-icon">{index === 0 ? <FaUsers /> : index === 1 ? <FaShieldAlt /> : index === 2 ? <FaRocket /> : <FaHeart />}</div>
                 <div>
                   <h3>{value.title}</h3>
                   <p>{value.text}</p>
@@ -140,9 +109,9 @@ function AboutPage() {
       </section>
 
       <section className="about-stats" aria-label="LeamJobs by the numbers">
-        {stats.map((stat) => (
+        {stats.map((stat, index) => (
           <article className="about-stat-card" key={stat.label}>
-            <span>{stat.icon}</span>
+            <span>{index === 0 ? <FaBriefcase /> : index === 1 ? <FaBuilding /> : index === 2 ? <FaUsers /> : <FaGlobe />}</span>
             <strong>{stat.value}</strong>
             <p>{stat.label}</p>
           </article>

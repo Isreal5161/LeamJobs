@@ -1,0 +1,90 @@
+.seeker-layout button,
+.seeker-layout a,
+.seeker-layout input,
+.seeker-layout textarea {
+  letter-spacing: 0;
+}
+
+.seeker-profile__avatar,
+.seeker-filter-row button,
+.seeker-section-heading a,
+.seeker-progress__footer a,
+.seeker-job-card__top span,
+.seeker-tag,
+.seeker-job-card__apply,
+.seeker-resume__actions button,
+.seeker-jobs-toolbar button,
+.seeker-applications-export,
+.seeker-application-tabs button,
+.seeker-application-status,
+.seeker-application-card__meta span,
+.seeker-income-progress div,
+.seeker-cv-summary__eyebrow,
+.seeker-cv-summary__actions button,
+.seeker-cv-tools button,
+.seeker-editor-card__tools button,
+.seeker-section-heading button,
+.seeker-profile-actions button,
+.seeker-cv-steps button,
+.seeker-profile-form label,
+.seeker-profile-check,
+.seeker-profile-details span,
+.seeker-qualification-list p,
+.seeker-profile-tags span {
+  font-weight: 600;
+}
+
+.seeker-section-heading h2,
+.seeker-section-heading strong,
+.seeker-job-card h3,
+.seeker-job-card h4,
+.seeker-application-card h3,
+.seeker-income-card h2,
+.seeker-cv-summary h2,
+.seeker-editor-card h2 {
+  font-weight: 700;
+}
+
+.seeker-filter-row button,
+.seeker-jobs-toolbar button,
+.seeker-applications-export,
+.seeker-application-tabs button,
+.seeker-cv-summary__actions button,
+.seeker-cv-tools button,
+.seeker-editor-card__tools button,
+.seeker-section-heading button,
+.seeker-profile-actions button,
+.seeker-resume__actions button {
+  font-size: 0.88rem;
+}
+
+.seeker-tag,
+.seeker-job-card__top span,
+.seeker-application-status,
+.seeker-profile-tags span {
+  font-size: 0.78rem;
+}
+
+.seeker-job-card__apply {
+  font-size: 0.9rem;
+}
+
+.seeker-profile-form label {
+  font-size: 0.9rem;
+}
+
+.seeker-profile-details span,
+.seeker-qualification-list p,
+.seeker-application-card__meta span {
+  font-size: 0.84rem;
+}
+
+@media (max-width: 767px) {
+  .seeker-filter-row button {
+    font-size: 0.9rem;
+  }
+
+  .seeker-profile-actions button {
+    font-size: 0.86rem;
+  }
+}

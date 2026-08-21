@@ -1,11 +1,14 @@
 import Button from '../../components/common/Button';
+import { Link } from 'react-router-dom';
 import {
   FaAirbnb,
+  FaAmazon,
   FaBriefcase,
   FaBuilding,
   FaFigma,
   FaGoogle,
   FaMapMarkerAlt,
+  FaMicrosoft,
   FaRocket,
   FaSlack,
   FaSpotify,
@@ -13,82 +16,7 @@ import {
   FaGlobe,
 } from 'react-icons/fa';
 import { SiDropbox, SiNotion, SiStripe } from 'react-icons/si';
-
-const filters = ['All', 'Startup', 'Enterprise', 'Remote-first', 'Fintech', 'Design', 'Product', 'Engineering'];
-
-const companies = [
-  {
-    icon: <FaGoogle />,
-    name: 'Google',
-    category: 'Technology',
-    location: 'Mountain View, CA',
-    employees: '100k+ employees',
-    tone: 'google',
-  },
-  {
-    icon: <FaSlack />,
-    name: 'Slack',
-    category: 'Software',
-    location: 'San Francisco, CA',
-    employees: '2k-5k employees',
-    tone: 'slack',
-  },
-  {
-    icon: <SiDropbox />,
-    name: 'Dropbox',
-    category: 'Cloud Storage',
-    location: 'San Francisco, CA',
-    employees: '2k-5k employees',
-    tone: 'dropbox',
-  },
-  {
-    icon: <FaFigma />,
-    name: 'Figma',
-    category: 'Design',
-    location: 'San Francisco, CA',
-    employees: '1k-2k employees',
-    tone: 'figma',
-  },
-  {
-    icon: <FaSpotify />,
-    name: 'Spotify',
-    category: 'Audio',
-    location: 'Stockholm, Sweden',
-    employees: '5k+ employees',
-    tone: 'spotify',
-  },
-  {
-    icon: <SiStripe />,
-    name: 'Stripe',
-    category: 'Fintech',
-    location: 'Dublin, Ireland',
-    employees: '4k+ employees',
-    tone: 'stripe',
-  },
-  {
-    icon: <FaAirbnb />,
-    name: 'Airbnb',
-    category: 'Travel',
-    location: 'San Francisco, CA',
-    employees: '6k+ employees',
-    tone: 'airbnb',
-  },
-  {
-    icon: <SiNotion />,
-    name: 'Notion',
-    category: 'Productivity',
-    location: 'San Francisco, CA',
-    employees: '1k+ employees',
-    tone: 'notion',
-  },
-];
-
-const stats = [
-  { icon: <FaBriefcase />, value: '120k+', label: 'Open roles' },
-  { icon: <FaBuilding />, value: '18k+', label: 'Companies' },
-  { icon: <FaUsers />, value: '2.4M', label: 'Hired members' },
-  { icon: <FaGlobe />, value: '150+', label: 'Countries' },
-];
+import { useSiteContent } from '../../context/SiteContentContext';
 
 function CompaniesHeroArt() {
   return (
@@ -115,15 +43,18 @@ function CompaniesHeroArt() {
 }
 
 function CompaniesPage() {
+  const { content } = useSiteContent();
+  const { heroTitle, heroSubtitle, primaryCta, secondaryCta, filters, companies, stats, ctaTitle, ctaSubtitle, ctaButton } = content.companies;
+
   return (
     <div className="companies-page">
       <section className="companies-hero">
         <div className="companies-hero__content">
-          <h1>Companies on LeamJobs</h1>
-          <p>Explore teams hiring right now-from early-stage startups to Fortune 500 leaders.</p>
+          <h1>{heroTitle}</h1>
+          <p>{heroSubtitle}</p>
           <div className="companies-hero__actions">
-            <Button variant="primary">Create free account</Button>
-            <Button variant="outline">I already have one</Button>
+            <Button variant="primary">{primaryCta}</Button>
+            <Button variant="outline">{secondaryCta}</Button>
           </div>
         </div>
         <CompaniesHeroArt />
@@ -144,22 +75,24 @@ function CompaniesPage() {
       <section className="companies-grid" aria-label="Companies hiring on LeamJobs">
         {companies.map((company) => (
           <article className="company-card" key={company.name}>
-            <div className={`company-card__logo company-card__logo--${company.tone}`}>{company.icon}</div>
+            <div className={`company-card__logo company-card__logo--${company.tone}`}>
+              {company.tone === 'google' ? <FaGoogle /> : company.tone === 'slack' ? <FaSlack /> : company.tone === 'dropbox' ? <SiDropbox /> : company.tone === 'figma' ? <FaFigma /> : company.tone === 'spotify' ? <FaSpotify /> : company.tone === 'stripe' ? <SiStripe /> : company.tone === 'airbnb' ? <FaAirbnb /> : company.tone === 'amazon' ? <FaAmazon /> : company.tone === 'microsoft' ? <FaMicrosoft /> : <SiNotion />}
+            </div>
             <div className="company-card__content">
               <h2>{company.name}</h2>
               <span>{company.category}</span>
               <p><FaMapMarkerAlt /> {company.location}</p>
               <p><FaUsers /> {company.employees}</p>
-              <a href="/features">View jobs</a>
+              <Link to={`/jobs/${company.name.toLowerCase()}`}>View jobs</Link>
             </div>
           </article>
         ))}
       </section>
 
       <section className="companies-stats" aria-label="LeamJobs company network">
-        {stats.map((stat) => (
+        {stats.map((stat, index) => (
           <article className="companies-stat" key={stat.label}>
-            <span>{stat.icon}</span>
+            <span>{index === 0 ? <FaBriefcase /> : index === 1 ? <FaBuilding /> : index === 2 ? <FaUsers /> : <FaGlobe />}</span>
             <div>
               <strong>{stat.value}</strong>
               <p>{stat.label}</p>
@@ -173,10 +106,10 @@ function CompaniesPage() {
           <FaRocket />
         </div>
         <div>
-          <h2>Hiring on LeamJobs?</h2>
-          <p>Reach millions of qualified candidates and find your next great hire.</p>
+          <h2>{ctaTitle}</h2>
+          <p>{ctaSubtitle}</p>
         </div>
-        <Button variant="primary">Post a job</Button>
+        <Button variant="primary">{ctaButton}</Button>
       </section>
     </div>
   );

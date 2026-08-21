@@ -1,5 +1,7 @@
+import { Link } from 'react-router-dom';
 import CompanyLogo from './CompanyLogo';
 import BookmarkButton from '../common/BookmarkButton';
+import type { PublicJob } from '../../data/jobData';
 
 type JobCardProps = {
   id: string;
@@ -20,22 +22,7 @@ type JobCardProps = {
   onViewDetails?: () => void;
 };
 
-export type RecommendedJob = {
-  id: string;
-  company: string;
-  logoText: string;
-  logoClass?: string;
-  featured?: boolean;
-  role: string;
-  salary: string;
-  location: string;
-  workArrangement: string;
-  workType: string;
-  level: string;
-  description: string;
-  postedAt: number;
-  salaryHigh: number;
-};
+export type RecommendedJob = PublicJob;
 
 function JobCard({
   id,
@@ -84,9 +71,9 @@ function JobCard({
               onToggle={onToggleBookmark ?? (() => {})}
               ariaLabel={saved ? `Remove ${company} ${role} from saved jobs` : `Save ${company} ${role}`}
             />
-            <button className="button button--detail" type="button" onClick={onViewDetails ?? (() => {})}>
+            <Link className="button button--detail" to={`/jobs/${id}`} onClick={onViewDetails ?? (() => {})}>
               Details
-            </button>
+            </Link>
             <button className="button button--apply" type="button" onClick={onApply}>
               Apply
             </button>

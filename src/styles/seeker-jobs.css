@@ -1,0 +1,246 @@
+.seeker-jobs-page {
+  display: grid;
+  gap: 1rem;
+  min-width: 0;
+}
+
+.seeker-jobs-hero {
+  display: grid;
+  gap: 1.45rem;
+  min-width: 0;
+  padding: 2rem;
+  border-radius: 8px;
+  background: #0e4ae1;
+  color: #ffffff;
+  overflow: hidden;
+}
+
+.seeker-jobs-content {
+  display: grid;
+  gap: 1rem;
+}
+
+.seeker-jobs-toolbar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 180px;
+  min-height: 58px;
+  overflow: hidden;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: 0 16px 36px rgba(15, 23, 42, 0.06);
+}
+
+.seeker-jobs-toolbar button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.7rem;
+  border: 0;
+  background: #ffffff;
+  color: #17251c;
+  font-weight: 800;
+}
+
+.seeker-jobs-toolbar__sort {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 0.55rem;
+  min-width: 0;
+  padding: 0 1.2rem;
+  color: #17251c;
+  cursor: pointer;
+}
+
+.seeker-jobs-toolbar__sort select {
+  min-width: 9rem;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: #17251c;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.seeker-jobs-toolbar__sort-chevron {
+  pointer-events: none;
+  color: #64748b;
+  font-size: 0.75rem;
+}
+
+.seeker-jobs-toolbar__sort {
+  justify-content: flex-start;
+  padding: 0 1.2rem;
+}
+
+.seeker-jobs-toolbar__filter {
+  border-left: 1px solid rgba(15, 23, 42, 0.08) !important;
+  color: #0e4ae1 !important;
+}
+
+.seeker-jobs-results {
+  display: grid;
+  gap: 1rem;
+}
+
+.seeker-job-list--jobs-page {
+  margin-top: 0;
+}
+
+.seeker-job-card__logo--spotify {
+  background: #e7f7ef;
+  color: #1db954;
+}
+
+.seeker-job-card__logo--figma {
+  background: #f0edff;
+  color: #7c3aed;
+  font-size: 1.5rem;
+  font-weight: 900;
+}
+
+.seeker-job-card__logo--airbnb {
+  background: #fff0f3;
+  color: #ff385c;
+}
+
+@media (min-width: 1025px) {
+  .seeker-jobs-page {
+    grid-template-columns: minmax(0, 1fr) 310px;
+    align-items: start;
+  }
+
+  .seeker-jobs-hero {
+    grid-column: 1 / -1;
+  }
+
+  .seeker-jobs-content {
+    grid-column: 1;
+  }
+
+}
+
+.seeker-jobs-profile-match {
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr);
+  gap: 0.8rem;
+  align-items: start;
+  padding: 1.1rem;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: 0 16px 36px rgba(15, 23, 42, 0.06);
+}
+
+.seeker-jobs-profile-match__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  background: #fff4d8;
+  color: #c27a00;
+}
+
+.seeker-jobs-profile-match span,
+.seeker-jobs-profile-match strong,
+.seeker-jobs-profile-match p {
+  display: block;
+  margin: 0;
+}
+
+.seeker-jobs-profile-match span {
+  color: #64748b;
+  font-size: 0.74rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.seeker-jobs-profile-match strong {
+  margin-top: 0.25rem;
+  color: #172033;
+  font-size: 1rem;
+  font-weight: 750;
+}
+
+.seeker-jobs-profile-match p {
+  margin-top: 0.35rem;
+  color: #64748b;
+  font-size: 0.8rem;
+  line-height: 1.45;
+}
+
+.seeker-jobs-profile-match__progress {
+  grid-column: 1 / -1;
+  height: 7px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #edf1f5;
+}
+
+.seeker-jobs-profile-match__progress span {
+  height: 100%;
+  border-radius: inherit;
+  background: #0e4ae1;
+}
+
+@media (max-width: 767px) {
+  .seeker-jobs-page {
+    gap: 0;
+    width: 100%;
+    max-width: 100vw;
+    overflow-x: hidden;
+  }
+
+  .seeker-jobs-hero {
+    width: 100%;
+    max-width: 100vw;
+    border-radius: 0 0 22px 22px;
+    padding: 1.45rem 1rem 1rem;
+  }
+
+  .seeker-jobs-content {
+    width: calc(100vw - 2rem);
+    max-width: 520px;
+    margin: 0 auto;
+    padding: 0.8rem 0 0;
+  }
+
+  .seeker-jobs-toolbar {
+    grid-template-columns: minmax(0, 1fr) 120px;
+    min-height: 54px;
+  }
+
+  .seeker-jobs-toolbar button {
+    gap: 0.5rem;
+    font-size: 0.9rem;
+  }
+
+  .seeker-jobs-toolbar__sort {
+    min-width: 0;
+    padding: 0 0.8rem;
+  }
+
+  .seeker-jobs-toolbar__sort select {
+    min-width: 0;
+    max-width: 8.5rem;
+  }
+
+  .seeker-jobs-toolbar__sort span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .seeker-job-card--listing {
+    grid-template-columns: 70px minmax(0, 1fr);
+  }
+
+  .seeker-job-card--listing .seeker-job-card__apply {
+    grid-column: 2;
+  }
+}

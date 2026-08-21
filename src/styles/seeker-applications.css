@@ -1,0 +1,448 @@
+.seeker-applications-page {
+  display: grid;
+  gap: 1rem;
+  min-width: 0;
+}
+
+.seeker-applications-hero {
+  display: grid;
+  gap: 1.45rem;
+  min-width: 0;
+  padding: 2rem;
+  overflow: hidden;
+  border-radius: 8px;
+  background: #0e4ae1;
+  color: #ffffff;
+}
+
+.seeker-applications-content,
+.seeker-application-list {
+  display: grid;
+  gap: 1rem;
+  min-width: 0;
+}
+
+.seeker-application-stats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1rem;
+  min-width: 0;
+}
+
+.seeker-application-stat {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  min-width: 0;
+  padding: 1rem;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: 0 16px 36px rgba(15, 23, 42, 0.06);
+}
+
+.seeker-application-stat__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: #e7f0ff;
+  color: #0e4ae1;
+}
+
+.seeker-application-stat__icon--success {
+  background: #e8f7ee;
+  color: #16803c;
+}
+
+.seeker-application-stat__icon--warning {
+  background: #fff2d8;
+  color: #d97706;
+}
+
+.seeker-application-stat__icon--danger {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.seeker-application-stat strong {
+  display: block;
+  color: #0f172a;
+  font-size: 1.45rem;
+  line-height: 1;
+}
+
+  .seeker-application-stat p {
+    max-width: 100%;
+    overflow-wrap: anywhere;
+    margin: 0.3rem 0 0;
+    color: #64748b;
+    font-size: 0.88rem;
+  }
+
+.seeker-applications-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: 1rem;
+  align-items: start;
+}
+
+.seeker-applications-export {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 38px;
+  padding: 0 0.9rem;
+  border: 0;
+  border-radius: 8px;
+  background: #eff5ff;
+  color: #0e4ae1;
+  font-weight: 800;
+}
+
+.seeker-application-tabs {
+  display: flex;
+  gap: 0.55rem;
+  margin: 1rem 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.seeker-application-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.seeker-application-tabs button {
+  flex: 0 0 auto;
+  min-height: 36px;
+  padding: 0 0.9rem;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 999px;
+  background: #ffffff;
+  color: #475569;
+  font-weight: 800;
+}
+
+.seeker-application-tabs .seeker-application-tab--active {
+  border-color: transparent;
+  background: #0e4ae1;
+  color: #ffffff;
+}
+
+.seeker-application-card {
+  position: relative;
+  display: grid;
+  grid-template-columns: 62px minmax(0, 1fr) 42px;
+  gap: 1rem;
+  align-items: center;
+  padding: 1rem;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.seeker-application-card__logo {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 58px;
+  height: 58px;
+  border-radius: 16px;
+  background: #eef2ff;
+  color: #0d47a1;
+  font-size: 2rem;
+  font-weight: 900;
+}
+
+.seeker-application-card__logo--microsoft {
+  background: #eef4ff;
+  color: #00a4ef;
+}
+
+.seeker-application-card__logo--stripe {
+  background: #f0edff;
+  color: #635bff;
+}
+
+.seeker-application-card__logo--figma {
+  background: #f0edff;
+  color: #7c3aed;
+}
+
+.seeker-application-card__content {
+  min-width: 0;
+}
+
+.seeker-application-card__top {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.seeker-application-card h3,
+.seeker-application-card p {
+  margin: 0;
+}
+
+.seeker-application-card h3 {
+  color: #0f172a;
+  font-size: 1rem;
+  line-height: 1.25;
+}
+
+.seeker-application-card p {
+  margin-top: 0.25rem;
+  color: #64748b;
+  font-size: 0.88rem;
+}
+
+.seeker-application-status {
+  flex: 0 0 auto;
+  height: max-content;
+  padding: 0.32rem 0.7rem;
+  border-radius: 999px;
+  background: #e7f0ff;
+  color: #0e4ae1;
+  font-size: 0.78rem;
+  font-weight: 900;
+}
+
+.seeker-application-status--approved,
+.seeker-application-status--completed {
+  background: #e8f7ee;
+  color: #16803c;
+}
+
+.seeker-application-status--pending {
+  background: #fff2d8;
+  color: #d97706;
+}
+
+.seeker-application-status--rejected {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.seeker-application-card__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.7rem 1rem;
+  margin-top: 0.85rem;
+}
+
+.seeker-application-card__meta span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  color: #475569;
+  font-size: 0.84rem;
+  font-weight: 700;
+}
+
+.seeker-application-card__meta svg {
+  color: #0e4ae1;
+}
+
+.seeker-application-card__link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  background: #eff5ff;
+  color: #0e4ae1;
+}
+
+.seeker-income-card {
+  position: sticky;
+  top: 1rem;
+  display: grid;
+  gap: 1rem;
+}
+
+.seeker-income-card__heading {
+  display: flex;
+  gap: 0.85rem;
+  align-items: center;
+}
+
+.seeker-income-card__heading > span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: #0e4ae1;
+  color: #ffffff;
+}
+
+.seeker-income-card h2,
+.seeker-income-card p {
+  margin: 0;
+}
+
+.seeker-income-card h2 {
+  color: #0f172a;
+  font-size: 1.1rem;
+}
+
+.seeker-income-card p {
+  color: #64748b;
+  font-size: 0.88rem;
+}
+
+.seeker-income-metrics {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.seeker-income-metrics div {
+  padding: 0.9rem;
+  border-radius: 8px;
+  background: #f8fafc;
+}
+
+.seeker-income-metrics strong,
+.seeker-income-metrics span {
+  display: block;
+}
+
+.seeker-income-metrics strong {
+  color: #0f172a;
+  font-size: 1.35rem;
+}
+
+.seeker-income-metrics span {
+  margin-top: 0.25rem;
+  color: #64748b;
+  font-size: 0.86rem;
+}
+
+.seeker-income-progress {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.seeker-income-progress div {
+  display: flex;
+  justify-content: space-between;
+  color: #475569;
+  font-weight: 800;
+}
+
+.seeker-income-progress__bar {
+  height: 10px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #e8eefc;
+}
+
+.seeker-income-progress__bar i {
+  display: block;
+  width: 72%;
+  height: 100%;
+  border-radius: inherit;
+  background: #0e4ae1;
+}
+
+@media (max-width: 1024px) {
+  .seeker-application-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .seeker-applications-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .seeker-income-card {
+    position: static;
+  }
+
+  .seeker-income-metrics {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 767px) {
+  .seeker-applications-page {
+    gap: 0;
+    width: 100%;
+    max-width: 100vw;
+    overflow-x: hidden;
+  }
+
+  .seeker-applications-hero {
+    width: 100%;
+    max-width: 100vw;
+    padding: 1.45rem 1rem 1rem;
+    border-radius: 0 0 22px 22px;
+  }
+
+  .seeker-applications-content {
+    width: calc(100vw - 2rem);
+    max-width: 520px;
+    margin: 0 auto;
+    padding: 0.8rem 0 0;
+    overflow-x: hidden;
+  }
+
+  .seeker-application-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: 100%;
+    max-width: 100%;
+    gap: 0.65rem;
+  }
+
+  .seeker-application-stat {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 0.65rem;
+    width: 100%;
+    padding: 0.8rem;
+  }
+
+  .seeker-application-card {
+    grid-template-columns: 54px minmax(0, 1fr);
+    align-items: start;
+    gap: 0.8rem;
+  }
+
+  .seeker-application-card__logo {
+    width: 50px;
+    height: 50px;
+    border-radius: 14px;
+    font-size: 1.65rem;
+  }
+
+  .seeker-application-card__top {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 0.55rem;
+  }
+
+  .seeker-application-card__link {
+    position: absolute;
+    top: 0.85rem;
+    right: 0.85rem;
+  }
+
+  .seeker-application-card__content {
+    min-width: 0;
+    padding-right: 2.4rem;
+  }
+
+  .seeker-application-card__meta {
+    display: grid;
+    gap: 0.55rem;
+  }
+
+  .seeker-income-metrics {
+    grid-template-columns: 1fr;
+  }
+}

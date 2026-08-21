@@ -1,45 +1,94 @@
-import { Link } from 'react-router-dom';
+import { NavLink } from 'react-router-dom';
+import {
+  FaBars,
+  FaBriefcase,
+  FaBuilding,
+  FaChevronLeft,
+  FaClipboardList,
+  FaComments,
+  FaEdit,
+  FaFilter,
+  FaFlag,
+  FaHome,
+  FaMoneyBillWave,
+  FaStar,
+  FaUser,
+} from 'react-icons/fa';
 
 type SidebarProps = {
   role: 'seeker' | 'employer' | 'admin';
+  isOpen?: boolean;
+  onToggle?: () => void;
 };
 
 const sidebarLinks = {
   seeker: [
-    { label: 'Dashboard', to: '/seeker/dashboard' },
-    { label: 'Profile', to: '/seeker/profile' },
-    { label: 'Applications', to: '/seeker/applications' },
-    { label: 'Saved Jobs', to: '/seeker/saved-jobs' },
-    { label: 'Settings', to: '/seeker/settings' },
+    { label: 'Home', to: '/seeker/dashboard', icon: FaHome },
+    { label: 'Jobs', to: '/seeker/jobs', icon: FaBriefcase },
+    { label: 'Applications', to: '/seeker/applications', icon: FaClipboardList },
+    { label: 'Messages', to: '/seeker/messages', icon: FaComments },
+    { label: 'Profile', to: '/seeker/profile', icon: FaUser },
+    { label: 'Payments', to: '/seeker/payments', icon: FaMoneyBillWave },
   ],
   employer: [
-    { label: 'Dashboard', to: '/employer/dashboard' },
-    { label: 'Jobs', to: '/employer/jobs' },
-    { label: 'Applicants', to: '/employer/applicants' },
-    { label: 'Company Profile', to: '/employer/profile' },
-    { label: 'Settings', to: '/employer/settings' },
+    { label: 'Dashboard', to: '/employer/dashboard', icon: FaHome },
+    { label: 'Jobs', to: '/employer/jobs', icon: FaBriefcase },
+    { label: 'Applicants', to: '/employer/applicants', icon: FaClipboardList },
+    { label: 'Messages', to: '/employer/messages', icon: FaComments },
+    { label: 'Company Profile', to: '/employer/profile', icon: FaUser },
+    { label: 'Payments', to: '/employer/payments', icon: FaMoneyBillWave },
   ],
   admin: [
-    { label: 'Dashboard', to: '/admin/dashboard' },
-    { label: 'Users', to: '/admin/users' },
-    { label: 'Jobs', to: '/admin/jobs' },
-    { label: 'Reports', to: '/admin/reports' },
-    { label: 'Analytics', to: '/admin/analytics' },
+    { label: 'Overview', to: '/admin/dashboard', icon: FaHome },
+    { label: 'Moderation', to: '/admin/moderation', icon: FaFlag },
+    { label: 'Job Posts', to: '/admin/jobs', icon: FaBriefcase },
+    { label: 'Page Content', to: '/admin/content', icon: FaEdit },
+    { label: 'Filters', to: '/admin/filters', icon: FaFilter },
+    { label: 'Recommendations', to: '/admin/recommendations', icon: FaStar },
+    { label: 'Users', to: '/admin/users', icon: FaUser },
+    { label: 'Companies', to: '/admin/companies', icon: FaBuilding },
+    { label: 'Payments', to: '/admin/payments', icon: FaMoneyBillWave },
   ],
 };
 
-function DashboardSidebar({ role }: SidebarProps) {
+function DashboardSidebar({ role, isOpen = true, onToggle }: SidebarProps) {
   return (
-    <aside style={{ width: 260, padding: '1.5rem', borderRadius: '24px', background: '#ffffff', border: '1px solid #e2e8f0' }}>
-      <div style={{ marginBottom: '1.5rem' }}>
-        <h2 style={{ margin: 0, fontSize: '1rem', color: '#0f172a' }}>Dashboard</h2>
-        <p style={{ margin: '0.5rem 0 0', color: '#64748b', fontSize: '0.95rem' }}>Quick access</p>
+    <aside className={`dashboard-menu ${isOpen ? 'dashboard-menu--open' : 'dashboard-menu--closed'}`}>
+      <div className="dashboard-menu__header">
+        <div className="dashboard-menu__brand" aria-hidden={!isOpen}>
+          <span className="dashboard-menu__mark">LJ</span>
+          <div className="dashboard-menu__brand-copy">
+            <strong>LeamJobs</strong>
+            <span>Career menu</span>
+          </div>
+        </div>
+        {onToggle ? (
+          <button
+            type="button"
+            className="dashboard-menu__toggle"
+            aria-label={isOpen ? 'Close menu' : 'Open menu'}
+            aria-expanded={isOpen}
+            onClick={onToggle}
+          >
+            {isOpen ? <FaChevronLeft /> : <FaBars />}
+          </button>
+        ) : null}
       </div>
-      <nav style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-        {sidebarLinks[role].map((item) => (
-          <Link key={item.to} to={item.to} style={{ padding: '0.9rem 1rem', borderRadius: '16px', color: '#0f172a', background: '#f8fafc' }}>
-            {item.label}
-          </Link>
+      <nav className="dashboard-menu__nav" aria-label={`${role} navigation`}>
+        {sidebarLinks[role].map(({ icon: Icon, ...item }) => (
+          <NavLink
+            key={item.to}
+            to={item.to}
+            className={({ isActive }) =>
+              `dashboard-menu__link ${isActive ? 'dashboard-menu__link--active' : ''}`
+            }
+            title={!isOpen ? item.label : undefined}
+          >
+            <span className="dashboard-menu__icon">
+              <Icon />
+            </span>
+            <span className="dashboard-menu__label">{item.label}</span>
+          </NavLink>
         ))}
       </nav>
     </aside>

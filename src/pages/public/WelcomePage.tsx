@@ -1,31 +1,30 @@
+import { Link } from 'react-router-dom';
 import Button from '../../components/common/Button';
 import Input from '../../components/common/Input';
 import RecommendedJobs from '../../components/jobs/RecommendedJobs';
-import { FaBriefcase, FaBuilding, FaUsers, FaWifi, FaClock, FaPencilAlt, FaMapMarkerAlt, FaDollarSign, FaCode, FaBullhorn } from 'react-icons/fa';
+import { FaArrowRight, FaBriefcase, FaBuilding, FaUsers, FaWifi, FaClock, FaPencilAlt, FaMapMarkerAlt, FaDollarSign, FaCode, FaBullhorn } from 'react-icons/fa';
+import { useSiteContent } from '../../context/SiteContentContext';
 
 
 function WelcomePage() {
+  const { content } = useSiteContent();
+  const { heroTitle, heroSubtitle, primaryCta, secondaryCta, employerCta, stats, filters } = content.welcome;
+
   return (
     <main>
       <section className="hero hero--welcome">
         <div className="container hero__panel">
           <div className="hero__top-row">
             <div className="hero__text-panel">
-              <h1 className="hero__title">Find a job that<br/>actually fits you.</h1>
-              <p className="hero__subtitle">
-                Smart matching, better opportunities, and tools to help you grow your career.
-              </p>
+              <h1 className="hero__title">{heroTitle}</h1>
+              <p className="hero__subtitle">{heroSubtitle}</p>
               {/* CTA buttons moved to bottom row for horizontal alignment with search */}
             </div>
 
             <div className="hero__stats">
-              {[
-                { icon: <FaBriefcase />, value: '120k+', label: 'Open roles' },
-                { icon: <FaBuilding />, value: '18k+', label: 'Companies' },
-                { icon: <FaUsers />, value: '2.4M', label: 'Hired members' },
-              ].map((stat) => (
+              {stats.map((stat, index) => (
                 <div key={stat.label} className="hero__stat-card">
-                  <span className="hero__stat-icon">{stat.icon}</span>
+                  <span className="hero__stat-icon">{index === 0 ? <FaBriefcase /> : index === 1 ? <FaBuilding /> : <FaUsers />}</span>
                   <div>
                     <p>{stat.value}</p>
                     <span>{stat.label}</span>
@@ -36,9 +35,20 @@ function WelcomePage() {
           </div>
 
           <div className="hero__bottom">
-            <div className="hero-actions">
-              <Button variant="primary">Create free account</Button>
-              <Button variant="outline">I already have one</Button>
+            <div className="hero-actions" aria-label="Account actions">
+              <div className="hero-actions__seeker">
+                <Link className="button button--primary hero-actions__primary" to="/register">
+                  {primaryCta}
+                </Link>
+                <Link className="hero-actions__secondary" to="/login">
+                  {secondaryCta}
+                </Link>
+              </div>
+              <Link className="hero-actions__employer" to="/employers/register">
+                <span>Hiring?</span>
+                {employerCta}
+                <FaArrowRight />
+              </Link>
             </div>
 
             <div className="hero__search-panel card">
@@ -63,20 +73,16 @@ function WelcomePage() {
           <aside className="jobs-filters">
             <h4>Filters</h4>
             <div className="filters-list">
-              {[
-                { icon: <FaWifi />, label: 'Remote' },
-                { icon: <FaClock />, label: 'Full-time' },
-                { icon: <FaPencilAlt />, label: 'Design' },
-                { icon: <FaMapMarkerAlt />, label: 'New York' },
-                { icon: <FaDollarSign />, label: '$100k+' },
-                { icon: <FaCode />, label: 'Engineering' },
-                { icon: <FaBullhorn />, label: 'Marketing' },
-              ].map((f) => (
-                <button key={f.label} className="tag-list__item filter-item" type="button">
-                  <span className="filter-icon">{f.icon}</span>
-                  <span className="filter-label">{f.label}</span>
-                </button>
-              ))}
+              {filters.map((label, index) => {
+                const icon = index === 0 ? <FaWifi /> : index === 1 ? <FaClock /> : index === 2 ? <FaPencilAlt /> : index === 3 ? <FaMapMarkerAlt /> : index === 4 ? <FaDollarSign /> : index === 5 ? <FaCode /> : <FaBullhorn />;
+
+                return (
+                  <button key={label} className="tag-list__item filter-item" type="button">
+                    <span className="filter-icon">{icon}</span>
+                    <span className="filter-label">{label}</span>
+                  </button>
+                );
+              })}
             </div>
             <div className="filters-clear">
               <button className="clear-filters" type="button">Clear all filters</button>

@@ -281,6 +281,16 @@
   color: #111827;
 }
 
+.company-card__logo--amazon {
+  background: #fff4df;
+  color: #c76b00;
+}
+
+.company-card__logo--microsoft {
+  background: #eaf3ff;
+  color: #2563eb;
+}
+
 .company-card h2 {
   margin: 0;
   color: #0f172a;

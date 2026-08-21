@@ -1,4 +1,5 @@
-import { FaAirbnb, FaAmazon, FaFigma, FaGoogle, FaMicrosoft, FaSpotify } from 'react-icons/fa';
+import { FaAirbnb, FaAmazon, FaFigma, FaGoogle, FaMicrosoft, FaSlack, FaSpotify } from 'react-icons/fa';
+import { SiDropbox, SiNotion, SiStripe } from 'react-icons/si';
 
 type CompanyLogoProps = {
   company: string;
@@ -13,6 +14,10 @@ const COMPANY_ICONS: Record<string, JSX.Element> = {
   spotify: <FaSpotify />,
   microsoft: <FaMicrosoft />,
   airbnb: <FaAirbnb />,
+  slack: <FaSlack />,
+  dropbox: <SiDropbox />,
+  stripe: <SiStripe />,
+  notion: <SiNotion />,
 };
 
 function CompanyLogo({ company, logoText, logoClass = '' }: CompanyLogoProps) {

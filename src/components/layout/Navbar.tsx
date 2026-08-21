@@ -60,6 +60,20 @@ function Navbar() {
             {link.label}
           </NavLink>
         ))}
+        <NavLink
+          to="/login"
+          onClick={() => setMenuOpen(false)}
+          className={({ isActive }) => (isActive ? 'navbar__link--active' : undefined)}
+        >
+          Sign in
+        </NavLink>
+        <NavLink
+          to="/register"
+          onClick={() => setMenuOpen(false)}
+          className={({ isActive }) => (isActive ? 'navbar__link--active' : undefined)}
+        >
+          Register
+        </NavLink>
       </nav>
     </header>
   );
