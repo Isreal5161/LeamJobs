@@ -1,14 +1,45 @@
+import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import Button from '../../components/common/Button';
 import Input from '../../components/common/Input';
 import RecommendedJobs from '../../components/jobs/RecommendedJobs';
 import { FaArrowRight, FaBriefcase, FaBuilding, FaUsers, FaWifi, FaClock, FaPencilAlt, FaMapMarkerAlt, FaDollarSign, FaCode, FaBullhorn } from 'react-icons/fa';
 import { useSiteContent } from '../../context/SiteContentContext';
+import { useJobStore } from '../../context/JobStoreContext';
 
 
 function WelcomePage() {
   const { content } = useSiteContent();
+  const { visibleJobs } = useJobStore();
   const { heroTitle, heroSubtitle, primaryCta, secondaryCta, employerCta, stats, filters } = content.welcome;
+  const [keywordQuery, setKeywordQuery] = useState('');
+  const [locationQuery, setLocationQuery] = useState('');
+  const [activeFilter, setActiveFilter] = useState<string | null>(null);
+
+  const filteredJobs = useMemo(() => {
+    const keyword = keywordQuery.trim().toLowerCase();
+    const location = locationQuery.trim().toLowerCase();
+
+    return visibleJobs.filter((job) => {
+      const searchableText = [
+        job.company,
+        job.role,
+        job.description,
+        job.location,
+        job.workArrangement,
+        job.workType,
+        job.level,
+        ...job.details.skills,
+      ].join(' ').toLowerCase();
+      const matchesKeyword = !keyword || searchableText.includes(keyword);
+      const matchesLocation = !location || job.location.toLowerCase().includes(location);
+
+      if (!matchesKeyword || !matchesLocation) return false;
+      if (!activeFilter) return true;
+      if (activeFilter === '$100k+') return job.salaryHigh >= 100;
+      return searchableText.includes(activeFilter.toLowerCase());
+    });
+  }, [activeFilter, keywordQuery, locationQuery, visibleJobs]);
 
   return (
     <main>
@@ -54,12 +85,24 @@ function WelcomePage() {
             <div className="hero__search-panel card">
               <div className="hero__search-grid">
                 <div className="search-card__field">
-                  <Input type="search" placeholder="Job title or keyword" />
+                  <Input
+                    type="search"
+                    placeholder="Job title or keyword"
+                    value={keywordQuery}
+                    onChange={(event) => setKeywordQuery(event.target.value)}
+                    aria-label="Search jobs by title or keyword"
+                  />
                 </div>
                 <div className="search-card__field">
-                  <Input type="text" placeholder="City, state, or remote" />
+                  <Input
+                    type="text"
+                    placeholder="City, state, or remote"
+                    value={locationQuery}
+                    onChange={(event) => setLocationQuery(event.target.value)}
+                    aria-label="Search jobs by location"
+                  />
                 </div>
-                <Button variant="primary" className="hero__search-button">
+                <Button variant="primary" className="hero__search-button" type="button">
                   Search
                 </Button>
               </div>
@@ -77,19 +120,22 @@ function WelcomePage() {
                 const icon = index === 0 ? <FaWifi /> : index === 1 ? <FaClock /> : index === 2 ? <FaPencilAlt /> : index === 3 ? <FaMapMarkerAlt /> : index === 4 ? <FaDollarSign /> : index === 5 ? <FaCode /> : <FaBullhorn />;
 
                 return (
-                  <button key={label} className="tag-list__item filter-item" type="button">
+                  <button
+                    key={label}
+                    className={`tag-list__item filter-item${activeFilter === label ? ' filter-item--active' : ''}`}
+                    type="button"
+                    aria-pressed={activeFilter === label}
+                    onClick={() => setActiveFilter((current) => current === label ? null : label)}
+                  >
                     <span className="filter-icon">{icon}</span>
                     <span className="filter-label">{label}</span>
                   </button>
                 );
               })}
             </div>
-            <div className="filters-clear">
-              <button className="clear-filters" type="button">Clear all filters</button>
-            </div>
           </aside>
 
-          <RecommendedJobs />
+          <RecommendedJobs jobs={filteredJobs} />
         </div>
       </section>
     </main>

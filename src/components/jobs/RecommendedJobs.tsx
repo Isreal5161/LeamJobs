@@ -27,12 +27,13 @@ function sortJobs(jobs: RecommendedJob[], sortKey: SortOption) {
   }
 }
 
-function RecommendedJobs() {
+function RecommendedJobs({ jobs }: { jobs?: RecommendedJob[] }) {
   const { visibleJobs } = useJobStore();
   const [sortOption, setSortOption] = useState<SortOption>('relevance');
   const [savedIds, setSavedIds] = useState<string[]>([]);
 
-  const sortedJobs = useMemo(() => sortJobs(visibleJobs, sortOption), [sortOption, visibleJobs]);
+  const jobsToDisplay = jobs ?? visibleJobs;
+  const sortedJobs = useMemo(() => sortJobs(jobsToDisplay, sortOption), [jobsToDisplay, sortOption]);
 
   const handleBookmarkToggle = (jobId: string) => {
     setSavedIds((current) =>
@@ -83,6 +84,7 @@ function RecommendedJobs() {
             onViewDetails={() => handleViewDetails(job.company, job.role)}
           />
         ))}
+        {sortedJobs.length === 0 ? <p className="recommended-jobs__empty">No jobs match your search or filter.</p> : null}
       </div>
     </section>
   );
