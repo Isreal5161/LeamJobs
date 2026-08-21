@@ -1,4 +1,4 @@
-export type ModerationStatus = 'Pending' | 'Approved' | 'Flagged' | 'Declined';
+export type ModerationStatus = 'Pending' | 'Approved' | 'Flagged' | 'Declined' | 'Draft';
 
 export type JobDetails = {
   overview: string;

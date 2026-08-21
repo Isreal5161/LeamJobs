@@ -342,9 +342,9 @@ function EmployerJobsPage() {
                 <div className="employer-job-card__footer">
                   <span><FaCalendarAlt /> Closes {job.expires}</span>
                   <div>
-                    <button type="button" aria-label={`Preview ${job.title}`}><FaEye /></button>
-                    <button type="button" aria-label={`Edit ${job.title}`} onClick={() => startEditing(job)}><FaEdit /></button>
-                    <button type="button" aria-label={`Delete ${job.title}`}><FaTrashAlt /></button>
+                    <button type="button" aria-label={`Preview ${job.role}`}><FaEye /></button>
+                    <button type="button" aria-label={`Edit ${job.role}`} onClick={() => startEditing(job)}><FaEdit /></button>
+                    <button type="button" aria-label={`Delete ${job.role}`}><FaTrashAlt /></button>
                   </div>
                 </div>
               </article>
