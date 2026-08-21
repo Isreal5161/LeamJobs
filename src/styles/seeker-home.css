@@ -751,10 +751,14 @@
   }
 
   .seeker-home__content {
-    padding: 0.8rem 1rem 0;
+    width: calc(100vw - 2rem);
+    max-width: 520px;
+    margin: 0 auto;
+    padding: 0.8rem 0 0;
   }
 
   .seeker-card {
+    min-width: 0;
     padding: 1rem;
   }
 
