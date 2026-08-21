@@ -454,22 +454,6 @@ function ProfilePage() {
 
       <main className="seeker-profile-content">
         <section className="seeker-cv-summary seeker-card">
-          <div className="seeker-cv-preview" aria-label="CV preview">
-            <div className="seeker-cv-preview__side">
-              <span />
-              <span />
-              <span />
-              <span />
-            </div>
-            <div className="seeker-cv-preview__body">
-              <strong>{profile.personalInfo.fullName}</strong>
-              <span>{profile.personalInfo.title}</span>
-              <i />
-              <i />
-              <i />
-            </div>
-          </div>
-
           <div className="seeker-cv-summary__content">
             <span className="seeker-cv-summary__eyebrow">Modern template</span>
             <h2>{profile.personalInfo.fullName}</h2>

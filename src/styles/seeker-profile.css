@@ -61,55 +61,6 @@
   align-items: center;
 }
 
-.seeker-cv-preview {
-  display: grid;
-  grid-template-columns: 42% 58%;
-  min-height: 230px;
-  overflow: hidden;
-  border: 1px solid rgba(15, 23, 42, 0.1);
-  border-radius: 8px;
-  background: #fffdf7;
-  box-shadow: 0 14px 28px rgba(15, 23, 42, 0.08);
-}
-
-.seeker-cv-preview__side {
-  display: grid;
-  align-content: start;
-  gap: 0.7rem;
-  padding: 1rem 0.75rem;
-  background: #0f2d57;
-}
-
-.seeker-cv-preview__side span,
-.seeker-cv-preview__body i {
-  display: block;
-  height: 6px;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.72);
-}
-
-.seeker-cv-preview__body {
-  display: grid;
-  align-content: start;
-  gap: 0.6rem;
-  padding: 1rem;
-}
-
-.seeker-cv-preview__body strong {
-  color: #0f172a;
-  font-size: 0.95rem;
-}
-
-.seeker-cv-preview__body span {
-  color: #64748b;
-  font-size: 0.75rem;
-}
-
-.seeker-cv-preview__body i {
-  height: 8px;
-  background: #dbeafe;
-}
-
 .seeker-cv-summary__content {
   display: grid;
   gap: 0.75rem;
@@ -778,10 +729,6 @@
     grid-template-columns: 1fr;
   }
 
-  .seeker-cv-preview {
-    max-width: 360px;
-  }
-
   .seeker-profile-actions {
     bottom: 64px;
   }
@@ -819,12 +766,6 @@
 
   .seeker-cv-summary {
     gap: 1rem;
-  }
-
-  .seeker-cv-preview {
-    width: 100%;
-    max-width: none;
-    min-height: 210px;
   }
 
   .seeker-cv-progress div,
