@@ -556,12 +556,22 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 88px;
-  min-height: 44px;
-  border-radius: 8px;
+  min-width: 72px;
+  min-height: 32px;
+  padding: 0 0.7rem;
+  border: 1px solid rgba(14, 74, 225, 0.25);
+  border-radius: 999px;
+  background: #eff5ff;
+  color: #0e4ae1;
+  font-size: 0.78rem;
+  font-weight: 800;
+  transition: background-color 0.2s ease, color 0.2s ease, transform 0.2s ease;
+}
+
+.seeker-job-card__apply:hover {
   background: #0e4ae1;
   color: #ffffff;
-  font-weight: 800;
+  transform: translateY(-1px);
 }
 
 .seeker-resume__body {
@@ -789,11 +799,11 @@
   }
 
   .seeker-job-card__apply {
-    grid-column: 1 / -1;
-    justify-self: stretch;
-    width: 100%;
-    min-width: 88px;
-    margin-top: 0.7rem;
+    grid-column: 2;
+    justify-self: end;
+    width: auto;
+    min-width: 72px;
+    margin-top: 0.4rem;
   }
 
   .seeker-job-card__description {

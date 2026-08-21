@@ -561,9 +561,11 @@
 }
 
 .button--apply {
-  min-width: 84px;
-  min-height: 40px;
-  padding: 0 1rem;
+  min-width: 72px;
+  min-height: 32px;
+  padding: 0 0.75rem;
+  border-radius: 999px;
+  font-size: 0.78rem;
 }
 
 .brand-logo--google {
@@ -1173,13 +1175,13 @@
 
   .button--detail,
   .button--apply {
-    width: 100%;
-    min-width: 0;
-    min-height: 40px;
+    width: auto;
+    min-width: 72px;
+    min-height: 32px;
     margin-top: 0.55rem;
     padding: 0 0.75rem;
-    border-radius: 8px;
-    font-size: 0.95rem;
+    border-radius: 999px;
+    font-size: 0.78rem;
   }
 
   .button--detail {
