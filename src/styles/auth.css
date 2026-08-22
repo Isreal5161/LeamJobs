@@ -337,14 +337,6 @@
     flex-shrink: 0;
     margin-top: auto !important;
   }
-
-  .public-layout--auth > footer .container {
-    color: #334155 !important;
-  }
-
-  .public-layout--auth > footer a {
-    color: #0e4ae1;
-  }
 }
 
 @media (max-width: 767px) {

@@ -1,9 +1,36 @@
+import { Link } from 'react-router-dom';
+
 function Footer() {
   return (
-    <footer style={{ background: '#ffffff', borderTop: '1px solid #e2e8f0', padding: '2rem 0', marginTop: '3rem' }}>
-      <div className="container" style={{ display: 'flex', flexDirection: 'column', gap: '1rem', color: '#64748b' }}>
-        <p style={{ margin: 0 }}>&copy; 2026 JobPortal. Crafted for modern hiring experiences.</p>
-        <div style={{ display: 'flex', gap: '1.25rem', flexWrap: 'wrap' }}>
+    <footer className="site-footer">
+      <div className="container site-footer__inner">
+        <div className="site-footer__brand">
+          <Link to="/" className="site-footer__logo">
+            <span className="site-logo__mark">LJ</span>
+            <span>LearnJobs</span>
+          </Link>
+          <p>Modern hiring tools for job seekers and companies building better teams.</p>
+        </div>
+
+        <nav className="site-footer__links" aria-label="Footer navigation">
+          <Link to="/about">About</Link>
+          <Link to="/companies">Companies</Link>
+          <Link to="/how-it-works">How it works</Link>
+          <Link to="/login">Sign in</Link>
+        </nav>
+
+        <form className="site-footer__subscribe" aria-label="Subscribe to job updates">
+          <label htmlFor="footer-email">Get job updates</label>
+          <div className="site-footer__subscribe-row">
+            <input id="footer-email" type="email" placeholder="Email address" />
+            <button type="submit">Subscribe</button>
+          </div>
+        </form>
+      </div>
+
+      <div className="container site-footer__bottom">
+        <p>&copy; 2026 JobPortal. Crafted for modern hiring experiences.</p>
+        <div>
           <a href="#">Privacy</a>
           <a href="#">Terms</a>
           <a href="#">Contact</a>
