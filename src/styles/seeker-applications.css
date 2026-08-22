@@ -913,14 +913,18 @@
   }
 
   .seeker-application-modal {
-    max-height: calc(100vh - 0.5rem);
+    max-height: min(560px, calc(100dvh - 2rem));
     border-radius: 12px 12px 0 0;
   }
 
   .seeker-application-modal__header,
   .seeker-application-modal__body,
   .seeker-application-modal__footer {
-    padding: 1rem;
+    padding: 0.8rem;
+  }
+
+  .seeker-application-modal__body {
+    gap: 0.7rem;
   }
 
   .seeker-application-job-facts,
