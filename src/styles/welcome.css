@@ -868,12 +868,12 @@
   }
 
   .job-card__actions {
-    grid-column: 2 / -1;
-    justify-items: start;
+    grid-column: 1 / -1;
+    justify-items: end;
   }
 
   .job-card__buttons {
-    justify-content: flex-start;
+    justify-content: flex-end;
   }
 
   .recommended-jobs__header {
