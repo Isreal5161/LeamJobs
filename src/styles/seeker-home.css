@@ -576,28 +576,60 @@
   font-size: 1.1rem;
 }
 
-.seeker-job-card__apply {
+.seeker-job-card__actions {
   grid-column: 3;
-  align-self: end;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  align-items: flex-end;
   justify-self: end;
+}
+
+.seeker-job-card__apply-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 72px;
-  min-height: 32px;
-  padding: 0 0.7rem;
-  border: 1px solid rgba(14, 74, 225, 0.25);
-  border-radius: 999px;
-  background: #eff5ff;
-  color: #0e4ae1;
-  font-size: 0.78rem;
+  min-width: 100px;
+  min-height: 36px;
+  padding: 0 1rem;
+  border: 0;
+  border-radius: 8px;
+  color: #ffffff;
+  font-size: 0.82rem;
   font-weight: 800;
-  transition: background-color 0.2s ease, color 0.2s ease, transform 0.2s ease;
+  transition: background-color 0.2s ease, transform 0.2s ease;
+  text-decoration: none;
 }
 
-.seeker-job-card__apply:hover {
+.seeker-job-card__apply-btn--primary {
   background: #0e4ae1;
-  color: #ffffff;
+}
+
+.seeker-job-card__apply-btn--primary:hover {
+  background: #0d3fb8;
+  transform: translateY(-1px);
+}
+
+.seeker-job-card__details-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 100px;
+  min-height: 28px;
+  padding: 0 0.8rem;
+  border: 1px solid rgba(14, 74, 225, 0.25);
+  border-radius: 8px;
+  background: #eff5ff;
+  color: #0e4ae1;
+  font-size: 0.75rem;
+  font-weight: 800;
+  transition: background-color 0.2s ease, color 0.2s ease, transform 0.2s ease;
+  text-decoration: none;
+}
+
+.seeker-job-card__details-link:hover {
+  background: #e0ebff;
+  color: #0d3fb8;
   transform: translateY(-1px);
 }
 
@@ -877,14 +909,30 @@
     line-height: 1.4;
   }
 
-  .seeker-job-card__apply {
+  .seeker-job-card__actions {
     grid-column: 1 / -1;
-    justify-self: start;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 0.6rem;
+    align-items: center;
+    justify-self: stretch;
+    margin-top: 0.6rem;
+  }
+
+  .seeker-job-card__apply-btn {
+    grid-column: 1;
     width: 100%;
-    max-width: 120px;
-    min-height: 34px;
+    min-height: 38px;
+    padding: 0 1rem;
+    font-size: 0.8rem;
+  }
+
+  .seeker-job-card__details-link {
+    grid-column: 2;
+    min-width: 80px;
+    min-height: 38px;
     padding: 0 0.8rem;
-    font-size: 0.75rem;
+    font-size: 0.72rem;
   }
 
   .seeker-resume__body {

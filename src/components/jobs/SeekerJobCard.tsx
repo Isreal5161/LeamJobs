@@ -49,9 +49,14 @@ function SeekerJobCard({ job, saved = false, listing = false, onToggleBookmark }
         onToggle={onToggleBookmark ?? (() => {})}
         ariaLabel={saved ? `Remove ${job.company} ${job.role} from saved jobs` : `Save ${job.company} ${job.role}`}
       />
-      <Link className="seeker-job-card__apply" to={detailPath}>
-        Details
-      </Link>
+      <div className="seeker-job-card__actions">
+        <Link className="seeker-job-card__apply-btn seeker-job-card__apply-btn--primary" to={detailPath}>
+          Apply Now
+        </Link>
+        <Link className="seeker-job-card__details-link" to={detailPath}>
+          View Details
+        </Link>
+      </div>
     </article>
   );
 }
