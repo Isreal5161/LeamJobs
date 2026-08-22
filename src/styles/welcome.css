@@ -1209,7 +1209,7 @@
   }
 
   .job-card__inner {
-    grid-template-columns: 52px minmax(0, 1fr);
+    grid-template-columns: 52px minmax(0, 1fr) auto;
     gap: 0.8rem;
     align-items: start;
   }
@@ -1231,7 +1231,6 @@
     grid-column: 2;
     grid-row: 1;
     gap: 0.12rem;
-    padding-right: 2.65rem;
   }
 
   .job-card__company-top {
@@ -1267,7 +1266,13 @@
   }
 
   .job-card__actions {
-    display: contents;
+    display: grid;
+    grid-column: 3;
+    grid-row: 1 / span 2;
+    align-content: start;
+    justify-items: end;
+    gap: 0.4rem;
+    width: auto;
   }
 
   .job-card__tags {
@@ -1285,12 +1290,11 @@
   }
 
   .job-card__buttons {
-    display: grid;
-    grid-column: 1 / -1;
-    grid-row: 3;
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-    gap: 0.7rem;
-    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.4rem;
+    width: auto;
   }
 
   .bookmark-button {
@@ -1304,10 +1308,10 @@
 
   .button--detail,
   .button--apply {
-    width: auto;
+    width: 72px;
     min-width: 72px;
     min-height: 32px;
-    margin-top: 0.55rem;
+    margin-top: 0;
     padding: 0 0.75rem;
     border-radius: 999px;
     font-size: 0.78rem;
