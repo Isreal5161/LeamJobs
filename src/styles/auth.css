@@ -1,10 +1,15 @@
 .public-layout--auth {
   background:
     linear-gradient(180deg, #f8fafc 0%, #eef5ff 48%, #f8fafc 100%);
+  min-height: 100vh;
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
 }
 
 .public-layout--auth > main.container {
   width: min(100% - 3rem, 1180px);
+  flex: 1;
 }
 
 .auth-page {
@@ -304,18 +309,12 @@
   text-align: center;
 }
 
-@media (min-width: 768px) and (max-width: 900px) {
-  .public-layout--auth {
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-  }
-
+@media (min-width: 768px) and (max-width: 1099px) {
   .public-layout--auth > main.container {
     display: flex;
     flex: 1;
     align-items: center;
-    width: min(calc(100% - 3rem), 720px);
+    width: min(calc(100% - 3rem), 960px);
   }
 
   .auth-page {
@@ -324,13 +323,19 @@
   }
 
   .auth-shell {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     width: 100%;
     margin: 0 auto;
+    min-height: 560px;
+  }
+
+  .auth-shell--reverse {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .public-layout--auth > footer {
     flex-shrink: 0;
-    margin-top: 0 !important;
+    margin-top: auto !important;
   }
 
   .public-layout--auth > footer .container {
@@ -342,7 +347,7 @@
   }
 }
 
-@media (max-width: 900px) {
+@media (max-width: 767px) {
   .public-layout--auth > main.container {
     width: min(100% - 2rem, 720px);
   }
