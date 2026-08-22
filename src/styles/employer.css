@@ -5,24 +5,29 @@
 }
 
 .employer-layout__shell {
-  display: grid;
-  grid-template-columns: 286px minmax(0, 1fr);
-  gap: 1.5rem;
-  width: min(100% - 3rem, 1320px);
+  position: relative;
+  display: block;
+  width: min(100% - 3rem, 1664px);
   margin: 0 auto;
   padding: 2rem 0 3rem;
-  transition: grid-template-columns 0.22s ease;
-}
-
-.employer-layout--menu-closed .employer-layout__shell {
-  grid-template-columns: 86px minmax(0, 1fr);
+  transition: none;
 }
 
 .employer-layout__sidebar {
-  position: sticky;
-  top: 1.5rem;
-  align-self: start;
+  position: absolute;
+  top: 2rem;
+  left: 0;
+  width: 286px;
   z-index: 20;
+  transition: width 0.22s ease;
+}
+
+.employer-layout--menu-closed .employer-layout__sidebar {
+  width: 58px;
+  position: fixed;
+  top: auto;
+  bottom: 1rem;
+  left: 1rem;
 }
 
 .employer-layout__main,
@@ -1045,13 +1050,21 @@
 
 @media (max-width: 1024px) {
   .employer-layout__shell {
-    grid-template-columns: 86px minmax(0, 1fr);
-    width: min(100% - 2rem, 840px);
+    width: min(100% - 2rem, 1240px);
     padding-bottom: 6rem;
   }
 
-  .employer-layout--menu-open .employer-layout__shell {
-    grid-template-columns: 246px minmax(0, 1fr);
+  .employer-layout__sidebar {
+    top: 2rem;
+    width: 246px;
+  }
+
+  .employer-layout--menu-closed .employer-layout__sidebar {
+    width: 58px;
+    position: fixed;
+    top: auto;
+    bottom: 1rem;
+    left: 1rem;
   }
 
   .employer-stat-grid,
@@ -1081,6 +1094,7 @@
 
 @media (max-width: 767px) {
   .employer-layout__shell {
+    position: relative;
     display: block;
     width: 100%;
     max-width: 100vw;

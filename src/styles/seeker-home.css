@@ -5,17 +5,12 @@
 }
 
 .seeker-layout__shell {
-  display: grid;
-  grid-template-columns: 286px minmax(0, 1fr);
-  gap: 1.5rem;
-  width: min(100% - 3rem, 1320px);
+  position: relative;
+  display: block;
+  width: min(100% - 3rem, 1664px);
   margin: 0 auto;
   padding: 2rem 0 3rem;
-  transition: grid-template-columns 0.22s ease;
-}
-
-.seeker-layout--menu-closed .seeker-layout__shell {
-  grid-template-columns: 86px minmax(0, 1fr);
+  transition: none;
 }
 
 .seeker-layout__main {
@@ -23,10 +18,20 @@
 }
 
 .seeker-layout__sidebar {
-  position: sticky;
-  top: 1.5rem;
-  align-self: start;
+  position: absolute;
+  top: 2rem;
+  left: 0;
+  width: 286px;
   z-index: 20;
+  transition: width 0.22s ease;
+}
+
+.seeker-layout--menu-closed .seeker-layout__sidebar {
+  width: 58px;
+  position: fixed;
+  top: auto;
+  bottom: 1rem;
+  left: 1rem;
 }
 
 .dashboard-menu {
@@ -175,6 +180,28 @@
 
 .dashboard-menu--closed .dashboard-menu__header {
   justify-content: center;
+}
+
+.dashboard-menu--closed .dashboard-menu__nav {
+  display: none;
+}
+
+.dashboard-menu--closed {
+  width: 58px;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  overflow: visible;
+}
+
+.dashboard-menu--closed .dashboard-menu__toggle {
+  border: 0;
+  background: transparent;
+  box-shadow: none;
 }
 
 .dashboard-menu--closed .dashboard-menu__link {
@@ -706,13 +733,21 @@
 
 @media (max-width: 1024px) {
   .seeker-layout__shell {
-    grid-template-columns: 86px minmax(0, 1fr);
-    width: min(100% - 2rem, 840px);
+    width: min(100% - 2rem, 1240px);
     padding-bottom: 6rem;
   }
 
-  .seeker-layout--menu-open .seeker-layout__shell {
-    grid-template-columns: 246px minmax(0, 1fr);
+  .seeker-layout__sidebar {
+    top: 2rem;
+    width: 246px;
+  }
+
+  .seeker-layout--menu-closed .seeker-layout__sidebar {
+    width: 58px;
+    position: fixed;
+    top: auto;
+    bottom: 1rem;
+    left: 1rem;
   }
 
   .dashboard-menu {
@@ -722,6 +757,7 @@
 
 @media (max-width: 767px) {
   .seeker-layout__shell {
+    position: relative;
     display: block;
     width: 100%;
     max-width: 100vw;

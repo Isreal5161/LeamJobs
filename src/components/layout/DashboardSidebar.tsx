@@ -1,9 +1,7 @@
 import { NavLink } from 'react-router-dom';
 import {
-  FaBars,
   FaBriefcase,
   FaBuilding,
-  FaChevronLeft,
   FaClipboardList,
   FaComments,
   FaEdit,
@@ -53,7 +51,7 @@ const sidebarLinks = {
   ],
 };
 
-function DashboardSidebar({ role, isOpen = true, onToggle }: SidebarProps) {
+function DashboardSidebar({ role, isOpen = true }: SidebarProps) {
   return (
     <aside className={`dashboard-menu ${isOpen ? 'dashboard-menu--open' : 'dashboard-menu--closed'}`}>
       <div className="dashboard-menu__header">
@@ -64,17 +62,6 @@ function DashboardSidebar({ role, isOpen = true, onToggle }: SidebarProps) {
             <span>Career menu</span>
           </div>
         </div>
-        {onToggle ? (
-          <button
-            type="button"
-            className="dashboard-menu__toggle"
-            aria-label={isOpen ? 'Close menu' : 'Open menu'}
-            aria-expanded={isOpen}
-            onClick={onToggle}
-          >
-            {isOpen ? <FaChevronLeft /> : <FaBars />}
-          </button>
-        ) : null}
       </div>
       <nav className="dashboard-menu__nav" aria-label={`${role} navigation`}>
         {sidebarLinks[role].map(({ icon: Icon, ...item }) => (

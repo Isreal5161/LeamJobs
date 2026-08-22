@@ -206,6 +206,73 @@
   display: none;
 }
 
+@media (min-width: 1025px) {
+  .seeker-layout--menu-closed .mobile-bottom-nav,
+  .employer-layout--menu-closed .mobile-bottom-nav {
+    display: flex;
+    position: fixed;
+    bottom: 1rem;
+    left: 50%;
+    width: auto;
+    max-width: calc(100vw - 8rem);
+    height: 64px;
+    padding: 0.4rem 0.55rem;
+    transform: translateX(-50%);
+    border: 1px solid rgba(15, 23, 42, 0.08);
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.94);
+    box-shadow: 0 -8px 24px rgba(15, 23, 42, 0.1);
+    align-items: center;
+    justify-content: center;
+    gap: 0.25rem;
+    z-index: 60;
+  }
+
+  .seeker-layout--menu-closed .mobile-bottom-nav__item,
+  .employer-layout--menu-closed .mobile-bottom-nav__item {
+    display: inline-flex;
+    flex: 0 0 auto;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.2rem;
+    min-width: 82px;
+    height: 52px;
+    padding: 0 0.8rem;
+    border: 0;
+    background: transparent;
+    color: #64748b;
+    font-size: 0.72rem;
+    font-weight: 700;
+    border-radius: 999px;
+    transition: background-color 0.2s ease, color 0.2s ease, transform 0.2s ease;
+  }
+
+  .seeker-layout--menu-closed .mobile-bottom-nav__item svg,
+  .employer-layout--menu-closed .mobile-bottom-nav__item svg {
+    width: 1rem;
+    height: 1rem;
+  }
+
+  .seeker-layout--menu-closed .mobile-bottom-nav__item:hover,
+  .employer-layout--menu-closed .mobile-bottom-nav__item:hover,
+  .seeker-layout--menu-closed .mobile-bottom-nav__item--active,
+  .employer-layout--menu-closed .mobile-bottom-nav__item--active {
+    background: #eef4ff;
+    color: #0e4ae1;
+  }
+
+  .seeker-layout--menu-closed .mobile-bottom-nav__item:hover,
+  .employer-layout--menu-closed .mobile-bottom-nav__item:hover {
+    transform: translateY(-1px);
+  }
+
+  .seeker-layout--menu-closed .seeker-layout__main,
+  .employer-layout--menu-closed .employer-layout__main {
+    padding-bottom: 96px;
+  }
+}
+
 @media (max-width: 1024px) {
   .mobile-bottom-nav {
     display: flex;
@@ -250,6 +317,11 @@
   main,
   main.container {
     padding-bottom: 84px;
+  }
+
+  .seeker-layout__main,
+  .employer-layout__main {
+    padding-bottom: 128px;
   }
 
   .public-layout--welcome main,

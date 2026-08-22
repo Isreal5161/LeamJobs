@@ -22,6 +22,12 @@ import EmployerApplicantsPage from './pages/employer/EmployerApplicantsPage';
 import EmployerProfilePage from './pages/employer/EmployerProfilePage';
 import MessagesPage from './pages/messages/MessagesPage';
 import AdminDashboardPage from './pages/admin/AdminDashboardPage';
+import AdminOverviewPage from './pages/admin/AdminOverviewPage';
+import AdminModerationPage from './pages/admin/AdminModerationPage';
+import AdminJobsPage from './pages/admin/AdminJobsPage';
+import AdminContentPage from './pages/admin/AdminContentPage';
+import AdminSeekersPage from './pages/admin/AdminSeekersPage';
+import AdminAnalyticsPage from './pages/admin/AdminAnalyticsPage';
 import { JobStoreProvider } from './context/JobStoreContext';
 import { SiteContentProvider } from './context/SiteContentContext';
 import { PaymentProvider } from './context/PaymentContext';
@@ -75,15 +81,17 @@ function App() {
             <Route path="payments" element={<EmployerPaymentsPage />} />
           </Route>
           <Route path="/admin" element={<AdminLayout />}>
-            <Route index element={<Navigate to="dashboard" replace />} />
-            <Route path="dashboard" element={<AdminDashboardPage />} />
-            <Route path="moderation" element={<AdminDashboardPage />} />
-            <Route path="jobs" element={<AdminDashboardPage />} />
-            <Route path="content" element={<AdminDashboardPage />} />
+            <Route index element={<AdminOverviewPage />} />
+            <Route path="dashboard" element={<AdminOverviewPage />} />
+            <Route path="moderation" element={<AdminModerationPage />} />
+            <Route path="jobs" element={<AdminJobsPage />} />
+            <Route path="content" element={<AdminContentPage />} />
             <Route path="filters" element={<AdminDashboardPage />} />
             <Route path="recommendations" element={<AdminDashboardPage />} />
             <Route path="users" element={<AdminDashboardPage />} />
             <Route path="companies" element={<AdminDashboardPage />} />
+            <Route path="seekers" element={<AdminSeekersPage />} />
+            <Route path="analytics" element={<AdminAnalyticsPage />} />
             <Route path="payments" element={<AdminPaymentsPage />} />
             <Route path="subscriptions" element={<AdminSubscriptionsPage />} />
           </Route>
