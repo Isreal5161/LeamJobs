@@ -786,18 +786,44 @@
   .hero__stats {
     grid-column: 2;
     grid-row: 1 / span 2;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 8px;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.25rem;
+    width: 100%;
     align-self: center;
   }
 
   .hero__stat-card {
-    min-height: 88px;
-    padding: 0.6rem 0.3rem;
+    min-height: 76px;
+    padding: 0.25rem 0.15rem;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+    gap: 0.3rem;
   }
 
   .hero__stat-card:last-child {
-    grid-column: 1 / -1;
+    grid-column: auto;
+  }
+
+  .hero__stat-card + .hero__stat-card {
+    border-left: 1px solid rgba(255, 255, 255, 0.22);
+  }
+
+  .hero__stat-icon {
+    width: 1.85rem;
+    height: 1.85rem;
+    border-radius: 9px;
+    color: #ffffff;
+    font-size: 0.82rem;
+  }
+
+  .hero__stat-icon::before {
+    background: rgba(14, 74, 225, 0.95);
+  }
+
+  .hero__stat-icon::after {
+    background: rgba(255, 255, 255, 0.9);
   }
 
   .hero-actions {
@@ -816,12 +842,14 @@
     font-size: clamp(2.45rem, 4.5vw, 3rem);
   }
 
-  .hero__stats {
-    gap: 12px;
+  .hero__stat-card p {
+    color: #ffffff;
+    font-size: 0.78rem;
   }
 
-  .hero__stat-card {
-    min-height: 150px;
+  .hero__stat-card span {
+    color: rgba(255, 255, 255, 0.84);
+    font-size: 0.58rem;
   }
 
   .hero__search-grid {
