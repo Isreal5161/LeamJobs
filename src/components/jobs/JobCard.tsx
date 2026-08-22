@@ -74,9 +74,9 @@ function JobCard({
             <Link className="button button--detail" to={`/jobs/${id}`} onClick={onViewDetails ?? (() => {})}>
               Details
             </Link>
-            <button className="button button--apply" type="button" onClick={onApply}>
+            <Link className="button button--apply" to={`/seeker/applications?jobId=${id}&apply=true`} onClick={onApply}>
               Apply
-            </button>
+            </Link>
           </div>
         </div>
       </div>

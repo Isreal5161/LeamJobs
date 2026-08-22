@@ -1,4 +1,4 @@
-import { NavLink } from 'react-router-dom';
+import { Link, NavLink } from 'react-router-dom';
 import {
   FaBriefcase,
   FaBuilding,
@@ -55,13 +55,13 @@ function DashboardSidebar({ role, isOpen = true }: SidebarProps) {
   return (
     <aside className={`dashboard-menu ${isOpen ? 'dashboard-menu--open' : 'dashboard-menu--closed'}`}>
       <div className="dashboard-menu__header">
-        <div className="dashboard-menu__brand" aria-hidden={!isOpen}>
+        <Link className="dashboard-menu__brand" to="/" aria-label="Go to LeamJobs welcome page" tabIndex={isOpen ? 0 : -1}>
           <span className="dashboard-menu__mark">LJ</span>
           <div className="dashboard-menu__brand-copy">
             <strong>LeamJobs</strong>
             <span>Career menu</span>
           </div>
-        </div>
+        </Link>
       </div>
       <nav className="dashboard-menu__nav" aria-label={`${role} navigation`}>
         {sidebarLinks[role].map(({ icon: Icon, ...item }) => (

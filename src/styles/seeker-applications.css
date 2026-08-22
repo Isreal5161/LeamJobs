@@ -351,6 +351,467 @@
   background: #0e4ae1;
 }
 
+.seeker-application-modal-backdrop {
+  position: fixed;
+  z-index: 100;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  background: rgba(15, 23, 42, 0.58);
+}
+
+.seeker-application-modal {
+  width: min(720px, 100%);
+  max-height: min(820px, calc(100vh - 2rem));
+  overflow-y: auto;
+  border-radius: 12px;
+  background: #ffffff;
+  box-shadow: 0 24px 70px rgba(15, 23, 42, 0.25);
+}
+
+.seeker-application-modal__header,
+.seeker-application-modal__footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.35rem 1.5rem;
+}
+
+.seeker-application-modal__header {
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.seeker-application-modal__header h2,
+.seeker-application-modal__header p {
+  margin: 0;
+}
+
+.seeker-application-modal__header h2 {
+  color: #0f172a;
+  font-size: 1.35rem;
+}
+
+.seeker-application-modal__header p {
+  margin-top: 0.35rem;
+  color: #64748b;
+}
+
+.seeker-application-modal__eyebrow {
+  display: block;
+  margin-bottom: 0.35rem;
+  color: #0e4ae1;
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.seeker-application-modal__close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: 38px;
+  height: 38px;
+  border: 0;
+  border-radius: 8px;
+  background: #f1f5f9;
+  color: #475569;
+}
+
+.seeker-application-modal__body {
+  display: grid;
+  gap: 1rem;
+  padding: 1.5rem;
+}
+
+.seeker-application-job-facts {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.7rem;
+}
+
+.seeker-application-job-facts span {
+  display: grid;
+  gap: 0.25rem;
+  padding: 0.85rem;
+  border-radius: 8px;
+  background: #f8fafc;
+  color: #475569;
+  font-size: 0.86rem;
+}
+
+.seeker-application-job-facts strong {
+  color: #0f172a;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+}
+
+.seeker-application-fit {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  border: 1px solid #b9e3c7;
+  border-radius: 8px;
+  background: #f2fbf5;
+}
+
+.seeker-application-fit--weak {
+  border-color: #f4d39a;
+  background: #fffaf0;
+}
+
+.seeker-application-fit--neutral {
+  border-color: #bfdbfe;
+  background: #eff6ff;
+}
+
+.seeker-application-fit__score {
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 78px;
+  height: 78px;
+  border-radius: 50%;
+  background: #16803c;
+  color: #ffffff;
+}
+
+.seeker-application-fit__score strong {
+  font-size: 1.3rem;
+  line-height: 1;
+}
+
+.seeker-application-fit__score span {
+  font-size: 0.68rem;
+  font-weight: 800;
+}
+
+.seeker-application-fit--weak .seeker-application-fit__score {
+  background: #d97706;
+}
+
+.seeker-application-fit--neutral .seeker-application-fit__score {
+  background: #0e4ae1;
+  font-size: 1.25rem;
+}
+
+.seeker-application-cv-choice {
+  display: grid;
+  gap: 0.85rem;
+  padding: 1rem;
+  border: 1px solid #dbe4f0;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.seeker-application-cv-choice__heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.seeker-application-cv-choice h3,
+.seeker-application-cv-choice p {
+  margin: 0;
+}
+
+.seeker-application-cv-choice h3 {
+  color: #0f172a;
+  font-size: 0.98rem;
+}
+
+.seeker-application-cv-choice h3 small {
+  margin-left: 0.4rem;
+  color: #64748b;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.seeker-application-cv-choice p {
+  margin-top: 0.3rem;
+  color: #64748b;
+  font-size: 0.84rem;
+}
+
+.seeker-application-cv-selected {
+  display: inline-flex;
+  align-items: center;
+  flex: 0 0 auto;
+  gap: 0.35rem;
+  color: #16803c;
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.seeker-application-cv-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.7rem;
+}
+
+.seeker-application-cv-button {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  min-height: 64px;
+  padding: 0.75rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background: #f8fafc;
+  color: #0e4ae1;
+  cursor: pointer;
+  text-align: left;
+}
+
+.seeker-application-cv-button--selected {
+  border-color: #0e4ae1;
+  background: #eff5ff;
+  box-shadow: 0 0 0 2px rgba(14, 74, 225, 0.1);
+}
+
+.seeker-application-cv-button > svg {
+  flex: 0 0 auto;
+  font-size: 1.1rem;
+}
+
+.seeker-application-cv-button span {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.seeker-application-cv-button strong {
+  color: #0f172a;
+  font-size: 0.84rem;
+}
+
+.seeker-application-cv-button small {
+  color: #64748b;
+  font-size: 0.74rem;
+}
+
+.seeker-application-cv-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.seeker-application-cv-note {
+  color: #64748b;
+  font-size: 0.8rem;
+}
+
+.seeker-application-fit h3,
+.seeker-application-fit p,
+.seeker-application-readiness h3 {
+  margin: 0;
+}
+
+.seeker-application-fit h3,
+.seeker-application-readiness h3 {
+  color: #0f172a;
+  font-size: 0.98rem;
+}
+
+.seeker-application-fit p {
+  margin-top: 0.3rem;
+  color: #475569;
+  font-size: 0.86rem;
+}
+
+.seeker-application-fit .seeker-application-fit__note {
+  color: #16803c;
+}
+
+.seeker-application-fit--weak .seeker-application-fit__note {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.35rem;
+  color: #b45309;
+}
+
+.seeker-application-edit-cv {
+  display: inline-flex;
+  margin-top: 0.55rem;
+  color: #0e4ae1;
+  font-size: 0.86rem;
+  font-weight: 900;
+  text-decoration: underline;
+}
+
+.seeker-application-readiness {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.7rem;
+  padding: 1rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+}
+
+.seeker-application-readiness h3 {
+  grid-column: 1 / -1;
+}
+
+.seeker-application-readiness span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  color: #475569;
+  font-size: 0.84rem;
+  font-weight: 700;
+}
+
+.seeker-application-readiness svg {
+  color: #16803c;
+}
+
+.seeker-application-proposal {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.seeker-application-proposal label {
+  color: #0f172a;
+  font-weight: 800;
+}
+
+.seeker-application-proposal textarea {
+  width: 100%;
+  resize: vertical;
+  padding: 0.85rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  color: #0f172a;
+  font: inherit;
+}
+
+.seeker-application-proposal textarea:focus {
+  outline: 3px solid rgba(14, 74, 225, 0.16);
+  border-color: #0e4ae1;
+}
+
+.seeker-application-proposal small {
+  color: #64748b;
+}
+
+.seeker-application-proposal label small,
+.seeker-application-upload small {
+  color: #64748b;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.seeker-application-upload {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.9rem;
+  border: 1px dashed #94a3b8;
+  border-radius: 8px;
+  background: #f8fafc;
+}
+
+.seeker-application-upload div {
+  display: grid;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+.seeker-application-upload strong {
+  color: #0f172a;
+}
+
+.seeker-application-upload span {
+  overflow: hidden;
+  color: #64748b;
+  font-size: 0.82rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.seeker-application-upload__button {
+  flex: 0 0 auto;
+  padding: 0.55rem 0.8rem;
+  border-radius: 8px;
+  background: #e7f0ff;
+  color: #0e4ae1;
+  cursor: pointer;
+  font-size: 0.82rem;
+  font-weight: 900;
+}
+
+.seeker-application-upload input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.seeker-application-modal__footer {
+  justify-content: flex-end;
+  border-top: 1px solid #e2e8f0;
+}
+
+.seeker-application-secondary-button {
+  min-height: 42px;
+  padding: 0 0.9rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #475569;
+  font-weight: 800;
+}
+
+.seeker-application-modal__footer .button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.seeker-application-success {
+  display: grid;
+  justify-items: center;
+  gap: 0.8rem;
+  padding: 3rem 1.5rem;
+  text-align: center;
+}
+
+.seeker-application-success > span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: #e8f7ee;
+  color: #16803c;
+  font-size: 1.5rem;
+}
+
+.seeker-application-success h3,
+.seeker-application-success p {
+  margin: 0;
+}
+
+.seeker-application-success h3 {
+  color: #0f172a;
+  font-size: 1.35rem;
+}
+
+.seeker-application-success p {
+  max-width: 440px;
+  color: #64748b;
+}
+
 @media (max-width: 1024px) {
   .seeker-application-stats {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -444,5 +905,60 @@
 
   .seeker-income-metrics {
     grid-template-columns: 1fr;
+  }
+
+  .seeker-application-modal-backdrop {
+    align-items: end;
+    padding: 0;
+  }
+
+  .seeker-application-modal {
+    max-height: calc(100vh - 0.5rem);
+    border-radius: 12px 12px 0 0;
+  }
+
+  .seeker-application-modal__header,
+  .seeker-application-modal__body,
+  .seeker-application-modal__footer {
+    padding: 1rem;
+  }
+
+  .seeker-application-job-facts,
+  .seeker-application-readiness {
+    grid-template-columns: 1fr;
+  }
+
+  .seeker-application-cv-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .seeker-application-cv-choice__heading {
+    flex-direction: column;
+  }
+
+  .seeker-application-readiness h3 {
+    grid-column: auto;
+  }
+
+  .seeker-application-fit {
+    align-items: flex-start;
+  }
+
+  .seeker-application-upload {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .seeker-application-upload__button {
+    width: 100%;
+    text-align: center;
+  }
+
+  .seeker-application-modal__footer {
+    flex-wrap: wrap;
+  }
+
+  .seeker-application-modal__footer .button {
+    flex: 1 1 100%;
   }
 }

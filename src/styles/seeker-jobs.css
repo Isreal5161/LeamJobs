@@ -108,18 +108,17 @@
 
 @media (min-width: 1025px) {
   .seeker-jobs-page {
-    grid-template-columns: minmax(0, 1fr) 310px;
+    grid-template-columns: minmax(0, 1fr);
     align-items: start;
   }
 
   .seeker-jobs-hero {
-    grid-column: 1 / -1;
+    grid-column: 1;
   }
 
   .seeker-jobs-content {
     grid-column: 1;
   }
-
 }
 
 .seeker-jobs-profile-match {
@@ -183,9 +182,21 @@
 }
 
 .seeker-jobs-profile-match__progress span {
+  display: block;
   height: 100%;
   border-radius: inherit;
   background: #0e4ae1;
+}
+
+@media (min-width: 768px) {
+  .seeker-jobs-profile-match {
+    grid-template-columns: 42px minmax(0, 1fr) minmax(220px, 34%);
+    align-items: center;
+  }
+
+  .seeker-jobs-profile-match__progress {
+    grid-column: auto;
+  }
 }
 
 @media (max-width: 767px) {

@@ -5,8 +5,8 @@
 }
 
 .admin-layout__shell {
-  display: grid;
-  grid-template-columns: 240px minmax(0, 1fr);
+  position: relative;
+  display: block;
   gap: 1.5rem;
   width: min(100% - 2.5rem, 1360px);
   margin: 0 auto;
@@ -14,15 +14,17 @@
   transition: grid-template-columns 0.22s ease;
 }
 
-.admin-layout--menu-closed .admin-layout__shell {
-  grid-template-columns: 84px minmax(0, 1fr);
-}
-
 .admin-layout__sidebar {
-  position: sticky;
-  top: 1.5rem;
+  position: absolute;
+  top: 6.85rem;
+  right: 0;
+  width: 286px;
   align-self: start;
   z-index: 20;
+}
+
+.admin-layout--menu-closed .admin-layout__sidebar {
+  display: none;
 }
 
 .admin-layout__main,
@@ -1843,13 +1845,14 @@
 
 @media (max-width: 1024px) {
   .admin-layout__shell {
-    grid-template-columns: 86px minmax(0, 1fr);
     width: min(100% - 2rem, 840px);
     padding-bottom: 2rem;
   }
 
-  .admin-layout--menu-open .admin-layout__shell {
-    grid-template-columns: 246px minmax(0, 1fr);
+  .admin-layout__sidebar {
+    top: 6.85rem;
+    right: 0;
+    width: 246px;
   }
 
   .admin-stat-grid,

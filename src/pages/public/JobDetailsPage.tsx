@@ -134,7 +134,7 @@ function JobDetailsPage() {
                 {job.workArrangement}
               </span>
             </div>
-            <Link className="button button--primary job-detail-apply-link" to={isSeekerRoute ? '/seeker/applications' : '/register'}>
+            <Link className="button button--primary job-detail-apply-link" to={`/seeker/applications?jobId=${job.id}&apply=true`}>
               Apply Now
             </Link>
           </div>
@@ -160,7 +160,7 @@ function JobDetailsPage() {
             </span>
           </div>
         </div>
-        <Link className="button button--primary job-detail-apply-link" to={isSeekerRoute ? '/seeker/applications' : '/register'}>
+        <Link className="button button--primary job-detail-apply-link" to={`/seeker/applications?jobId=${job.id}&apply=true`}>
           Apply Now
         </Link>
       </div>

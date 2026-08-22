@@ -22,6 +22,7 @@ export type PublicJob = {
   workArrangement: string;
   workType: string;
   level: string;
+  cvRequirement?: 'required' | 'recommended' | 'optional' | 'not-needed';
   description: string;
   postedAt: number;
   salaryHigh: number;
@@ -67,6 +68,7 @@ export const initialJobs: PublicJob[] = [
     workArrangement: 'Remote',
     workType: 'Full-time',
     level: 'Senior-level',
+    cvRequirement: 'recommended',
     description: 'Design delightful products used by billions worldwide.',
     postedAt: 6,
     salaryHigh: 190,
@@ -108,6 +110,7 @@ export const initialJobs: PublicJob[] = [
     workArrangement: 'Hybrid',
     workType: 'Full-time',
     level: 'Senior-level',
+    cvRequirement: 'not-needed',
     description: 'Craft user experiences that make a global impact.',
     postedAt: 5,
     salaryHigh: 160,

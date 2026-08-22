@@ -1,6 +1,7 @@
 import { Outlet } from 'react-router-dom';
 import { useState } from 'react';
 import DashboardSidebar from '../components/layout/DashboardSidebar';
+import DashboardTopbar from '../components/layout/DashboardTopbar';
 import MobileBottomNav from '../components/layout/MobileBottomNav';
 
 function EmployerLayout() {
@@ -9,6 +10,7 @@ function EmployerLayout() {
   return (
     <div className={`employer-layout ${menuOpen ? 'employer-layout--menu-open' : 'employer-layout--menu-closed'}`}>
       <div className="employer-layout__shell">
+        <DashboardTopbar isOpen={menuOpen} onToggle={() => setMenuOpen((open) => !open)} />
         <div className="employer-layout__sidebar">
           <DashboardSidebar role="employer" isOpen={menuOpen} onToggle={() => setMenuOpen((open) => !open)} />
         </div>

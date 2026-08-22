@@ -22,6 +22,30 @@ const stats = [
   { icon: <FaBookmark />, value: '8', label: 'Saved Jobs', tone: 'blue' },
 ];
 
+const portfolioProjects = [
+  {
+    employer: 'Google',
+    title: 'Candidate insights dashboard',
+    outcome: 'Designed a recruiter analytics view that helped hiring teams compare shortlisted talent faster.',
+    meta: 'Product design / 2024',
+    tags: ['Dashboard', 'UX Research'],
+  },
+  {
+    employer: 'Amazon',
+    title: 'Vendor onboarding flow',
+    outcome: 'Built responsive application screens and reduced repeated form steps for new marketplace vendors.',
+    meta: 'UI/UX design / 2024',
+    tags: ['Forms', 'Responsive'],
+  },
+  {
+    employer: 'Spotify',
+    title: 'Creator campaign workspace',
+    outcome: 'Shipped a campaign planning prototype for music teams to review assets, status, and approvals.',
+    meta: 'Frontend prototype / 2023',
+    tags: ['React', 'Prototype'],
+  },
+];
+
 function Homepage() {
   const { visibleJobs } = useJobStore();
   const recommendedJobs = visibleJobs.slice(0, 2);
@@ -126,9 +150,21 @@ function Homepage() {
             </Link>
           </div>
           <div className="seeker-portfolio__grid" aria-label="Portfolio project previews">
-            <span className="seeker-portfolio__thumb seeker-portfolio__thumb--one" />
-            <span className="seeker-portfolio__thumb seeker-portfolio__thumb--two" />
-            <span className="seeker-portfolio__thumb seeker-portfolio__thumb--three" />
+            {portfolioProjects.map((project) => (
+              <article className="seeker-portfolio__project" key={project.title}>
+                <div className="seeker-portfolio__project-top">
+                  <span className="seeker-portfolio__employer">{project.employer}</span>
+                  <small>{project.meta}</small>
+                </div>
+                <h3>{project.title}</h3>
+                <p>{project.outcome}</p>
+                <div className="seeker-portfolio__tags">
+                  {project.tags.map((tag) => (
+                    <span key={tag}>{tag}</span>
+                  ))}
+                </div>
+              </article>
+            ))}
           </div>
         </section>
       </div>

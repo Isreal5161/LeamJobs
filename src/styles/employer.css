@@ -15,19 +15,15 @@
 
 .employer-layout__sidebar {
   position: absolute;
-  top: 2rem;
-  left: 0;
+  top: 6.85rem;
+  right: 0;
   width: 286px;
   z-index: 20;
   transition: width 0.22s ease;
 }
 
 .employer-layout--menu-closed .employer-layout__sidebar {
-  width: 58px;
-  position: fixed;
-  top: auto;
-  bottom: 1rem;
-  left: 1rem;
+  display: none;
 }
 
 .employer-layout__main,
@@ -1055,16 +1051,13 @@
   }
 
   .employer-layout__sidebar {
-    top: 2rem;
+    top: 6.85rem;
+    right: 0;
     width: 246px;
   }
 
   .employer-layout--menu-closed .employer-layout__sidebar {
-    width: 58px;
-    position: fixed;
-    top: auto;
-    bottom: 1rem;
-    left: 1rem;
+    display: none;
   }
 
   .employer-stat-grid,

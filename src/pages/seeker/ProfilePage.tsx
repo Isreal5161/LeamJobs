@@ -1,4 +1,4 @@
-import { useMemo, useState, type ChangeEvent } from 'react';
+import { useEffect, useMemo, useState, type ChangeEvent } from 'react';
 import {
   FaArrowLeft,
   FaBriefcase,
@@ -17,6 +17,7 @@ import {
   FaPlus,
   FaRegSave,
   FaTrash,
+  FaTimes,
   FaUpload,
   FaUser,
 } from 'react-icons/fa';
@@ -68,6 +69,11 @@ type ProfileState = {
 
 type AddPanel = 'skill' | 'qualification' | null;
 type CvMode = 'builder' | 'upload';
+type ProfileNotification = {
+  title: string;
+  message: string;
+  tone: 'success' | 'info' | 'error';
+};
 
 const steps: Array<{ key: StepKey; label: string }> = [
   { key: 'personal', label: 'Personal Info & Summary' },
@@ -152,7 +158,7 @@ function ProfilePage() {
   const [selectedTemplate, setSelectedTemplate] = useState<'modern' | 'professional' | 'creative' | 'minimalist'>('modern');
   const [isTemplateModalOpen, setIsTemplateModalOpen] = useState(false);
   const [activeStep, setActiveStep] = useState<StepKey>('personal');
-  const [uploadStatus, setUploadStatus] = useState('Ready to upload');
+  const [notification, setNotification] = useState<ProfileNotification | null>(null);
   const [uploadedCvName, setUploadedCvName] = useState('');
   const [uploadedCvFile, setUploadedCvFile] = useState<File | null>(null);
   const [cvMode, setCvMode] = useState<CvMode>('builder');
@@ -161,6 +167,17 @@ function ProfilePage() {
   const [addValue, setAddValue] = useState('');
   const { plans, getSubscription, updateSubscription } = useSubscriptions();
   const subscription = getSubscription('sarah-johnson');
+
+  useEffect(() => {
+    if (!notification) return undefined;
+
+    const timeout = window.setTimeout(() => setNotification(null), 4500);
+    return () => window.clearTimeout(timeout);
+  }, [notification]);
+
+  const showNotification = (nextNotification: ProfileNotification) => {
+    setNotification(nextNotification);
+  };
 
   const completionScore = useMemo(() => {
     const fields = [
@@ -356,7 +373,11 @@ function ProfilePage() {
   };
 
   const handleSaveDraft = () => {
-    setUploadStatus('Draft saved locally');
+    showNotification({
+      title: 'Draft saved',
+      message: 'Your CV changes have been saved locally and are ready for review.',
+      tone: 'success',
+    });
   };
 
   const handleEditCvContent = () => {
@@ -371,14 +392,22 @@ function ProfilePage() {
     const supportedTypes = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
     const supportedExtension = /\.(pdf|doc|docx)$/i.test(file.name);
     if (!supportedTypes.includes(file.type) && !supportedExtension) {
-      setUploadStatus('Please upload a PDF, DOC, or DOCX file');
+      showNotification({
+        title: 'Unsupported file type',
+        message: 'Please upload a PDF, DOC, or DOCX file for your CV.',
+        tone: 'error',
+      });
       event.target.value = '';
       return;
     }
 
     setUploadedCvFile(file);
     setUploadedCvName(file.name);
-    setUploadStatus(`CV selected: ${file.name}`);
+    showNotification({
+      title: 'CV file selected',
+      message: `${file.name} is ready to upload with your profile.`,
+      tone: 'success',
+    });
     console.log('CV_FILE_READY_FOR_BACKEND', {
       name: file.name,
       type: file.type,
@@ -399,7 +428,11 @@ function ProfilePage() {
     };
 
     console.log('PROFILE_PAYLOAD_READY_FOR_BACKEND', payload);
-    setUploadStatus('Profile uploaded and ready for backend');
+    showNotification({
+      title: 'Profile uploaded',
+      message: 'Your profile and CV details are ready for backend processing.',
+      tone: 'success',
+    });
   };
 
   const handleDownloadPDF = async () => {
@@ -473,8 +506,8 @@ function ProfilePage() {
         </section>
 
         <section className="seeker-cv-tools" aria-label="CV tools">
-          <button type="button" onClick={() => setUploadStatus('LinkedIn import is ready for backend connection')}><FaLinkedin /> Import from LinkedIn</button>
-          <button type="button" onClick={() => setUploadStatus('AI enhancement is ready for backend connection')}><FaMagic /> AI Resume Enhancement</button>
+          <button type="button" onClick={() => showNotification({ title: 'LinkedIn import queued', message: 'This action is ready for backend connection.', tone: 'info' })}><FaLinkedin /> Import from LinkedIn</button>
+          <button type="button" onClick={() => showNotification({ title: 'AI enhancement queued', message: 'Resume enhancement is ready for backend connection.', tone: 'info' })}><FaMagic /> AI Resume Enhancement</button>
         </section>
 
         <section className="seeker-card seeker-cv-workspace">
@@ -864,7 +897,24 @@ function ProfilePage() {
         <button type="button" onClick={handleUploadProfile}><FaUpload /> Upload Profile</button>
       </div>
 
-      <div className="seeker-upload-status">{uploadStatus}</div>
+      {notification && (
+        <div
+          className={`seeker-profile-toast seeker-profile-toast--${notification.tone}`}
+          role="status"
+          aria-live="polite"
+        >
+          <span className="seeker-profile-toast__icon">
+            {notification.tone === 'error' ? <FaTimes /> : notification.tone === 'info' ? <FaMagic /> : <FaCheck />}
+          </span>
+          <div>
+            <strong>{notification.title}</strong>
+            <p>{notification.message}</p>
+          </div>
+          <button type="button" onClick={() => setNotification(null)} aria-label="Dismiss notification">
+            <FaTimes />
+          </button>
+        </div>
+      )}
 
       <CVTemplateSelector
         isOpen={isTemplateModalOpen}
