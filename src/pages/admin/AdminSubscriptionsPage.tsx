@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { FaCheckCircle, FaCrown, FaUserShield, FaUsers } from 'react-icons/fa';
+import { FaChartLine, FaCheckCircle, FaCrown, FaDollarSign, FaUserShield, FaUsers } from 'react-icons/fa';
 import { useSubscriptions, type SubscriptionPlanId, type SubscriptionStatus } from '../../context/SubscriptionContext';
 
 function AdminSubscriptionsPage() {
@@ -24,36 +24,34 @@ function AdminSubscriptionsPage() {
   };
 
   return (
-    <div className="subscription-page">
-      <section className="subscription-hero">
+    <div className="admin-page subscription-page">
+      <section className="admin-hero">
         <div>
-          <span>Admin monetization</span>
+          <span className="admin-eyebrow">Admin monetization</span>
           <h1>Subscriber management</h1>
           <p>Control pricing, featured visibility, and recommendation weighting for subscribed users.</p>
         </div>
-        <FaCrown />
+        <button className="admin-icon-button" type="button" aria-label="Manage subscriptions">
+          <FaCrown />
+        </button>
       </section>
 
-      <section className="subscription-stat-grid">
-        <article>
-          <span>Total subscribers</span>
-          <strong>{subscriptions.length}</strong>
-          <small>Free and paid seeker profiles</small>
+      <section className="admin-stat-grid">
+        <article className="admin-stat-card">
+          <span className="admin-stat-card__icon"><FaUsers /></span>
+          <div><strong>{subscriptions.length}</strong><p>total subscribers</p></div>
         </article>
-        <article>
-          <span>Active paid plans</span>
-          <strong>{active.filter((subscription) => subscription.planId !== 'free').length}</strong>
-          <small>Professional and Premium</small>
+        <article className="admin-stat-card">
+          <span className="admin-stat-card__icon admin-stat-card__icon--green"><FaCheckCircle /></span>
+          <div><strong>{active.filter((subscription) => subscription.planId !== 'free').length}</strong><p>active paid plans</p></div>
         </article>
-        <article>
-          <span>Monthly revenue</span>
-          <strong>${monthlyRevenue}</strong>
-          <small>Live demo subscription revenue</small>
+        <article className="admin-stat-card">
+          <span className="admin-stat-card__icon admin-stat-card__icon--yellow"><FaDollarSign /></span>
+          <div><strong>${monthlyRevenue}</strong><p>monthly revenue</p></div>
         </article>
-        <article>
-          <span>Featured users</span>
-          <strong>{featured.length}</strong>
-          <small>Currently boosted in rankings</small>
+        <article className="admin-stat-card">
+          <span className="admin-stat-card__icon admin-stat-card__icon--purple"><FaChartLine /></span>
+          <div><strong>{featured.length}</strong><p>featured users</p></div>
         </article>
       </section>
 

@@ -44,7 +44,7 @@ function CompaniesHeroArt() {
 
 function CompaniesPage() {
   const { content } = useSiteContent();
-  const { heroTitle, heroSubtitle, primaryCta, secondaryCta, filters, companies, stats, ctaTitle, ctaSubtitle, ctaButton } = content.companies;
+  const { heroTitle, heroSubtitle, primaryCta, secondaryCta, filters, companies, viewJobsLabel, stats, ctaTitle, ctaSubtitle, ctaButton } = content.companies;
 
   return (
     <div className="companies-page">
@@ -83,7 +83,7 @@ function CompaniesPage() {
               <span>{company.category}</span>
               <p><FaMapMarkerAlt /> {company.location}</p>
               <p><FaUsers /> {company.employees}</p>
-              <Link to={`/jobs/${company.name.toLowerCase()}`}>View jobs</Link>
+              <Link to={`/jobs/${company.name.toLowerCase()}`}>{viewJobsLabel}</Link>
             </div>
           </article>
         ))}

@@ -154,7 +154,30 @@
   align-items: start;
 }
 
+.admin-posted-jobs-workspace {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+  align-items: start;
+}
+
+.admin-analytics-workspace {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+  align-items: start;
+}
+
+.admin-analytics-workspace .admin-company-directory {
+  grid-column: 1 / -1;
+}
+
 .admin-moderation-workspace > .admin-panel {
+  border-color: #dbe3ee;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.045);
+}
+
+.admin-posted-jobs-workspace > .admin-panel {
   border-color: #dbe3ee;
   box-shadow: 0 10px 24px rgba(15, 23, 42, 0.045);
 }
@@ -202,6 +225,11 @@
 .admin-stat-card__icon--purple {
   background: #f3ebff;
   color: #5b2fb5;
+}
+
+.admin-stat-card__icon--red {
+  background: #fff1f2;
+  color: #dc2626;
 }
 
 .admin-stat-card strong {
@@ -525,6 +553,10 @@
   padding-right: 0.2rem;
 }
 
+.admin-review-list--rows {
+  max-height: none;
+}
+
 .admin-review-item {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
@@ -535,6 +567,51 @@
   color: inherit;
   text-align: left;
   transition: border-color 0.18s ease, background 0.18s ease, box-shadow 0.18s ease;
+}
+
+.admin-review-job-card {
+  grid-template-columns: 44px minmax(0, 1fr) minmax(180px, auto) auto;
+  border-color: #e1e8f1;
+  border-radius: 9px;
+}
+
+.admin-review-job-card__content {
+  min-width: 0;
+}
+
+.admin-review-job-card__content strong,
+.admin-review-job-card__content p,
+.admin-review-job-card__content small {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.admin-review-job-card__content small {
+  margin-top: 0.18rem;
+  color: #64748b;
+  font-size: 0.76rem;
+  font-weight: 500;
+}
+
+.admin-review-job-card__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  justify-content: flex-end;
+}
+
+.admin-review-job-card__meta span {
+  display: inline-flex;
+  min-height: 30px;
+  align-items: center;
+  padding: 0 0.65rem;
+  border-radius: 999px;
+  background: #f8fafc;
+  color: #475569;
+  font-size: 0.75rem;
+  font-weight: 700;
 }
 
 .admin-review-item:hover {
@@ -744,6 +821,30 @@
   gap: 0.55rem;
 }
 
+.admin-review-section__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.8rem;
+}
+
+.admin-review-list-editor {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 38px;
+  gap: 0.5rem;
+}
+
+.admin-review-list-editor button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 38px;
+  border: 1px solid #f3c3c7;
+  border-radius: 8px;
+  background: #fff1f2;
+  color: #b91c1c;
+}
+
 .admin-review-performance {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -768,6 +869,39 @@
   margin-top: 0.25rem;
   font-size: 0.78rem;
   font-weight: 600;
+}
+
+.admin-review-decision-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.9rem;
+  border: 1px solid #dbe3ee;
+  border-radius: 9px;
+  background: #fbfcfe;
+}
+
+.admin-review-decision-card span,
+.admin-review-decision-card strong {
+  display: block;
+}
+
+.admin-review-decision-card span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: #0e4ae1;
+  font-size: 0.74rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.admin-review-decision-card strong {
+  margin-top: 0.25rem;
+  color: #334155;
+  font-size: 0.9rem;
+  font-weight: 650;
 }
 
 .admin-job-editor {
@@ -1051,7 +1185,7 @@
 }
 
 .admin-content-workspace {
-  grid-template-columns: minmax(220px, 0.72fr) minmax(0, 1.8fr);
+  grid-template-columns: 1fr;
   align-items: start;
 }
 
@@ -1062,13 +1196,12 @@
 }
 
 .admin-content-pages-panel {
-  position: sticky;
-  top: 1.5rem;
   background: #fbfcfe;
 }
 
 .admin-content-page-list {
   display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 0.65rem;
 }
 
@@ -1142,6 +1275,95 @@
 
 .admin-content-editor-panel .admin-stack {
   gap: 0.75rem;
+}
+
+.admin-content-form {
+  gap: 1rem;
+}
+
+.admin-content-section-card {
+  display: grid;
+  gap: 0.85rem;
+  padding: 0.95rem;
+  border: 1px solid #e1e8f1;
+  border-radius: 9px;
+  background: #fbfcfe;
+}
+
+.admin-content-section-card__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.admin-content-section-card__header > span {
+  display: inline-flex;
+  align-items: center;
+  color: #0e4ae1;
+  font-size: 0.75rem;
+  font-weight: 850;
+  text-transform: uppercase;
+}
+
+.admin-content-repeater {
+  display: grid;
+  gap: 0.75rem;
+  padding: 0.8rem;
+  border: 1px solid #dbe3ee;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.admin-content-repeater--inline {
+  grid-template-columns: repeat(2, minmax(0, 1fr)) 38px;
+  align-items: end;
+}
+
+.admin-content-token-editor {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.admin-content-remove-button,
+.admin-content-icon-remove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  min-height: 38px;
+  border: 1px solid #f3c3c7;
+  border-radius: 8px;
+  background: #fff1f2;
+  color: #b91c1c;
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.admin-content-remove-button {
+  justify-self: start;
+  padding: 0 0.75rem;
+}
+
+.admin-content-icon-remove {
+  width: 38px;
+}
+
+.admin-content-save-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.85rem;
+  border: 1px solid #dbe3ee;
+  border-radius: 9px;
+  background: #f8fafc;
+}
+
+.admin-content-save-row span {
+  color: #0f766e;
+  font-size: 0.82rem;
+  font-weight: 700;
 }
 
 .admin-filters-workspace .admin-panel {
@@ -1546,6 +1768,32 @@
   box-shadow: 0 10px 24px rgba(15, 23, 42, 0.045);
 }
 
+.admin-company-search {
+  display: grid;
+  gap: 0.45rem;
+  color: #334155;
+  font-size: 0.82rem;
+  font-weight: 650;
+}
+
+.admin-company-search input {
+  width: 100%;
+  min-height: 44px;
+  padding: 0 0.85rem;
+  border: 1px solid #dbe3ee;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #334155;
+  font: inherit;
+  font-size: 0.9rem;
+  outline: 0;
+}
+
+.admin-company-search input:focus {
+  border-color: #7aa5e8;
+  box-shadow: 0 0 0 3px rgba(14, 74, 225, 0.1);
+}
+
 .admin-company-list {
   display: grid;
   gap: 0.7rem;
@@ -1571,6 +1819,16 @@
   border-color: #2563eb;
   background: #f8fbff;
   box-shadow: inset 3px 0 0 #2563eb;
+}
+
+.admin-company-card--static {
+  cursor: default;
+}
+
+.admin-company-card--static:hover {
+  border-color: #e1e8f1;
+  background: #ffffff;
+  box-shadow: none;
 }
 
 .admin-company-card__identity {
@@ -1863,6 +2121,7 @@
   .admin-grid,
   .admin-grid--moderation,
   .admin-moderation-workspace,
+  .admin-analytics-workspace,
   .admin-overview-grid,
   .admin-overview-grid--shortcuts,
   .admin-jobs-layout,
@@ -1873,8 +2132,13 @@
     grid-template-columns: 1fr;
   }
 
+  .admin-content-page-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .admin-review-list-panel,
-  .admin-review-accounts {
+  .admin-review-accounts,
+  .admin-content-pages-panel {
     position: static;
   }
 
@@ -1974,9 +2238,23 @@
     align-items: start;
   }
 
+  .admin-review-job-card {
+    grid-template-columns: 44px minmax(0, 1fr) minmax(180px, auto) auto;
+    align-items: center;
+  }
+
   .admin-review-item .admin-status,
   .admin-account-card .admin-status {
     justify-self: start;
+  }
+
+  .admin-review-job-card .admin-status {
+    justify-self: end;
+  }
+
+  .admin-review-decision-card {
+    align-items: flex-start;
+    flex-direction: column;
   }
 }
 
@@ -2058,8 +2336,28 @@
   }
 
   .admin-job-editor,
-  .admin-form__split {
+  .admin-form__split,
+  .admin-content-repeater--inline {
     grid-template-columns: 1fr;
+  }
+
+  .admin-content-page-list {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-content-section-card__header,
+  .admin-content-save-row {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .admin-content-section-card__header .admin-review-action,
+  .admin-content-save-row .admin-button {
+    width: 100%;
+  }
+
+  .admin-content-icon-remove {
+    width: 100%;
   }
 
   .admin-stat-grid {
@@ -2182,6 +2480,44 @@
   .admin-review-actions {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .admin-review-job-card {
+    grid-template-columns: 40px minmax(0, 1fr);
+    align-items: start;
+    gap: 0.65rem;
+  }
+
+  .admin-review-job-card .admin-job-company-mark {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+  }
+
+  .admin-review-job-card .admin-status {
+    grid-column: 2;
+    justify-self: start;
+  }
+
+  .admin-review-job-card__meta {
+    grid-column: 2;
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .admin-review-job-card__meta span {
+    min-height: 28px;
+    padding: 0 0.55rem;
+    font-size: 0.7rem;
+  }
+
+  .admin-review-decision-card {
+    display: grid;
+    align-items: start;
+  }
+
+  .admin-review-decision-card .admin-review-actions {
+    width: 100%;
   }
 
   .admin-review-actions button {

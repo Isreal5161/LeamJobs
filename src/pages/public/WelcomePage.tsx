@@ -11,7 +11,19 @@ import { useJobStore } from '../../context/JobStoreContext';
 function WelcomePage() {
   const { content } = useSiteContent();
   const { visibleJobs } = useJobStore();
-  const { heroTitle, heroSubtitle, primaryCta, secondaryCta, employerCta, stats, filters } = content.welcome;
+  const {
+    heroTitle,
+    heroSubtitle,
+    primaryCta,
+    secondaryCta,
+    employerCta,
+    filterTitle,
+    keywordPlaceholder,
+    locationPlaceholder,
+    searchButton,
+    stats,
+    filters,
+  } = content.welcome;
   const [keywordQuery, setKeywordQuery] = useState('');
   const [locationQuery, setLocationQuery] = useState('');
   const [activeFilter, setActiveFilter] = useState<string | null>(null);
@@ -87,7 +99,7 @@ function WelcomePage() {
                 <div className="search-card__field">
                   <Input
                     type="search"
-                    placeholder="Job title or keyword"
+                    placeholder={keywordPlaceholder}
                     value={keywordQuery}
                     onChange={(event) => setKeywordQuery(event.target.value)}
                     aria-label="Search jobs by title or keyword"
@@ -96,14 +108,14 @@ function WelcomePage() {
                 <div className="search-card__field">
                   <Input
                     type="text"
-                    placeholder="City, state, or remote"
+                    placeholder={locationPlaceholder}
                     value={locationQuery}
                     onChange={(event) => setLocationQuery(event.target.value)}
                     aria-label="Search jobs by location"
                   />
                 </div>
                 <Button variant="primary" className="hero__search-button" type="button">
-                  Search
+                  {searchButton}
                 </Button>
               </div>
             </div>
@@ -114,7 +126,7 @@ function WelcomePage() {
       <section className="jobs-section">
         <div className="container jobs-section__content">
           <aside className="jobs-filters">
-            <h4>Filters</h4>
+            <h4>{filterTitle}</h4>
             <div className="filters-list">
               {filters.map((label, index) => {
                 const icon = index === 0 ? <FaWifi /> : index === 1 ? <FaClock /> : index === 2 ? <FaPencilAlt /> : index === 3 ? <FaMapMarkerAlt /> : index === 4 ? <FaDollarSign /> : index === 5 ? <FaCode /> : <FaBullhorn />;

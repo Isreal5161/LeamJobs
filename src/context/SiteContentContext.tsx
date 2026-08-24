@@ -13,6 +13,10 @@ export type WelcomeContent = {
   primaryCta: string;
   secondaryCta: string;
   employerCta: string;
+  filterTitle: string;
+  keywordPlaceholder: string;
+  locationPlaceholder: string;
+  searchButton: string;
   stats: SiteStat[];
   filters: string[];
 };
@@ -23,9 +27,19 @@ export type AboutContent = {
   description: string;
   primaryCta: string;
   secondaryCta: string;
+  missionTitle: string;
+  missionText: string;
+  valuesTitle: string;
   values: { title: string; text: string }[];
   stats: SiteStat[];
+  teamTitle: string;
+  teamText: string;
+  teamButton: string;
+  teamMoreLabel: string;
   team: string[];
+  partnerTitle: string;
+  partnerText: string;
+  partnerButton: string;
 };
 
 export type FeatureItem = {
@@ -38,8 +52,12 @@ export type FeaturesContent = {
   heroSubtitle: string;
   primaryCta: string;
   secondaryCta: string;
+  recommendationsTitle: string;
   recommendations: { title: string; meta: string; match: string }[];
   profileCompletion: number;
+  profileTitle: string;
+  profileText: string;
+  profileLink: string;
   items: FeatureItem[];
   ctaTitle: string;
   ctaSubtitle: string;
@@ -51,6 +69,7 @@ export type HowItWorksContent = {
   heroSubtitle: string;
   primaryCta: string;
   secondaryCta: string;
+  heroStepLabels: string[];
   steps: { title: string; text: string }[];
   stats: SiteStat[];
   ctaTitle: string;
@@ -65,6 +84,7 @@ export type CompaniesContent = {
   secondaryCta: string;
   filters: string[];
   companies: { name: string; category: string; location: string; employees: string; tone: string }[];
+  viewJobsLabel: string;
   stats: SiteStat[];
   ctaTitle: string;
   ctaSubtitle: string;
@@ -86,6 +106,10 @@ export const initialSiteContent: SiteContent = {
     primaryCta: 'Create free account',
     secondaryCta: 'Sign in',
     employerCta: 'Post a job',
+    filterTitle: 'Filters',
+    keywordPlaceholder: 'Job title or keyword',
+    locationPlaceholder: 'City, state, or remote',
+    searchButton: 'Search',
     stats: [
       { value: '120k+', label: 'Open roles' },
       { value: '18k+', label: 'Companies' },
@@ -100,6 +124,10 @@ export const initialSiteContent: SiteContent = {
       "We're on a mission to connect great people with meaningful opportunities and help companies build teams that drive the future.",
     primaryCta: 'Create free account',
     secondaryCta: 'I already have one',
+    missionTitle: 'Our mission',
+    missionText:
+      'To create a smarter, more human way to find and fill jobs, empowering people to grow their careers and companies to build exceptional teams.',
+    valuesTitle: 'Our values',
     values: [
       { title: 'People first', text: 'We put people at the center of everything we do.' },
       { title: 'Trust & transparency', text: 'Honest, open, and fair in every interaction.' },
@@ -112,7 +140,16 @@ export const initialSiteContent: SiteContent = {
       { value: '2.4M', label: 'Hired members' },
       { value: '150+', label: 'Countries' },
     ],
+    teamTitle: 'Built by a passionate team',
+    teamText:
+      'LeamJobs is crafted by a global team of builders, designers, and problem-solvers who care deeply about making the job search experience better for everyone.',
+    teamButton: 'Join our team',
+    teamMoreLabel: '+12',
     team: ['SA', 'JM', 'NK', 'AL', 'RP'],
+    partnerTitle: 'Stronger together',
+    partnerText:
+      'We partner with amazing companies and communities to create more opportunities and drive meaningful careers forward.',
+    partnerButton: 'Partner with us',
   },
   features: {
     heroTitle: 'Features that make job search smarter',
@@ -120,12 +157,16 @@ export const initialSiteContent: SiteContent = {
       'LeamJobs gives you the tools and insights you need to find the right opportunities, faster and with confidence.',
     primaryCta: 'Create free account',
     secondaryCta: 'I already have one',
+    recommendationsTitle: 'Recommended for you',
     recommendations: [
       { title: 'Senior Product Designer', meta: 'Google - New York, NY - Remote', match: '95% match' },
       { title: 'Product Design Lead', meta: 'Slack - San Francisco, CA - Hybrid', match: '89% match' },
       { title: 'Design Systems Manager', meta: 'Dropbox - Austin, TX - Remote', match: '82% match' },
     ],
     profileCompletion: 72,
+    profileTitle: 'Profile completeness',
+    profileText: 'Add skills and experience to increase your match rate.',
+    profileLink: 'Complete profile ->',
     items: [
       {
         title: 'Smart matching',
@@ -161,6 +202,7 @@ export const initialSiteContent: SiteContent = {
     heroSubtitle: 'Three simple steps to your next great opportunity.',
     primaryCta: 'Create free account',
     secondaryCta: 'I already have one',
+    heroStepLabels: ['Create profile', 'Get matched', 'Apply & get hired'],
     steps: [
       {
         title: 'Create your profile',
@@ -203,6 +245,7 @@ export const initialSiteContent: SiteContent = {
       { name: 'Amazon', category: 'Technology', location: 'Seattle, WA', employees: '1.5M+ employees', tone: 'amazon' },
       { name: 'Microsoft', category: 'Technology', location: 'Redmond, WA', employees: '220k+ employees', tone: 'microsoft' },
     ],
+    viewJobsLabel: 'View jobs',
     stats: [
       { value: '120k+', label: 'Open roles' },
       { value: '18k+', label: 'Companies' },

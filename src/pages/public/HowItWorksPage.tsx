@@ -53,13 +53,13 @@ function StepIllustration({ variant }: { variant: string }) {
   );
 }
 
-function HeroSteps({ steps }: { steps: { title: string; text: string }[] }) {
+function HeroSteps({ steps, labels }: { steps: { title: string; text: string }[]; labels: string[] }) {
   return (
     <div className="how-hero__steps" aria-label="Three step overview">
       {steps.map((step, index) => (
         <div className="how-hero-step" key={step.title}>
           <div className="how-hero-step__number">{index + 1}</div>
-          <p>{index === 0 ? 'Create profile' : index === 1 ? 'Get matched' : 'Apply & get hired'}</p>
+          <p>{labels[index] ?? step.title}</p>
           <StepIllustration variant={index === 0 ? 'profile' : index === 1 ? 'match' : 'apply'} />
         </div>
       ))}
@@ -69,7 +69,7 @@ function HeroSteps({ steps }: { steps: { title: string; text: string }[] }) {
 
 function HowItWorksPage() {
   const { content } = useSiteContent();
-  const { heroTitle, heroSubtitle, primaryCta, secondaryCta, steps, stats, ctaTitle, ctaSubtitle, ctaButton } = content['how-it-works'];
+  const { heroTitle, heroSubtitle, primaryCta, secondaryCta, heroStepLabels, steps, stats, ctaTitle, ctaSubtitle, ctaButton } = content['how-it-works'];
 
   return (
     <div className="how-page">
@@ -82,7 +82,7 @@ function HowItWorksPage() {
             <Button variant="outline">{secondaryCta}</Button>
           </div>
         </div>
-        <HeroSteps steps={steps} />
+        <HeroSteps steps={steps} labels={heroStepLabels} />
       </section>
 
       <section className="how-steps" aria-label="How LeamJobs works">
