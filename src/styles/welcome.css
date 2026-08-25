@@ -1378,4 +1378,49 @@
   .hero__search-panel {
     order: 4;
   }
+
+  .hero-actions__seeker {
+    grid-template-columns: 1fr;
+    gap: 0.5rem;
+  }
+
+  .hero-actions__secondary {
+    width: 100%;
+    min-width: 0;
+    min-height: 46px;
+  }
+}
+
+@media (min-width: 361px) and (max-width: 480px) {
+  .hero__panel {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+
+  .hero__text-panel,
+  .hero-actions,
+  .hero__stats,
+  .hero__search-panel {
+    width: 100%;
+    flex: 0 0 auto;
+  }
+
+  .hero__text-panel {
+    order: 1;
+  }
+
+  .hero-actions {
+    order: 2;
+    margin-top: 0.75rem;
+  }
+
+  .hero__stats {
+    order: 3;
+    margin-top: 0.85rem;
+  }
+
+  .hero__search-panel {
+    order: 4;
+  }
 }

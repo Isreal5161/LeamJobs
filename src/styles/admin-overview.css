@@ -240,8 +240,8 @@
 
 .admin-overview-stat-value {
   display: block;
-  font-size: 1.45rem;
-  font-weight: 800;
+  font-size: 1.25rem;
+  font-weight: 700;
   line-height: 1;
 }
 
@@ -568,7 +568,7 @@
   }
 
   .admin-overview-stat-value {
-    font-size: 1.5rem;
+    font-size: 1.3rem;
   }
 
   .admin-overview-stat-label {
