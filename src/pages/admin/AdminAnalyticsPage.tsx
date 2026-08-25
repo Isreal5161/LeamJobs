@@ -8,6 +8,7 @@ function AdminAnalyticsPage() {
   const { jobs } = useJobStore();
   const { subscriptions, plans } = useSubscriptions();
   const [companyQuery, setCompanyQuery] = useState('');
+  const [seekerQuery, setSeekerQuery] = useState('');
   const approvedJobs = jobs.filter((job) => job.status === 'Approved');
   const pendingJobs = jobs.filter((job) => job.status !== 'Approved');
   const totalViews = approvedJobs.reduce((total, job) => total + job.views, 0);
@@ -19,10 +20,13 @@ function AdminAnalyticsPage() {
   const totalRevenue = employerIncome + subscriptionRevenue;
 
   const revenueRows = [
-    { label: 'Employer subscriptions', value: employerIncome, width: 78 },
-    { label: 'Seeker subscriptions', value: subscriptionRevenue, width: 46 },
-    { label: 'Featured marketplace jobs', value: jobs.filter((job) => job.featured).length * 120, width: 34 },
-  ];
+    { label: 'Employer subscriptions', value: employerIncome, color: 'blue' },
+    { label: 'Seeker subscriptions', value: subscriptionRevenue, color: 'purple' },
+    { label: 'Featured marketplace jobs', value: jobs.filter((job) => job.featured).length * 120, color: 'green' },
+  ].map((row) => ({
+    ...row,
+    share: totalRevenue > 0 ? Math.round((row.value / totalRevenue) * 100) : 0,
+  }));
   const normalizedCompanyQuery = companyQuery.trim().toLowerCase();
   const filteredEmployers = adminEmployers.filter((employer) => {
     const employerJobs = jobs.filter((job) => job.company.toLowerCase().includes(employer.name.split(' ')[0].toLowerCase()));
@@ -35,6 +39,25 @@ function AdminAnalyticsPage() {
     ].join(' ').toLowerCase();
 
     return !normalizedCompanyQuery || searchableText.includes(normalizedCompanyQuery);
+  });
+
+  const normalizedSeekerQuery = seekerQuery.trim().toLowerCase();
+  const subscribedSeekers = adminSeekers.filter((seeker) => {
+    const seekerSubscription = subscriptions.find(
+      (sub) => sub.seekerId === seeker.id && sub.status === 'Active'
+    );
+    return !!seekerSubscription;
+  });
+
+  const filteredSeekers = subscribedSeekers.filter((seeker) => {
+    const searchableText = [
+      seeker.name,
+      seeker.email,
+      seeker.role,
+      seeker.status,
+    ].join(' ').toLowerCase();
+
+    return !normalizedSeekerQuery || searchableText.includes(normalizedSeekerQuery);
   });
 
   return (
@@ -84,20 +107,37 @@ function AdminAnalyticsPage() {
           <p>{pendingJobs.length} job posts still need admin attention before becoming visible to seekers.</p>
         </article>
 
-        <article className="admin-panel">
+        <article className="admin-panel admin-revenue-panel">
           <div className="admin-section-heading">
             <div>
               <span><FaDollarSign /> Revenue sources</span>
               <h2>Income by channel</h2>
             </div>
+            <strong className="admin-revenue-total">${totalRevenue.toLocaleString()}</strong>
           </div>
-          <div className="admin-bars">
-            {revenueRows.map((row) => (
-              <span key={row.label}>
-                <strong>{row.label} / ${row.value}</strong>
-                <i style={{ width: `${row.width}%` }} />
-              </span>
-            ))}
+          <div className="admin-revenue-chart" aria-label="Revenue sources chart">
+            <div className="admin-revenue-chart__track">
+              {revenueRows.map((row) => (
+                <span
+                  key={row.label}
+                  className={`admin-revenue-chart__segment admin-revenue-chart__segment--${row.color}`}
+                  style={{ width: `${Math.max(row.share, 4)}%` }}
+                  title={`${row.label}: ${row.share}%`}
+                />
+              ))}
+            </div>
+            <div className="admin-revenue-list">
+              {revenueRows.map((row) => (
+                <div className="admin-revenue-row" key={row.label}>
+                  <span className={`admin-revenue-dot admin-revenue-dot--${row.color}`} />
+                  <div>
+                    <strong>{row.label}</strong>
+                    <small>{row.share}% of tracked revenue</small>
+                  </div>
+                  <b>${row.value.toLocaleString()}</b>
+                </div>
+              ))}
+            </div>
           </div>
         </article>
 
@@ -137,6 +177,69 @@ function AdminAnalyticsPage() {
               );
             })}
             {!filteredEmployers.length ? <p className="admin-empty-state">No companies match your search.</p> : null}
+          </div>
+        </section>
+
+        <section className="admin-panel admin-seeker-directory">
+          <div className="admin-section-heading">
+            <div>
+              <span><FaUsers /> Seeker activity</span>
+              <h2>Seekers by subscription and engagement</h2>
+            </div>
+            <strong className="admin-seeker-count">{subscribedSeekers.length} subscribed</strong>
+          </div>
+          <label className="admin-seeker-search" aria-label="Search seekers">
+            <span>Search seekers</span>
+            <input
+              type="search"
+              value={seekerQuery}
+              onChange={(event) => setSeekerQuery(event.target.value)}
+              placeholder="Search name, email, role, or status"
+            />
+          </label>
+          <div className="admin-seeker-list">
+            {filteredSeekers.map((seeker) => {
+              const seekerSub = subscriptions.find((sub) => sub.seekerId === seeker.id);
+              const seekerPlan = seekerSub ? plans.find((plan) => plan.id === seekerSub.planId) : null;
+              return (
+                <article className="admin-seeker-row" key={seeker.id}>
+                  <div className="admin-seeker-row__main">
+                    {seeker.avatarUrl ? (
+                      <img src={seeker.avatarUrl} alt={seeker.name} className="admin-seeker-row__avatar" />
+                    ) : (
+                      <div className="admin-seeker-row__avatar admin-seeker-row__avatar--initials" style={{ backgroundColor: seeker.avatarBgColor }}>
+                        {seeker.name.split(' ').map((n) => n[0]).join('')}
+                      </div>
+                    )}
+                    <div className="admin-seeker-row__info">
+                      <strong>{seeker.name}</strong>
+                      <p>{seeker.email}</p>
+                      <small>{seeker.role} • Joined {seeker.joined}</small>
+                    </div>
+                  </div>
+
+                  {seekerPlan && (
+                    <>
+                      <div className={`admin-seeker-row__plan admin-seeker-row__plan--${seekerSub?.planId}`}>
+                        <strong>{seekerPlan.name}</strong>
+                        <small>${seekerPlan.price}/month</small>
+                      </div>
+
+                      <div className="admin-seeker-row__boost">
+                        +{seekerPlan.visibilityBoost}%
+                        <small>boost</small>
+                      </div>
+
+                      <div className="admin-seeker-row__renewal">
+                        <strong>Renews</strong>
+                        <small>{seekerSub?.renewalDate}</small>
+                      </div>
+                    </>
+                  )}
+                </article>
+              );
+            })}
+            {!filteredSeekers.length ? <p className="admin-empty-state">No seekers match your search.</p> : null}
           </div>
         </section>
       </section>

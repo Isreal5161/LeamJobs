@@ -5,8 +5,8 @@ import {
   FaDollarSign,
   FaShieldHalved,
   FaUsers,
-  FaCircleCheck,
   FaArrowRight,
+  FaBuilding,
   FaClock,
 } from 'react-icons/fa6';
 import { adminEmployers, adminJobs, adminSeekers } from './adminData';
@@ -16,7 +16,6 @@ function AdminOverviewPage() {
   const totalJobs = adminJobs.length;
   const pendingJobs = adminJobs.filter((job) => job.status === 'Pending').length;
   const approvedJobs = adminJobs.filter((job) => job.status === 'Approved').length;
-  const totalAccounts = adminSeekers.length + adminEmployers.length;
   const seekerCount = adminSeekers.length;
   const employerCount = adminEmployers.length;
   const monthlyIncome = adminEmployers.reduce((total, employer) => total + employer.monthlyIncome, 0);
@@ -36,19 +35,28 @@ function AdminOverviewPage() {
       id: 'pending',
       icon: <FaClock />,
       value: pendingJobs,
-      label: 'Pending approval',
+      label: 'Pending company jobs',
       trend: `${pendingJobs} needs review`,
       color: 'orange',
       link: '/admin/jobs',
     },
     {
-      id: 'users',
+      id: 'seekers',
       icon: <FaUsers />,
-      value: totalAccounts,
-      label: 'Active accounts',
-      subtext: `${seekerCount} seekers • ${employerCount} employers`,
+      value: seekerCount,
+      label: 'Active seekers',
+      subtext: 'Job seeker accounts',
       color: 'green',
       link: '/admin/seekers',
+    },
+    {
+      id: 'employees',
+      icon: <FaBuilding />,
+      value: employerCount,
+      label: 'Active employees',
+      subtext: 'Company accounts',
+      color: 'teal',
+      link: '/admin/companies',
     },
     {
       id: 'income',
@@ -132,26 +140,6 @@ function AdminOverviewPage() {
           </div>
         </section>
 
-        {/* System Status */}
-        <section className="admin-overview-status">
-          <div className="admin-overview-section-header">
-            <h2>System status</h2>
-          </div>
-          <div className="admin-overview-status-card admin-overview-status-card--healthy">
-            <div className="admin-overview-status-indicator">
-              <FaCircleCheck />
-              <span>All systems operational</span>
-            </div>
-            <h3>Marketplace stable</h3>
-            <p>All public pages, employer tools, and seeker flows are running smoothly and available for use.</p>
-            <ul className="admin-overview-status-list">
-              <li><FaCircleCheck /> Job posting service</li>
-              <li><FaCircleCheck /> Payment processing</li>
-              <li><FaCircleCheck /> Application system</li>
-              <li><FaCircleCheck /> Search and discovery</li>
-            </ul>
-          </div>
-        </section>
       </div>
 
       {/* Summary Stats */}

@@ -19,6 +19,8 @@ export const adminJobs = employerJobs.map((job, index) => ({
   featured: index === 0,
 }));
 
+const avatarColors = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#FFA07A', '#98D8C8', '#F7DC6F', '#BB8FCE', '#85C1E2'];
+
 export const adminSeekers = applicants.map((applicant, index) => ({
   id: applicant.id,
   name: applicant.name,
@@ -29,6 +31,8 @@ export const adminSeekers = applicants.map((applicant, index) => ({
   savedJobs: index + 5,
   status: index === 4 ? 'Flagged' : 'Approved',
   joined: `Aug ${14 - index}, 2026`,
+  avatarUrl: applicant.avatarUrl || undefined,
+  avatarBgColor: avatarColors[index % avatarColors.length],
 }));
 
 export const adminEmployers = [
