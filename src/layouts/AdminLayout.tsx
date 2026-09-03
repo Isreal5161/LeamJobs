@@ -11,8 +11,21 @@ function AdminLayout() {
     <div className={`admin-layout ${menuOpen ? 'admin-layout--menu-open' : 'admin-layout--menu-closed'}`}>
       <div className="admin-layout__shell">
         <DashboardTopbar isOpen={menuOpen} onToggle={() => setMenuOpen((open) => !open)} />
+        {menuOpen && (
+          <button
+            type="button"
+            className="admin-layout__menu-backdrop"
+            aria-label="Close navigation menu"
+            onClick={() => setMenuOpen(false)}
+          />
+        )}
         <div className="admin-layout__sidebar">
-          <DashboardSidebar role="admin" isOpen={menuOpen} onToggle={() => setMenuOpen((open) => !open)} />
+          <DashboardSidebar
+            role="admin"
+            isOpen={menuOpen}
+            onToggle={() => setMenuOpen((open) => !open)}
+            onNavigate={() => setMenuOpen(false)}
+          />
         </div>
         <main className="admin-layout__main">
           <Outlet />

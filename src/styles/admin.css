@@ -21,10 +21,29 @@
   width: 286px;
   align-self: start;
   z-index: 20;
+  transition: transform 0.42s ease, opacity 0.42s ease;
 }
 
 .admin-layout--menu-closed .admin-layout__sidebar {
-  display: none;
+  transform: translateX(calc(100% + 1.5rem));
+  opacity: 0;
+  pointer-events: none;
+}
+
+.admin-layout__menu-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 19;
+  border: 0;
+  background: rgba(15, 23, 42, 0.28);
+  cursor: pointer;
+}
+
+@media (max-width: 767px) {
+  .admin-layout .dashboard-topbar {
+    position: relative;
+    z-index: 50;
+  }
 }
 
 .admin-layout__main,
@@ -54,6 +73,13 @@
   padding: 1.5rem 1.6rem;
   background: #ffffff;
   color: #0f172a;
+}
+
+.admin-hero__actions {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex: 0 0 auto;
 }
 
 .admin-eyebrow,
@@ -120,6 +146,7 @@
   min-height: 42px;
   padding: 0 0.95rem;
   border: 1px solid transparent;
+  white-space: nowrap;
 }
 
 .admin-button--primary,
@@ -1241,6 +1268,7 @@
 
 .admin-form input,
 .admin-form textarea,
+.admin-form select,
 .admin-job-card input,
 .admin-job-card select,
 .admin-add-control input {
@@ -1257,6 +1285,11 @@
 .admin-job-card input,
 .admin-job-card select,
 .admin-add-control input {
+  min-height: 44px;
+  padding: 0 0.85rem;
+}
+
+.admin-form select {
   min-height: 44px;
   padding: 0 0.85rem;
 }
@@ -2431,7 +2464,7 @@
   .admin-hero {
     position: relative;
     align-items: flex-start;
-    flex-direction: row;
+    flex-direction: column;
     padding: 1.15rem 1rem 4.8rem;
     border: 0;
     border-radius: 0 0 28px 28px;
@@ -2471,6 +2504,20 @@
     height: 42px;
     margin-left: auto;
     border-radius: 14px;
+  }
+
+  .admin-hero__actions {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    margin-left: 0;
+  }
+
+  .admin-hero__actions .admin-button {
+    align-self: flex-start;
+    min-width: 112px;
+    min-height: 44px;
+    padding: 0 0.8rem;
   }
 
   .admin-job-editor,

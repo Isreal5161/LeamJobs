@@ -110,6 +110,17 @@ function EmployerJobsPage() {
     setForm(emptyJobForm);
   };
 
+  const cancelEditing = () => {
+    if (selectedJob) {
+      setForm(formFromJob(selectedJob));
+      return;
+    }
+
+    setIsCreating(false);
+    setSelectedJobId(employerJobs[0]?.id ?? '');
+    setForm(employerJobs[0] ? formFromJob(employerJobs[0]) : emptyJobForm);
+  };
+
   const saveJob = (status: PublicJob['status']) => {
     const responsibilities = form.responsibilities.filter((item) => item.trim());
     const requirements = form.requirements.filter((item) => item.trim());
@@ -176,9 +187,14 @@ function EmployerJobsPage() {
             <h1>Manage open positions</h1>
             <p>Create, update, publish, and monitor every role from one focused workspace.</p>
           </div>
-          <button className="employer-icon-button" type="button" aria-label="Notifications">
-            <FaBell />
-          </button>
+          <div className="employer-hero__actions">
+            <button className="employer-icon-button" type="button" aria-label="Notifications">
+              <FaBell />
+            </button>
+            <button className="employer-button employer-button--light" type="button" onClick={startCreating}>
+              <FaPlus /> Post job
+            </button>
+          </div>
         </div>
       </section>
 
@@ -189,10 +205,6 @@ function EmployerJobsPage() {
               <h2>{isCreating ? 'Create job post' : selectedJob?.status === 'Draft' ? 'Finish job draft' : 'Edit job post'}</h2>
               <p>Build a clear role description for stronger applicant matches.</p>
             </div>
-            <button className="employer-button employer-button--primary" type="button" onClick={startCreating}>
-              <FaPlus />
-              Publish
-            </button>
           </div>
 
           {selectedJob?.status === 'Approved' ? (
@@ -280,8 +292,11 @@ function EmployerJobsPage() {
             </div>
 
             <div className="employer-editor-actions">
-                <button className="employer-button employer-button--ghost" type="button" onClick={() => saveJob('Draft')}>
-                Save Draft
+              <button className="employer-button employer-button--ghost" type="button" onClick={() => saveJob('Draft')}>
+                Save to draft
+              </button>
+              <button className="employer-button employer-button--ghost" type="button" onClick={cancelEditing}>
+                Cancel
               </button>
               <button className="employer-button employer-button--primary" type="button" onClick={() => saveJob('Pending')}>
                 <FaCheckCircle />

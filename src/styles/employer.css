@@ -19,11 +19,22 @@
   right: 0;
   width: 286px;
   z-index: 20;
-  transition: width 0.22s ease;
+  transition: transform 0.42s ease, opacity 0.42s ease;
 }
 
 .employer-layout--menu-closed .employer-layout__sidebar {
-  display: none;
+  transform: translateX(calc(100% + 1.5rem));
+  opacity: 0;
+  pointer-events: none;
+}
+
+.employer-layout__menu-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 19;
+  border: 0;
+  background: rgba(15, 23, 42, 0.28);
+  cursor: pointer;
 }
 
 .employer-layout__main,
@@ -1056,10 +1067,6 @@
     width: 246px;
   }
 
-  .employer-layout--menu-closed .employer-layout__sidebar {
-    display: none;
-  }
-
   .employer-stat-grid,
   .employer-applicant-strip,
   .employer-editor-summary {
@@ -1095,10 +1102,6 @@
     overflow-x: hidden;
   }
 
-  .employer-layout__sidebar {
-    display: none;
-  }
-
   .employer-page {
     gap: 0;
     width: 100%;
@@ -1117,6 +1120,16 @@
   .employer-section-heading {
     align-items: flex-start;
     flex-direction: column;
+  }
+
+  .employer-hero__actions {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .employer-hero__actions .employer-button {
+    min-height: 44px;
+    white-space: nowrap;
   }
 
   .employer-content {

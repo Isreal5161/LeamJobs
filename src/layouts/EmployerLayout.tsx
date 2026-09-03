@@ -11,8 +11,21 @@ function EmployerLayout() {
     <div className={`employer-layout ${menuOpen ? 'employer-layout--menu-open' : 'employer-layout--menu-closed'}`}>
       <div className="employer-layout__shell">
         <DashboardTopbar isOpen={menuOpen} onToggle={() => setMenuOpen((open) => !open)} />
+        {menuOpen && (
+          <button
+            type="button"
+            className="employer-layout__menu-backdrop"
+            aria-label="Close navigation menu"
+            onClick={() => setMenuOpen(false)}
+          />
+        )}
         <div className="employer-layout__sidebar">
-          <DashboardSidebar role="employer" isOpen={menuOpen} onToggle={() => setMenuOpen((open) => !open)} />
+          <DashboardSidebar
+            role="employer"
+            isOpen={menuOpen}
+            onToggle={() => setMenuOpen((open) => !open)}
+            onNavigate={() => setMenuOpen(false)}
+          />
         </div>
         <main className="employer-layout__main">
           <Outlet />

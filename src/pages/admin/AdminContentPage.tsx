@@ -249,8 +249,8 @@ function AdminContentPage() {
                   <label><span>Profile text</span><textarea value={content.features.profileText} onChange={(event) => updatePage('features', (current) => ({ ...current, profileText: event.target.value }))} /></label>
                   <label><span>Profile link</span><input value={content.features.profileLink} onChange={(event) => updatePage('features', (current) => ({ ...current, profileLink: event.target.value }))} /></label>
                 </section>
-                <FeatureItemsEditor />
-                <CtaEditor page="features" />
+                {FeatureItemsEditor()}
+                {CtaEditor({ page: 'features' })}
               </>
             ) : null}
 
@@ -290,7 +290,7 @@ function AdminContentPage() {
                   onRemove={(index) => removeStat('how-it-works', index)}
                   onChange={(index, patch) => updateStat('how-it-works', index, patch)}
                 />
-                <CtaEditor page="how-it-works" />
+                {CtaEditor({ page: 'how-it-works' })}
               </>
             ) : null}
 
@@ -338,7 +338,7 @@ function AdminContentPage() {
                   onRemove={(index) => removeStat('companies', index)}
                   onChange={(index, patch) => updateStat('companies', index, patch)}
                 />
-                <CtaEditor page="companies" />
+                {CtaEditor({ page: 'companies' })}
               </>
             ) : null}
 

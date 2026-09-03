@@ -20,7 +20,12 @@ function SeekerLayout() {
           />
         )}
         <div className="seeker-layout__sidebar">
-          <DashboardSidebar role="seeker" isOpen={menuOpen} onToggle={() => setMenuOpen((open) => !open)} />
+          <DashboardSidebar
+            role="seeker"
+            isOpen={menuOpen}
+            onToggle={() => setMenuOpen((open) => !open)}
+            onNavigate={() => setMenuOpen(false)}
+          />
         </div>
         <main className="seeker-layout__main">
           <Outlet />

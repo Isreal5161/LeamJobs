@@ -18,6 +18,7 @@ type SidebarProps = {
   role: 'seeker' | 'employer' | 'admin';
   isOpen?: boolean;
   onToggle?: () => void;
+  onNavigate?: () => void;
 };
 
 const sidebarLinks = {
@@ -51,7 +52,7 @@ const sidebarLinks = {
   ],
 };
 
-function DashboardSidebar({ role, isOpen = true }: SidebarProps) {
+function DashboardSidebar({ role, isOpen = true, onNavigate }: SidebarProps) {
   return (
     <aside className={`dashboard-menu ${isOpen ? 'dashboard-menu--open' : 'dashboard-menu--closed'}`}>
       <div className="dashboard-menu__header">
@@ -71,6 +72,7 @@ function DashboardSidebar({ role, isOpen = true }: SidebarProps) {
             className={({ isActive }) =>
               `dashboard-menu__link ${isActive ? 'dashboard-menu__link--active' : ''}`
             }
+            onClick={onNavigate}
             title={!isOpen ? item.label : undefined}
           >
             <span className="dashboard-menu__icon">
