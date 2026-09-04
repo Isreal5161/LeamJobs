@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import {
   FaBell,
@@ -7,394 +7,183 @@ import {
   FaCalendarAlt,
   FaCheckCircle,
   FaClock,
-  FaDollarSign,
   FaDownload,
-  FaExclamationTriangle,
   FaExternalLinkAlt,
   FaFileAlt,
-  FaGoogle,
-  FaMicrosoft,
   FaSearch,
-  FaTimesCircle,
   FaTimes,
-  FaUpload,
+  FaTimesCircle,
 } from 'react-icons/fa';
-import { useJobStore } from '../../context/JobStoreContext';
+import { useAuth } from '../../context/AuthContext';
+import {
+  createSeekerApplication,
+  getSeekerApplications,
+  getSeekerJob,
+  type SeekerApplication,
+  type SeekerDashboardJob,
+} from '../../services/api';
 
-const applicationStats = [
-  { label: 'Total applications', value: '18', icon: <FaFileAlt />, tone: 'blue' },
-  { label: 'Approved', value: '7', icon: <FaCheckCircle />, tone: 'success' },
-  { label: 'Pending review', value: '8', icon: <FaClock />, tone: 'warning' },
-  { label: 'Rejected', value: '3', icon: <FaTimesCircle />, tone: 'danger' },
-];
+const formatDate = (value: string) => new Intl.DateTimeFormat(undefined, { dateStyle: 'medium' }).format(new Date(value));
+const formatJobType = (value: string) => value.replaceAll('_', ' ').toLowerCase().replace(/\b\w/g, (character) => character.toUpperCase());
+const getInitials = (value: string) => value.split(' ').filter(Boolean).map((part) => part[0]).join('').slice(0, 2).toUpperCase();
 
-const applications = [
-  {
-    id: 'google',
-    company: 'Google',
-    role: 'Senior Product Designer',
-    type: 'Remote',
-    applied: 'Applied Aug 12, 2026',
-    status: 'Approved',
-    nextStep: 'Interview scheduled',
-    amount: '$4,800',
-    icon: <FaGoogle />,
-    tone: 'google',
-  },
-  {
-    id: 'microsoft',
-    company: 'Microsoft',
-    role: 'UX Designer',
-    type: 'Hybrid',
-    applied: 'Applied Aug 10, 2026',
-    status: 'Pending',
-    nextStep: 'Recruiter review',
-    amount: '$3,200',
-    icon: <FaMicrosoft />,
-    tone: 'microsoft',
-  },
-  {
-    id: 'stripe',
-    company: 'Stripe',
-    role: 'Product Designer',
-    type: 'Contract',
-    applied: 'Applied Aug 6, 2026',
-    status: 'Rejected',
-    nextStep: 'Feedback available',
-    amount: '$0',
-    icon: 'S',
-    tone: 'stripe',
-  },
-  {
-    id: 'figma',
-    company: 'Figma',
-    role: 'Design Systems Designer',
-    type: 'Remote',
-    applied: 'Applied Aug 2, 2026',
-    status: 'Completed',
-    nextStep: 'Payment released',
-    amount: '$6,500',
-    icon: 'F',
-    tone: 'figma',
-  },
-];
-
-const completedJobs = [
-  { label: 'Jobs completed', value: '5' },
-  { label: 'Total income', value: '$18,450' },
-  { label: 'This month', value: '$6,500' },
-];
-
-const seekerCvSkills = ['UI Design', 'UX Research', 'Prototyping', 'Design Systems', 'Figma', 'User Testing'];
-type CvSource = 'profile' | 'upload' | null;
-
-type Application = {
-  id: string;
-  company: string;
-  role: string;
-  type: string;
-  applied: string;
-  status: string;
-  nextStep: string;
-  amount: string;
-  icon: ReactNode;
-  tone: string;
-};
+const mapApplicationStatus = (status: string) => status === 'INTERVIEW' ? 'Interview' : status.charAt(0) + status.slice(1).toLowerCase();
 
 function ApplicationsPage() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const { visibleJobs } = useJobStore();
-  const requestedJob = visibleJobs.find((job) => job.id === searchParams.get('jobId'));
-  const [selectedJob, setSelectedJob] = useState(requestedJob);
+  const { user, token } = useAuth();
+  const [applications, setApplications] = useState<SeekerApplication[]>([]);
+  const [summary, setSummary] = useState({ total: 0, interviews: 0 });
+  const [selectedJob, setSelectedJob] = useState<SeekerDashboardJob | null>(null);
   const [proposal, setProposal] = useState('');
   const [applicationSent, setApplicationSent] = useState(false);
-  const [savedDraft, setSavedDraft] = useState(false);
-  const [supportingFileName, setSupportingFileName] = useState('');
-  const [cvSource, setCvSource] = useState<CvSource>(null);
-  const [cvFileName, setCvFileName] = useState('');
-  const [submittedApplications, setSubmittedApplications] = useState<Application[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isJobLoading, setIsJobLoading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState('');
+  const [jobError, setJobError] = useState('');
+  const [submitError, setSubmitError] = useState('');
+
+  const loadApplications = async () => {
+    if (!token) {
+      setError('Your session could not be loaded. Please sign in again.');
+      setIsLoading(false);
+      return;
+    }
+
+    setIsLoading(true);
+    const result = await getSeekerApplications(token);
+
+    if (result.ok) {
+      setApplications(result.data.data.applications);
+      setSummary(result.data.data.summary);
+      setError('');
+    } else {
+      setError(result.error.message || 'We could not load your applications.');
+    }
+
+    setIsLoading(false);
+  };
 
   useEffect(() => {
-    if (searchParams.get('apply') === 'true' && requestedJob) {
-      setSelectedJob(requestedJob);
-      setApplicationSent(false);
-      setSavedDraft(false);
-      setProposal('');
-      setSupportingFileName('');
-      setCvSource(null);
-      setCvFileName('');
-    }
-  }, [requestedJob, searchParams]);
+    void loadApplications();
+  }, [token]);
+
+  useEffect(() => {
+    const jobId = searchParams.get('jobId');
+    if (!token || !jobId || searchParams.get('apply') !== 'true') return;
+
+    let isMounted = true;
+    setIsJobLoading(true);
+    setJobError('');
+    setSubmitError('');
+
+    const loadJob = async () => {
+      const result = await getSeekerJob(jobId, token);
+      if (!isMounted) return;
+
+      if (!result.ok) {
+        setSelectedJob(null);
+        setJobError(result.error.message || 'This job is unavailable.');
+      } else if (result.data.data.alreadyApplied) {
+        setSelectedJob(null);
+        setJobError('You have already applied to this job.');
+      } else {
+        setSelectedJob(result.data.data.job);
+        setApplicationSent(false);
+        setProposal('');
+      }
+
+      setIsJobLoading(false);
+    };
+
+    void loadJob();
+    return () => { isMounted = false; };
+  }, [searchParams, token]);
 
   const closeApplication = () => {
-    setSelectedJob(undefined);
+    setSelectedJob(null);
+    setApplicationSent(false);
+    setProposal('');
+    setSubmitError('');
     navigate('/seeker/applications', { replace: true });
   };
 
-  const submitApplication = () => {
-    if (!selectedJob || (cvRequirement === 'required' && !cvSource)) return;
+  const submitApplication = async () => {
+    if (!selectedJob || !token || isSubmitting) return;
 
-    setSubmittedApplications((current) => [
-      {
-        id: selectedJob.id,
-        company: selectedJob.company,
-        role: selectedJob.role,
-        type: selectedJob.workArrangement,
-        applied: 'Applied today',
-        status: 'Pending',
-        nextStep: 'Recruiter review',
-        amount: selectedJob.paymentAmount ? `$${selectedJob.paymentAmount.toLocaleString()}` : '$0',
-        icon: selectedJob.logoText,
-        tone: selectedJob.logoClass?.replace('brand-logo--', '') || 'default',
-      },
-      ...current.filter((application) => application.id !== selectedJob.id),
-    ]);
-    setApplicationSent(true);
+    setIsSubmitting(true);
+    setSubmitError('');
+    const result = await createSeekerApplication({
+      jobId: selectedJob.id,
+      ...(proposal.trim() ? { coverLetter: proposal.trim() } : {}),
+    }, token);
+
+    if (!result.ok) {
+      setSubmitError(result.error.message || 'We could not submit your application.');
+    } else {
+      setApplicationSent(true);
+      await loadApplications();
+    }
+
+    setIsSubmitting(false);
   };
 
-  const allApplications = [...submittedApplications, ...applications];
-  const cvRequirement = selectedJob?.cvRequirement ?? 'recommended';
-  const cvSelected = cvSource !== null;
-  const matchingSkills = cvSelected ? selectedJob?.details.skills.filter((skill) => seekerCvSkills.includes(skill)) ?? [] : [];
-  const missingSkills = selectedJob?.details.skills.filter((skill) => !matchingSkills.includes(skill)) ?? [];
-  const cvMatchScore = selectedJob ? Math.min(96, Math.max(38, 48 + matchingSkills.length * 10)) : 0;
-  const cvIsWeakMatch = cvRequirement !== 'not-needed' && cvMatchScore < 70;
+  const fullName = [user?.firstName, user?.lastName].filter(Boolean).join(' ') || 'Welcome back';
+  const applicationStats = [
+    { label: 'Total applications', value: summary.total, icon: <FaFileAlt />, tone: 'blue' },
+    { label: 'Interviews', value: summary.interviews, icon: <FaCheckCircle />, tone: 'success' },
+  ];
+
+  const applicationCard = (application: SeekerApplication) => (
+    <article className="seeker-application-card" key={application.id}>
+      <div className="seeker-application-card__logo seeker-application-card__logo--default">{getInitials(application.companyName || 'Company')}</div>
+      <div className="seeker-application-card__content">
+        <div className="seeker-application-card__top">
+          <div><h3>{application.jobTitle}</h3><p>{application.companyName || 'Company not provided'} · {formatJobType(application.jobType)}</p></div>
+          <span className={`seeker-application-status seeker-application-status--${application.status.toLowerCase()}`}>{mapApplicationStatus(application.status)}</span>
+        </div>
+        <div className="seeker-application-card__meta">
+          <span><FaCalendarAlt /> Applied {formatDate(application.appliedAt)}</span>
+          <span><FaBriefcase /> Updated {formatDate(application.updatedAt)}</span>
+        </div>
+      </div>
+      <Link to={`/seeker/jobs/${application.jobId}`} className="seeker-application-card__link" aria-label={`View ${application.jobTitle} details`}><FaExternalLinkAlt /></Link>
+    </article>
+  );
 
   return (
     <div className="seeker-applications-page">
       <section className="seeker-applications-hero">
-        <div className="seeker-hero__top">
-          <div className="seeker-profile">
-            <div className="seeker-profile__avatar" aria-hidden="true">SJ</div>
-            <div>
-              <h1>Applications</h1>
-              <p>Track progress, outcomes, and job income</p>
-            </div>
-          </div>
-          <button className="seeker-icon-button seeker-icon-button--alert" type="button" aria-label="Notifications">
-            <FaBell />
-          </button>
-        </div>
-
-        <label className="seeker-search" aria-label="Search applications">
-          <FaSearch />
-          <input type="search" placeholder="Search company, role, or status" />
-        </label>
+        <div className="seeker-hero__top"><div className="seeker-profile"><div className="seeker-profile__avatar" aria-hidden="true">{getInitials(fullName)}</div><div><h1>Applications</h1><p>Track progress, outcomes, and job income</p></div></div><button className="seeker-icon-button seeker-icon-button--alert" type="button" aria-label="Notifications"><FaBell /></button></div>
+        <label className="seeker-search" aria-label="Search applications"><FaSearch /><input type="search" placeholder="Search company, role, or status" /></label>
       </section>
 
       <main className="seeker-applications-content">
         <section className="seeker-application-stats" aria-label="Application overview">
-          {applicationStats.map((stat) => (
-            <article className="seeker-application-stat" key={stat.label}>
-              <span className={`seeker-application-stat__icon seeker-application-stat__icon--${stat.tone}`}>
-                {stat.icon}
-              </span>
-              <div>
-                <strong>{stat.value}</strong>
-                <p>{stat.label}</p>
-              </div>
-            </article>
-          ))}
+          {isLoading ? <p>Loading application stats...</p> : applicationStats.map((stat) => <article className="seeker-application-stat" key={stat.label}><span className={`seeker-application-stat__icon seeker-application-stat__icon--${stat.tone}`}>{stat.icon}</span><div><strong>{stat.value}</strong><p>{stat.label}</p></div></article>)}
         </section>
 
         <section className="seeker-applications-grid">
           <div className="seeker-card seeker-application-list-card">
-            <div className="seeker-section-heading">
-              <h2>Recent applications</h2>
-              <button type="button" className="seeker-applications-export">
-                <FaDownload />
-                Export
-              </button>
-            </div>
-
-            <div className="seeker-application-tabs" aria-label="Application status filters">
-              {['All', 'Approved', 'Pending', 'Rejected', 'Completed'].map((tab) => (
-                <button className={tab === 'All' ? 'seeker-application-tab--active' : ''} type="button" key={tab}>
-                  {tab}
-                </button>
-              ))}
-            </div>
-
+            <div className="seeker-section-heading"><h2>Recent applications</h2><button type="button" className="seeker-applications-export"><FaDownload /> Export</button></div>
+            <div className="seeker-application-tabs" aria-label="Application status filters">{['All', 'Interview', 'Applied', 'Reviewing', 'Rejected'].map((tab) => <button className={tab === 'All' ? 'seeker-application-tab--active' : ''} type="button" key={tab}>{tab}</button>)}</div>
             <div className="seeker-application-list">
-              {allApplications.map((application) => (
-                <article className="seeker-application-card" key={`${application.id}-${application.role}`}>
-                  <div className={`seeker-application-card__logo seeker-application-card__logo--${application.tone}`}>
-                    {application.icon}
-                  </div>
-                  <div className="seeker-application-card__content">
-                    <div className="seeker-application-card__top">
-                      <div>
-                        <h3>{application.role}</h3>
-                        <p>{application.company} · {application.type}</p>
-                      </div>
-                      <span className={`seeker-application-status seeker-application-status--${application.status.toLowerCase()}`}>
-                        {application.status}
-                      </span>
-                    </div>
-                    <div className="seeker-application-card__meta">
-                      <span><FaCalendarAlt /> {application.applied}</span>
-                      <span><FaBriefcase /> {application.nextStep}</span>
-                      <span><FaDollarSign /> {application.amount}</span>
-                    </div>
-                  </div>
-                  <Link to={`/seeker/jobs/${application.id}`} className="seeker-application-card__link" aria-label={`View ${application.role} details`}>
-                    <FaExternalLinkAlt />
-                  </Link>
-                </article>
-              ))}
+              {error ? <p role="alert">{error}</p> : null}
+              {!isLoading && !error && applications.length === 0 ? <p>No applications yet.</p> : null}
+              {!isLoading && !error ? applications.map(applicationCard) : null}
             </div>
           </div>
-
-          <aside className="seeker-card seeker-income-card" aria-label="Completed jobs and income">
-            <div className="seeker-income-card__heading">
-              <span><FaDollarSign /></span>
-              <div>
-                <h2>Work summary</h2>
-                <p>Completed jobs and released payments</p>
-              </div>
-            </div>
-            <div className="seeker-income-metrics">
-              {completedJobs.map((item) => (
-                <div key={item.label}>
-                  <strong>{item.value}</strong>
-                  <span>{item.label}</span>
-                </div>
-              ))}
-            </div>
-            <div className="seeker-income-progress">
-              <div>
-                <span>Monthly goal</span>
-                <strong>72%</strong>
-              </div>
-              <span className="seeker-income-progress__bar"><i /></span>
-            </div>
-          </aside>
+          <aside className="seeker-card seeker-income-card" aria-label="Application summary"><div className="seeker-income-card__heading"><span><FaBriefcase /></span><div><h2>Application summary</h2><p>Your current application activity</p></div></div><div className="seeker-income-metrics"><div><strong>{summary.total}</strong><span>Total applications</span></div><div><strong>{summary.interviews}</strong><span>Interviews</span></div></div></aside>
         </section>
       </main>
 
-      {selectedJob && (
-        <div className="seeker-application-modal-backdrop" role="presentation" onMouseDown={(event) => {
-          if (event.target === event.currentTarget) closeApplication();
-        }}>
+      {(selectedJob || isJobLoading || jobError) && (
+        <div className="seeker-application-modal-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) closeApplication(); }}>
           <section className="seeker-application-modal" role="dialog" aria-modal="true" aria-labelledby="application-modal-title">
-            <div className="seeker-application-modal__header">
-              <div>
-                <span className="seeker-application-modal__eyebrow">Application workspace</span>
-                <h2 id="application-modal-title">Apply for {selectedJob.role}</h2>
-                <p>{selectedJob.company} · {selectedJob.location}</p>
-              </div>
-              <button type="button" className="seeker-application-modal__close" onClick={closeApplication} aria-label="Close application form">
-                <FaTimes />
-              </button>
-            </div>
-
-            {applicationSent ? (
-              <div className="seeker-application-success">
-                <span><FaCheck /></span>
-                <h3>Application submitted</h3>
-                <p>Your application was sent to {selectedJob.company}. You can track it from Applications.</p>
-                <button type="button" className="button button--primary" onClick={closeApplication}>Back to applications</button>
-              </div>
-            ) : (
-              <>
-                <div className="seeker-application-modal__body">
-                  <div className="seeker-application-job-facts">
-                    <span><strong>Compensation</strong>{selectedJob.salary}</span>
-                    <span><strong>Work type</strong>{selectedJob.workType}</span>
-                    <span><strong>Arrangement</strong>{selectedJob.workArrangement}</span>
-                  </div>
-                  <div className="seeker-application-cv-choice">
-                    <div className="seeker-application-cv-choice__heading">
-                      <div>
-                        <h3>Choose a CV <small>{cvRequirement === 'required' ? 'Required for this job' : 'Optional for this job'}</small></h3>
-                        <p>Select a CV to see how well it matches this role.</p>
-                      </div>
-                      {cvSource && <span className="seeker-application-cv-selected"><FaCheck /> {cvSource === 'profile' ? 'Profile CV selected' : cvFileName}</span>}
-                    </div>
-                    <div className="seeker-application-cv-actions">
-                      <button type="button" className={`seeker-application-cv-button ${cvSource === 'profile' ? 'seeker-application-cv-button--selected' : ''}`} onClick={() => setCvSource('profile')}>
-                        <FaFileAlt />
-                        <span><strong>Use profile CV</strong><small>Sarah Johnson CV</small></span>
-                      </button>
-                      <label className={`seeker-application-cv-button ${cvSource === 'upload' ? 'seeker-application-cv-button--selected' : ''}`} htmlFor="application-cv-upload">
-                        <FaUpload />
-                        <span><strong>Upload a CV</strong><small>PDF or DOCX</small></span>
-                      </label>
-                      <input id="application-cv-upload" className="seeker-application-cv-input" type="file" accept=".pdf,.doc,.docx" onChange={(event) => {
-                        const file = event.target.files?.[0];
-                        if (file) {
-                          setCvFileName(file.name);
-                          setCvSource('upload');
-                        }
-                      }} />
-                    </div>
-                    {cvSource === 'profile' && <Link className="seeker-application-edit-cv" to="/seeker/profile">Edit CV in profile</Link>}
-                    {cvRequirement !== 'required' && !cvSource && <span className="seeker-application-cv-note">You can continue without a CV.</span>}
-                  </div>
-                  {cvRequirement === 'not-needed' && !cvSelected ? (
-                    <div className="seeker-application-fit seeker-application-fit--neutral">
-                      <div className="seeker-application-fit__score"><FaCheck /></div>
-                      <div>
-                        <h3>CV is optional for this job</h3>
-                        <p>Focus on your work samples, portfolio, or a clear introduction instead.</p>
-                      </div>
-                    </div>
-                  ) : !cvSelected ? (
-                    <div className="seeker-application-fit seeker-application-fit--neutral">
-                      <div className="seeker-application-fit__score"><FaFileAlt /></div>
-                      <div>
-                        <h3>No CV selected</h3>
-                        <p>Choose your profile CV or upload one to see the compatibility check.</p>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className={`seeker-application-fit ${cvIsWeakMatch ? 'seeker-application-fit--weak' : ''}`}>
-                      <div className="seeker-application-fit__score"><strong>{cvMatchScore}%</strong><span>CV match</span></div>
-                      <div>
-                        <h3>{cvIsWeakMatch ? 'Your CV needs a little work' : 'Good fit for this role'}</h3>
-                        <p>Matching skills: {matchingSkills.length ? matchingSkills.join(', ') : 'No direct skill matches yet'}</p>
-                        {cvIsWeakMatch ? (
-                          <>
-                            <p className="seeker-application-fit__note"><FaExclamationTriangle /> Add {missingSkills.slice(0, 2).join(' and ')} to improve your match.</p>
-                            <Link className="seeker-application-edit-cv" to="/seeker/profile">Edit CV</Link>
-                          </>
-                        ) : (
-                          <p className="seeker-application-fit__note">Your experience aligns well with the skills requested for this role.</p>
-                        )}
-                      </div>
-                    </div>
-                  )}
-                  <div className="seeker-application-readiness">
-                    <h3>Application readiness</h3>
-                    {(cvRequirement === 'not-needed' && !cvSelected
-                      ? ['CV not required', 'Profile summary complete', 'Portfolio available', 'Contact details verified']
-                      : [cvSource === 'upload' ? 'Uploaded CV selected' : 'Profile CV selected', 'Profile summary complete', 'Portfolio available', 'Contact details verified']
-                    ).map((item) => (
-                      <span key={item}><FaCheck /> {item}</span>
-                    ))}
-                  </div>
-                  <div className="seeker-application-proposal">
-                    <label htmlFor="application-proposal">Cover letter or short introduction <small>(optional)</small></label>
-                    <textarea id="application-proposal" value={proposal} onChange={(event) => setProposal(event.target.value)} placeholder="Share a concise introduction, relevant experience, and what you would bring to this role." rows={5} />
-                    <small>{proposal.trim().length ? `${proposal.trim().length} characters` : 'You can apply without a cover letter.'}</small>
-                  </div>
-                  <div className="seeker-application-upload">
-                    <div>
-                      <strong>Supporting material <small>(optional)</small></strong>
-                      <span>{supportingFileName || 'Add a portfolio, work sample, or another document.'}</span>
-                    </div>
-                    <label className="seeker-application-upload__button" htmlFor="supporting-material">{supportingFileName ? 'Change file' : 'Upload file'}</label>
-                    <input id="supporting-material" type="file" accept=".pdf,.doc,.docx,.ppt,.pptx,.zip" onChange={(event) => setSupportingFileName(event.target.files?.[0]?.name || '')} />
-                  </div>
-                </div>
-                <div className="seeker-application-modal__footer">
-                  <button type="button" className="seeker-application-secondary-button" onClick={closeApplication}>Cancel</button>
-                  <button type="button" className="seeker-application-secondary-button" onClick={() => setSavedDraft(true)}>{savedDraft ? 'Draft saved' : 'Save draft'}</button>
-                  <button type="button" className="button button--primary" disabled={cvRequirement === 'required' && !cvSource} onClick={submitApplication}>Submit application</button>
-                </div>
-              </>
-            )}
+            <div className="seeker-application-modal__header"><div><span className="seeker-application-modal__eyebrow">Application workspace</span><h2 id="application-modal-title">{isJobLoading ? 'Loading job...' : selectedJob ? `Apply for ${selectedJob.title}` : 'Application unavailable'}</h2>{selectedJob ? <p>{selectedJob.company?.name || 'Company not provided'} · {selectedJob.location}</p> : null}</div><button type="button" className="seeker-application-modal__close" onClick={closeApplication} aria-label="Close application form"><FaTimes /></button></div>
+            {isJobLoading ? <div className="seeker-application-modal__body"><p>Loading this job...</p></div> : jobError ? <div className="seeker-application-success"><span><FaTimesCircle /></span><h3>Unable to apply</h3><p>{jobError}</p><button type="button" className="button button--primary" onClick={closeApplication}>Back to applications</button></div> : applicationSent ? <div className="seeker-application-success"><span><FaCheck /></span><h3>Application submitted</h3><p>Your application was sent. You can track it from Applications.</p><button type="button" className="button button--primary" onClick={closeApplication}>Back to applications</button></div> : selectedJob ? <><div className="seeker-application-modal__body"><div className="seeker-application-job-facts"><span><strong>Compensation</strong>{selectedJob.compensation?.type === 'FREELANCE' ? `${selectedJob.compensation.currency} ${selectedJob.compensation.projectAmount}` : selectedJob.compensation ? `${selectedJob.compensation.currency} ${selectedJob.compensation.salaryMin ?? 'Not specified'} - ${selectedJob.compensation.salaryMax ?? 'Not specified'}` : 'Not specified'}</span><span><strong>Job type</strong>{formatJobType(selectedJob.jobType)}</span><span><strong>Location</strong>{selectedJob.location}</span></div><div className="seeker-application-cv-choice"><div className="seeker-application-cv-choice__heading"><div><h3>Resume</h3><p>The JSON application API accepts a resume URL. Local file uploads are not connected.</p></div></div><span className="seeker-application-cv-note">Add or update your resume URL from your profile before applying.</span></div><div className="seeker-application-proposal"><label htmlFor="application-proposal">Cover letter or short introduction <small>(optional)</small></label><textarea id="application-proposal" value={proposal} onChange={(event) => setProposal(event.target.value)} placeholder="Share a concise introduction, relevant experience, and what you would bring to this role." rows={5} /><small>{proposal.trim().length ? `${proposal.trim().length} characters` : 'You can apply without a cover letter.'}</small></div>{submitError ? <p role="alert">{submitError}</p> : null}</div><div className="seeker-application-modal__footer"><button type="button" className="seeker-application-secondary-button" onClick={closeApplication}>Cancel</button><button type="button" className="button button--primary" disabled={isSubmitting} onClick={submitApplication}>{isSubmitting ? 'Submitting...' : 'Submit application'}</button></div></> : null}
           </section>
         </div>
       )}

@@ -1,4 +1,5 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
+import ProtectedRoute from './components/auth/ProtectedRoute';
 import PublicLayout from './layouts/PublicLayout';
 import SeekerLayout from './layouts/SeekerLayout';
 import EmployerLayout from './layouts/EmployerLayout';
@@ -61,7 +62,7 @@ function App() {
             <Route path="jobs/:jobId" element={<JobDetailsPage />} />
             <Route path="*" element={<NotFoundPage />} />
           </Route>
-          <Route path="/seeker" element={<SeekerLayout />}>
+          <Route path="/seeker" element={<ProtectedRoute allowedRoles={['SEEKER']}><SeekerLayout /></ProtectedRoute>}>
             <Route index element={<Navigate to="dashboard" replace />} />
             <Route path="dashboard" element={<Homepage />} />
             <Route path="jobs" element={<JobsPage />} />
@@ -71,7 +72,7 @@ function App() {
             <Route path="profile" element={<ProfilePage />} />
             <Route path="payments" element={<SeekerPaymentsPage />} />
           </Route>
-          <Route path="/employer" element={<EmployerLayout />}>
+          <Route path="/employer" element={<ProtectedRoute allowedRoles={['EMPLOYER']}><EmployerLayout /></ProtectedRoute>}>
             <Route index element={<Navigate to="dashboard" replace />} />
             <Route path="dashboard" element={<EmployerDashboardPage />} />
             <Route path="jobs" element={<EmployerJobsPage />} />
@@ -80,7 +81,7 @@ function App() {
             <Route path="profile" element={<EmployerProfilePage />} />
             <Route path="payments" element={<EmployerPaymentsPage />} />
           </Route>
-          <Route path="/admin" element={<AdminLayout />}>
+          <Route path="/admin" element={<ProtectedRoute allowedRoles={['ADMIN']}><AdminLayout /></ProtectedRoute>}>
             <Route index element={<AdminOverviewPage />} />
             <Route path="dashboard" element={<AdminOverviewPage />} />
             <Route path="moderation" element={<AdminModerationPage />} />

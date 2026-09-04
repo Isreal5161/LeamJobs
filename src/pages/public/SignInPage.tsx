@@ -1,6 +1,8 @@
-import { Link, useNavigate } from 'react-router-dom';
+import { FormEvent, useState } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import Button from '../../components/common/Button';
 import Input from '../../components/common/Input';
+import { useAuth } from '../../context/AuthContext';
 import { FaApple, FaCheck, FaEnvelope, FaGoogle, FaLock } from 'react-icons/fa';
 
 type AuthRole = 'seeker' | 'employer';
@@ -54,7 +56,49 @@ type SignInPageProps = {
 
 function SignInPage({ role = 'seeker' }: SignInPageProps) {
   const navigate = useNavigate();
+  const location = useLocation();
+  const { login, isLoading: isAuthLoading } = useAuth();
   const content = authContent[role];
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setError('');
+
+    if (!email.trim() || !password) {
+      setError('Email and password are required.');
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      const user = await login(email, password);
+
+      if (!user.role) {
+        setError('Your account could not be loaded. Please try again.');
+        return;
+      }
+
+      const destinationMap = {
+        SEEKER: '/seeker/dashboard',
+        EMPLOYER: '/employer/jobs',
+        ADMIN: '/admin',
+      } as const;
+
+      const route = destinationMap[user.role] ?? '/';
+      const from = (location.state as { from?: Location } | null)?.from;
+      navigate(from && from.pathname ? from.pathname : route, { replace: true });
+    } catch (loginError) {
+      const message = loginError instanceof Error ? loginError.message : 'We could not sign you in. Please try again.';
+      setError(message);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   return (
     <section className="auth-page" aria-labelledby="signin-title">
@@ -105,18 +149,21 @@ function SignInPage({ role = 'seeker' }: SignInPageProps) {
             <span>or continue with email</span>
           </div>
 
-          <form
-            className="auth-form"
-            onSubmit={(event) => {
-              event.preventDefault();
-              navigate(content.dashboardPath);
-            }}
-          >
+          {error ? <p role="alert">{error}</p> : null}
+
+          <form className="auth-form" onSubmit={handleSubmit} noValidate>
             <label className="auth-field">
               <span>{content.emailLabel}</span>
               <div className="auth-input-wrap">
                 <FaEnvelope />
-                <Input type="email" placeholder={content.emailPlaceholder} autoComplete="email" />
+                <Input
+                  type="email"
+                  placeholder={content.emailPlaceholder}
+                  autoComplete="email"
+                  value={email}
+                  onChange={(event) => setEmail(event.target.value)}
+                  disabled={isSubmitting || isAuthLoading}
+                />
               </div>
             </label>
 
@@ -124,7 +171,14 @@ function SignInPage({ role = 'seeker' }: SignInPageProps) {
               <span>Password</span>
               <div className="auth-input-wrap">
                 <FaLock />
-                <Input type="password" placeholder="Enter your password" autoComplete="current-password" />
+                <Input
+                  type="password"
+                  placeholder="Enter your password"
+                  autoComplete="current-password"
+                  value={password}
+                  onChange={(event) => setPassword(event.target.value)}
+                  disabled={isSubmitting || isAuthLoading}
+                />
               </div>
             </label>
 
@@ -136,8 +190,8 @@ function SignInPage({ role = 'seeker' }: SignInPageProps) {
               <Link to={content.forgotPath}>Forgot password?</Link>
             </div>
 
-            <Button type="submit" variant="primary" fullWidth className="auth-submit">
-              {content.submitLabel}
+            <Button type="submit" variant="primary" fullWidth className="auth-submit" disabled={isSubmitting || isAuthLoading}>
+              {isSubmitting ? 'Signing in...' : content.submitLabel}
             </Button>
           </form>
 
