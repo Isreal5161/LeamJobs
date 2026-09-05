@@ -261,7 +261,42 @@
 .auth-input-wrap .input {
   min-height: 52px;
   padding-left: 2.75rem;
+  padding-right: 2.9rem;
   border-radius: 8px;
+}
+
+.auth-password-input {
+  padding-right: 2.9rem;
+}
+
+.auth-password-toggle {
+  position: absolute;
+  top: 50%;
+  right: 0.75rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: #64748b;
+  transform: translateY(-50%);
+  cursor: pointer;
+  padding: 0;
+}
+
+.auth-password-toggle:hover,
+.auth-password-toggle:focus-visible {
+  background: rgba(15, 23, 42, 0.05);
+  color: #0f172a;
+  outline: none;
+}
+
+.auth-password-toggle:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .auth-form-options {

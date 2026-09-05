@@ -23,10 +23,24 @@ import {
 } from 'react-icons/fa';
 import CVTemplateSelector, { TEMPLATES } from '../../components/cv-templates/CVTemplateSelector';
 import CVTemplateRenderer, { CVData } from '../../components/cv-templates/CVTemplateRenderer';
+import { useAuth } from '../../context/AuthContext';
 import { useSubscriptions, type SubscriptionPlanId } from '../../context/SubscriptionContext';
+import {
+  getSeekerProfile,
+  API_BASE_URL,
+  updateSeekerCV,
+  updateSeekerProfile,
+  uploadSeekerProfilePicture,
+  uploadSeekerResume,
+  deleteSeekerProfilePicture,
+  deleteSeekerResume,
+  type CertificationItem as ApiCertificationItem,
+  type EducationItem as ApiEducationItem,
+  type ExperienceItem as ApiExperienceItem,
+} from '../../services/api';
 import { downloadCVAsPDF } from '../../utils/cvDownloadUtils';
 
-type StepKey = 'personal' | 'experience' | 'education' | 'skills' | 'certifications';
+type StepKey = 'personal' | 'experience' | 'education' | 'skills' | 'certifications' | 'languages' | 'projects';
 
 type ExperienceItem = {
   id: string;
@@ -51,6 +65,23 @@ type CertificationItem = {
   issuer: string;
 };
 
+type LanguageItem = {
+  id: string;
+  name: string;
+  proficiency: 'Basic' | 'Conversational' | 'Professional' | 'Fluent' | 'Native';
+};
+
+type ProjectItem = {
+  id: string;
+  name: string;
+  description: string;
+  technologies: string[];
+  projectUrl: string;
+  githubUrl: string;
+  startDate: string;
+  endDate: string;
+};
+
 type ProfileState = {
   personalInfo: {
     fullName: string;
@@ -65,6 +96,8 @@ type ProfileState = {
   education: EducationItem[];
   skills: string[];
   certifications: CertificationItem[];
+  languages: LanguageItem[];
+  projects: ProjectItem[];
 };
 
 type AddPanel = 'skill' | 'qualification' | null;
@@ -81,6 +114,8 @@ const steps: Array<{ key: StepKey; label: string }> = [
   { key: 'education', label: 'Education' },
   { key: 'skills', label: 'Skills' },
   { key: 'certifications', label: 'Qualifications' },
+  { key: 'languages', label: 'Languages' },
+  { key: 'projects', label: 'Projects' },
 ];
 
 const skillSuggestions = [
@@ -103,58 +138,26 @@ const qualificationSuggestions = [
 
 const createId = (prefix: string) => `${prefix}-${Date.now()}-${Math.random().toString(16).slice(2)}`;
 
-const initialProfileState: ProfileState = {
+const createEmptyProfileState = (): ProfileState => ({
   personalInfo: {
-    fullName: 'Sarah Johnson',
-    title: 'Senior UI/UX Designer',
-    email: 'sarah.johnson@example.com',
-    phone: '+1 (555) 123-4567',
-    location: 'New York, NY',
-    linkedin: 'linkedin.com/in/sarahjohnson',
-    summary: 'Senior UI/UX Designer with 5+ years of experience building accessible product experiences. Specialized in design systems, user research, and cross-functional collaboration.',
+    fullName: '',
+    title: '',
+    email: '',
+    phone: '',
+    location: '',
+    linkedin: '',
+    summary: '',
   },
-  experience: [
-    {
-      id: createId('experience'),
-      jobTitle: 'Senior UI/UX Designer',
-      company: 'Tech Company Inc.',
-      startDate: 'Jan 2022',
-      endDate: 'Present',
-      currentlyWorking: true,
-      description: 'Led design system implementation across 50+ products. Improved user onboarding by 40% through comprehensive UX research and iterative design.',
-    },
-    {
-      id: createId('experience'),
-      jobTitle: 'UX Designer',
-      company: 'Design Studio Co.',
-      startDate: 'Jun 2020',
-      endDate: 'Dec 2021',
-      currentlyWorking: false,
-      description: 'Designed mobile and web experiences for Fortune 500 clients. Conducted user research studies and usability testing.',
-    },
-  ],
-  education: [
-    {
-      id: createId('education'),
-      degree: 'B.Sc. in Interaction Design',
-      school: 'University of Design',
-      year: '2018',
-    },
-    {
-      id: createId('education'),
-      degree: 'Google UX Certificate',
-      school: 'Google via Coursera',
-      year: '2019',
-    },
-  ],
-  skills: ['UI Design', 'UX Research', 'Prototyping', 'Design Systems', 'Figma', 'User Testing'],
-  certifications: [
-    { id: createId('cert'), name: 'Advanced Figma Systems', issuer: 'Figma Academy' },
-    { id: createId('cert'), name: 'Interaction Design Specialist', issuer: 'Nielsen Norman Group' },
-  ],
-};
+  experience: [],
+  education: [],
+  skills: [],
+  certifications: [],
+  languages: [],
+  projects: [],
+});
 
 function ProfilePage() {
+  const { user, token } = useAuth();
   const [selectedTemplate, setSelectedTemplate] = useState<'modern' | 'professional' | 'creative' | 'minimalist'>('modern');
   const [isTemplateModalOpen, setIsTemplateModalOpen] = useState(false);
   const [activeStep, setActiveStep] = useState<StepKey>('personal');
@@ -162,11 +165,123 @@ function ProfilePage() {
   const [uploadedCvName, setUploadedCvName] = useState('');
   const [uploadedCvFile, setUploadedCvFile] = useState<File | null>(null);
   const [cvMode, setCvMode] = useState<CvMode>('builder');
-  const [profile, setProfile] = useState<ProfileState>(initialProfileState);
+  const [profile, setProfile] = useState<ProfileState>(createEmptyProfileState());
+  const [isLoadingProfile, setIsLoadingProfile] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isUploadingFile, setIsUploadingFile] = useState(false);
+  const [profilePictureUrl, setProfilePictureUrl] = useState<string | null>(null);
+  const [resumeUrl, setResumeUrl] = useState<string | null>(null);
+  const [profilePictureFile, setProfilePictureFile] = useState<File | null>(null);
+  const [profileError, setProfileError] = useState<string | null>(null);
+  const [onboardingLocation, setOnboardingLocation] = useState({ country: '', state: '', city: '' });
   const [addPanel, setAddPanel] = useState<AddPanel>(null);
   const [addValue, setAddValue] = useState('');
   const { plans, getSubscription, updateSubscription } = useSubscriptions();
-  const subscription = getSubscription('sarah-johnson');
+
+  const subscriptionUserId = user?.id || '';
+  const subscription = subscriptionUserId ? getSubscription(subscriptionUserId) : { status: 'Free', planId: 'free', renewalDate: '' };
+
+  useEffect(() => {
+    if (!token) {
+      setIsLoadingProfile(false);
+      setProfileError('Unable to load profile: no authentication token');
+      return;
+    }
+
+    let isMounted = true;
+
+    const loadProfile = async () => {
+      const result = await getSeekerProfile(token);
+
+      if (!isMounted) {
+        return;
+      }
+
+      if (!result.ok) {
+        const errorMessage = result.status === 401
+          ? 'Your session has expired. Please sign in again.'
+          : result.status === 403
+            ? 'You do not have permission to view this profile.'
+            : 'We could not load your profile right now. Please try again.';
+
+        setProfileError(errorMessage);
+        setIsLoadingProfile(false);
+        return;
+      }
+
+      const { user: apiUser, profile: apiProfile } = result.data.data;
+
+      const fullName = `${apiUser.firstName ?? ''} ${apiUser.lastName ?? ''}`.trim();
+      const phone = apiUser.phone ? String(apiUser.phone).trim() : '';
+
+      const locationParts = [apiProfile.city, apiProfile.state, apiProfile.country]
+        .map((part) => part ? String(part).trim() : '')
+        .filter(Boolean);
+      const location = locationParts.join(', ');
+
+      const title = apiProfile.professionalTitle ? String(apiProfile.professionalTitle).trim() : '';
+      const skills = Array.isArray(apiProfile.skills)
+        ? apiProfile.skills.filter((skill) => skill && String(skill).trim().length > 0)
+        : [];
+
+      setProfile({
+        personalInfo: {
+          fullName,
+          title,
+          email: apiUser.email ?? '',
+          phone,
+          location,
+          linkedin: apiProfile.linkedinUrl ?? '',
+          summary: apiProfile.bio ?? '',
+        },
+        experience: apiProfile.experience ?? [],
+        education: apiProfile.education ?? [],
+        skills,
+        certifications: apiProfile.certifications ?? [],
+        languages: apiProfile.languages ?? [],
+        projects: apiProfile.projects ?? [],
+      });
+      setSelectedTemplate(apiProfile.cvTemplate ?? 'modern');
+      setProfilePictureUrl(apiProfile.profilePictureUrl ?? null);
+      setResumeUrl(apiProfile.resumeUrl ?? null);
+      if (apiProfile.resumeUrl) {
+        setUploadedCvName('Uploaded resume');
+      }
+      setOnboardingLocation({
+        country: apiProfile.country ?? '',
+        state: apiProfile.state ?? '',
+        city: apiProfile.city ?? '',
+      });
+
+      setProfileError(null);
+      setIsLoadingProfile(false);
+    };
+
+    void loadProfile();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [token]);
+
+  useEffect(() => {
+    if (!token || !profilePictureUrl || profilePictureUrl.startsWith('blob:')) return undefined;
+
+    let objectUrl = '';
+    let isMounted = true;
+    const loadPicture = async () => {
+      const response = await fetch(`${API_BASE_URL}${profilePictureUrl}`, { headers: { Authorization: `Bearer ${token}` } });
+      if (!response.ok || !isMounted) return;
+      objectUrl = URL.createObjectURL(await response.blob());
+      setProfilePictureUrl(objectUrl);
+    };
+
+    void loadPicture();
+    return () => {
+      isMounted = false;
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+    };
+  }, [profilePictureUrl, token]);
 
   useEffect(() => {
     if (!notification) return undefined;
@@ -327,6 +442,60 @@ function ProfilePage() {
     }));
   };
 
+  const addLanguage = () => {
+    setProfile((current) => ({
+      ...current,
+      languages: [...current.languages, { id: createId('language'), name: '', proficiency: 'Professional' }],
+    }));
+  };
+
+  const updateLanguage = (id: string, field: keyof LanguageItem, value: string) => {
+    if (field === 'name' && profile.languages.some((item) => item.id !== id && item.name.trim().toLocaleLowerCase() === value.trim().toLocaleLowerCase())) {
+      showNotification({ title: 'Duplicate language', message: 'That language is already in your profile.', tone: 'error' });
+      return;
+    }
+
+    setProfile((current) => ({
+      ...current,
+      languages: current.languages.map((item) => item.id === id ? { ...item, [field]: value } as LanguageItem : item),
+    }));
+  };
+
+  const removeLanguage = (id: string) => {
+    setProfile((current) => ({ ...current, languages: current.languages.filter((item) => item.id !== id) }));
+  };
+
+  const addProject = () => {
+    setProfile((current) => ({
+      ...current,
+      projects: [...current.projects, {
+        id: createId('project'), name: '', description: '', technologies: [], projectUrl: '', githubUrl: '', startDate: '', endDate: '',
+      }],
+    }));
+  };
+
+  const updateProject = (id: string, field: keyof ProjectItem, value: string | string[]) => {
+    setProfile((current) => ({
+      ...current,
+      projects: current.projects.map((item) => item.id === id ? { ...item, [field]: value } as ProjectItem : item),
+    }));
+  };
+
+  const removeProject = (id: string) => {
+    setProfile((current) => ({ ...current, projects: current.projects.filter((item) => item.id !== id) }));
+  };
+
+  const updateProjectTechnologies = (id: string, value: string) => {
+    const seen = new Set<string>();
+    const technologies = value.split(',').map((technology) => technology.trim()).filter((technology) => {
+      const key = technology.toLocaleLowerCase();
+      if (!technology || seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+    updateProject(id, 'technologies', technologies);
+  };
+
   const filteredSuggestions = (suggestions: string[]) => suggestions
     .filter((suggestion) => suggestion.toLowerCase().includes(addValue.trim().toLowerCase()))
     .slice(0, 8);
@@ -372,10 +541,83 @@ function ProfilePage() {
     );
   };
 
-  const handleSaveDraft = () => {
+  const handleSaveDraft = async () => {
+    if (!token || isSaving) return;
+
+    const fullNameParts = profile.personalInfo.fullName.trim().split(/\s+/).filter(Boolean);
+    if (fullNameParts.length < 2) {
+      showNotification({
+        title: 'Name required',
+        message: 'Enter your first and last name before saving your profile.',
+        tone: 'error',
+      });
+      return;
+    }
+
+    const cvPayload = {
+      bio: profile.personalInfo.summary.trim(),
+      education: profile.education as ApiEducationItem[],
+      experience: profile.experience.map((item) => ({
+        ...item,
+        endDate: item.currentlyWorking && !item.endDate.trim() ? 'Present' : item.endDate,
+      })) as ApiExperienceItem[],
+      certifications: profile.certifications as ApiCertificationItem[],
+      languages: profile.languages,
+      projects: profile.projects,
+      linkedinUrl: profile.personalInfo.linkedin.trim(),
+      cvTemplate: selectedTemplate,
+    };
+
+    setIsSaving(true);
+    const cvResult = await updateSeekerCV(cvPayload, token);
+
+    if (!cvResult.ok) {
+      setIsSaving(false);
+      const message = cvResult.status === 400
+        ? 'Please check the profile fields and try again.'
+        : cvResult.status === 401
+          ? 'Your session has expired. Please sign in again.'
+          : cvResult.status === 403
+            ? 'You do not have permission to update this profile.'
+            : 'We could not save your CV right now. Please try again.';
+      showNotification({ title: 'Save failed', message, tone: 'error' });
+      return;
+    }
+
+    const profileFieldsAreReady = onboardingLocation.country.trim()
+      && onboardingLocation.state.trim()
+      && onboardingLocation.city.trim()
+      && profile.personalInfo.title.trim()
+      && profile.skills.length > 0;
+
+    if (profileFieldsAreReady) {
+      const profileResult = await updateSeekerProfile({
+        fullName: profile.personalInfo.fullName.trim(),
+        country: onboardingLocation.country.trim(),
+        state: onboardingLocation.state.trim(),
+        city: onboardingLocation.city.trim(),
+        professionalTitle: profile.personalInfo.title.trim(),
+        skills: profile.skills.map((skill) => skill.trim()).filter(Boolean),
+      }, token);
+
+      if (!profileResult.ok) {
+        setIsSaving(false);
+        const message = profileResult.status === 400
+          ? 'Your personal profile fields are incomplete or invalid.'
+          : profileResult.status === 401
+            ? 'Your session has expired. Please sign in again.'
+            : profileResult.status === 403
+              ? 'You do not have permission to update this profile.'
+              : 'Your CV was saved, but personal details could not be updated.';
+        showNotification({ title: 'Partial save', message, tone: 'error' });
+        return;
+      }
+    }
+
+    setIsSaving(false);
     showNotification({
       title: 'Draft saved',
-      message: 'Your CV changes have been saved locally and are ready for review.',
+      message: 'Your profile and CV changes have been saved.',
       tone: 'success',
     });
   };
@@ -416,22 +658,76 @@ function ProfilePage() {
     });
   };
 
-  const handleUploadProfile = () => {
-    const payload = {
-      personalInfo: profile.personalInfo,
-      experience: profile.experience,
-      education: profile.education,
-      skills: profile.skills,
-      certifications: profile.certifications,
-      cvFile: uploadedCvFile,
-      uploadedAt: new Date().toISOString(),
-    };
+  const handleProfilePictureSelect = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type) || file.size > 10 * 1024 * 1024) {
+      showNotification({ title: 'Invalid profile picture', message: 'Choose a JPEG, PNG, or WebP image under 10 MB.', tone: 'error' });
+      event.target.value = '';
+      return;
+    }
+    setProfilePictureFile(file);
+    setProfilePictureUrl(URL.createObjectURL(file));
+    if (token) {
+      setIsUploadingFile(true);
+      const result = await uploadSeekerProfilePicture(file, token);
+      setIsUploadingFile(false);
+      if (result.ok) {
+        setProfilePictureUrl(result.data.data.profilePictureUrl ?? null);
+        setProfilePictureFile(null);
+        showNotification({ title: 'Profile picture updated', message: 'Your profile picture has been uploaded.', tone: 'success' });
+      } else {
+        showNotification({ title: 'Upload failed', message: result.error.message, tone: 'error' });
+      }
+    }
+  };
 
-    console.log('PROFILE_PAYLOAD_READY_FOR_BACKEND', payload);
+  const handleRemoveProfilePicture = async () => {
+    if (!token || isUploadingFile) return;
+    setIsUploadingFile(true);
+    const result = await deleteSeekerProfilePicture(token);
+    setIsUploadingFile(false);
+    if (result.ok) {
+      setProfilePictureUrl(null);
+      setProfilePictureFile(null);
+      showNotification({ title: 'Profile picture removed', message: 'Your profile picture has been removed.', tone: 'success' });
+    } else showNotification({ title: 'Remove failed', message: result.error.message, tone: 'error' });
+  };
+
+  const handleUploadResume = async () => {
+    if (!token || !uploadedCvFile || isUploadingFile) return;
+    setIsUploadingFile(true);
+    const result = await uploadSeekerResume(uploadedCvFile, token);
+    setIsUploadingFile(false);
+    if (result.ok) {
+      setResumeUrl(result.data.data.resumeUrl ?? null);
+      setUploadedCvFile(null);
+      showNotification({ title: 'Resume uploaded', message: 'Your resume is now attached to your profile.', tone: 'success' });
+    } else showNotification({ title: 'Upload failed', message: result.error.message, tone: 'error' });
+  };
+
+  const handleRemoveResume = async () => {
+    if (!token || isUploadingFile) return;
+    setIsUploadingFile(true);
+    const result = await deleteSeekerResume(token);
+    setIsUploadingFile(false);
+    if (result.ok) {
+      setResumeUrl(null);
+      setUploadedCvName('');
+      showNotification({ title: 'Resume removed', message: 'Your uploaded resume has been removed.', tone: 'success' });
+    } else showNotification({ title: 'Remove failed', message: result.error.message, tone: 'error' });
+  };
+
+  const handleUploadProfile = async () => {
+    if (uploadedCvFile) {
+      await handleUploadResume();
+      return;
+    }
+
     showNotification({
-      title: 'Profile uploaded',
-      message: 'Your profile and CV details are ready for backend processing.',
-      tone: 'success',
+      title: resumeUrl ? 'Resume uploaded' : 'Choose a resume first',
+      message: resumeUrl ? 'Your current resume is attached to your profile.' : 'Choose a PDF, DOC, or DOCX file to upload.',
+      tone: resumeUrl ? 'info' : 'error',
     });
   };
 
@@ -486,72 +782,89 @@ function ProfilePage() {
       </section>
 
       <main className="seeker-profile-content">
-        <section className="seeker-cv-summary seeker-card">
-          <div className="seeker-cv-summary__content">
-            <span className="seeker-cv-summary__eyebrow">Modern template</span>
-            <h2>{profile.personalInfo.fullName}</h2>
-            <p>{profile.personalInfo.summary}</p>
-            <div className="seeker-cv-progress">
-              <div>
-                <strong>{completionScore}% complete</strong>
-                <span>{Math.max(0, 5 - (completionScore / 20))} sections need updates</span>
+        {isLoadingProfile ? (
+          <section className="seeker-card">
+            <div className="seeker-cv-summary__content" style={{ textAlign: 'center', padding: '3rem' }}>
+              <p style={{ fontSize: '1rem', color: '#666' }}>Loading your profile...</p>
+            </div>
+          </section>
+        ) : profileError ? (
+          <section className="seeker-card">
+            <div className="seeker-cv-summary__content" style={{ textAlign: 'center', padding: '3rem', color: '#d32f2f' }}>
+              <strong style={{ fontSize: '1.1rem' }}>Unable to load profile</strong>
+              <p style={{ marginTop: '0.5rem', color: '#666' }}>{profileError}</p>
+            </div>
+          </section>
+        ) : (
+          <>
+            <section className="seeker-cv-summary seeker-card">
+              <div className="seeker-cv-summary__content">
+                <span className="seeker-cv-summary__eyebrow">Modern template</span>
+                <h2>{profile.personalInfo.fullName || 'Your Profile'}</h2>
+                <p>{profile.personalInfo.summary || 'Add a professional summary to your profile.'}</p>
+                <div className="seeker-cv-progress">
+                  <div>
+                    <strong>{completionScore}% complete</strong>
+                    <span>{Math.max(0, 5 - (completionScore / 20))} sections need updates</span>
+                  </div>
+                  <span className="seeker-cv-progress__bar"><i style={{ width: `${completionScore}%` }} /></span>
+                </div>
+                <div className="seeker-cv-summary__actions">
+                  <button type="button" onClick={() => document.getElementById('cv-preview-container')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}><FaEye /> Preview</button>
+                  <button type="button" onClick={handleDownloadPDF}><FaDownload /> Download PDF</button>
+                </div>
               </div>
-              <span className="seeker-cv-progress__bar"><i style={{ width: `${completionScore}%` }} /></span>
-            </div>
-            <div className="seeker-cv-summary__actions">
-              <button type="button" onClick={() => document.getElementById('cv-preview-container')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}><FaEye /> Preview</button>
-              <button type="button" onClick={handleDownloadPDF}><FaDownload /> Download PDF</button>
-            </div>
-          </div>
-        </section>
+            </section>
 
-        <section className="seeker-cv-tools" aria-label="CV tools">
-          <button type="button" onClick={() => showNotification({ title: 'LinkedIn import queued', message: 'This action is ready for backend connection.', tone: 'info' })}><FaLinkedin /> Import from LinkedIn</button>
-          <button type="button" onClick={() => showNotification({ title: 'AI enhancement queued', message: 'Resume enhancement is ready for backend connection.', tone: 'info' })}><FaMagic /> AI Resume Enhancement</button>
-        </section>
+            <section className="seeker-cv-tools" aria-label="CV tools">
+              <button type="button" onClick={() => showNotification({ title: 'LinkedIn import queued', message: 'This action is ready for backend connection.', tone: 'info' })}><FaLinkedin /> Import from LinkedIn</button>
+              <button type="button" onClick={() => showNotification({ title: 'AI enhancement queued', message: 'Resume enhancement is ready for backend connection.', tone: 'info' })}><FaMagic /> AI Resume Enhancement</button>
+            </section>
 
-        <section className="seeker-card seeker-cv-workspace">
-          <div className="seeker-cv-workspace__heading">
-            <div>
-              <span className="seeker-cv-summary__eyebrow">CV workspace</span>
-              <h2>Build or upload your CV</h2>
-              <p>Use your profile information with a template, or send us an existing CV for backend processing.</p>
-            </div>
-            {uploadedCvName && <span className="seeker-cv-file-status"><FaCheck /> {uploadedCvName}</span>}
-          </div>
-
-          <div className="seeker-cv-mode-grid" role="tablist" aria-label="Choose how to create your CV">
-            <button type="button" role="tab" aria-selected={cvMode === 'builder'} className={cvMode === 'builder' ? 'seeker-cv-mode-card seeker-cv-mode-card--active' : 'seeker-cv-mode-card'} onClick={() => setCvMode('builder')}>
-              <FaEdit />
-              <strong>Build with a template</strong>
-              <span>Write and edit your CV using your profile information.</span>
-            </button>
-            <button type="button" role="tab" aria-selected={cvMode === 'upload'} className={cvMode === 'upload' ? 'seeker-cv-mode-card seeker-cv-mode-card--active' : 'seeker-cv-mode-card'} onClick={() => setCvMode('upload')}>
-              <FaUpload />
-              <strong>Upload existing CV</strong>
-              <span>Choose a PDF, DOC, or DOCX file from your device.</span>
-            </button>
-          </div>
-
-          {cvMode === 'builder' ? (
-            <>
-              <div className="seeker-cv-template-choices" aria-label="CV templates">
-                {TEMPLATES.map((template) => (
-                  <button type="button" key={template.id} className={selectedTemplate === template.style ? 'seeker-cv-template-choice seeker-cv-template-choice--active' : 'seeker-cv-template-choice'} onClick={() => setSelectedTemplate(template.style)}>
-                    <span>{template.name}</span>
-                    <small>{template.description}</small>
-                  </button>
-                ))}
+            <section className="seeker-card seeker-cv-workspace">
+              <div className="seeker-cv-workspace__heading">
+                <div>
+                  <span className="seeker-cv-summary__eyebrow">CV workspace</span>
+                  <h2>Build or upload your CV</h2>
+                  <p>Use your profile information with a template, or send us an existing CV for backend processing.</p>
+                </div>
+                {uploadedCvName && <span className="seeker-cv-file-status"><FaCheck /> {uploadedCvName}</span>}
               </div>
-              <div id="cv-preview-container" className="seeker-cv-rendered-preview">
-                <CVTemplateRenderer data={{
-                  personalInfo: profile.personalInfo,
-                  summary: profile.personalInfo.summary,
-                  experience: profile.experience,
-                  education: profile.education,
-                  skills: profile.skills.filter(Boolean),
-                  certifications: profile.certifications,
-                }} template={selectedTemplate} />
+
+              <div className="seeker-cv-mode-grid" role="tablist" aria-label="Choose how to create your CV">
+                <button type="button" role="tab" aria-selected={cvMode === 'builder'} className={cvMode === 'builder' ? 'seeker-cv-mode-card seeker-cv-mode-card--active' : 'seeker-cv-mode-card'} onClick={() => setCvMode('builder')}>
+                  <FaEdit />
+                  <strong>Build with a template</strong>
+                  <span>Write and edit your CV using your profile information.</span>
+                </button>
+                <button type="button" role="tab" aria-selected={cvMode === 'upload'} className={cvMode === 'upload' ? 'seeker-cv-mode-card seeker-cv-mode-card--active' : 'seeker-cv-mode-card'} onClick={() => setCvMode('upload')}>
+                  <FaUpload />
+                  <strong>Upload existing CV</strong>
+                  <span>Choose a PDF, DOC, or DOCX file from your device.</span>
+                </button>
+              </div>
+
+              {cvMode === 'builder' ? (
+                <>
+                  <div className="seeker-cv-template-choices" aria-label="CV templates">
+                    {TEMPLATES.map((template) => (
+                      <button type="button" key={template.id} className={selectedTemplate === template.style ? 'seeker-cv-template-choice seeker-cv-template-choice--active' : 'seeker-cv-template-choice'} onClick={() => setSelectedTemplate(template.style)}>
+                        <span>{template.name}</span>
+                        <small>{template.description}</small>
+                      </button>
+                    ))}
+                  </div>
+                  <div id="cv-preview-container" className="seeker-cv-rendered-preview">
+                    <CVTemplateRenderer data={{
+                      personalInfo: profile.personalInfo,
+                      summary: profile.personalInfo.summary,
+                      experience: profile.experience,
+                      education: profile.education,
+                      skills: profile.skills.filter(Boolean),
+                      certifications: profile.certifications,
+                      languages: profile.languages,
+                      projects: profile.projects,
+                    }} template={selectedTemplate} />
               </div>
               <div className="seeker-cv-workspace__actions">
                 <button type="button" onClick={handleEditCvContent}><FaEdit /> Edit CV content</button>
@@ -568,125 +881,136 @@ function ProfilePage() {
                 <input type="file" accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document" onChange={handleCvFileUpload} />
               </label>
               {uploadedCvName && <small>Selected: {uploadedCvName}</small>}
+              {uploadedCvFile && <button type="button" onClick={handleUploadResume} disabled={isUploadingFile}>{isUploadingFile ? 'Uploading...' : 'Upload resume'}</button>}
+              {resumeUrl && <button type="button" onClick={handleRemoveResume} disabled={isUploadingFile}>Remove uploaded resume</button>}
             </div>
           )}
-        </section>
+            </section>
 
-        <section className="seeker-card seeker-subscription-card">
-          <div className="seeker-subscription-card__heading">
-            <div>
-              <span className="seeker-subscription-eyebrow"><FaCrown /> Profile visibility</span>
-              <h2>Get discovered by more employers</h2>
-              <p>Choose a plan to increase your visibility when your profile matches a job.</p>
-            </div>
-            <span className={`seeker-subscription-status seeker-subscription-status--${subscription.status.toLowerCase()}`}>{subscription.status}</span>
-          </div>
-          <div className="seeker-subscription-plan-grid">
-            {plans.map((plan) => (
-              <article className={`seeker-subscription-plan ${subscription.planId === plan.id ? 'seeker-subscription-plan--active' : ''}`} key={plan.id}>
+            <section className="seeker-card seeker-subscription-card">
+              <div className="seeker-subscription-card__heading">
                 <div>
-                  <h3>{plan.name}</h3>
-                  <strong>${plan.price}<small>/month</small></strong>
+                  <span className="seeker-subscription-eyebrow"><FaCrown /> Profile visibility</span>
+                  <h2>Get discovered by more employers</h2>
+                  <p>Choose a plan to increase your visibility when your profile matches a job.</p>
                 </div>
-                <p>{plan.description}</p>
-                <ul>{plan.benefits.map((benefit) => <li key={benefit}>{benefit}</li>)}</ul>
-                <button type="button" onClick={() => updateSubscription('sarah-johnson', plan.id as SubscriptionPlanId)}>{subscription.planId === plan.id ? 'Current plan' : plan.id === 'free' ? 'Use Free' : `Choose ${plan.name}`}</button>
-              </article>
-            ))}
-          </div>
-          <small className="seeker-subscription-renewal">Current plan: {plans.find((plan) => plan.id === subscription.planId)?.name} / Renewal: {subscription.renewalDate} / Recommendation boost: +{plans.find((plan) => plan.id === subscription.planId)?.visibilityBoost ?? 0}%</small>
-        </section>
+                <span className={`seeker-subscription-status seeker-subscription-status--${subscription.status.toLowerCase()}`}>{subscription.status}</span>
+              </div>
+              <div className="seeker-subscription-plan-grid">
+                {plans.map((plan) => (
+                  <article className={`seeker-subscription-plan ${subscription.planId === plan.id ? 'seeker-subscription-plan--active' : ''}`} key={plan.id}>
+                    <div>
+                      <h3>{plan.name}</h3>
+                      <strong>${plan.price}<small>/month</small></strong>
+                    </div>
+                    <p>{plan.description}</p>
+                    <ul>{plan.benefits.map((benefit) => <li key={benefit}>{benefit}</li>)}</ul>
+                    <button type="button" onClick={() => updateSubscription(subscriptionUserId, plan.id as SubscriptionPlanId)}>{subscription.planId === plan.id ? 'Current plan' : plan.id === 'free' ? 'Use Free' : `Choose ${plan.name}`}</button>
+                  </article>
+                ))}
+              </div>
+              <small className="seeker-subscription-renewal">Current plan: {plans.find((plan) => plan.id === subscription.planId)?.name} / Renewal: {subscription.renewalDate} / Recommendation boost: +{plans.find((plan) => plan.id === subscription.planId)?.visibilityBoost ?? 0}%</small>
+            </section>
 
-        <nav id="seeker-profile-editor" className="seeker-cv-steps" aria-label="CV sections">
-          {steps.map((step) => (
-            <button
-              className={activeStep === step.key ? 'seeker-cv-step--active' : profile.personalInfo.fullName && step.key === 'personal' ? 'seeker-cv-step--done' : ''}
-              type="button"
-              key={step.key}
-              onClick={() => setActiveStep(step.key)}
-            >
-              <span>{step.key === 'personal' ? <FaCheck /> : steps.findIndex((item) => item.key === step.key) + 1}</span>
-              {step.label}
-            </button>
-          ))}
-        </nav>
+            <nav id="seeker-profile-editor" className="seeker-cv-steps" aria-label="CV sections">
+              {steps.map((step) => (
+                <button
+                  className={activeStep === step.key ? 'seeker-cv-step--active' : profile.personalInfo.fullName && step.key === 'personal' ? 'seeker-cv-step--done' : ''}
+                  type="button"
+                  key={step.key}
+                  onClick={() => setActiveStep(step.key)}
+                >
+                  <span>{step.key === 'personal' ? <FaCheck /> : steps.findIndex((item) => item.key === step.key) + 1}</span>
+                  {step.label}
+                </button>
+              ))}
+            </nav>
 
-        <section className="seeker-profile-grid">
-          <div className="seeker-profile-main">
-            {activeStep === 'personal' && (
-              <section className="seeker-card seeker-editor-card">
-                <div className="seeker-editor-card__heading">
-                  <div>
-                    <h2>Personal details</h2>
-                    <p>Keep your public candidate information accurate.</p>
-                  </div>
-                </div>
-
-                <form className="seeker-profile-form">
-                  <label>
-                    <span>Full Name</span>
-                    <input type="text" value={profile.personalInfo.fullName} onChange={(event) => updatePersonalInfo('fullName', event.target.value)} />
-                  </label>
-                  <label>
-                    <span>Professional Title</span>
-                    <input type="text" value={profile.personalInfo.title} onChange={(event) => updatePersonalInfo('title', event.target.value)} />
-                  </label>
-                  <div className="seeker-profile-form__split">
-                    <label>
-                      <span>Email</span>
-                      <input type="email" value={profile.personalInfo.email} onChange={(event) => updatePersonalInfo('email', event.target.value)} />
-                    </label>
-                    <label>
-                      <span>Phone</span>
-                      <input type="tel" value={profile.personalInfo.phone} onChange={(event) => updatePersonalInfo('phone', event.target.value)} />
-                    </label>
-                  </div>
-                  <div className="seeker-profile-form__split">
-                    <label>
-                      <span>Location</span>
-                      <input type="text" value={profile.personalInfo.location} onChange={(event) => updatePersonalInfo('location', event.target.value)} />
-                    </label>
-                    <label>
-                      <span>LinkedIn</span>
-                      <input type="text" value={profile.personalInfo.linkedin} onChange={(event) => updatePersonalInfo('linkedin', event.target.value)} />
-                    </label>
-                  </div>
-                  <label>
-                    <span>Profile Summary</span>
-                    <textarea
-                      className="seeker-profile-summary"
-                      value={profile.personalInfo.summary}
-                      rows={5}
-                      onChange={(event) => updatePersonalInfo('summary', event.target.value)}
-                    />
-                  </label>
-                </form>
-              </section>
-            )}
-
-            {activeStep === 'experience' && (
-              <section className="seeker-card seeker-editor-card">
-                <div className="seeker-editor-card__heading">
-                  <div>
-                    <h2>Experience</h2>
-                    <p>Add your work experience in reverse chronological order.</p>
-                  </div>
-                  <div className="seeker-editor-card__tools">
-                    <button type="button" aria-label="Reorder section"><FaGripVertical /></button>
-                    <button type="button" aria-label="Edit section"><FaEdit /></button>
-                    <button type="button" aria-label="Add experience" onClick={addExperience}><FaPlus /></button>
-                  </div>
-                </div>
-
-                <div className="seeker-form-list">
-                  {profile.experience.map((item) => (
-                    <div className="seeker-form-item" key={item.id}>
-                      <div className="seeker-form-item__header">
-                        <strong>Role #{profile.experience.indexOf(item) + 1}</strong>
-                        <button type="button" className="seeker-delete-button" onClick={() => removeExperience(item.id)}>
-                          <FaTrash />
-                        </button>
+            <section className="seeker-profile-grid">
+              <div className="seeker-profile-main">
+                {activeStep === 'personal' && (
+                  <section className="seeker-card seeker-editor-card">
+                    <div className="seeker-editor-card__heading">
+                      <div>
+                        <h2>Personal details</h2>
+                        <p>Keep your public candidate information accurate.</p>
                       </div>
+                    </div>
+
+                    <form className="seeker-profile-form">
+                      <div className="seeker-profile-picture-control">
+                        <span>Profile picture</span>
+                        {profilePictureUrl ? <img src={profilePictureUrl} alt="Profile" /> : <span aria-hidden="true">{profile.personalInfo.fullName.split(/\s+/).filter(Boolean).map((part) => part[0]).join('').slice(0, 2).toUpperCase() || 'ME'}</span>}
+                        <label className="seeker-cv-upload-control">
+                          {isUploadingFile ? 'Uploading...' : 'Choose picture'}
+                          <input type="file" accept="image/jpeg,image/png,image/webp" onChange={handleProfilePictureSelect} disabled={isUploadingFile} />
+                        </label>
+                        {profilePictureUrl && <button type="button" onClick={handleRemoveProfilePicture} disabled={isUploadingFile}>Remove picture</button>}
+                      </div>
+                      <label>
+                        <span>Full Name</span>
+                        <input type="text" value={profile.personalInfo.fullName} onChange={(event) => updatePersonalInfo('fullName', event.target.value)} />
+                      </label>
+                      <label>
+                        <span>Professional Title</span>
+                        <input type="text" value={profile.personalInfo.title} onChange={(event) => updatePersonalInfo('title', event.target.value)} />
+                      </label>
+                      <div className="seeker-profile-form__split">
+                        <label>
+                          <span>Email</span>
+                          <input type="email" value={profile.personalInfo.email} onChange={(event) => updatePersonalInfo('email', event.target.value)} />
+                        </label>
+                        <label>
+                          <span>Phone</span>
+                          <input type="tel" value={profile.personalInfo.phone} onChange={(event) => updatePersonalInfo('phone', event.target.value)} />
+                        </label>
+                      </div>
+                      <div className="seeker-profile-form__split">
+                        <label>
+                          <span>Location</span>
+                          <input type="text" value={profile.personalInfo.location} onChange={(event) => updatePersonalInfo('location', event.target.value)} />
+                        </label>
+                        <label>
+                          <span>LinkedIn</span>
+                          <input type="text" value={profile.personalInfo.linkedin} onChange={(event) => updatePersonalInfo('linkedin', event.target.value)} />
+                        </label>
+                      </div>
+                      <label>
+                        <span>Profile Summary</span>
+                        <textarea
+                          className="seeker-profile-summary"
+                          value={profile.personalInfo.summary}
+                          rows={5}
+                          onChange={(event) => updatePersonalInfo('summary', event.target.value)}
+                        />
+                      </label>
+                    </form>
+                  </section>
+                )}
+
+                {activeStep === 'experience' && (
+                  <section className="seeker-card seeker-editor-card">
+                    <div className="seeker-editor-card__heading">
+                      <div>
+                        <h2>Experience</h2>
+                        <p>Add your work experience in reverse chronological order.</p>
+                      </div>
+                      <div className="seeker-editor-card__tools">
+                        <button type="button" aria-label="Reorder section"><FaGripVertical /></button>
+                        <button type="button" aria-label="Edit section"><FaEdit /></button>
+                        <button type="button" aria-label="Add experience" onClick={addExperience}><FaPlus /></button>
+                      </div>
+                    </div>
+
+                    <div className="seeker-form-list">
+                      {profile.experience.map((item) => (
+                        <div className="seeker-form-item" key={item.id}>
+                          <div className="seeker-form-item__header">
+                            <strong>Role #{profile.experience.indexOf(item) + 1}</strong>
+                            <button type="button" className="seeker-delete-button" onClick={() => removeExperience(item.id)}>
+                              <FaTrash />
+                            </button>
+                          </div>
 
                       <form className="seeker-profile-form">
                         <label>
@@ -862,6 +1186,49 @@ function ProfilePage() {
                 </datalist>
               </section>
             )}
+
+            {activeStep === 'languages' && (
+              <section className="seeker-card seeker-editor-card">
+                <div className="seeker-editor-card__heading">
+                  <div><h2>Languages</h2><p>Add the languages you use professionally.</p></div>
+                  <button type="button" aria-label="Add language" onClick={addLanguage}><FaPlus /></button>
+                </div>
+                <div className="seeker-form-list">
+                  {profile.languages.map((item) => (
+                    <div className="seeker-form-item" key={item.id}>
+                      <div className="seeker-form-item__header"><strong>Language</strong><button type="button" className="seeker-delete-button" onClick={() => removeLanguage(item.id)}><FaTrash /></button></div>
+                      <div className="seeker-profile-form__split">
+                        <label><span>Name</span><input value={item.name} onChange={(event) => updateLanguage(item.id, 'name', event.target.value)} /></label>
+                        <label><span>Proficiency</span><select value={item.proficiency} onChange={(event) => updateLanguage(item.id, 'proficiency', event.target.value)}>{['Basic', 'Conversational', 'Professional', 'Fluent', 'Native'].map((level) => <option key={level}>{level}</option>)}</select></label>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {activeStep === 'projects' && (
+              <section className="seeker-card seeker-editor-card">
+                <div className="seeker-editor-card__heading">
+                  <div><h2>Projects</h2><p>Show practical work and the technologies behind it.</p></div>
+                  <button type="button" aria-label="Add project" onClick={addProject}><FaPlus /></button>
+                </div>
+                <div className="seeker-form-list">
+                  {profile.projects.map((item) => (
+                    <div className="seeker-form-item" key={item.id}>
+                      <div className="seeker-form-item__header"><strong>Project</strong><button type="button" className="seeker-delete-button" onClick={() => removeProject(item.id)}><FaTrash /></button></div>
+                      <form className="seeker-profile-form">
+                        <label><span>Name</span><input value={item.name} onChange={(event) => updateProject(item.id, 'name', event.target.value)} /></label>
+                        <label><span>Description</span><textarea value={item.description} onChange={(event) => updateProject(item.id, 'description', event.target.value)} /></label>
+                        <label><span>Technologies</span><input value={item.technologies.join(', ')} placeholder="React, Node.js" onChange={(event) => updateProjectTechnologies(item.id, event.target.value)} /></label>
+                        <div className="seeker-profile-form__split"><label><span>Project URL</span><input type="url" value={item.projectUrl} onChange={(event) => updateProject(item.id, 'projectUrl', event.target.value)} /></label><label><span>GitHub URL</span><input type="url" value={item.githubUrl} onChange={(event) => updateProject(item.id, 'githubUrl', event.target.value)} /></label></div>
+                        <div className="seeker-profile-form__split"><label><span>Start date</span><input type="month" value={item.startDate} onChange={(event) => updateProject(item.id, 'startDate', event.target.value)} /></label><label><span>End date</span><input type="month" value={item.endDate} onChange={(event) => updateProject(item.id, 'endDate', event.target.value)} /></label></div>
+                      </form>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            )}
           </div>
 
           <aside className="seeker-profile-side">
@@ -889,11 +1256,13 @@ function ProfilePage() {
               </div>
             </section>
           </aside>
-        </section>
+            </section>
+          </>
+        )}
       </main>
 
       <div className="seeker-profile-actions">
-        <button type="button" onClick={handleSaveDraft}><FaRegSave /> Save Draft</button>
+        <button type="button" onClick={handleSaveDraft} disabled={isSaving}><FaRegSave /> {isSaving ? 'Saving...' : 'Save Draft'}</button>
         <button type="button" onClick={handleUploadProfile}><FaUpload /> Upload Profile</button>
       </div>
 

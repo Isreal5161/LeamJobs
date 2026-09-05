@@ -17,6 +17,7 @@ import './styles/seeker-home.css';
 import './styles/seeker-jobs.css';
 import './styles/seeker-applications.css';
 import './styles/seeker-profile.css';
+import './styles/seeker-onboarding.css';
 import './styles/seeker-typography.css';
 import './styles/employer.css';
 import './styles/messages.css';

@@ -7,6 +7,7 @@ export type ApiRequestOptions = {
   endpoint: string;
   body?: unknown;
   token?: string;
+  headers?: HeadersInit;
 };
 
 export type ApiSuccess<T> = {
@@ -101,6 +102,28 @@ export type SeekerJobResponse = {
   };
 };
 
+export type SeekerJobListItem = SeekerDashboardJob & {
+  skills: string[];
+  requirements: unknown | null;
+};
+
+export type SeekerJobsResponse = {
+  success: true;
+  data: {
+    jobs: SeekerJobListItem[];
+    nextCursor: string | null;
+  };
+};
+
+export type SeekerJobsQuery = {
+  search?: string;
+  location?: string;
+  jobType?: 'NORMAL_EMPLOYMENT' | 'FREELANCE_PROJECT';
+  skills?: string[];
+  limit?: number;
+  cursor?: string;
+};
+
 export type SeekerApplication = {
   id: string;
   jobId: string;
@@ -137,27 +160,149 @@ export type CreateSeekerApplicationResponse = {
   };
 };
 
+export type GetSeekerProfileResponse = {
+  success: true;
+  data: {
+    user: {
+      id: string;
+      firstName: string;
+      lastName: string;
+      email: string;
+      phone: string | null;
+    };
+    profile: {
+      id: string | null;
+      country: string | null;
+      state: string | null;
+      city: string | null;
+      professionalTitle: string | null;
+      location: string | null;
+      skills: string[];
+      bio: string | null;
+      education: EducationItem[] | null;
+      experience: ExperienceItem[] | null;
+      certifications: CertificationItem[] | null;
+      languages: LanguageItem[] | null;
+      projects: ProjectItem[] | null;
+      cvTemplate: 'modern' | 'professional' | 'creative' | 'minimalist' | null;
+      linkedinUrl: string | null;
+      resumeUrl: string | null;
+      resumeObjectKey: string | null;
+      profilePictureUrl: string | null;
+      profilePictureKey: string | null;
+    };
+    onboardingComplete: boolean;
+  };
+};
+
+export type UpdateSeekerProfilePayload = {
+  fullName?: string;
+  country: string;
+  state: string;
+  city: string;
+  professionalTitle: string;
+  skills: string[];
+};
+
+export type UpdateSeekerProfileResponse = {
+  success: true;
+  data: {
+    id: string;
+    country: string | null;
+    state: string | null;
+    city: string | null;
+    professionalTitle: string | null;
+    location: string | null;
+    skills: string[];
+  };
+};
+
+export type EducationItem = {
+  id: string;
+  degree: string;
+  school: string;
+  year: string;
+};
+
+export type ExperienceItem = {
+  id: string;
+  jobTitle: string;
+  company: string;
+  startDate: string;
+  endDate: string;
+  currentlyWorking: boolean;
+  description: string;
+};
+
+export type CertificationItem = {
+  id: string;
+  name: string;
+  issuer: string;
+};
+export type LanguageItem = {
+  id: string;
+  name: string;
+  proficiency: 'Basic' | 'Conversational' | 'Professional' | 'Fluent' | 'Native';
+};
+export type ProjectItem = {
+  id: string;
+  name: string;
+  description: string;
+  technologies: string[];
+  projectUrl: string;
+  githubUrl: string;
+  startDate: string;
+  endDate: string;
+};
+
+export type UpdateSeekerCVPayload = {
+  bio?: string | null;
+  education?: EducationItem[];
+  experience?: ExperienceItem[];
+  certifications?: CertificationItem[];
+  linkedinUrl?: string | null;
+  cvTemplate?: 'modern' | 'professional' | 'creative' | 'minimalist' | null;
+  languages?: LanguageItem[] | null;
+  projects?: ProjectItem[] | null;
+};
+
+export type UpdateSeekerCVResponse = {
+  success: true;
+  data: {
+    id: string;
+    bio: string | null;
+    education: EducationItem[] | null;
+    experience: ExperienceItem[] | null;
+    certifications: CertificationItem[] | null;
+    languages: LanguageItem[] | null;
+    projects: ProjectItem[] | null;
+    linkedinUrl: string | null;
+    cvTemplate: 'modern' | 'professional' | 'creative' | 'minimalist' | null;
+  };
+};
+
 export async function request<T>({
   method,
   endpoint,
   body,
   token,
+  headers: customHeaders,
 }: ApiRequestOptions): Promise<ApiResponse<T>> {
-  const headers: HeadersInit = {};
+  const headers = new Headers(customHeaders);
 
-  if (body !== undefined) {
-    headers['Content-Type'] = 'application/json';
+  if (body !== undefined && !(body instanceof FormData)) {
+    headers.set('Content-Type', 'application/json');
   }
 
   if (token) {
-    headers.Authorization = `Bearer ${token}`;
+    headers.set('Authorization', `Bearer ${token}`);
   }
 
   try {
     const response = await fetch(`${API_BASE_URL}${endpoint}`, {
       method,
       headers,
-      body: body === undefined ? undefined : JSON.stringify(body),
+      body: body === undefined ? undefined : body instanceof FormData ? body : JSON.stringify(body),
     });
 
     const data = await response.json().catch(() => undefined);
@@ -199,6 +344,44 @@ export function getSeekerJob(jobId: string, token: string) {
   });
 }
 
+export function getSeekerJobs(query: SeekerJobsQuery, token: string) {
+  const params = new URLSearchParams();
+  if (query.search?.trim()) params.set('search', query.search.trim());
+  if (query.location?.trim()) params.set('location', query.location.trim());
+  if (query.jobType) params.set('jobType', query.jobType);
+  if (query.skills?.length) params.set('skills', query.skills.join(','));
+  params.set('limit', String(query.limit ?? 25));
+  if (query.cursor) params.set('cursor', query.cursor);
+
+  return request<SeekerJobsResponse>({
+    method: 'GET',
+    endpoint: `/seeker/jobs?${params.toString()}`,
+    token,
+  });
+}
+
+export type SeekerRecommendation = {
+  job: SeekerJobListItem;
+  matchScore: number;
+  matchedSkills: string[];
+  totalJobSkills: number;
+};
+
+export type SeekerRecommendationsResponse = {
+  success: true;
+  data: {
+    recommendations: SeekerRecommendation[];
+    nextCursor: string | null;
+  };
+};
+
+export function getSeekerRecommendations(query: { limit?: number; cursor?: string }, token: string) {
+  const params = new URLSearchParams();
+  params.set('limit', String(query.limit ?? 25));
+  if (query.cursor) params.set('cursor', query.cursor);
+  return request<SeekerRecommendationsResponse>({ method: 'GET', endpoint: `/seeker/recommendations?${params.toString()}`, token });
+}
+
 export function getSeekerApplications(token: string) {
   return request<SeekerApplicationsResponse>({
     method: 'GET',
@@ -213,5 +396,258 @@ export function createSeekerApplication(payload: CreateSeekerApplicationPayload,
     endpoint: '/seeker/applications',
     body: payload,
     token,
+  });
+}
+
+export function getSeekerProfile(token: string) {
+  return request<GetSeekerProfileResponse>({
+    method: 'GET',
+    endpoint: '/seeker/profile',
+    token,
+  });
+}
+
+export function updateSeekerProfile(payload: UpdateSeekerProfilePayload, token: string) {
+  return request<UpdateSeekerProfileResponse>({
+    method: 'PATCH',
+    endpoint: '/seeker/profile',
+    body: payload,
+    token,
+  });
+}
+
+export function updateSeekerCV(payload: UpdateSeekerCVPayload, token: string) {
+  return request<UpdateSeekerCVResponse>({
+    method: 'PATCH',
+    endpoint: '/seeker/profile/cv',
+    body: payload,
+    token,
+  });
+}
+
+export type ProfileFileResponse = {
+  success: true;
+  data: {
+    profilePictureUrl?: string | null;
+    profilePictureKey?: string | null;
+    resumeUrl?: string | null;
+    resumeObjectKey?: string | null;
+  };
+};
+
+export function uploadSeekerProfilePicture(file: File, token: string) {
+  const body = new FormData();
+  body.append('file', file);
+  return request<ProfileFileResponse>({ method: 'POST', endpoint: '/seeker/profile/picture', body, token });
+}
+
+export function deleteSeekerProfilePicture(token: string) {
+  return request<ProfileFileResponse>({ method: 'DELETE', endpoint: '/seeker/profile/picture', token });
+}
+
+export function uploadSeekerResume(file: File, token: string) {
+  const body = new FormData();
+  body.append('file', file);
+  return request<ProfileFileResponse>({ method: 'POST', endpoint: '/seeker/profile/resume', body, token });
+}
+
+export function deleteSeekerResume(token: string) {
+  return request<ProfileFileResponse>({ method: 'DELETE', endpoint: '/seeker/profile/resume', token });
+}
+
+export type SeekerMessage = {
+  id: string;
+  conversationId: string;
+  senderId: string;
+  body: string;
+  clientMessageId: string | null;
+  createdAt: string;
+  readAt: string | null;
+};
+
+export type SeekerConversation = {
+  id: string;
+  employer: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    companyName: string | null;
+    companyLogoUrl: string | null;
+  };
+  job: { id: string; title: string; location: string; jobType: string } | null;
+  application: { id: string; status: string; jobId: string } | null;
+  lastMessage: SeekerMessage | null;
+  lastMessageAt: string | null;
+  unreadCount: number;
+};
+
+export type SeekerConversationsResponse = {
+  success: true;
+  data: { conversations: SeekerConversation[] };
+};
+
+export type SeekerConversationResponse = {
+  success: true;
+  data: { conversation: SeekerConversation };
+};
+
+export type SeekerMessagesResponse = {
+  success: true;
+  data: { messages: SeekerMessage[]; nextCursor: string | null };
+};
+
+export type SeekerMessageResponse = {
+  success: true;
+  data: { message: SeekerMessage };
+};
+
+export type SeekerReadResponse = {
+  success: true;
+  data: { conversationId: string; unreadCount: number };
+};
+
+export function getSeekerConversations(token: string) {
+  return request<SeekerConversationsResponse>({ method: 'GET', endpoint: '/seeker/conversations', token });
+}
+
+export function getSeekerConversation(conversationId: string, token: string) {
+  return request<SeekerConversationResponse>({ method: 'GET', endpoint: `/seeker/conversations/${encodeURIComponent(conversationId)}`, token });
+}
+
+export function getSeekerConversationMessages(conversationId: string, token: string, options: { limit?: number; cursor?: string } = {}) {
+  const params = new URLSearchParams();
+  params.set('limit', String(options.limit ?? 50));
+  if (options.cursor) params.set('cursor', options.cursor);
+  return request<SeekerMessagesResponse>({ method: 'GET', endpoint: `/seeker/conversations/${encodeURIComponent(conversationId)}/messages?${params.toString()}`, token });
+}
+
+export function createSeekerConversationFromApplication(applicationId: string, token: string) {
+  return request<SeekerConversationResponse>({ method: 'POST', endpoint: `/seeker/conversations/from-application/${encodeURIComponent(applicationId)}`, token });
+}
+
+export function sendSeekerMessage(conversationId: string, body: string, token: string, clientMessageId?: string) {
+  return request<SeekerMessageResponse>({
+    method: 'POST',
+    endpoint: `/seeker/conversations/${encodeURIComponent(conversationId)}/messages`,
+    body: { body, ...(clientMessageId ? { clientMessageId } : {}) },
+    token,
+  });
+}
+
+export function markSeekerConversationAsRead(conversationId: string, token: string) {
+  return request<SeekerReadResponse>({ method: 'PATCH', endpoint: `/seeker/conversations/${encodeURIComponent(conversationId)}/read`, token });
+}
+
+export type SeekerPaymentSummary = {
+  currency: string | null;
+  availableBalance: string;
+  pendingWithdrawalBalance: string;
+  totalEarnings: string;
+  totalWithdrawn: string;
+};
+
+export type SeekerPaymentItem = {
+  id: string;
+  jobTitle: string | null;
+  employerName: string | null;
+  amount: string;
+  currency: string;
+  platformFee: string | null;
+  netAmount: string;
+  status: string;
+  date: string;
+};
+
+export type SeekerTransactionItem = {
+  id: string;
+  type: string;
+  amount: string;
+  currency: string;
+  description: string | null;
+  createdAt: string;
+  balanceAfter: string | null;
+};
+
+export type SeekerWithdrawalItem = {
+  id: string;
+  amount: string;
+  currency: string;
+  status: string;
+  requestedAt: string;
+  processingAt: string | null;
+  completedAt: string | null;
+  failedAt: string | null;
+  failureReason: string | null;
+  paymentMethod: { type: string; last4: string } | null;
+};
+
+export type SeekerPaymentPageResponse<T> = {
+  success: true;
+  data: T;
+};
+
+export function getSeekerPaymentSummary(token: string) {
+  return request<SeekerPaymentPageResponse<SeekerPaymentSummary>>({ method: 'GET', endpoint: '/seeker/payments/summary', token });
+}
+
+export function getSeekerPayments(token: string) {
+  return request<SeekerPaymentPageResponse<{ items: SeekerPaymentItem[]; nextCursor: string | null }>>({ method: 'GET', endpoint: '/seeker/payments?limit=25', token });
+}
+
+export function getSeekerTransactions(token: string) {
+  return request<SeekerPaymentPageResponse<{ items: SeekerTransactionItem[]; nextCursor: string | null }>>({ method: 'GET', endpoint: '/seeker/payments/transactions?limit=25', token });
+}
+
+export function getSeekerWithdrawals(token: string) {
+  return request<SeekerPaymentPageResponse<{ items: SeekerWithdrawalItem[]; nextCursor: string | null }>>({ method: 'GET', endpoint: '/seeker/payments/withdrawals?limit=25', token });
+}
+
+export type SeekerPayoutAccount = {
+  id: string;
+  provider: string;
+  bankCode: string;
+  accountName: string;
+  accountNumberLast4: string;
+  isDefault: boolean;
+  verifiedAt: string;
+};
+
+export type SeekerPayoutAccountsResponse = {
+  success: true;
+  data: { payoutAccounts: SeekerPayoutAccount[] };
+};
+
+export type SeekerWithdrawalRequest = {
+  amount: string;
+  currency: string;
+  payoutAccountId: string;
+};
+
+export type SeekerWithdrawal = {
+  id: string;
+  amount: string;
+  currency: string;
+  status: 'PENDING' | 'PROCESSING' | 'SUCCESSFUL' | 'FAILED' | 'CANCELLED' | string;
+  requestedAt: string;
+  createdAt: string;
+  payoutAccount: SeekerPayoutAccount | null;
+};
+
+export type SeekerWithdrawalResponse = {
+  success: true;
+  data: { withdrawal: SeekerWithdrawal };
+};
+
+export function getSeekerPayoutAccounts(token: string) {
+  return request<SeekerPayoutAccountsResponse>({ method: 'GET', endpoint: '/seeker/payout-accounts', token });
+}
+
+export function requestSeekerWithdrawal(payload: SeekerWithdrawalRequest, idempotencyKey: string, token: string) {
+  return request<SeekerWithdrawalResponse>({
+    method: 'POST',
+    endpoint: '/seeker/payments/withdrawals',
+    body: payload,
+    token,
+    headers: { 'Idempotency-Key': idempotencyKey },
   });
 }

@@ -3,7 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import Button from '../../components/common/Button';
 import Input from '../../components/common/Input';
 import { useAuth } from '../../context/AuthContext';
-import { FaApple, FaCheck, FaEnvelope, FaGoogle, FaLock } from 'react-icons/fa';
+import { FaApple, FaCheck, FaEnvelope, FaEye, FaEyeSlash, FaGoogle, FaLock } from 'react-icons/fa';
 
 type AuthRole = 'seeker' | 'employer';
 
@@ -61,6 +61,7 @@ function SignInPage({ role = 'seeker' }: SignInPageProps) {
   const content = authContent[role];
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -172,13 +173,23 @@ function SignInPage({ role = 'seeker' }: SignInPageProps) {
               <div className="auth-input-wrap">
                 <FaLock />
                 <Input
-                  type="password"
+                  type={showPassword ? 'text' : 'password'}
                   placeholder="Enter your password"
                   autoComplete="current-password"
                   value={password}
                   onChange={(event) => setPassword(event.target.value)}
                   disabled={isSubmitting || isAuthLoading}
+                  className="auth-password-input"
                 />
+                <button
+                  type="button"
+                  className="auth-password-toggle"
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                  onClick={() => setShowPassword((current) => !current)}
+                  disabled={isSubmitting || isAuthLoading}
+                >
+                  {showPassword ? <FaEyeSlash /> : <FaEye />}
+                </button>
               </div>
             </label>
 

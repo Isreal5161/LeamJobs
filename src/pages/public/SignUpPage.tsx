@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import Button from '../../components/common/Button';
 import Input from '../../components/common/Input';
 import { request } from '../../services/api';
-import { FaBriefcase, FaBuilding, FaCheck, FaEnvelope, FaGoogle, FaLock, FaUser } from 'react-icons/fa';
+import { FaBriefcase, FaBuilding, FaCheck, FaEnvelope, FaEye, FaEyeSlash, FaGoogle, FaLock, FaUser } from 'react-icons/fa';
 
 type AuthRole = 'seeker' | 'employer';
 
@@ -94,6 +94,8 @@ function SignUpPage({ role = 'seeker' }: SignUpPageProps) {
     confirmPassword: '',
     termsAccepted: false,
   });
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [errors, setErrors] = useState<RegistrationErrors>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
@@ -284,14 +286,24 @@ function SignUpPage({ role = 'seeker' }: SignUpPageProps) {
               <div className="auth-input-wrap">
                 <FaLock />
                 <Input
-                  type="password"
+                  type={showPassword ? 'text' : 'password'}
                   name="password"
                   placeholder="Create a password"
                   autoComplete="new-password"
                   value={form.password}
                   onChange={(event) => setField('password', event.target.value)}
                   aria-invalid={Boolean(errors.password)}
+                  className="auth-password-input"
                 />
+                <button
+                  type="button"
+                  className="auth-password-toggle"
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                  onClick={() => setShowPassword((current) => !current)}
+                  disabled={isSubmitting}
+                >
+                  {showPassword ? <FaEyeSlash /> : <FaEye />}
+                </button>
               </div>
               {errors.password ? <small role="alert">{errors.password}</small> : null}
             </label>
@@ -301,14 +313,24 @@ function SignUpPage({ role = 'seeker' }: SignUpPageProps) {
               <div className="auth-input-wrap">
                 <FaLock />
                 <Input
-                  type="password"
+                  type={showConfirmPassword ? 'text' : 'password'}
                   name="confirmPassword"
                   placeholder="Re-enter your password"
                   autoComplete="new-password"
                   value={form.confirmPassword}
                   onChange={(event) => setField('confirmPassword', event.target.value)}
                   aria-invalid={Boolean(errors.confirmPassword)}
+                  className="auth-password-input"
                 />
+                <button
+                  type="button"
+                  className="auth-password-toggle"
+                  aria-label={showConfirmPassword ? 'Hide confirm password' : 'Show confirm password'}
+                  onClick={() => setShowConfirmPassword((current) => !current)}
+                  disabled={isSubmitting}
+                >
+                  {showConfirmPassword ? <FaEyeSlash /> : <FaEye />}
+                </button>
               </div>
               {errors.confirmPassword ? <small role="alert">{errors.confirmPassword}</small> : null}
             </label>

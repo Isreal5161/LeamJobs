@@ -17,6 +17,7 @@ import Homepage from './pages/seeker/Homepage';
 import JobsPage from './pages/seeker/JobsPage';
 import ApplicationsPage from './pages/seeker/ApplicationsPage';
 import ProfilePage from './pages/seeker/ProfilePage';
+import OnboardingPage from './pages/seeker/OnboardingPage';
 import EmployerDashboardPage from './pages/employer/EmployerDashboardPage';
 import EmployerJobsPage from './pages/employer/EmployerJobsPage';
 import EmployerApplicantsPage from './pages/employer/EmployerApplicantsPage';
@@ -70,6 +71,7 @@ function App() {
             <Route path="applications" element={<ApplicationsPage />} />
             <Route path="messages" element={<MessagesPage role="seeker" />} />
             <Route path="profile" element={<ProfilePage />} />
+            <Route path="onboarding" element={<OnboardingPage />} />
             <Route path="payments" element={<SeekerPaymentsPage />} />
           </Route>
           <Route path="/employer" element={<ProtectedRoute allowedRoles={['EMPLOYER']}><EmployerLayout /></ProtectedRoute>}>

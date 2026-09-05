@@ -29,11 +29,28 @@ export interface CVData {
     name: string;
     issuer: string;
   }>;
+  languages?: Array<{ name: string; proficiency: string }>;
+  projects?: Array<{
+    name: string;
+    description: string;
+    technologies: string[];
+    projectUrl: string;
+    githubUrl: string;
+    startDate: string;
+    endDate: string;
+  }>;
 }
 
 interface CVTemplateRendererProps {
   data: CVData;
   template: 'modern' | 'professional' | 'creative' | 'minimalist';
+}
+
+function AdditionalSections({ data, className }: { data: CVData; className: string }) {
+  return <>
+    {(data.languages ?? []).length > 0 && <section className={className}><h3>Languages</h3>{data.languages?.map((language) => <p key={`${language.name}-${language.proficiency}`}><strong>{language.name}</strong> - {language.proficiency}</p>)}</section>}
+    {(data.projects ?? []).length > 0 && <section className={className}><h3>Projects</h3>{data.projects?.map((project) => <div key={project.name} className="cv-entry"><div className="cv-entry__header"><strong>{project.name}</strong><span>{project.startDate}{project.endDate ? ` - ${project.endDate}` : ''}</span></div>{project.description && <p>{project.description}</p>}{project.technologies.length > 0 && <p><strong>Technologies:</strong> {project.technologies.join(', ')}</p>}{project.projectUrl && <p>{project.projectUrl}</p>}{project.githubUrl && <p>{project.githubUrl}</p>}</div>)}</section>}
+  </>;
 }
 
 // Modern Template with sidebar
@@ -128,6 +145,7 @@ function ModernTemplate({ data }: { data: CVData }) {
           </section>
         )}
       </div>
+      <AdditionalSections data={data} className="cv-modern__section" />
     </div>
   );
 }
@@ -189,6 +207,7 @@ function ProfessionalTemplate({ data }: { data: CVData }) {
           </div>
         )}
       </div>
+      <AdditionalSections data={data} className="cv-professional__section" />
     </div>
   );
 }
@@ -223,6 +242,7 @@ function CreativeTemplate({ data }: { data: CVData }) {
               <p>{data.summary}</p>
             </section>
           )}
+          <AdditionalSections data={data} className="cv-creative__section" />
 
           {data.experience.length > 0 && (
             <section className="cv-creative__section">
@@ -339,6 +359,7 @@ function MinimalistTemplate({ data }: { data: CVData }) {
           <p>{data.skills.join(' • ')}</p>
         </section>
       )}
+      <AdditionalSections data={data} className="cv-minimalist__section" />
     </div>
   );
 }

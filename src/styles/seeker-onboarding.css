@@ -1,0 +1,279 @@
+.seeker-onboarding-page {
+  padding: 2rem 0 3rem;
+}
+
+.seeker-onboarding-shell {
+  width: min(100%, 980px);
+  margin: 0 auto;
+  padding: clamp(1.5rem, 3vw, 2.5rem);
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 24px;
+  background: #ffffff;
+  box-shadow: 0 18px 44px rgba(15, 23, 42, 0.08);
+}
+
+.seeker-onboarding-header {
+  display: grid;
+  gap: 0.65rem;
+  margin-bottom: 1.5rem;
+}
+
+.seeker-onboarding-badge {
+  width: max-content;
+  padding: 0.4rem 0.8rem;
+  border-radius: 999px;
+  background: #eff5ff;
+  color: #0e4ae1;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.seeker-onboarding-header h1 {
+  margin: 0;
+  color: #0f172a;
+  font-size: clamp(2rem, 4vw, 3rem);
+  line-height: 1.1;
+}
+
+.seeker-onboarding-header p {
+  margin: 0;
+  color: #475569;
+  font-size: 1rem;
+  line-height: 1.6;
+}
+
+.seeker-onboarding-alert {
+  margin-bottom: 1rem;
+  padding: 0.9rem 1rem;
+  border-radius: 12px;
+  background: #fff1f2;
+  border: 1px solid rgba(190, 24, 93, 0.16);
+  color: #9f1239;
+  font-weight: 700;
+}
+
+.seeker-onboarding-loading {
+  padding: 1rem 0;
+  color: #475569;
+  font-weight: 600;
+}
+
+.seeker-onboarding-form {
+  display: grid;
+  gap: 1.25rem;
+}
+
+.seeker-onboarding-welcome {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  padding: 1rem 1.1rem;
+  border: 1px solid rgba(14, 74, 225, 0.12);
+  border-radius: 16px;
+  background: #f8fbff;
+}
+
+.seeker-onboarding-user-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  background: #0e4ae1;
+  color: #ffffff;
+}
+
+.seeker-onboarding-welcome h2 {
+  margin: 0;
+  color: #0f172a;
+  font-size: 1.25rem;
+}
+
+.seeker-onboarding-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.seeker-onboarding-field {
+  display: grid;
+  gap: 0.45rem;
+  color: #0f172a;
+  font-size: 0.92rem;
+  font-weight: 700;
+}
+
+.seeker-onboarding-field--skills {
+  gap: 0.75rem;
+}
+
+.seeker-onboarding-field input,
+.seeker-onboarding-field select {
+  width: 100%;
+  min-height: 52px;
+  padding: 0.9rem 1rem;
+  border: 1px solid rgba(15, 23, 42, 0.14);
+  border-radius: 14px;
+  background: #ffffff;
+  color: #111827;
+  font: inherit;
+  transition: border-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.seeker-onboarding-field input:focus,
+.seeker-onboarding-field select:focus {
+  outline: none;
+  border-color: #0e4ae1;
+  box-shadow: 0 0 0 4px rgba(14, 74, 225, 0.12);
+}
+
+.seeker-onboarding-field small {
+  color: #c21d3a;
+  font-weight: 700;
+}
+
+.seeker-onboarding-skill-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+
+.seeker-onboarding-skill,
+.seeker-onboarding-selected-skill,
+.seeker-onboarding-add-skill-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  min-height: 40px;
+  border-radius: 999px;
+  border: 1px solid rgba(14, 74, 225, 0.2);
+  background: #ffffff;
+  color: #0f172a;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.seeker-onboarding-skill {
+  padding: 0.55rem 0.85rem;
+}
+
+.seeker-onboarding-skill--selected {
+  border-color: rgba(14, 74, 225, 0.4);
+  background: #eaf1ff;
+  color: #0e4ae1;
+}
+
+.seeker-onboarding-skill:hover,
+.seeker-onboarding-selected-skill:hover,
+.seeker-onboarding-add-skill-button:hover {
+  transform: translateY(-1px);
+}
+
+.seeker-onboarding-selected-skills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  min-height: 44px;
+  padding: 0.7rem 0.8rem;
+  border: 1px solid rgba(15, 23, 42, 0.1);
+  border-radius: 14px;
+  background: #f8fafc;
+}
+
+.seeker-onboarding-empty-state {
+  margin: 0;
+  color: #64748b;
+  font-size: 0.9rem;
+}
+
+.seeker-onboarding-selected-skill {
+  padding: 0.5rem 0.8rem;
+  border-radius: 999px;
+  background: #eef4ff;
+  border-color: rgba(14, 74, 225, 0.18);
+  color: #0e4ae1;
+}
+
+.seeker-onboarding-custom-skill-row {
+  display: flex;
+  align-items: end;
+  gap: 0.75rem;
+}
+
+.seeker-onboarding-custom-skill-label {
+  display: grid;
+  gap: 0.45rem;
+  flex: 1;
+  color: #0f172a;
+  font-size: 0.92rem;
+  font-weight: 700;
+}
+
+.seeker-onboarding-custom-skill-label input {
+  width: 100%;
+  min-height: 52px;
+  padding: 0.9rem 1rem;
+  border: 1px solid rgba(15, 23, 42, 0.14);
+  border-radius: 14px;
+  background: #ffffff;
+  color: #111827;
+  font: inherit;
+}
+
+.seeker-onboarding-add-skill-button {
+  min-width: 152px;
+  padding: 0 1rem;
+  border: 0;
+  background: #0e4ae1;
+  color: #ffffff;
+}
+
+.seeker-onboarding-submit {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 50px;
+  padding: 0.85rem 1.5rem;
+  border: 0;
+  border-radius: 14px;
+  background: #0e4ae1;
+  color: #ffffff;
+  font-size: 1rem;
+  font-weight: 800;
+  cursor: pointer;
+  transition: transform 0.18s ease, opacity 0.18s ease;
+}
+
+.seeker-onboarding-submit:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+
+.seeker-onboarding-submit:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+@media (max-width: 760px) {
+  .seeker-onboarding-shell {
+    padding: 1.25rem;
+    border-radius: 18px;
+  }
+
+  .seeker-onboarding-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .seeker-onboarding-custom-skill-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .seeker-onboarding-add-skill-button {
+    width: 100%;
+  }
+}

@@ -3,43 +3,56 @@ import { FaBookmark } from 'react-icons/fa';
 import BookmarkButton from '../common/BookmarkButton';
 import CompanyLogo from './CompanyLogo';
 import type { RecommendedJob } from './JobCard';
+import type { SeekerJobListItem } from '../../services/api';
 
 type SeekerJobCardProps = {
-  job: RecommendedJob;
+  job: RecommendedJob | SeekerJobListItem;
   saved?: boolean;
   listing?: boolean;
   onToggleBookmark?: () => void;
+  matchScore?: number;
+  matchedSkills?: string[];
 };
 
-function SeekerJobCard({ job, saved = false, listing = false, onToggleBookmark }: SeekerJobCardProps) {
+function SeekerJobCard({ job, saved = false, listing = false, onToggleBookmark, matchScore, matchedSkills }: SeekerJobCardProps) {
+  const isBackendJob = 'jobType' in job && 'skills' in job;
+  const company = isBackendJob ? job.company?.name ?? 'Company not provided' : job.company;
+  const title = isBackendJob ? job.title : job.role;
+  const logoUrl = isBackendJob ? job.company?.logoUrl : undefined;
+  const location = job.location;
+  const description = job.description;
+  const jobType = isBackendJob ? (job.jobType === 'FREELANCE_PROJECT' ? 'Freelance project' : 'Employment') : job.workType;
+  const compensation = isBackendJob
+    ? job.compensation?.type === 'FREELANCE'
+      ? `${job.compensation.currency} ${job.compensation.projectAmount}`
+      : job.compensation
+        ? `${job.compensation.currency} ${job.compensation.salaryMin ?? '-'} - ${job.compensation.salaryMax ?? '-'}`
+        : 'Compensation not specified'
+    : job.salary;
   const detailPath = `/seeker/jobs/${job.id}`;
 
   return (
     <article className={`seeker-job-card${listing ? ' seeker-job-card--listing' : ''}`}>
-      <Link className="seeker-job-card__body-link" to={detailPath} aria-label={`View ${job.role} at ${job.company}`}>
-        <CompanyLogo company={job.company} logoText={job.logoText} logoClass={`${job.logoClass ?? ''} seeker-job-card__logo`} />
+      <Link className="seeker-job-card__body-link" to={detailPath} aria-label={`View ${title} at ${company}`}>
+        {logoUrl ? <img className="company-logo seeker-job-card__logo" src={logoUrl} alt="" /> : <CompanyLogo company={company} logoText={company.slice(0, 2).toUpperCase()} logoClass="seeker-job-card__logo" />}
         <div className="seeker-job-card__content">
           <div className="seeker-job-card__top">
-            <h3>{job.company}</h3>
-            {job.featured && (
-              <span>
-                <FaBookmark />
-                Featured
-              </span>
-            )}
+            <h3>{company}</h3>
+            {matchScore !== undefined && <span>{matchScore}% Match</span>}
           </div>
-          <h4>{job.role}</h4>
+          <h4>{title}</h4>
           <p>
-            {job.salary} <span /> {job.location}
+            {compensation} <span /> {location}
           </p>
           <div className="seeker-job-card__tags">
-            {[job.workType, job.level, job.workArrangement].map((tag, index) => (
+            {[jobType, ...(isBackendJob ? job.skills.slice(0, 2) : [job.level, job.workArrangement])].map((tag, index) => (
               <small className={`seeker-tag seeker-tag--${index}`} key={tag}>
                 {tag}
               </small>
             ))}
           </div>
-          <p className="seeker-job-card__description">{job.description}</p>
+          <p className="seeker-job-card__description">{description}</p>
+          {matchedSkills && matchedSkills.length > 0 && <small>Matched skills: {matchedSkills.join(', ')}</small>}
         </div>
       </Link>
 
@@ -47,7 +60,7 @@ function SeekerJobCard({ job, saved = false, listing = false, onToggleBookmark }
         className="seeker-job-card__save"
         saved={saved}
         onToggle={onToggleBookmark ?? (() => {})}
-        ariaLabel={saved ? `Remove ${job.company} ${job.role} from saved jobs` : `Save ${job.company} ${job.role}`}
+        ariaLabel={saved ? `Remove ${company} ${title} from saved jobs` : `Save ${company} ${title}`}
       />
       <div className="seeker-job-card__actions">
         <Link className="seeker-job-card__apply-btn seeker-job-card__apply-btn--primary" to={detailPath}>

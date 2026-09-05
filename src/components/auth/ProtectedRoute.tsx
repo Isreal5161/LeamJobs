@@ -1,5 +1,7 @@
-import { Navigate, useLocation } from 'react-router-dom';
+import { useEffect, useRef } from 'react';
+import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth, type AuthRole } from '../../context/AuthContext';
+import { getSeekerProfile } from '../../services/api';
 
 type ProtectedRouteProps = {
   children: JSX.Element;
@@ -19,8 +21,46 @@ const ROLE_DASHBOARD_PATH: Record<AuthRole, string> = {
 };
 
 function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) {
-  const { user, isLoading } = useAuth();
+  const { user, token, isLoading } = useAuth();
   const location = useLocation();
+  const navigate = useNavigate();
+  const onboardingCheckRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (isLoading || !user || !token || user.role !== 'SEEKER') {
+      return;
+    }
+
+    if (location.pathname === '/seeker/onboarding') {
+      onboardingCheckRef.current = user.id;
+      return;
+    }
+
+    if (onboardingCheckRef.current === user.id) {
+      return;
+    }
+
+    let isActive = true;
+
+    const checkOnboarding = async () => {
+      const result = await getSeekerProfile(token);
+
+      if (!isActive || !user || user.role !== 'SEEKER') {
+        return;
+      }
+
+      if (result.ok && result.data.data.onboardingComplete === false) {
+        navigate('/seeker/onboarding', { replace: true });
+      }
+    };
+
+    void checkOnboarding();
+    onboardingCheckRef.current = user.id;
+
+    return () => {
+      isActive = false;
+    };
+  }, [isLoading, location.pathname, navigate, token, user]);
 
   if (isLoading) {
     return <div className="auth-loading">Loading...</div>;
