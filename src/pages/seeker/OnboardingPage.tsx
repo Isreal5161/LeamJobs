@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { FaPlus, FaTimes, FaUser } from 'react-icons/fa';
 import { useAuth } from '../../context/AuthContext';
 import { getSeekerProfile, updateSeekerProfile } from '../../services/api';
+import { professionSuggestions } from '../../data/professionSuggestions';
 
 const COUNTRY_OPTIONS = [
   'Nigeria',
@@ -130,6 +131,8 @@ function OnboardingPage() {
   const [errors, setErrors] = useState<FormErrors>({});
   const [isLoadingProfile, setIsLoadingProfile] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [professionQuery, setProfessionQuery] = useState('');
+  const [isProfessionOpen, setIsProfessionOpen] = useState(false);
 
   const firstName = user?.firstName || 'there';
 
@@ -300,6 +303,7 @@ function OnboardingPage() {
   };
 
   const isNigeria = form.country === 'Nigeria';
+  const filteredProfessions = professionSuggestions.filter((profession) => profession.toLocaleLowerCase().includes(professionQuery.trim().toLocaleLowerCase())).slice(0, 8);
 
   return (
     <div className="seeker-onboarding-page">
@@ -392,20 +396,12 @@ function OnboardingPage() {
               {errors.city ? <small role="alert">{errors.city}</small> : null}
             </label>
 
-            <label className="seeker-onboarding-field">
-              <span>Professional Title</span>
-              <input
-                type="text"
-                value={form.professionalTitle}
-                placeholder="e.g. Frontend Developer"
-                onChange={(event) => {
-                  setForm((current) => ({ ...current, professionalTitle: event.target.value }));
-                  clearFieldError('professionalTitle');
-                }}
-                aria-invalid={Boolean(errors.professionalTitle)}
-              />
+            <div className="seeker-onboarding-field seeker-combobox">
+              <label htmlFor="profession-search">What type of work do you do?</label>
+              <input id="profession-search" type="text" value={professionQuery || form.professionalTitle} placeholder="Search your profession or type your own" onFocus={() => setIsProfessionOpen(true)} onChange={(event) => { setProfessionQuery(event.target.value); setForm((current) => ({ ...current, professionalTitle: event.target.value })); clearFieldError('professionalTitle'); }} onKeyDown={(event) => { if (event.key === 'Escape') setIsProfessionOpen(false); if (event.key === 'Enter' && filteredProfessions[0]) { event.preventDefault(); setForm((current) => ({ ...current, professionalTitle: filteredProfessions[0] })); setProfessionQuery(filteredProfessions[0]); setIsProfessionOpen(false); } }} aria-invalid={Boolean(errors.professionalTitle)} />
+              {isProfessionOpen && filteredProfessions.length > 0 && <div className="seeker-combobox__options" role="listbox">{filteredProfessions.map((profession) => <button type="button" role="option" key={profession} onMouseDown={(event) => event.preventDefault()} onClick={() => { setForm((current) => ({ ...current, professionalTitle: profession })); setProfessionQuery(profession); setIsProfessionOpen(false); }}>{profession}</button>)}</div>}
               {errors.professionalTitle ? <small role="alert">{errors.professionalTitle}</small> : null}
-            </label>
+            </div>
 
             <div className="seeker-onboarding-field seeker-onboarding-field--skills">
               <span>Skills</span>

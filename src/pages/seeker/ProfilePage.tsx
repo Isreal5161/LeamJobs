@@ -11,7 +11,6 @@ import {
   FaEye,
   FaGraduationCap,
   FaGripVertical,
-  FaLinkedin,
   FaMagic,
   FaMapMarkerAlt,
   FaPlus,
@@ -39,8 +38,9 @@ import {
   type ExperienceItem as ApiExperienceItem,
 } from '../../services/api';
 import { downloadCVAsPDF } from '../../utils/cvDownloadUtils';
+import { getLanguageSuggestions } from '../../data/languageSuggestions';
 
-type StepKey = 'personal' | 'experience' | 'education' | 'skills' | 'certifications' | 'languages' | 'projects';
+type StepKey = 'personal' | 'summary' | 'experience' | 'education' | 'skills' | 'certifications' | 'languages' | 'projects' | 'linkedin' | 'review';
 
 type ExperienceItem = {
   id: string;
@@ -108,14 +108,17 @@ type ProfileNotification = {
   tone: 'success' | 'info' | 'error';
 };
 
-const steps: Array<{ key: StepKey; label: string }> = [
-  { key: 'personal', label: 'Personal Info & Summary' },
-  { key: 'experience', label: 'Experience' },
-  { key: 'education', label: 'Education' },
-  { key: 'skills', label: 'Skills' },
-  { key: 'certifications', label: 'Qualifications' },
-  { key: 'languages', label: 'Languages' },
-  { key: 'projects', label: 'Projects' },
+const steps: Array<{ key: StepKey; label: string; description: string }> = [
+  { key: 'personal', label: 'Personal Details', description: 'Add your basic details so employers know who you are.' },
+  { key: 'summary', label: 'Profile Summary', description: 'Tell employers a little about your experience and the kind of work you do.' },
+  { key: 'experience', label: 'Experience', description: 'Add previous jobs, freelancing, or client work.' },
+  { key: 'education', label: 'Education', description: 'Add your education, training, and qualifications.' },
+  { key: 'skills', label: 'Skills', description: 'Highlight the abilities and strengths you want employers to notice.' },
+  { key: 'certifications', label: 'Qualifications', description: 'Add certificates, awards, or training that support your profile.' },
+  { key: 'languages', label: 'Languages', description: 'Share the languages you speak and your level of confidence.' },
+  { key: 'projects', label: 'Projects', description: 'Show examples of work you have completed, from client jobs to creative work or services.' },
+  { key: 'linkedin', label: 'LinkedIn', description: 'Add your LinkedIn profile to make your CV easier to verify.' },
+  { key: 'review', label: 'Review', description: 'Check your final CV and save your progress.' },
 ];
 
 const skillSuggestions = [
@@ -172,6 +175,8 @@ function ProfilePage() {
   const [profilePictureUrl, setProfilePictureUrl] = useState<string | null>(null);
   const [resumeUrl, setResumeUrl] = useState<string | null>(null);
   const [profilePictureFile, setProfilePictureFile] = useState<File | null>(null);
+  const [languageQueries, setLanguageQueries] = useState<Record<string, string>>({});
+  const [openLanguageId, setOpenLanguageId] = useState<string | null>(null);
   const [profileError, setProfileError] = useState<string | null>(null);
   const [onboardingLocation, setOnboardingLocation] = useState({ country: '', state: '', city: '' });
   const [addPanel, setAddPanel] = useState<AddPanel>(null);
@@ -295,22 +300,82 @@ function ProfilePage() {
   };
 
   const completionScore = useMemo(() => {
-    const fields = [
-      profile.personalInfo.fullName,
-      profile.personalInfo.title,
-      profile.personalInfo.email,
-      profile.personalInfo.phone,
-      profile.personalInfo.location,
-      profile.personalInfo.linkedin,
-      profile.experience.length,
-      profile.education.length,
-      profile.skills.length,
-      profile.certifications.length,
+    const onboardingReady = Boolean(
+      onboardingLocation.country.trim()
+      && onboardingLocation.state.trim()
+      && onboardingLocation.city.trim()
+      && profile.personalInfo.title.trim()
+      && profile.skills.length > 0,
+    );
+
+    const cvFields = [
+      profile.personalInfo.summary.trim(),
+      profile.experience.length > 0 ? 'experience' : '',
+      profile.education.length > 0 ? 'education' : '',
+      profile.skills.length > 0 ? 'skills' : '',
+      profile.certifications.length > 0 ? 'certifications' : '',
+      profile.languages.length > 0 ? 'languages' : '',
+      profile.projects.length > 0 ? 'projects' : '',
+      profile.personalInfo.linkedin.trim(),
     ];
 
-    const filled = fields.filter((value) => String(value).trim() !== '').length;
-    return Math.min(100, Math.round((filled / 10) * 100));
-  }, [profile]);
+    const filledCvFields = cvFields.filter((value) => String(value).trim() !== '').length;
+    const onboardingWeight = onboardingReady ? 50 : 0;
+    const cvWeight = Math.min(50, Math.round((filledCvFields / 8) * 50));
+
+    return Math.min(100, onboardingWeight + cvWeight);
+  }, [onboardingLocation, profile]);
+
+  const completionMessage = useMemo(() => {
+    if (completionScore >= 100) return 'Your profile is complete.';
+    if (completionScore >= 75) return 'Great progress! Keep going to complete your CV.';
+    if (completionScore >= 50) return 'Your basic profile is complete. Complete your CV to reach 100%.';
+    return 'Start with your basics and build your CV step by step.';
+  }, [completionScore]);
+
+  const currentStepIndex = steps.findIndex((step) => step.key === activeStep);
+  const currentStep = steps[currentStepIndex] ?? steps[0];
+  const isFinalStep = activeStep === 'review';
+
+  const goToStep = (direction: number) => {
+    const nextIndex = Math.max(0, Math.min(steps.length - 1, currentStepIndex + direction));
+    setActiveStep(steps[nextIndex].key);
+  };
+
+  const shouldShowSkipForStep = (stepKey: StepKey) => {
+    if (stepKey === 'personal') return false;
+    if (stepKey === 'summary') return !profile.personalInfo.summary.trim();
+    if (stepKey === 'experience') return profile.experience.length === 0;
+    if (stepKey === 'education') return profile.education.length === 0;
+    if (stepKey === 'skills') return profile.skills.length === 0;
+    if (stepKey === 'certifications') return profile.certifications.length === 0;
+    if (stepKey === 'languages') return profile.languages.length === 0;
+    if (stepKey === 'projects') return profile.projects.length === 0;
+    if (stepKey === 'linkedin') return !profile.personalInfo.linkedin.trim();
+    return false;
+  };
+
+  const renderStepControls = (stepKey: StepKey) => {
+    const skipVisible = shouldShowSkipForStep(stepKey);
+
+    return (
+      <div className="seeker-step-actions">
+        {currentStepIndex > 0 && (
+          <button type="button" className="seeker-step-button seeker-step-button--secondary" onClick={() => goToStep(-1)}>
+            Back
+          </button>
+        )}
+        {skipVisible && !isFinalStep && (
+          <button type="button" className="seeker-step-button seeker-step-button--ghost" onClick={() => goToStep(1)}>
+            Skip for now
+          </button>
+        )}
+        <button type="button" className="seeker-step-button seeker-step-button--primary" onClick={() => goToStep(1)}>
+          {isFinalStep ? 'Finish CV' : 'Next'}
+        </button>
+      </div>
+    );
+  };
 
   const updatePersonalInfo = (field: keyof ProfileState['personalInfo'], value: string) => {
     setProfile((current) => ({
@@ -459,6 +524,12 @@ function ProfilePage() {
       ...current,
       languages: current.languages.map((item) => item.id === id ? { ...item, [field]: value } as LanguageItem : item),
     }));
+  };
+
+  const selectLanguage = (id: string, name: string) => {
+    updateLanguage(id, 'name', name);
+    setLanguageQueries((current) => ({ ...current, [id]: name }));
+    setOpenLanguageId(null);
   };
 
   const removeLanguage = (id: string) => {
@@ -816,9 +887,21 @@ function ProfilePage() {
               </div>
             </section>
 
-            <section className="seeker-cv-tools" aria-label="CV tools">
-              <button type="button" onClick={() => showNotification({ title: 'LinkedIn import queued', message: 'This action is ready for backend connection.', tone: 'info' })}><FaLinkedin /> Import from LinkedIn</button>
-              <button type="button" onClick={() => showNotification({ title: 'AI enhancement queued', message: 'Resume enhancement is ready for backend connection.', tone: 'info' })}><FaMagic /> AI Resume Enhancement</button>
+            <section className="seeker-card seeker-cv-setup">
+              <div className="seeker-cv-setup__content">
+                <div>
+                  <span className="seeker-cv-summary__eyebrow">CV Setup</span>
+                  <h2>Step {currentStepIndex + 1} of {steps.length}</h2>
+                  <p>{currentStep.description}</p>
+                </div>
+                <div className="seeker-cv-progress">
+                  <div>
+                    <strong>{completionScore}% complete</strong>
+                    <span>{completionMessage}</span>
+                  </div>
+                  <span className="seeker-cv-progress__bar"><i style={{ width: `${completionScore}%` }} /></span>
+                </div>
+              </div>
             </section>
 
             <section className="seeker-card seeker-cv-workspace">
@@ -826,7 +909,7 @@ function ProfilePage() {
                 <div>
                   <span className="seeker-cv-summary__eyebrow">CV workspace</span>
                   <h2>Build or upload your CV</h2>
-                  <p>Use your profile information with a template, or send us an existing CV for backend processing.</p>
+                  <p>Use your profile information with a template, or upload an existing CV file.</p>
                 </div>
                 {uploadedCvName && <span className="seeker-cv-file-status"><FaCheck /> {uploadedCvName}</span>}
               </div>
@@ -874,15 +957,15 @@ function ProfilePage() {
           ) : (
             <div className="seeker-cv-upload-box">
               <FaUpload />
-              <strong>Upload your existing CV</strong>
-              <span>PDF, DOC, or DOCX files up to 10 MB</span>
+              <strong>Already have a CV?</strong>
+              <span>Upload your existing CV (PDF, DOC, or DOCX) up to 10 MB.</span>
               <label className="seeker-cv-upload-control">
-                Choose CV file
+                Choose CV File
                 <input type="file" accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document" onChange={handleCvFileUpload} />
               </label>
               {uploadedCvName && <small>Selected: {uploadedCvName}</small>}
-              {uploadedCvFile && <button type="button" onClick={handleUploadResume} disabled={isUploadingFile}>{isUploadingFile ? 'Uploading...' : 'Upload resume'}</button>}
-              {resumeUrl && <button type="button" onClick={handleRemoveResume} disabled={isUploadingFile}>Remove uploaded resume</button>}
+              {uploadedCvFile && <button type="button" onClick={handleUploadResume} disabled={isUploadingFile}>{isUploadingFile ? 'Uploading...' : 'Upload CV'}</button>}
+              {resumeUrl && <button type="button" onClick={handleRemoveResume} disabled={isUploadingFile}>Remove uploaded CV</button>}
             </div>
           )}
             </section>
@@ -915,7 +998,7 @@ function ProfilePage() {
             <nav id="seeker-profile-editor" className="seeker-cv-steps" aria-label="CV sections">
               {steps.map((step) => (
                 <button
-                  className={activeStep === step.key ? 'seeker-cv-step--active' : profile.personalInfo.fullName && step.key === 'personal' ? 'seeker-cv-step--done' : ''}
+                  className={activeStep === step.key ? 'seeker-cv-step--active' : step.key === 'personal' && profile.personalInfo.fullName ? 'seeker-cv-step--done' : ''}
                   type="button"
                   key={step.key}
                   onClick={() => setActiveStep(step.key)}
@@ -939,10 +1022,10 @@ function ProfilePage() {
 
                     <form className="seeker-profile-form">
                       <div className="seeker-profile-picture-control">
-                        <span>Profile picture</span>
+                        <span>Profile Photo</span>
                         {profilePictureUrl ? <img src={profilePictureUrl} alt="Profile" /> : <span aria-hidden="true">{profile.personalInfo.fullName.split(/\s+/).filter(Boolean).map((part) => part[0]).join('').slice(0, 2).toUpperCase() || 'ME'}</span>}
                         <label className="seeker-cv-upload-control">
-                          {isUploadingFile ? 'Uploading...' : 'Choose picture'}
+                          {isUploadingFile ? 'Uploading...' : 'Upload Photo'}
                           <input type="file" accept="image/jpeg,image/png,image/webp" onChange={handleProfilePictureSelect} disabled={isUploadingFile} />
                         </label>
                         {profilePictureUrl && <button type="button" onClick={handleRemoveProfilePicture} disabled={isUploadingFile}>Remove picture</button>}
@@ -972,19 +1055,36 @@ function ProfilePage() {
                         </label>
                         <label>
                           <span>LinkedIn</span>
-                          <input type="text" value={profile.personalInfo.linkedin} onChange={(event) => updatePersonalInfo('linkedin', event.target.value)} />
+                          <input type="url" value={profile.personalInfo.linkedin} onChange={(event) => updatePersonalInfo('linkedin', event.target.value)} />
                         </label>
                       </div>
+                    </form>
+                    {renderStepControls('personal')}
+                  </section>
+                )}
+
+                {activeStep === 'summary' && (
+                  <section className="seeker-card seeker-editor-card">
+                    <div className="seeker-editor-card__heading">
+                      <div>
+                        <h2>Profile Summary</h2>
+                        <p>Tell employers a little about yourself, your experience, and the kind of work you do.</p>
+                      </div>
+                    </div>
+
+                    <form className="seeker-profile-form">
                       <label>
                         <span>Profile Summary</span>
                         <textarea
                           className="seeker-profile-summary"
                           value={profile.personalInfo.summary}
-                          rows={5}
+                          rows={6}
+                          placeholder="Write a short summary about your work, strengths, and what you are looking for."
                           onChange={(event) => updatePersonalInfo('summary', event.target.value)}
                         />
                       </label>
                     </form>
+                    {renderStepControls('summary')}
                   </section>
                 )}
 
@@ -1002,233 +1102,138 @@ function ProfilePage() {
                       </div>
                     </div>
 
-                    <div className="seeker-form-list">
-                      {profile.experience.map((item) => (
+                    {profile.experience.length === 0 ? (
+                      <div className="seeker-step-empty-state">
+                        <p>No experience yet? You can skip this step and come back later.</p>
+                      </div>
+                    ) : (
+                      <div className="seeker-form-list">
+                        {profile.experience.map((item) => (
+                          <div className="seeker-form-item" key={item.id}>
+                            <div className="seeker-form-item__header">
+                              <strong>Role #{profile.experience.indexOf(item) + 1}</strong>
+                              <button type="button" className="seeker-delete-button" onClick={() => removeExperience(item.id)}>
+                                <FaTrash />
+                              </button>
+                            </div>
+
+                            <form className="seeker-profile-form">
+                              <label>
+                                <span>Job Title</span>
+                                <input type="text" value={item.jobTitle} onChange={(event) => updateExperience(item.id, 'jobTitle', event.target.value)} />
+                              </label>
+                              <label>
+                                <span>Company</span>
+                                <input type="text" value={item.company} onChange={(event) => updateExperience(item.id, 'company', event.target.value)} />
+                              </label>
+                              <div className="seeker-profile-form__split">
+                                <label>
+                                  <span>Start Date</span>
+                                  <div className="seeker-date-input">
+                                    <input type="text" value={item.startDate} onChange={(event) => updateExperience(item.id, 'startDate', event.target.value)} />
+                                    <FaCalendarAlt />
+                                  </div>
+                                </label>
+                                <label>
+                                  <span>End Date</span>
+                                  <div className="seeker-date-input">
+                                    <input type="text" value={item.endDate} onChange={(event) => updateExperience(item.id, 'endDate', event.target.value)} disabled={item.currentlyWorking} />
+                                    <FaCalendarAlt />
+                                  </div>
+                                </label>
+                              </div>
+                              <label className="seeker-profile-check">
+                                <input type="checkbox" checked={item.currentlyWorking} onChange={(event) => updateExperience(item.id, 'currentlyWorking', event.target.checked)} />
+                                <span>I currently work here</span>
+                              </label>
+                              <label>
+                                <span>Job Description</span>
+                                <div className="seeker-rich-editor">
+                                  <div className="seeker-rich-editor__toolbar" aria-label="Formatting toolbar">
+                                    <strong>B</strong>
+                                    <em>I</em>
+                                    <u>U</u>
+                                    <span>•</span>
+                                    <span>1.</span>
+                                    <FaEdit />
+                                  </div>
+                                  <textarea value={item.description} onChange={(event) => updateExperience(item.id, 'description', event.target.value)} />
+                                </div>
+                              </label>
+                            </form>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    {renderStepControls('experience')}
+                  </section>
+                )}
+
+                {activeStep === 'education' && (
+                  <section className="seeker-card seeker-editor-card">
+                    <div className="seeker-editor-card__heading">
+                      <div><h2>Education</h2><p>Add your education and training.</p></div>
+                      <button type="button" aria-label="Add education" onClick={addEducation}><FaPlus /></button>
+                    </div>
+                    {profile.education.length === 0 ? <div className="seeker-step-empty-state"><p>No education added yet? You can skip this step and return later.</p></div> : (
+                      <div className="seeker-form-list">{profile.education.map((item) => (
                         <div className="seeker-form-item" key={item.id}>
-                          <div className="seeker-form-item__header">
-                            <strong>Role #{profile.experience.indexOf(item) + 1}</strong>
-                            <button type="button" className="seeker-delete-button" onClick={() => removeExperience(item.id)}>
-                              <FaTrash />
-                            </button>
-                          </div>
-
-                      <form className="seeker-profile-form">
-                        <label>
-                          <span>Job Title</span>
-                          <input type="text" value={item.jobTitle} onChange={(event) => updateExperience(item.id, 'jobTitle', event.target.value)} />
-                        </label>
-                        <label>
-                          <span>Company</span>
-                          <input type="text" value={item.company} onChange={(event) => updateExperience(item.id, 'company', event.target.value)} />
-                        </label>
-                        <div className="seeker-profile-form__split">
-                          <label>
-                            <span>Start Date</span>
-                            <div className="seeker-date-input">
-                              <input type="text" value={item.startDate} onChange={(event) => updateExperience(item.id, 'startDate', event.target.value)} />
-                              <FaCalendarAlt />
-                            </div>
-                          </label>
-                          <label>
-                            <span>End Date</span>
-                            <div className="seeker-date-input">
-                              <input type="text" value={item.endDate} onChange={(event) => updateExperience(item.id, 'endDate', event.target.value)} disabled={item.currentlyWorking} />
-                              <FaCalendarAlt />
-                            </div>
-                          </label>
+                          <div className="seeker-form-item__header"><strong>Education #{profile.education.indexOf(item) + 1}</strong><button type="button" className="seeker-delete-button" onClick={() => removeEducation(item.id)}><FaTrash /></button></div>
+                          <form className="seeker-profile-form">
+                            <label><span>Degree</span><input type="text" value={item.degree} onChange={(event) => updateEducation(item.id, 'degree', event.target.value)} /></label>
+                            <label><span>School</span><input type="text" value={item.school} onChange={(event) => updateEducation(item.id, 'school', event.target.value)} /></label>
+                            <label><span>Year</span><input type="text" value={item.year} onChange={(event) => updateEducation(item.id, 'year', event.target.value)} /></label>
+                          </form>
                         </div>
-                        <label className="seeker-profile-check">
-                          <input type="checkbox" checked={item.currentlyWorking} onChange={(event) => updateExperience(item.id, 'currentlyWorking', event.target.checked)} />
-                          <span>I currently work here</span>
-                        </label>
-                        <label>
-                          <span>Job Description</span>
-                          <div className="seeker-rich-editor">
-                            <div className="seeker-rich-editor__toolbar" aria-label="Formatting toolbar">
-                              <strong>B</strong>
-                              <em>I</em>
-                              <u>U</u>
-                              <span>•</span>
-                              <span>1.</span>
-                              <FaEdit />
-                            </div>
-                            <textarea value={item.description} onChange={(event) => updateExperience(item.id, 'description', event.target.value)} />
-                          </div>
-                        </label>
-                      </form>
-                    </div>
-                  ))}
-                </div>
-              </section>
-            )}
+                      ))}</div>
+                    )}
+                    {renderStepControls('education')}
+                  </section>
+                )}
 
-            {activeStep === 'education' && (
-              <section className="seeker-card seeker-editor-card">
-                <div className="seeker-editor-card__heading">
-                  <div>
-                    <h2>Education</h2>
-                    <p>List your academic background and certifications.</p>
-                  </div>
-                  <div className="seeker-editor-card__tools">
-                    <button type="button" aria-label="Add education" onClick={addEducation}><FaPlus /></button>
-                  </div>
-                </div>
+                {activeStep === 'skills' && (
+                  <section className="seeker-card seeker-editor-card">
+                    <div className="seeker-editor-card__heading"><div><h2>Skills</h2><p>Highlight the strengths and abilities that matter most to employers.</p></div><button type="button" aria-label="Add skill" onClick={() => openAddPanel('skill')}><FaPlus /></button></div>
+                    {addPanel === 'skill' && renderAddPanel('skill')}
+                    {profile.skills.length === 0 ? <div className="seeker-step-empty-state"><p>No skills added yet. You can skip this step and return later.</p></div> : <div className="seeker-form-list">{profile.skills.map((skill, index) => <div className="seeker-form-item seeker-form-item--inline" key={`${skill}-${index}`}><input type="text" list="skill-suggestions" value={skill} placeholder="Type a skill or choose a suggestion" onChange={(event) => updateSkill(index, event.target.value)} /><button type="button" className="seeker-delete-button" onClick={() => removeSkill(index)}><FaTrash /></button></div>)}</div>}
+                    <datalist id="skill-suggestions">{skillSuggestions.map((skill) => <option value={skill} key={skill} />)}</datalist>
+                    {renderStepControls('skills')}
+                  </section>
+                )}
 
-                <div className="seeker-form-list">
-                  {profile.education.map((item) => (
-                    <div className="seeker-form-item" key={item.id}>
-                      <div className="seeker-form-item__header">
-                        <strong>Education #{profile.education.indexOf(item) + 1}</strong>
-                        <button type="button" className="seeker-delete-button" onClick={() => removeEducation(item.id)}>
-                          <FaTrash />
-                        </button>
-                      </div>
+                {activeStep === 'certifications' && (
+                  <section className="seeker-card seeker-editor-card">
+                    <div className="seeker-editor-card__heading"><div><h2>Qualifications</h2><p>Show qualifications, awards, and credentials that strengthen your profile.</p></div><button type="button" aria-label="Add qualification" onClick={() => openAddPanel('qualification')}><FaPlus /></button></div>
+                    {addPanel === 'qualification' && renderAddPanel('qualification')}
+                    {profile.certifications.length === 0 ? <div className="seeker-step-empty-state"><p>No qualifications added yet. You can skip this step for now.</p></div> : <div className="seeker-form-list">{profile.certifications.map((item) => <div className="seeker-form-item" key={item.id}><div className="seeker-form-item__header"><strong>Certification</strong><button type="button" className="seeker-delete-button" onClick={() => removeCertification(item.id)}><FaTrash /></button></div><form className="seeker-profile-form"><label><span>Qualification or Certificate</span><input type="text" list="qualification-suggestions" value={item.name} placeholder="Type a qualification or choose a suggestion" onChange={(event) => updateCertification(item.id, 'name', event.target.value)} /></label><label><span>Issuer</span><input type="text" value={item.issuer} onChange={(event) => updateCertification(item.id, 'issuer', event.target.value)} /></label></form></div>)}</div>}
+                    <datalist id="qualification-suggestions">{qualificationSuggestions.map((qualification) => <option value={qualification} key={qualification} />)}</datalist>
+                    {renderStepControls('certifications')}
+                  </section>
+                )}
 
-                      <form className="seeker-profile-form">
-                        <label>
-                          <span>Degree</span>
-                          <input type="text" value={item.degree} onChange={(event) => updateEducation(item.id, 'degree', event.target.value)} />
-                        </label>
-                        <label>
-                          <span>School</span>
-                          <input type="text" value={item.school} onChange={(event) => updateEducation(item.id, 'school', event.target.value)} />
-                        </label>
-                        <label>
-                          <span>Year</span>
-                          <input type="text" value={item.year} onChange={(event) => updateEducation(item.id, 'year', event.target.value)} />
-                        </label>
-                      </form>
-                    </div>
-                  ))}
-                </div>
-              </section>
-            )}
+                {activeStep === 'languages' && (
+                  <section className="seeker-card seeker-editor-card">
+                    <div className="seeker-editor-card__heading"><div><h2>Languages</h2><p>Add languages you speak and choose your proficiency.</p></div><button type="button" aria-label="Add language" onClick={addLanguage}><FaPlus /></button></div>
+                    {profile.languages.length === 0 ? <div className="seeker-step-empty-state"><p>No languages added yet. You can skip this step and return later.</p></div> : <div className="seeker-form-list">{profile.languages.map((item) => <div className="seeker-form-item" key={item.id}><div className="seeker-form-item__header"><strong>Language</strong><button type="button" className="seeker-delete-button" onClick={() => removeLanguage(item.id)}><FaTrash /></button></div><div className="seeker-profile-form__split"><div className="seeker-combobox"><label htmlFor={`language-${item.id}`}>Language</label><input id={`language-${item.id}`} value={languageQueries[item.id] ?? item.name} placeholder="Search or type a language" onFocus={() => setOpenLanguageId(item.id)} onChange={(event) => { setLanguageQueries((current) => ({ ...current, [item.id]: event.target.value })); updateLanguage(item.id, 'name', event.target.value); setOpenLanguageId(item.id); }} onKeyDown={(event) => { const options = getLanguageSuggestions(onboardingLocation.country, languageQueries[item.id] ?? item.name); if (event.key === 'Escape') setOpenLanguageId(null); if (event.key === 'Enter' && options[0]) { event.preventDefault(); selectLanguage(item.id, options[0]); } }} />{openLanguageId === item.id && getLanguageSuggestions(onboardingLocation.country, languageQueries[item.id] ?? item.name).length > 0 && <div className="seeker-combobox__options" role="listbox">{getLanguageSuggestions(onboardingLocation.country, languageQueries[item.id] ?? item.name).map((language) => <button type="button" role="option" key={language} onMouseDown={(event) => event.preventDefault()} onClick={() => selectLanguage(item.id, language)}>{language}</button>)}</div>}</div><label><span>Proficiency</span><select value={item.proficiency} onChange={(event) => updateLanguage(item.id, 'proficiency', event.target.value)}>{['Basic', 'Conversational', 'Professional', 'Fluent', 'Native'].map((level) => <option key={level}>{level}</option>)}</select></label></div></div>)}</div>}
+                    {renderStepControls('languages')}
+                  </section>
+                )}
 
-            {activeStep === 'skills' && (
-              <section className="seeker-card seeker-editor-card">
-                <div className="seeker-editor-card__heading">
-                  <div>
-                    <h2>Skills</h2>
-                    <p>Highlight technical and soft skills relevant to the role.</p>
-                  </div>
-                  <div className="seeker-editor-card__tools">
-                    <button type="button" aria-label="Add skill" onClick={() => openAddPanel('skill')}><FaPlus /></button>
-                  </div>
-                </div>
+                {activeStep === 'projects' && (
+                  <section className="seeker-card seeker-editor-card">
+                    <div className="seeker-editor-card__heading"><div><h2>Projects &amp; Work Samples</h2><p>Show client jobs, creative work, services, repairs, business work, or software projects.</p></div><button type="button" aria-label="Add project" onClick={addProject}><FaPlus /></button></div>
+                    {profile.projects.length === 0 ? <div className="seeker-step-empty-state"><p>No work samples yet. You can skip this step and return later.</p></div> : <div className="seeker-form-list">{profile.projects.map((item) => <div className="seeker-form-item" key={item.id}><div className="seeker-form-item__header"><strong>Work Sample</strong><button type="button" className="seeker-delete-button" onClick={() => removeProject(item.id)}><FaTrash /></button></div><form className="seeker-profile-form"><label><span>Work or project name</span><input value={item.name} placeholder="e.g. Bridal Makeup for a Wedding" onChange={(event) => updateProject(item.id, 'name', event.target.value)} /></label><label><span>Description</span><textarea value={item.description} placeholder="Describe what you did and the result." onChange={(event) => updateProject(item.id, 'description', event.target.value)} /></label><label><span>Tools or technologies used (optional)</span><input value={item.technologies.join(', ')} placeholder="Optional: tools, materials, or technologies" onChange={(event) => updateProjectTechnologies(item.id, event.target.value)} /></label><div className="seeker-profile-form__split"><label><span>Work/project link (optional)</span><input type="url" value={item.projectUrl} placeholder="Website, portfolio, social media, or other link" onChange={(event) => updateProject(item.id, 'projectUrl', event.target.value)} /></label><label><span>GitHub URL (optional)</span><input type="url" value={item.githubUrl} onChange={(event) => updateProject(item.id, 'githubUrl', event.target.value)} /></label></div><div className="seeker-profile-form__split"><label><span>Start date (optional)</span><input type="month" value={item.startDate} onChange={(event) => updateProject(item.id, 'startDate', event.target.value)} /></label><label><span>End date (optional)</span><input type="month" value={item.endDate} onChange={(event) => updateProject(item.id, 'endDate', event.target.value)} /></label></div></form></div>)}</div>}
+                    {renderStepControls('projects')}
+                  </section>
+                )}
 
-                {addPanel === 'skill' && renderAddPanel('skill')}
+                {activeStep === 'linkedin' && (
+                  <section className="seeker-card seeker-editor-card"><div className="seeker-editor-card__heading"><div><h2>LinkedIn</h2><p>Add your LinkedIn profile so employers can verify your background.</p></div></div><form className="seeker-profile-form"><label><span>LinkedIn profile URL</span><input type="url" value={profile.personalInfo.linkedin} placeholder="https://linkedin.com/in/yourname" onChange={(event) => updatePersonalInfo('linkedin', event.target.value)} /></label></form>{renderStepControls('linkedin')}</section>
+                )}
 
-                <div className="seeker-form-list">
-                  {profile.skills.map((skill, index) => (
-                    <div className="seeker-form-item seeker-form-item--inline" key={`${skill}-${index}`}>
-                      <input
-                        type="text"
-                        list="skill-suggestions"
-                        value={skill}
-                        placeholder="Type a skill or choose a suggestion"
-                        onChange={(event) => updateSkill(index, event.target.value)}
-                      />
-                      <button type="button" className="seeker-delete-button" onClick={() => removeSkill(index)}><FaTrash /></button>
-                    </div>
-                  ))}
-                </div>
-                <datalist id="skill-suggestions">
-                  {skillSuggestions.map((skill) => <option value={skill} key={skill} />)}
-                </datalist>
-              </section>
-            )}
-
-            {activeStep === 'certifications' && (
-              <section className="seeker-card seeker-editor-card">
-                <div className="seeker-editor-card__heading">
-                  <div>
-                    <h2>Qualifications</h2>
-                    <p>Show the qualifications, awards, and credentials that strengthen your profile.</p>
-                  </div>
-                  <div className="seeker-editor-card__tools">
-                    <button type="button" aria-label="Add qualification" onClick={() => openAddPanel('qualification')}><FaPlus /></button>
-                  </div>
-                </div>
-
-                {addPanel === 'qualification' && renderAddPanel('qualification')}
-
-                <div className="seeker-form-list">
-                  {profile.certifications.map((item) => (
-                    <div className="seeker-form-item" key={item.id}>
-                      <div className="seeker-form-item__header">
-                        <strong>Certification</strong>
-                        <button type="button" className="seeker-delete-button" onClick={() => removeCertification(item.id)}>
-                          <FaTrash />
-                        </button>
-                      </div>
-
-                      <form className="seeker-profile-form">
-                        <label>
-                          <span>Qualification or Certificate</span>
-                          <input
-                            type="text"
-                            list="qualification-suggestions"
-                            value={item.name}
-                            placeholder="Type a qualification or choose a suggestion"
-                            onChange={(event) => updateCertification(item.id, 'name', event.target.value)}
-                          />
-                        </label>
-                        <label>
-                          <span>Issuer</span>
-                          <input type="text" value={item.issuer} onChange={(event) => updateCertification(item.id, 'issuer', event.target.value)} />
-                        </label>
-                      </form>
-                    </div>
-                  ))}
-                </div>
-                <datalist id="qualification-suggestions">
-                  {qualificationSuggestions.map((qualification) => <option value={qualification} key={qualification} />)}
-                </datalist>
-              </section>
-            )}
-
-            {activeStep === 'languages' && (
-              <section className="seeker-card seeker-editor-card">
-                <div className="seeker-editor-card__heading">
-                  <div><h2>Languages</h2><p>Add the languages you use professionally.</p></div>
-                  <button type="button" aria-label="Add language" onClick={addLanguage}><FaPlus /></button>
-                </div>
-                <div className="seeker-form-list">
-                  {profile.languages.map((item) => (
-                    <div className="seeker-form-item" key={item.id}>
-                      <div className="seeker-form-item__header"><strong>Language</strong><button type="button" className="seeker-delete-button" onClick={() => removeLanguage(item.id)}><FaTrash /></button></div>
-                      <div className="seeker-profile-form__split">
-                        <label><span>Name</span><input value={item.name} onChange={(event) => updateLanguage(item.id, 'name', event.target.value)} /></label>
-                        <label><span>Proficiency</span><select value={item.proficiency} onChange={(event) => updateLanguage(item.id, 'proficiency', event.target.value)}>{['Basic', 'Conversational', 'Professional', 'Fluent', 'Native'].map((level) => <option key={level}>{level}</option>)}</select></label>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </section>
-            )}
-
-            {activeStep === 'projects' && (
-              <section className="seeker-card seeker-editor-card">
-                <div className="seeker-editor-card__heading">
-                  <div><h2>Projects</h2><p>Show practical work and the technologies behind it.</p></div>
-                  <button type="button" aria-label="Add project" onClick={addProject}><FaPlus /></button>
-                </div>
-                <div className="seeker-form-list">
-                  {profile.projects.map((item) => (
-                    <div className="seeker-form-item" key={item.id}>
-                      <div className="seeker-form-item__header"><strong>Project</strong><button type="button" className="seeker-delete-button" onClick={() => removeProject(item.id)}><FaTrash /></button></div>
-                      <form className="seeker-profile-form">
-                        <label><span>Name</span><input value={item.name} onChange={(event) => updateProject(item.id, 'name', event.target.value)} /></label>
-                        <label><span>Description</span><textarea value={item.description} onChange={(event) => updateProject(item.id, 'description', event.target.value)} /></label>
-                        <label><span>Technologies</span><input value={item.technologies.join(', ')} placeholder="React, Node.js" onChange={(event) => updateProjectTechnologies(item.id, event.target.value)} /></label>
-                        <div className="seeker-profile-form__split"><label><span>Project URL</span><input type="url" value={item.projectUrl} onChange={(event) => updateProject(item.id, 'projectUrl', event.target.value)} /></label><label><span>GitHub URL</span><input type="url" value={item.githubUrl} onChange={(event) => updateProject(item.id, 'githubUrl', event.target.value)} /></label></div>
-                        <div className="seeker-profile-form__split"><label><span>Start date</span><input type="month" value={item.startDate} onChange={(event) => updateProject(item.id, 'startDate', event.target.value)} /></label><label><span>End date</span><input type="month" value={item.endDate} onChange={(event) => updateProject(item.id, 'endDate', event.target.value)} /></label></div>
-                      </form>
-                    </div>
-                  ))}
-                </div>
-              </section>
-            )}
+                {activeStep === 'review' && (
+                  <section className="seeker-card seeker-editor-card"><div className="seeker-editor-card__heading"><div><h2>Review your CV</h2><p>Check the main sections of your profile before saving.</p></div></div><div className="seeker-step-review"><div className="seeker-step-review__grid"><div><strong>Personal details</strong><span>{profile.personalInfo.fullName || 'Not added yet'}</span></div><div><strong>Summary</strong><span>{profile.personalInfo.summary ? 'Added' : 'Not added yet'}</span></div><div><strong>Experience</strong><span>{profile.experience.length ? `${profile.experience.length} item(s)` : 'Not added yet'}</span></div><div><strong>Education</strong><span>{profile.education.length ? `${profile.education.length} item(s)` : 'Not added yet'}</span></div><div><strong>Skills</strong><span>{profile.skills.length ? `${profile.skills.length} skill(s)` : 'Not added yet'}</span></div><div><strong>Qualifications</strong><span>{profile.certifications.length ? `${profile.certifications.length} item(s)` : 'Not added yet'}</span></div><div><strong>Languages</strong><span>{profile.languages.length ? `${profile.languages.length} language(s)` : 'Not added yet'}</span></div><div><strong>Work samples</strong><span>{profile.projects.length ? `${profile.projects.length} item(s)` : 'Not added yet'}</span></div><div><strong>LinkedIn</strong><span>{profile.personalInfo.linkedin ? 'Added' : 'Not added yet'}</span></div></div></div>{renderStepControls('review')}</section>
+                )}
           </div>
 
           <aside className="seeker-profile-side">
@@ -1263,7 +1268,7 @@ function ProfilePage() {
 
       <div className="seeker-profile-actions">
         <button type="button" onClick={handleSaveDraft} disabled={isSaving}><FaRegSave /> {isSaving ? 'Saving...' : 'Save Draft'}</button>
-        <button type="button" onClick={handleUploadProfile}><FaUpload /> Upload Profile</button>
+        <button type="button" onClick={handleUploadProfile}><FaUpload /> Upload CV</button>
       </div>
 
       {notification && (
