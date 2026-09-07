@@ -19,6 +19,10 @@
   color: #ffffff;
 }
 
+.seeker-home.messages-page .messages-hero p {
+  color: #ffffff;
+}
+
 .messages-eyebrow {
   display: inline-flex;
   margin-bottom: 0.35rem;
