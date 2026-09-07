@@ -254,7 +254,7 @@
 }
 
 @media (max-width: 767px) {
-  .seeker-jobs-page { width: min(calc(100vw - 1.5rem), 520px); margin: 0 auto; padding-bottom: 5.5rem; }
+  .seeker-jobs-page { width: min(100%, 520px); margin: 0 auto; padding-bottom: 5.5rem; }
   .seeker-jobs-hero { padding: 1.1rem; }
   .seeker-jobs-content { width: 100%; }
   .seeker-jobs-page > .seeker-jobs-hero .seeker-filter-fields { display: none; }

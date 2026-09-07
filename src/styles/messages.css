@@ -170,7 +170,7 @@
 @media (max-width: 767px) {
   .seeker-home.messages-page { padding-bottom: 5.5rem; }
   .seeker-home.messages-page .messages-hero { padding: 1.1rem; }
-  .messages-shell { width: min(calc(100% - 1.5rem), 520px); margin: 0 auto; }
+  .messages-shell { width: min(100%, 520px); margin: 0 auto; }
   .messages-list-panel,
   .messages-chat-panel { padding: 1rem; }
   .messages-thread { grid-template-columns: 54px minmax(0, 1fr); }

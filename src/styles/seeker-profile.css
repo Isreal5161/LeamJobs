@@ -1297,8 +1297,7 @@
   }
 
   .seeker-profile-content {
-    width: calc(100vw - 2rem);
-    max-width: 520px;
+    width: min(100%, 520px);
     margin: -4.8rem auto 0;
   }
 

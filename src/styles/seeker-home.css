@@ -1022,9 +1022,13 @@ input:focus-visible,
 }
 
 @media (max-width: 767px) {
+  .seeker-layout__shell {
+    padding: 1rem 0 1.5rem;
+  }
+
   .seeker-home {
     gap: 0.85rem;
-    width: min(calc(100vw - 1.5rem), 520px);
+    width: min(100%, 520px);
     margin: 0 auto;
     padding-bottom: 5.5rem;
   }
