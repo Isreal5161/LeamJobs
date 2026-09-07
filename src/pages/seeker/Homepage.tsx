@@ -1,20 +1,16 @@
-import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useEffect, useState, type FormEvent } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import {
-  FaBell,
   FaBriefcase,
   FaChevronRight,
   FaDownload,
   FaEdit,
   FaFilePdf,
-  FaFilter,
   FaSearch,
   FaUserFriends,
 } from 'react-icons/fa';
 import { useAuth } from '../../context/AuthContext';
-import { request, type SeekerDashboardData, type SeekerDashboardJob, type SeekerDashboardResponse } from '../../services/api';
-
-const filters = ['Remote', 'Full-time', 'Design', 'New York', '$100k+'];
+import { getSeekerProfile, request, type SeekerDashboardData, type SeekerDashboardJob, type SeekerDashboardResponse, type GetSeekerProfileResponse } from '../../services/api';
 
 const formatDate = (value: string) => new Intl.DateTimeFormat(undefined, {
   dateStyle: 'medium',
@@ -36,6 +32,11 @@ const formatCompensation = (job: SeekerDashboardJob) => {
 
 const getInitials = (name: string) => name.split(' ').filter(Boolean).map((part) => part[0]).join('').slice(0, 2).toUpperCase();
 
+const formatStatus = (status: string) => status
+  .toLowerCase()
+  .replace(/_/g, ' ')
+  .replace(/\b\w/g, (character) => character.toUpperCase());
+
 function ApprovedJobCard({ job }: { job: SeekerDashboardJob }) {
   const companyName = job.company?.name ?? 'Company not provided';
   const logoUrl = job.company?.logoUrl;
@@ -49,7 +50,9 @@ function ApprovedJobCard({ job }: { job: SeekerDashboardJob }) {
           <span className="company-logo seeker-job-card__logo" aria-hidden="true">{getInitials(companyName)}</span>
         )}
         <div className="seeker-job-card__content">
-          <div className="seeker-job-card__top"><h3>{companyName}</h3></div>
+          <div className="seeker-job-card__top">
+            <h3>{companyName}</h3>
+          </div>
           <h4>{job.title}</h4>
           <p>{formatCompensation(job)} <span /> {job.location}</p>
           <div className="seeker-job-card__tags">
@@ -68,10 +71,14 @@ function ApprovedJobCard({ job }: { job: SeekerDashboardJob }) {
 }
 
 function Homepage() {
+  const navigate = useNavigate();
   const { user, token } = useAuth();
   const [dashboard, setDashboard] = useState<SeekerDashboardData | null>(null);
+  const [profileState, setProfileState] = useState<GetSeekerProfileResponse['data']['profile'] | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
+  const [retryKey, setRetryKey] = useState(0);
+  const [searchValue, setSearchValue] = useState('');
 
   useEffect(() => {
     let isMounted = true;
@@ -85,19 +92,29 @@ function Homepage() {
 
       setIsLoading(true);
       setError('');
-      const result = await request<SeekerDashboardResponse>({
-        method: 'GET',
-        endpoint: '/seeker/dashboard',
-        token,
-      });
+
+      const [dashboardResult, profileResult] = await Promise.all([
+        request<SeekerDashboardResponse>({
+          method: 'GET',
+          endpoint: '/seeker/dashboard',
+          token,
+        }),
+        getSeekerProfile(token),
+      ]);
 
       if (!isMounted) return;
 
-      if (!result.ok) {
-        setError(result.error.message || 'We could not load your dashboard. Please try again.');
+      if (!dashboardResult.ok) {
+        setError(dashboardResult.error.message || 'We could not load your dashboard right now. Please try again.');
         setDashboard(null);
       } else {
-        setDashboard(result.data.data);
+        setDashboard(dashboardResult.data.data);
+      }
+
+      if (profileResult.ok) {
+        setProfileState(profileResult.data.data.profile);
+      } else {
+        setProfileState(null);
       }
 
       setIsLoading(false);
@@ -108,121 +125,222 @@ function Homepage() {
     return () => {
       isMounted = false;
     };
-  }, [token]);
+  }, [token, retryKey]);
+
+  const handleSearchSubmit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const trimmedValue = searchValue.trim();
+    navigate(trimmedValue ? `/seeker/jobs?search=${encodeURIComponent(trimmedValue)}` : '/seeker/jobs');
+  };
 
   const profile = dashboard?.profile;
   const fullName = profile?.fullName || [user?.firstName, user?.lastName].filter(Boolean).join(' ') || 'Welcome back';
   const profileCompletion = profile?.profileCompletion ?? 0;
+  const resumeUrl = profile?.resume?.url ?? profileState?.resumeUrl ?? null;
+  const hasStructuredCv = Boolean(
+    profileState && (
+      profileState.professionalTitle?.trim()
+      || profileState.bio?.trim()
+      || profileState.linkedinUrl?.trim()
+      || profileState.cvTemplate
+      || (profileState.skills?.length ?? 0) > 0
+      || (profileState.experience?.length ?? 0) > 0
+      || (profileState.education?.length ?? 0) > 0
+      || (profileState.certifications?.length ?? 0) > 0
+      || (profileState.languages?.length ?? 0) > 0
+      || (profileState.projects?.length ?? 0) > 0
+    )
+  );
+  const cvStatus = resumeUrl
+    ? { title: 'CV available', description: 'Your uploaded CV is ready to view and download.' }
+    : hasStructuredCv
+      ? { title: 'CV profile ready', description: 'Your CV is ready to edit and update.' }
+      : { title: 'No CV uploaded yet', description: 'Create or upload your CV to start your job search.' };
   const stats = dashboard ? [
-    { icon: <FaBriefcase />, value: dashboard.stats.appliedJobs, label: 'Applied Jobs', tone: 'green' },
-    { icon: <FaUserFriends />, value: dashboard.stats.interviews, label: 'Interviews', tone: 'yellow' },
+    { icon: <FaBriefcase />, value: dashboard.stats.appliedJobs, label: 'Applied Jobs', tone: 'blue' },
+    { icon: <FaUserFriends />, value: dashboard.stats.interviews, label: 'Interviews', tone: 'gold' },
   ] : [];
+
+  const renderSkeletonCard = (className: string) => (
+    <div className={`${className} is-skeleton`} aria-hidden="true">
+      <span />
+      <span />
+      <span />
+    </div>
+  );
 
   return (
     <div className="seeker-home">
-      <section className="seeker-hero">
-        <div className="seeker-hero__top">
-          <div className="seeker-profile">
-            <div className="seeker-profile__avatar" aria-hidden="true">{getInitials(fullName)}</div>
-            <div>
-              <h1>{fullName === 'Welcome back' ? fullName : `Hi, ${fullName}!`}</h1>
-              <p>Let's find your next opportunity</p>
-            </div>
+      <header className="seeker-home__header">
+        <div className="seeker-home__greeting">
+          <div className="seeker-home__avatar" aria-hidden="true">{getInitials(fullName)}</div>
+          <div className="seeker-home__identity">
+            <p className="seeker-home__eyebrow">Welcome back</p>
+            <h1>{fullName === 'Welcome back' ? fullName : `${fullName}`}</h1>
           </div>
-          <button className="seeker-icon-button seeker-icon-button--alert" type="button" aria-label="Notifications">
-            <FaBell />
-          </button>
         </div>
+      </header>
 
-        <label className="seeker-search" aria-label="Search jobs, companies or roles">
-          <FaSearch />
-          <input type="search" placeholder="Search jobs, companies or roles" />
+      <form className="seeker-home__search" onSubmit={handleSearchSubmit}>
+        <label className="seeker-home__search-label" htmlFor="dashboard-search">
+          <FaSearch aria-hidden="true" />
+          <span className="sr-only">Search jobs</span>
         </label>
-
-        <div className="seeker-filter-row">
-          {filters.map((filter) => (
-            <button type="button" key={filter}>{filter}</button>
-          ))}
-          <button className="seeker-filter-row__control" type="button" aria-label="Filter jobs">
-            <FaFilter />
-          </button>
-        </div>
-      </section>
+        <input
+          id="dashboard-search"
+          type="search"
+          value={searchValue}
+          onChange={(event) => setSearchValue(event.target.value)}
+          placeholder="Search jobs, companies or roles"
+          aria-label="Search jobs, companies or roles"
+        />
+        <button type="submit">Search</button>
+      </form>
 
       <div className="seeker-home__content">
-        <section className="seeker-card seeker-progress">
+        <section className="seeker-card seeker-progress" aria-labelledby="profile-completion-heading">
           <div className="seeker-section-heading">
-            <h2>Profile completion</h2>
+            <div>
+              <p className="seeker-card__label">Overview</p>
+              <h2 id="profile-completion-heading">Profile completion</h2>
+            </div>
             <strong>{isLoading ? '...' : `${profileCompletion}%`}</strong>
           </div>
-          <div className="seeker-progress__bar" aria-hidden="true">
+          <div className="seeker-progress__bar" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={profileCompletion} aria-label="Profile completion percentage">
             <span style={{ width: `${profileCompletion}%` }} />
           </div>
           <div className="seeker-progress__footer">
             <p>{error || (profile ? 'Keep your profile current for better opportunities.' : 'Complete your profile to help employers learn more about you.')}</p>
             <Link to="/seeker/profile">
-              View suggestions
+              View Profile
               <FaChevronRight />
             </Link>
           </div>
         </section>
 
-        <section className="seeker-card seeker-recommendations">
+        <section className="seeker-card seeker-cv" aria-labelledby="cv-header">
           <div className="seeker-section-heading">
-            <h2>Approved jobs</h2>
-            <Link to="/seeker/jobs">
-              View all
-              <FaChevronRight />
-            </Link>
-          </div>
-          <div className="seeker-job-list">
-            {isLoading ? <p>Loading approved jobs...</p> : null}
-            {!isLoading && !error && dashboard?.approvedJobs.length === 0 ? <p>No approved jobs are available right now.</p> : null}
-            {!isLoading && !error ? dashboard?.approvedJobs.slice(0, 2).map((job) => <ApprovedJobCard job={job} key={job.id} />) : null}
-          </div>
-        </section>
-
-        <section className="seeker-card seeker-resume">
-          <div className="seeker-section-heading">
-            <h2>Resume / CV</h2>
-          </div>
-          <div className="seeker-resume__body">
-            <span className="seeker-resume__icon"><FaFilePdf /></span>
-            {profile?.resume ? <div><strong>Current resume</strong><p>Available from your profile</p></div> : <div><strong>No resume uploaded</strong><p>Add a resume from your profile</p></div>}
-            <div className="seeker-resume__actions">
-              <Link to="/seeker/profile"><FaEdit /> Edit CV</Link>
-              {profile?.resume ? <a href={profile.resume.url} target="_blank" rel="noreferrer"><FaDownload /> Download</a> : null}
+            <div>
+              <p className="seeker-card__label">Profile</p>
+              <h2 id="cv-header">CV / Resume</h2>
             </div>
           </div>
+
+          {isLoading ? (
+            renderSkeletonCard('seeker-cv__skeleton')
+          ) : (
+            <div className="seeker-cv__body">
+              <div className="seeker-cv__summary">
+                <span className="seeker-cv__icon" aria-hidden="true"><FaFilePdf /></span>
+                <div>
+                  <strong>{cvStatus.title}</strong>
+                  <p>{cvStatus.description}</p>
+                </div>
+              </div>
+
+              <div className="seeker-cv__actions">
+                <Link className="seeker-button seeker-button--primary" to="/seeker/profile#seeker-profile-editor">
+                  <FaEdit />
+                  Edit CV
+                </Link>
+                {resumeUrl ? (
+                  <a className="seeker-button seeker-button--secondary" href={resumeUrl} target="_blank" rel="noreferrer" download>
+                    <FaDownload />
+                    Download
+                  </a>
+                ) : null}
+              </div>
+            </div>
+          )}
         </section>
 
         <section className="seeker-card seeker-stats" aria-label="Application overview">
-          {isLoading ? <p>Loading application stats...</p> : null}
-          {!isLoading && !error ? stats.map((stat) => (
+          {isLoading ? (
+            <>
+              {renderSkeletonCard('seeker-stats__skeleton')}
+              {renderSkeletonCard('seeker-stats__skeleton')}
+            </>
+          ) : error ? null : stats.map((stat) => (
             <article key={stat.label}>
               <span className={`seeker-stat-icon seeker-stat-icon--${stat.tone}`}>{stat.icon}</span>
               <strong>{stat.value}</strong>
               <p>{stat.label}</p>
             </article>
-          )) : null}
+          ))}
         </section>
 
-        <section className="seeker-card seeker-portfolio">
+        <section className="seeker-card seeker-portfolio" aria-labelledby="recent-applications-heading">
           <div className="seeker-section-heading">
-            <h2>Recent applications</h2>
-            <Link to="/seeker/applications">View all <FaChevronRight /></Link>
+            <div>
+              <p className="seeker-card__label">Activity</p>
+              <h2 id="recent-applications-heading">Recent applications</h2>
+            </div>
+            <Link to="/seeker/applications">
+              View Applications
+              <FaChevronRight />
+            </Link>
           </div>
-          <div className="seeker-portfolio__grid" aria-label="Recent applications">
-            {isLoading ? <p>Loading recent applications...</p> : null}
-            {!isLoading && !error && dashboard?.recentApplications.length === 0 ? <p>No applications yet.</p> : null}
-            {!isLoading && !error ? dashboard?.recentApplications.map((application) => (
-              <article className="seeker-portfolio__project" key={application.id}>
-                <div className="seeker-portfolio__project-top"><span className="seeker-portfolio__employer">{application.companyName ?? 'Company not provided'}</span><small>{formatDate(application.appliedAt)}</small></div>
-                <h3>{application.jobTitle}</h3>
-                <p>Status: {application.status}</p>
-              </article>
-            )) : null}
+
+          {isLoading ? (
+            renderSkeletonCard('seeker-portfolio__skeleton')
+          ) : error ? (
+            <div className="seeker-card__empty-state" role="alert">
+              <p>We couldn’t load your recent applications right now.</p>
+              <button type="button" className="seeker-button seeker-button--secondary" onClick={() => setRetryKey((current) => current + 1)}>Retry</button>
+            </div>
+          ) : dashboard && dashboard.recentApplications.length === 0 ? (
+            <div className="seeker-card__empty-state">
+              <p>No applications yet.</p>
+              <Link className="seeker-button seeker-button--secondary" to="/seeker/jobs">Browse jobs</Link>
+            </div>
+          ) : (
+            <div className="seeker-portfolio__grid">
+              {dashboard?.recentApplications.map((application) => (
+                <article className="seeker-portfolio__project" key={application.id}>
+                  <div className="seeker-portfolio__project-top">
+                    <span className="seeker-portfolio__employer">{application.companyName ?? 'Company not provided'}</span>
+                    <small>{formatDate(application.appliedAt)}</small>
+                  </div>
+                  <h3>{application.jobTitle}</h3>
+                  <div className="seeker-portfolio__meta">
+                    <span className={`seeker-portfolio__status seeker-portfolio__status--${application.status.toLowerCase()}`}>{formatStatus(application.status)}</span>
+                  </div>
+                </article>
+              ))}
+            </div>
+          )}
+        </section>
+
+        <section className="seeker-card seeker-recommendations" aria-labelledby="approved-jobs-heading">
+          <div className="seeker-section-heading">
+            <div>
+              <p className="seeker-card__label">Discover</p>
+              <h2 id="approved-jobs-heading">Approved jobs</h2>
+            </div>
+            <Link to="/seeker/jobs">
+              View all
+              <FaChevronRight />
+            </Link>
           </div>
+
+          {isLoading ? (
+            renderSkeletonCard('seeker-job-list__skeleton')
+          ) : error ? (
+            <div className="seeker-card__empty-state" role="alert">
+              <p>We couldn’t load the latest job opportunities.</p>
+              <button type="button" className="seeker-button seeker-button--secondary" onClick={() => setRetryKey((current) => current + 1)}>Retry</button>
+            </div>
+          ) : dashboard && dashboard.approvedJobs.length === 0 ? (
+            <div className="seeker-card__empty-state">
+              <p>No approved jobs are available right now.</p>
+            </div>
+          ) : (
+            <div className="seeker-job-list">
+              {dashboard?.approvedJobs.slice(0, 2).map((job) => (
+                <ApprovedJobCard key={job.id} job={job} />
+              ))}
+            </div>
+          )}
         </section>
       </div>
     </div>
