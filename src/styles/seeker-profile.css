@@ -323,6 +323,155 @@
   color: #0f172a;
 }
 
+.seeker-cv-upload-box > span {
+  max-width: 760px;
+  line-height: 1.5;
+}
+
+.seeker-cv-file-controls {
+  display: grid;
+  gap: 0.85rem;
+  width: min(100%, 720px);
+  margin-top: 0.35rem;
+}
+
+.seeker-cv-file-actions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+}
+
+.seeker-cv-upload-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 42px;
+  padding: 0 1rem;
+  border: 0;
+  border-radius: 8px;
+  background: #0e4ae1;
+  color: #ffffff;
+  cursor: pointer;
+  font-weight: 800;
+}
+
+.seeker-cv-upload-action:disabled,
+.seeker-delete-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.seeker-cv-remove-action {
+  width: auto;
+  padding: 0 1rem;
+}
+
+.seeker-cv-file-meta {
+  display: grid;
+  justify-items: center;
+  gap: 0.3rem;
+}
+
+.seeker-cv-file-meta small {
+  color: #64748b;
+  font-weight: 700;
+}
+
+.seeker-cv-workflow-options {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+  width: 100%;
+  margin-top: 0.35rem;
+}
+
+.seeker-cv-workflow-option {
+  display: grid;
+  gap: 0.3rem;
+  padding: 0.85rem;
+  border: 1px solid rgba(14, 74, 225, 0.18);
+  border-radius: 8px;
+  background: #ffffff;
+  color: #475569;
+  text-align: left;
+}
+
+.seeker-cv-workflow-option strong {
+  color: #0f172a;
+}
+
+.seeker-cv-workflow-option span,
+.seeker-cv-workflow-option small {
+  color: #64748b;
+  line-height: 1.4;
+}
+
+.seeker-cv-workflow-option--active {
+  border-color: #0e4ae1;
+  background: #f7faff;
+}
+
+.seeker-cv-workflow-option:disabled {
+  cursor: not-allowed;
+  opacity: 0.72;
+}
+
+.seeker-cv-import-status,
+.seeker-cv-import-review {
+  display: grid;
+  gap: 0.35rem;
+  padding: 1rem;
+  border: 1px solid rgba(14, 74, 225, 0.18);
+  border-radius: 8px;
+  background: #f7faff;
+}
+
+.seeker-cv-import-status strong,
+.seeker-cv-import-review strong {
+  color: #0f172a;
+}
+
+.seeker-cv-import-status span,
+.seeker-cv-import-review span {
+  color: #64748b;
+  line-height: 1.45;
+}
+
+.seeker-cv-import-warnings {
+  display: grid;
+  gap: 0.35rem;
+  margin: 0.25rem 0 0;
+  padding-left: 1.1rem;
+  color: #64748b;
+  font-size: 0.88rem;
+  line-height: 1.45;
+}
+
+.seeker-cv-import-review__action {
+  width: max-content;
+  min-height: 40px;
+  margin-top: 0.35rem;
+  padding: 0 0.9rem;
+  border: 1px solid rgba(14, 74, 225, 0.22);
+  border-radius: 8px;
+  background: #ffffff;
+  color: #0e4ae1;
+  cursor: pointer;
+  font-weight: 800;
+}
+
+.seeker-cv-import-review__action:hover,
+.seeker-cv-import-review__action:focus-visible {
+  background: #eff5ff;
+}
+
+.seeker-cv-import-review__action:focus-visible {
+  outline: 3px solid rgba(14, 74, 225, 0.14);
+  outline-offset: 2px;
+}
+
 .seeker-cv-upload-control {
   margin-top: 0.35rem;
 }
@@ -764,6 +913,132 @@
   resize: vertical;
 }
 
+.seeker-step-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(15, 23, 42, 0.08);
+}
+
+.seeker-step-actions__left,
+.seeker-step-actions__right {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.seeker-step-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 42px;
+  padding: 0 1rem;
+  border-radius: 8px;
+  font-size: 0.88rem;
+  font-weight: 800;
+  transition: background-color 160ms ease, border-color 160ms ease, color 160ms ease, opacity 160ms ease;
+}
+
+.seeker-step-button--primary {
+  border: 1px solid #0e4ae1;
+  background: #0e4ae1;
+  color: #ffffff;
+}
+
+.seeker-step-button--primary:hover,
+.seeker-step-button--primary:focus-visible {
+  border-color: #0b3bcb;
+  background: #0b3bcb;
+}
+
+.seeker-step-button--secondary {
+  border: 1px solid rgba(14, 74, 225, 0.22);
+  background: #ffffff;
+  color: #0e4ae1;
+}
+
+.seeker-step-button--secondary:hover,
+.seeker-step-button--secondary:focus-visible {
+  background: #eff5ff;
+}
+
+.seeker-step-button--ghost {
+  border: 1px solid transparent;
+  background: transparent;
+  color: #64748b;
+}
+
+.seeker-step-button--ghost:hover,
+.seeker-step-button--ghost:focus-visible {
+  border-color: rgba(15, 23, 42, 0.12);
+  background: #f8fafc;
+  color: #334155;
+}
+
+.seeker-step-button:focus-visible {
+  outline: 3px solid rgba(14, 74, 225, 0.16);
+  outline-offset: 2px;
+}
+
+.seeker-step-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.seeker-step-empty-state {
+  display: grid;
+  gap: 0.35rem;
+  padding: 1rem;
+  border: 1px dashed rgba(14, 74, 225, 0.24);
+  border-radius: 8px;
+  background: #f8fbff;
+  color: #475569;
+}
+
+.seeker-step-empty-state p {
+  margin: 0;
+  color: #64748b;
+  font-weight: 600;
+}
+
+.seeker-step-review {
+  padding: 0.25rem 0;
+}
+
+.seeker-step-review__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.seeker-step-review__grid > div {
+  display: grid;
+  gap: 0.35rem;
+  min-width: 0;
+  padding: 0.9rem;
+  border: 1px solid rgba(15, 23, 42, 0.1);
+  border-radius: 8px;
+  background: #fbfcfe;
+}
+
+.seeker-step-review__grid strong {
+  color: #0f172a;
+  font-size: 0.9rem;
+}
+
+.seeker-step-review__status {
+  color: #64748b;
+  font-size: 0.84rem;
+  font-weight: 700;
+}
+
+.seeker-step-review__status--complete {
+  color: #047857;
+}
+
 .seeker-profile-details {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
@@ -948,10 +1223,14 @@
     flex-direction: column;
   }
 
-  .seeker-cv-summary__actions,
-  .seeker-profile-actions {
+  .seeker-cv-summary__actions {
     display: grid;
     grid-template-columns: 1fr 1fr;
+  }
+
+  .seeker-profile-actions {
+    display: grid;
+    grid-template-columns: 1fr;
   }
 
   .seeker-cv-summary__actions button,
@@ -975,6 +1254,22 @@
     flex-direction: column;
   }
 
+  .seeker-cv-file-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+    width: 100%;
+  }
+
+  .seeker-cv-file-actions .seeker-cv-upload-control,
+  .seeker-cv-file-actions .seeker-cv-upload-action,
+  .seeker-cv-file-actions .seeker-cv-remove-action {
+    width: 100%;
+  }
+
+  .seeker-cv-workflow-options {
+    grid-template-columns: 1fr;
+  }
+
   .seeker-cv-steps {
     display: flex;
     gap: 1rem;
@@ -993,8 +1288,28 @@
   }
 
   .seeker-profile-form__split,
-  .seeker-profile-details {
+  .seeker-profile-details,
+  .seeker-step-review__grid {
     grid-template-columns: 1fr;
+  }
+
+  .seeker-step-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .seeker-step-actions__left,
+  .seeker-step-actions__right {
+    width: 100%;
+  }
+
+  .seeker-step-actions__right {
+    justify-content: stretch;
+  }
+
+  .seeker-step-button {
+    flex: 1;
+    min-width: 0;
   }
 
   .seeker-editor-card__tools {

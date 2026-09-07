@@ -21,6 +21,7 @@ export type ApiFailure = {
   status: number;
   error: {
     message: string;
+    code?: string;
     details?: unknown;
   };
 };
@@ -308,13 +309,16 @@ export async function request<T>({
     const data = await response.json().catch(() => undefined);
 
     if (!response.ok) {
-      const errorData = typeof data === 'object' && data !== null ? data as { message?: string; errors?: unknown } : undefined;
+      const errorData = typeof data === 'object' && data !== null
+        ? data as { message?: string; errors?: unknown; error?: { message?: string; code?: string } }
+        : undefined;
 
       return {
         ok: false,
         status: response.status,
         error: {
-          message: errorData?.message ?? 'Request failed',
+          message: errorData?.message ?? errorData?.error?.message ?? 'Request failed',
+          code: errorData?.error?.code,
           details: errorData?.errors,
         },
       };

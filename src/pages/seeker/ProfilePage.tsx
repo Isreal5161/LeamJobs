@@ -27,6 +27,7 @@ import { useSubscriptions, type SubscriptionPlanId } from '../../context/Subscri
 import {
   getSeekerProfile,
   API_BASE_URL,
+  request,
   updateSeekerCV,
   updateSeekerProfile,
   uploadSeekerProfilePicture,
@@ -101,7 +102,29 @@ type ProfileState = {
 };
 
 type AddPanel = 'skill' | 'qualification' | null;
-type CvMode = 'builder' | 'upload';
+type CvWorkflowMode = 'template' | 'uploaded' | 'imported' | 'import-review';
+type CvImportStatus = 'idle' | 'processing' | 'review' | 'editing-imported';
+type ImportedCvData = {
+  fullName: string | null;
+  professionalTitle: string | null;
+  bio: string | null;
+  experience: ExperienceItem[] | null;
+  education: EducationItem[] | null;
+  skills: string[] | null;
+  certifications: CertificationItem[] | null;
+  languages: LanguageItem[] | null;
+  projects: ProjectItem[] | null;
+  linkedinUrl: string | null;
+};
+type ResumeImportResponse = {
+  success: true;
+  data: {
+    source: { format: string; filename: string | null };
+    requiresReview: boolean;
+    warnings: string[];
+    cv: ImportedCvData;
+  };
+};
 type ProfileNotification = {
   title: string;
   message: string;
@@ -167,8 +190,13 @@ function ProfilePage() {
   const [notification, setNotification] = useState<ProfileNotification | null>(null);
   const [uploadedCvName, setUploadedCvName] = useState('');
   const [uploadedCvFile, setUploadedCvFile] = useState<File | null>(null);
-  const [cvMode, setCvMode] = useState<CvMode>('builder');
+  const [cvWorkflowMode, setCvWorkflowMode] = useState<CvWorkflowMode>('template');
+  const [cvImportStatus, setCvImportStatus] = useState<CvImportStatus>('idle');
+  const [importedCvData, setImportedCvData] = useState<ImportedCvData | null>(null);
+  const [cvImportWarnings, setCvImportWarnings] = useState<string[]>([]);
+  const [cvImportSourceFormat, setCvImportSourceFormat] = useState<string | null>(null);
   const [profile, setProfile] = useState<ProfileState>(createEmptyProfileState());
+  const [loadedProfileSnapshot, setLoadedProfileSnapshot] = useState<ProfileState | null>(null);
   const [isLoadingProfile, setIsLoadingProfile] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [isUploadingFile, setIsUploadingFile] = useState(false);
@@ -229,7 +257,7 @@ function ProfilePage() {
         ? apiProfile.skills.filter((skill) => skill && String(skill).trim().length > 0)
         : [];
 
-      setProfile({
+      const loadedProfile: ProfileState = {
         personalInfo: {
           fullName,
           title,
@@ -245,12 +273,15 @@ function ProfilePage() {
         certifications: apiProfile.certifications ?? [],
         languages: apiProfile.languages ?? [],
         projects: apiProfile.projects ?? [],
-      });
+      };
+      setProfile(loadedProfile);
+      setLoadedProfileSnapshot(loadedProfile);
       setSelectedTemplate(apiProfile.cvTemplate ?? 'modern');
       setProfilePictureUrl(apiProfile.profilePictureUrl ?? null);
       setResumeUrl(apiProfile.resumeUrl ?? null);
       if (apiProfile.resumeUrl) {
         setUploadedCvName('Uploaded resume');
+        setCvWorkflowMode('uploaded');
       }
       setOnboardingLocation({
         country: apiProfile.country ?? '',
@@ -360,22 +391,32 @@ function ProfilePage() {
 
     return (
       <div className="seeker-step-actions">
-        {currentStepIndex > 0 && (
-          <button type="button" className="seeker-step-button seeker-step-button--secondary" onClick={() => goToStep(-1)}>
-            Back
+        <div className="seeker-step-actions__left">
+          {currentStepIndex > 0 && (
+            <button type="button" className="seeker-step-button seeker-step-button--secondary" onClick={() => goToStep(-1)}>
+              Back
+            </button>
+          )}
+        </div>
+        <div className="seeker-step-actions__right">
+          {skipVisible && !isFinalStep && (
+            <button type="button" className="seeker-step-button seeker-step-button--ghost" onClick={() => goToStep(1)}>
+              Skip for now
+            </button>
+          )}
+          <button type="button" className="seeker-step-button seeker-step-button--primary" onClick={isFinalStep ? handleUpdateProfile : () => goToStep(1)} disabled={isFinalStep && isSaving}>
+            {isFinalStep ? (isSaving ? 'Updating...' : 'Finish CV') : 'Next'}
           </button>
-        )}
-        {skipVisible && !isFinalStep && (
-          <button type="button" className="seeker-step-button seeker-step-button--ghost" onClick={() => goToStep(1)}>
-            Skip for now
-          </button>
-        )}
-        <button type="button" className="seeker-step-button seeker-step-button--primary" onClick={() => goToStep(1)}>
-          {isFinalStep ? 'Finish CV' : 'Next'}
-        </button>
+        </div>
       </div>
     );
   };
+
+  const renderReviewStatus = (isComplete: boolean, completeText: string) => (
+    <span className={isComplete ? 'seeker-step-review__status seeker-step-review__status--complete' : 'seeker-step-review__status'}>
+      {isComplete ? `✓ ${completeText}` : '○ Not added'}
+    </span>
+  );
 
   const updatePersonalInfo = (field: keyof ProfileState['personalInfo'], value: string) => {
     setProfile((current) => ({
@@ -612,7 +653,7 @@ function ProfilePage() {
     );
   };
 
-  const handleSaveDraft = async () => {
+  const handleUpdateProfile = async () => {
     if (!token || isSaving) return;
 
     const fullNameParts = profile.personalInfo.fullName.trim().split(/\s+/).filter(Boolean);
@@ -655,11 +696,14 @@ function ProfilePage() {
       return;
     }
 
-    const profileFieldsAreReady = onboardingLocation.country.trim()
-      && onboardingLocation.state.trim()
-      && onboardingLocation.city.trim()
-      && profile.personalInfo.title.trim()
-      && profile.skills.length > 0;
+    const incompleteProfileFields = [
+      !onboardingLocation.country.trim() ? 'country' : '',
+      !onboardingLocation.state.trim() ? 'state or region' : '',
+      !onboardingLocation.city.trim() ? 'city' : '',
+      !profile.personalInfo.title.trim() ? 'professional title' : '',
+      profile.skills.length === 0 ? 'at least one skill' : '',
+    ].filter(Boolean);
+    const profileFieldsAreReady = incompleteProfileFields.length === 0;
 
     if (profileFieldsAreReady) {
       const profileResult = await updateSeekerProfile({
@@ -685,15 +729,102 @@ function ProfilePage() {
       }
     }
 
+    if (!profileFieldsAreReady) {
+      setIsSaving(false);
+      showNotification({
+        title: 'CV updated, profile incomplete',
+        message: `Complete your ${incompleteProfileFields.join(', ')} to update your full profile.`,
+        tone: 'info',
+      });
+      return;
+    }
+
     setIsSaving(false);
     showNotification({
-      title: 'Draft saved',
-      message: 'Your profile and CV changes have been saved.',
+      title: 'Profile updated successfully',
+      message: 'Your profile and CV template changes have been saved.',
+      tone: 'success',
+    });
+    setLoadedProfileSnapshot(profile);
+  };
+
+  const hasUnsavedProfileEdits = loadedProfileSnapshot !== null
+    && JSON.stringify(profile) !== JSON.stringify(loadedProfileSnapshot);
+
+  const handleImportCv = async () => {
+    if (!token || !resumeUrl || cvImportStatus === 'processing') return;
+
+    if (hasUnsavedProfileEdits && !window.confirm('Import this CV?\n\nImporting will replace the current unsaved CV information in the editor. Your previously saved profile will not be affected.')) {
+      return;
+    }
+
+    setCvImportStatus('processing');
+    const result = await request<ResumeImportResponse>({
+      method: 'POST',
+      endpoint: '/seeker/profile/resume/import',
+      token,
+    });
+
+    if (!result.ok) {
+      const messages: Record<string, string> = {
+        RESUME_NOT_FOUND: 'No uploaded CV was found. Please upload your CV first.',
+        UNSUPPORTED_RESUME_FORMAT: 'This CV format cannot be imported. Please use PDF or DOCX.',
+        DOC_IMPORT_UNSUPPORTED: 'Word .doc files cannot be imported automatically yet. Convert the CV to PDF or DOCX and upload it again.',
+        TEXT_EXTRACTION_FAILED: "We couldn't read the CV. Please check that the file is valid and try again.",
+        TEXT_EXTRACTION_EMPTY: "We couldn't find readable text in this CV. If it is scanned, automatic import may not be available.",
+        RESUME_IMPORT_RATE_LIMITED: 'Too many import attempts. Please wait a few minutes before trying again.',
+      };
+
+      setCvImportStatus('idle');
+      showNotification({
+        title: 'CV import failed',
+        message: messages[result.error.code ?? ''] ?? "We couldn't import this CV right now. Please try again.",
+        tone: 'error',
+      });
+      return;
+    }
+
+    const imported = result.data.data.cv;
+    const importedExperience = Array.isArray(imported.experience) ? imported.experience.filter(Boolean).map((item) => ({ ...item, id: item.id || createId('experience') })) : [];
+    const importedEducation = Array.isArray(imported.education) ? imported.education.filter(Boolean).map((item) => ({ ...item, id: item.id || createId('education') })) : [];
+    const importedCertifications = Array.isArray(imported.certifications) ? imported.certifications.filter(Boolean).map((item) => ({ ...item, id: item.id || createId('certification') })) : [];
+    const importedLanguages = Array.isArray(imported.languages) ? imported.languages.filter(Boolean).map((item) => ({ ...item, id: item.id || createId('language') })) : [];
+    const importedProjects = Array.isArray(imported.projects) ? imported.projects.filter(Boolean).map((item) => ({ ...item, id: item.id || createId('project') })) : [];
+    const importedSkills = Array.isArray(imported.skills) ? [...new Set(imported.skills.map((skill) => skill.trim()).filter(Boolean))] : [];
+
+    setProfile((current) => ({
+      ...current,
+      personalInfo: {
+        ...current.personalInfo,
+        fullName: imported.fullName?.trim() || current.personalInfo.fullName,
+        title: imported.professionalTitle?.trim() || current.personalInfo.title,
+        summary: imported.bio?.trim() || current.personalInfo.summary,
+        linkedin: imported.linkedinUrl?.trim() || current.personalInfo.linkedin,
+      },
+      experience: importedExperience.length > 0 ? importedExperience : current.experience,
+      education: importedEducation.length > 0 ? importedEducation : current.education,
+      skills: importedSkills.length > 0 ? importedSkills : current.skills,
+      certifications: importedCertifications.length > 0 ? importedCertifications : current.certifications,
+      languages: importedLanguages.length > 0 ? importedLanguages : current.languages,
+      projects: importedProjects.length > 0 ? importedProjects : current.projects,
+    }));
+    setImportedCvData(imported);
+    setCvImportWarnings(result.data.data.warnings ?? []);
+    setCvImportSourceFormat(result.data.data.source.format ?? null);
+    setCvImportStatus('review');
+    setCvWorkflowMode('import-review');
+    showNotification({
+      title: 'CV information imported',
+      message: 'Review the imported information in the guided editor before updating your profile.',
       tone: 'success',
     });
   };
 
   const handleEditCvContent = () => {
+    if (cvImportStatus === 'review') {
+      setCvImportStatus('editing-imported');
+      setCvWorkflowMode('imported');
+    }
     setActiveStep('personal');
     document.getElementById('seeker-profile-editor')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
@@ -716,6 +847,11 @@ function ProfilePage() {
 
     setUploadedCvFile(file);
     setUploadedCvName(file.name);
+    setCvWorkflowMode('uploaded');
+    setCvImportStatus('idle');
+    setImportedCvData(null);
+    setCvImportWarnings([]);
+    setCvImportSourceFormat(null);
     showNotification({
       title: 'CV file selected',
       message: `${file.name} is ready to upload with your profile.`,
@@ -773,6 +909,11 @@ function ProfilePage() {
     if (result.ok) {
       setResumeUrl(result.data.data.resumeUrl ?? null);
       setUploadedCvFile(null);
+      setCvWorkflowMode('uploaded');
+      setCvImportStatus('idle');
+      setImportedCvData(null);
+      setCvImportWarnings([]);
+      setCvImportSourceFormat(null);
       showNotification({ title: 'Resume uploaded', message: 'Your resume is now attached to your profile.', tone: 'success' });
     } else showNotification({ title: 'Upload failed', message: result.error.message, tone: 'error' });
   };
@@ -785,21 +926,13 @@ function ProfilePage() {
     if (result.ok) {
       setResumeUrl(null);
       setUploadedCvName('');
+      setCvWorkflowMode('template');
+      setCvImportStatus('idle');
+      setImportedCvData(null);
+      setCvImportWarnings([]);
+      setCvImportSourceFormat(null);
       showNotification({ title: 'Resume removed', message: 'Your uploaded resume has been removed.', tone: 'success' });
     } else showNotification({ title: 'Remove failed', message: result.error.message, tone: 'error' });
-  };
-
-  const handleUploadProfile = async () => {
-    if (uploadedCvFile) {
-      await handleUploadResume();
-      return;
-    }
-
-    showNotification({
-      title: resumeUrl ? 'Resume uploaded' : 'Choose a resume first',
-      message: resumeUrl ? 'Your current resume is attached to your profile.' : 'Choose a PDF, DOC, or DOCX file to upload.',
-      tone: resumeUrl ? 'info' : 'error',
-    });
   };
 
   const handleDownloadPDF = async () => {
@@ -908,26 +1041,63 @@ function ProfilePage() {
               <div className="seeker-cv-workspace__heading">
                 <div>
                   <span className="seeker-cv-summary__eyebrow">CV workspace</span>
-                  <h2>Build or upload your CV</h2>
-                  <p>Use your profile information with a template, or upload an existing CV file.</p>
+                  <h2>How do you want to use your CV?</h2>
+                  <p>Choose one path. Your structured CV information remains in the guided editor below.</p>
                 </div>
-                {uploadedCvName && <span className="seeker-cv-file-status"><FaCheck /> {uploadedCvName}</span>}
               </div>
 
               <div className="seeker-cv-mode-grid" role="tablist" aria-label="Choose how to create your CV">
-                <button type="button" role="tab" aria-selected={cvMode === 'builder'} className={cvMode === 'builder' ? 'seeker-cv-mode-card seeker-cv-mode-card--active' : 'seeker-cv-mode-card'} onClick={() => setCvMode('builder')}>
-                  <FaEdit />
-                  <strong>Build with a template</strong>
-                  <span>Write and edit your CV using your profile information.</span>
-                </button>
-                <button type="button" role="tab" aria-selected={cvMode === 'upload'} className={cvMode === 'upload' ? 'seeker-cv-mode-card seeker-cv-mode-card--active' : 'seeker-cv-mode-card'} onClick={() => setCvMode('upload')}>
+                <button type="button" role="tab" aria-selected={cvWorkflowMode === 'uploaded'} className={cvWorkflowMode === 'uploaded' ? 'seeker-cv-mode-card seeker-cv-mode-card--active' : 'seeker-cv-mode-card'} onClick={() => setCvWorkflowMode('uploaded')}>
                   <FaUpload />
-                  <strong>Upload existing CV</strong>
-                  <span>Choose a PDF, DOC, or DOCX file from your device.</span>
+                  <strong>Use an existing CV</strong>
+                  <span>Upload your existing CV and use it directly, or import its information into a LeamJobs template later.</span>
+                </button>
+                <button type="button" role="tab" aria-selected={cvWorkflowMode === 'template' || cvWorkflowMode === 'imported' || cvWorkflowMode === 'import-review'} className={cvWorkflowMode === 'template' || cvWorkflowMode === 'imported' || cvWorkflowMode === 'import-review' ? 'seeker-cv-mode-card seeker-cv-mode-card--active' : 'seeker-cv-mode-card'} onClick={() => setCvWorkflowMode(importedCvData ? 'imported' : 'template')}>
+                  <FaEdit />
+                  <strong>Build with LeamJobs</strong>
+                  <span>Create a professional CV using the guided editor and templates.</span>
                 </button>
               </div>
 
-              {cvMode === 'builder' ? (
+              {(cvWorkflowMode === 'uploaded' || uploadedCvFile) && <div className="seeker-cv-upload-box">
+              <FaUpload />
+              <strong>Already have a CV?</strong>
+              <span>Upload your existing CV here. You can use it directly or use its information with the LeamJobs CV template later.</span>
+              <div className="seeker-cv-file-controls">
+                <div className="seeker-cv-file-actions">
+                  <label className="seeker-cv-upload-control">
+                    Choose CV
+                    <input type="file" accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document" onChange={handleCvFileUpload} />
+                  </label>
+                  <button type="button" className="seeker-cv-upload-action" onClick={handleUploadResume} disabled={!uploadedCvFile || isUploadingFile}>
+                    {isUploadingFile ? 'Uploading...' : 'Upload CV'}
+                  </button>
+                  <button type="button" className="seeker-delete-button seeker-cv-remove-action" onClick={handleRemoveResume} disabled={!resumeUrl || isUploadingFile}>
+                    Remove CV
+                  </button>
+                </div>
+                {(uploadedCvFile || resumeUrl) && (
+                  <div className="seeker-cv-file-meta" aria-live="polite">
+                    <span className="seeker-cv-file-status"><FaCheck /> {uploadedCvName || 'Uploaded CV'}</span>
+                    <small>{uploadedCvFile ? 'Ready to upload' : 'Uploaded CV'}</small>
+                  </div>
+                )}
+                {resumeUrl && !uploadedCvFile && (
+                  <div className="seeker-cv-workflow-options">
+                    <button type="button" className="seeker-cv-workflow-option seeker-cv-workflow-option--active" onClick={() => setCvWorkflowMode('uploaded')}>
+                      <strong>Use uploaded CV</strong>
+                      <span>Keep using your uploaded CV without converting it.</span>
+                    </button>
+                    <button type="button" className="seeker-cv-workflow-option" onClick={handleImportCv} disabled={!resumeUrl || cvImportStatus === 'processing'}>
+                      <strong>{cvImportStatus === 'processing' ? 'Importing CV...' : 'Import into LeamJobs template'}</strong>
+                      <span>Review extracted information before adding it to your LeamJobs CV.</span>
+                      {cvImportStatus === 'processing' && <small>Reading your uploaded CV...</small>}
+                    </button>
+                  </div>
+                )}
+              </div></div>}
+
+              {(cvWorkflowMode === 'template' || cvWorkflowMode === 'imported' || cvWorkflowMode === 'import-review') && (
                 <>
                   <div className="seeker-cv-template-choices" aria-label="CV templates">
                     {TEMPLATES.map((template) => (
@@ -937,6 +1107,12 @@ function ProfilePage() {
                       </button>
                     ))}
                   </div>
+                  {cvWorkflowMode === 'imported' && (
+                    <div className="seeker-cv-import-status" role="status">
+                      <strong>Your CV information has been imported</strong>
+                      <span>Review the guided sections below before updating your LeamJobs CV.</span>
+                    </div>
+                  )}
                   <div id="cv-preview-container" className="seeker-cv-rendered-preview">
                     <CVTemplateRenderer data={{
                       personalInfo: profile.personalInfo,
@@ -948,26 +1124,26 @@ function ProfilePage() {
                       languages: profile.languages,
                       projects: profile.projects,
                     }} template={selectedTemplate} />
-              </div>
-              <div className="seeker-cv-workspace__actions">
-                <button type="button" onClick={handleEditCvContent}><FaEdit /> Edit CV content</button>
-                <button type="button" onClick={handleDownloadPDF}><FaDownload /> Download PDF</button>
-              </div>
-            </>
-          ) : (
-            <div className="seeker-cv-upload-box">
-              <FaUpload />
-              <strong>Already have a CV?</strong>
-              <span>Upload your existing CV (PDF, DOC, or DOCX) up to 10 MB.</span>
-              <label className="seeker-cv-upload-control">
-                Choose CV File
-                <input type="file" accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document" onChange={handleCvFileUpload} />
-              </label>
-              {uploadedCvName && <small>Selected: {uploadedCvName}</small>}
-              {uploadedCvFile && <button type="button" onClick={handleUploadResume} disabled={isUploadingFile}>{isUploadingFile ? 'Uploading...' : 'Upload CV'}</button>}
-              {resumeUrl && <button type="button" onClick={handleRemoveResume} disabled={isUploadingFile}>Remove uploaded CV</button>}
-            </div>
-          )}
+                  </div>
+                  <div className="seeker-cv-workspace__actions">
+                    <button type="button" onClick={handleEditCvContent}><FaEdit /> Edit CV content</button>
+                    <button type="button" onClick={handleDownloadPDF}><FaDownload /> Download PDF</button>
+                  </div>
+                </>
+              )}
+
+              {cvImportStatus === 'review' && importedCvData && (
+                <div className="seeker-cv-import-review">
+                  <strong>Information imported from {cvImportSourceFormat?.toUpperCase() || 'your CV'}</strong>
+                  <span>Review the information below in the guided editor before updating your LeamJobs profile.</span>
+                  {cvImportWarnings.length > 0 && (
+                    <ul className="seeker-cv-import-warnings">
+                      {cvImportWarnings.map((warning) => <li key={warning}>{warning}</li>)}
+                    </ul>
+                  )}
+                  <button type="button" className="seeker-cv-import-review__action" onClick={handleEditCvContent}>Review imported information</button>
+                </div>
+              )}
             </section>
 
             <section className="seeker-card seeker-subscription-card">
@@ -1232,7 +1408,28 @@ function ProfilePage() {
                 )}
 
                 {activeStep === 'review' && (
-                  <section className="seeker-card seeker-editor-card"><div className="seeker-editor-card__heading"><div><h2>Review your CV</h2><p>Check the main sections of your profile before saving.</p></div></div><div className="seeker-step-review"><div className="seeker-step-review__grid"><div><strong>Personal details</strong><span>{profile.personalInfo.fullName || 'Not added yet'}</span></div><div><strong>Summary</strong><span>{profile.personalInfo.summary ? 'Added' : 'Not added yet'}</span></div><div><strong>Experience</strong><span>{profile.experience.length ? `${profile.experience.length} item(s)` : 'Not added yet'}</span></div><div><strong>Education</strong><span>{profile.education.length ? `${profile.education.length} item(s)` : 'Not added yet'}</span></div><div><strong>Skills</strong><span>{profile.skills.length ? `${profile.skills.length} skill(s)` : 'Not added yet'}</span></div><div><strong>Qualifications</strong><span>{profile.certifications.length ? `${profile.certifications.length} item(s)` : 'Not added yet'}</span></div><div><strong>Languages</strong><span>{profile.languages.length ? `${profile.languages.length} language(s)` : 'Not added yet'}</span></div><div><strong>Work samples</strong><span>{profile.projects.length ? `${profile.projects.length} item(s)` : 'Not added yet'}</span></div><div><strong>LinkedIn</strong><span>{profile.personalInfo.linkedin ? 'Added' : 'Not added yet'}</span></div></div></div>{renderStepControls('review')}</section>
+                  <section className="seeker-card seeker-editor-card">
+                    <div className="seeker-editor-card__heading">
+                      <div>
+                        <h2>Review your CV</h2>
+                        <p>Check the main sections of your profile before saving.</p>
+                      </div>
+                    </div>
+                    <div className="seeker-step-review">
+                      <div className="seeker-step-review__grid">
+                        <div><strong>Personal details</strong>{renderReviewStatus(Boolean(profile.personalInfo.fullName.trim()), profile.personalInfo.fullName || 'Complete')}</div>
+                        <div><strong>Summary</strong>{renderReviewStatus(Boolean(profile.personalInfo.summary.trim()), 'Complete')}</div>
+                        <div><strong>Experience</strong>{renderReviewStatus(profile.experience.length > 0, `${profile.experience.length} item(s)`)}</div>
+                        <div><strong>Education</strong>{renderReviewStatus(profile.education.length > 0, `${profile.education.length} item(s)`)}</div>
+                        <div><strong>Skills</strong>{renderReviewStatus(profile.skills.length > 0, `${profile.skills.length} skill(s)`)}</div>
+                        <div><strong>Qualifications</strong>{renderReviewStatus(profile.certifications.length > 0, `${profile.certifications.length} item(s)`)}</div>
+                        <div><strong>Languages</strong>{renderReviewStatus(profile.languages.length > 0, `${profile.languages.length} language(s)`)}</div>
+                        <div><strong>Work samples</strong>{renderReviewStatus(profile.projects.length > 0, `${profile.projects.length} item(s)`)}</div>
+                        <div><strong>LinkedIn</strong>{renderReviewStatus(Boolean(profile.personalInfo.linkedin.trim()), 'Complete')}</div>
+                      </div>
+                    </div>
+                    {renderStepControls('review')}
+                  </section>
                 )}
           </div>
 
@@ -1267,8 +1464,7 @@ function ProfilePage() {
       </main>
 
       <div className="seeker-profile-actions">
-        <button type="button" onClick={handleSaveDraft} disabled={isSaving}><FaRegSave /> {isSaving ? 'Saving...' : 'Save Draft'}</button>
-        <button type="button" onClick={handleUploadProfile}><FaUpload /> Upload CV</button>
+        <button type="button" onClick={handleUpdateProfile} disabled={isSaving}><FaRegSave /> {isSaving ? 'Updating...' : 'Update Profile'}</button>
       </div>
 
       {notification && (
