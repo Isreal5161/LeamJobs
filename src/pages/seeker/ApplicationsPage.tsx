@@ -7,7 +7,6 @@ import {
   FaCalendarAlt,
   FaCheckCircle,
   FaClock,
-  FaDownload,
   FaExternalLinkAlt,
   FaFileAlt,
   FaSearch,
@@ -179,7 +178,7 @@ function ApplicationsPage() {
 
         <section className="seeker-applications-grid">
           <div className="seeker-card seeker-application-list-card">
-            <div className="seeker-section-heading"><h2>Recent applications</h2><button type="button" className="seeker-applications-export"><FaDownload /> Export</button></div>
+            <div className="seeker-section-heading"><div><h2>Recent applications</h2><p className="seeker-application-list-card__subtitle">Review your latest applications and their progress.</p></div></div>
             <div className="seeker-application-tabs" aria-label="Application status filters">{['All', 'Interview', 'Applied', 'Reviewing', 'Rejected'].map((tab) => <button className={tab === 'All' ? 'seeker-application-tab--active' : ''} type="button" key={tab}>{tab}</button>)}</div>
             <div className="seeker-application-list">
               {error ? <p role="alert">{error}</p> : null}

@@ -15,6 +15,10 @@
   box-shadow: var(--seeker-card-shadow);
 }
 
+.seeker-home.messages-page .messages-hero h1 {
+  color: #ffffff;
+}
+
 .messages-eyebrow {
   display: inline-flex;
   margin-bottom: 0.35rem;
