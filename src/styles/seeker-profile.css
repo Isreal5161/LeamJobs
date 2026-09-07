@@ -365,6 +365,8 @@
 
 .seeker-cv-remove-action {
   width: auto;
+  min-width: 112px;
+  min-height: 42px;
   padding: 0 1rem;
 }
 

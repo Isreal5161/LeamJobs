@@ -108,6 +108,12 @@ type ImportedCvData = {
   fullName: string | null;
   professionalTitle: string | null;
   bio: string | null;
+  email: string | null;
+  phone: string | null;
+  country: string | null;
+  state: string | null;
+  city: string | null;
+  website: string | null;
   experience: ExperienceItem[] | null;
   education: EducationItem[] | null;
   skills: string[] | null;
@@ -121,6 +127,7 @@ type ResumeImportResponse = {
   data: {
     source: { format: string; filename: string | null };
     requiresReview: boolean;
+    extraction: { method: string; aiUsed: boolean };
     warnings: string[];
     cv: ImportedCvData;
   };
@@ -772,6 +779,7 @@ function ProfilePage() {
         DOC_IMPORT_UNSUPPORTED: 'Word .doc files cannot be imported automatically yet. Convert the CV to PDF or DOCX and upload it again.',
         TEXT_EXTRACTION_FAILED: "We couldn't read the CV. Please check that the file is valid and try again.",
         TEXT_EXTRACTION_EMPTY: "We couldn't find readable text in this CV. If it is scanned, automatic import may not be available.",
+        RESUME_IMPORT_FAILED: "We couldn't import this CV right now. Please try again.",
         RESUME_IMPORT_RATE_LIMITED: 'Too many import attempts. Please wait a few minutes before trying again.',
       };
 
@@ -785,6 +793,10 @@ function ProfilePage() {
     }
 
     const imported = result.data.data.cv;
+    const importedLocation = [imported.city, imported.state, imported.country]
+      .map((part) => part?.trim() || '')
+      .filter(Boolean)
+      .join(', ');
     const importedExperience = Array.isArray(imported.experience) ? imported.experience.filter(Boolean).map((item) => ({ ...item, id: item.id || createId('experience') })) : [];
     const importedEducation = Array.isArray(imported.education) ? imported.education.filter(Boolean).map((item) => ({ ...item, id: item.id || createId('education') })) : [];
     const importedCertifications = Array.isArray(imported.certifications) ? imported.certifications.filter(Boolean).map((item) => ({ ...item, id: item.id || createId('certification') })) : [];
@@ -798,6 +810,9 @@ function ProfilePage() {
         ...current.personalInfo,
         fullName: imported.fullName?.trim() || current.personalInfo.fullName,
         title: imported.professionalTitle?.trim() || current.personalInfo.title,
+        email: imported.email?.trim() || current.personalInfo.email,
+        phone: imported.phone?.trim() || current.personalInfo.phone,
+        location: importedLocation || current.personalInfo.location,
         summary: imported.bio?.trim() || current.personalInfo.summary,
         linkedin: imported.linkedinUrl?.trim() || current.personalInfo.linkedin,
       },
@@ -808,6 +823,11 @@ function ProfilePage() {
       languages: importedLanguages.length > 0 ? importedLanguages : current.languages,
       projects: importedProjects.length > 0 ? importedProjects : current.projects,
     }));
+    setOnboardingLocation((current) => ({
+      country: imported.country?.trim() || current.country,
+      state: imported.state?.trim() || current.state,
+      city: imported.city?.trim() || current.city,
+    }));
     setImportedCvData(imported);
     setCvImportWarnings(result.data.data.warnings ?? []);
     setCvImportSourceFormat(result.data.data.source.format ?? null);
@@ -815,7 +835,9 @@ function ProfilePage() {
     setCvWorkflowMode('import-review');
     showNotification({
       title: 'CV information imported',
-      message: 'Review the imported information in the guided editor before updating your profile.',
+      message: result.data.data.extraction.aiUsed
+        ? 'AI-assisted extraction completed. Review the imported information before updating your profile.'
+        : 'Review the imported information in the guided editor before updating your profile.',
       tone: 'success',
     });
   };
