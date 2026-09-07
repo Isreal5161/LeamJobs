@@ -1,27 +1,77 @@
 import { useEffect, useState } from 'react';
-import { FaBell, FaChevronDown, FaChevronRight, FaFilter, FaSearch, FaSlidersH, FaSortAmountDown } from 'react-icons/fa';
+import { useSearchParams } from 'react-router-dom';
+import { FaFilter, FaSearch, FaTimes } from 'react-icons/fa';
 import SeekerJobCard from '../../components/jobs/SeekerJobCard';
 import { useAuth } from '../../context/AuthContext';
 import { getSeekerJobs, getSeekerRecommendations, type SeekerJobListItem, type SeekerRecommendation } from '../../services/api';
 
 function JobsPage() {
-  const { token } = useAuth();
+  const { token, user } = useAuth();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [jobs, setJobs] = useState<SeekerJobListItem[]>([]);
   const [recommendations, setRecommendations] = useState<SeekerRecommendation[]>([]);
-  const [searchInput, setSearchInput] = useState('');
-  const [search, setSearch] = useState('');
-  const [location, setLocation] = useState('');
-  const [jobType, setJobType] = useState<'' | 'NORMAL_EMPLOYMENT' | 'FREELANCE_PROJECT'>('');
+  const [searchInput, setSearchInput] = useState(() => searchParams.get('q') ?? '');
+  const [search, setSearch] = useState(() => searchParams.get('q') ?? '');
+  const [locationInput, setLocationInput] = useState(() => searchParams.get('location') ?? '');
+  const [location, setLocation] = useState(() => searchParams.get('location') ?? '');
+  const [jobType, setJobType] = useState<'' | 'NORMAL_EMPLOYMENT' | 'FREELANCE_PROJECT'>(() => (searchParams.get('jobType') as '' | 'NORMAL_EMPLOYMENT' | 'FREELANCE_PROJECT') || '');
   const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [error, setError] = useState('');
   const [retryKey, setRetryKey] = useState(0);
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
+
+  const fullName = [user?.firstName, user?.lastName].filter(Boolean).join(' ');
+  const initials = fullName.split(/\s+/).filter(Boolean).map((part) => part[0]).join('').slice(0, 2).toUpperCase() || 'ME';
+  const activeFilterCount = Number(Boolean(location)) + Number(Boolean(jobType));
+
+  const updateQuery = (updates: Record<string, string>) => {
+    const next = new URLSearchParams(searchParams);
+    Object.entries(updates).forEach(([key, value]) => {
+      if (value) next.set(key, value);
+      else next.delete(key);
+    });
+    setSearchParams(next, { replace: true });
+  };
 
   useEffect(() => {
-    const timeout = window.setTimeout(() => setSearch(searchInput.trim()), 300);
+    const timeout = window.setTimeout(() => {
+      const nextSearch = searchInput.trim();
+      setSearch(nextSearch);
+      updateQuery({ q: nextSearch });
+    }, 300);
     return () => window.clearTimeout(timeout);
-  }, [searchInput]);
+  }, [searchInput]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    const timeout = window.setTimeout(() => {
+      const nextLocation = locationInput.trim();
+      setLocation(nextLocation);
+      updateQuery({ location: nextLocation });
+    }, 300);
+    return () => window.clearTimeout(timeout);
+  }, [locationInput]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    const nextSearch = searchParams.get('q') ?? '';
+    const nextLocation = searchParams.get('location') ?? '';
+    const nextJobType = (searchParams.get('jobType') as typeof jobType) || '';
+    if (nextSearch !== searchInput) setSearchInput(nextSearch);
+    if (nextSearch !== search) setSearch(nextSearch);
+    if (nextLocation !== locationInput) setLocationInput(nextLocation);
+    if (nextLocation !== location) setLocation(nextLocation);
+    if (nextJobType !== jobType) setJobType(nextJobType);
+  }, [searchParams]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    if (!isFilterOpen) return undefined;
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setIsFilterOpen(false);
+    };
+    window.addEventListener('keydown', handleEscape);
+    return () => window.removeEventListener('keydown', handleEscape);
+  }, [isFilterOpen]);
 
   useEffect(() => {
     if (!token) {
@@ -67,21 +117,56 @@ function JobsPage() {
     setIsLoadingMore(false);
   };
 
+  const clearFilters = () => {
+    setLocationInput('');
+    setLocation('');
+    setJobType('');
+    updateQuery({ location: '', jobType: '' });
+    setIsFilterOpen(false);
+  };
+
+  const friendlyError = error.toLowerCase().includes('401') || error.toLowerCase().includes('unauthorized')
+    ? 'Your session has expired. Please sign in again.'
+    : 'We could not load jobs right now. Please try again.';
+
+  const renderFilterFields = () => (
+    <>
+      <input aria-label="Filter by location" placeholder="Location" value={locationInput} onChange={(event) => setLocationInput(event.target.value)} />
+      <select aria-label="Filter by job type" value={jobType} onChange={(event) => {
+        const nextJobType = event.target.value as typeof jobType;
+        setJobType(nextJobType);
+        updateQuery({ jobType: nextJobType });
+      }}>
+        <option value="">All job types</option>
+        <option value="NORMAL_EMPLOYMENT">Employment</option>
+        <option value="FREELANCE_PROJECT">Freelance projects</option>
+      </select>
+    </>
+  );
+
+  const renderSkeletons = () => <div className="seeker-job-list" aria-label="Loading jobs" aria-live="polite">{[1, 2, 3].map((item) => <div className="seeker-job-skeleton" key={item}><span /><div><i /><i /><i /></div></div>)}</div>;
+
+  const emptyMessage = search || location || jobType
+    ? search
+      ? 'No jobs match your search.'
+      : 'No jobs match these filters.'
+    : 'No approved jobs are available right now.';
+
   return (
     <div className="seeker-jobs-page">
       <section className="seeker-jobs-hero">
-        <div className="seeker-hero__top"><div className="seeker-profile"><div className="seeker-profile__avatar" aria-hidden="true">JB</div><div><h1>Find Jobs</h1><p>Discover approved opportunities</p></div></div><button className="seeker-icon-button seeker-icon-button--alert" type="button" aria-label="Notifications"><FaBell /></button></div>
-        <label className="seeker-search" aria-label="Search jobs, companies or keywords"><FaSearch /><input type="search" placeholder="Search for jobs, companies or keywords" value={searchInput} onChange={(event) => setSearchInput(event.target.value)} /></label>
-        <div className="seeker-filter-row"><input aria-label="Filter by location" placeholder="Location" value={location} onChange={(event) => setLocation(event.target.value)} /><select aria-label="Filter by job type" value={jobType} onChange={(event) => setJobType(event.target.value as typeof jobType)}><option value="">All job types</option><option value="NORMAL_EMPLOYMENT">Employment</option><option value="FREELANCE_PROJECT">Freelance projects</option></select><button className="seeker-filter-row__control" type="button" aria-label="Filters"><FaSlidersH /></button></div>
+        <div className="seeker-hero__top"><div className="seeker-profile"><div className="seeker-profile__avatar" aria-hidden="true">{initials}</div><div><h1>Find Jobs</h1><p>Discover approved opportunities</p></div></div></div>
+        <label className="seeker-search" aria-label="Search jobs, companies or keywords"><FaSearch /><input type="search" placeholder="Search jobs, companies or keywords" value={searchInput} onChange={(event) => setSearchInput(event.target.value)} />{searchInput && <button type="button" className="seeker-search__clear" aria-label="Clear search" onClick={() => setSearchInput('')}><FaTimes /></button>}</label>
+        <div className="seeker-filter-row"><div className="seeker-filter-fields">{renderFilterFields()}</div><button className="seeker-filter-trigger" type="button" onClick={() => setIsFilterOpen(true)}><FaFilter /><span>Filters{activeFilterCount > 0 ? ` (${activeFilterCount})` : ''}</span></button>{activeFilterCount > 0 && <button className="seeker-filter-clear" type="button" onClick={clearFilters}>Clear filters</button>}</div>
       </section>
       <main className="seeker-jobs-content">
-        <section className="seeker-jobs-toolbar" aria-label="Job sorting and filters"><label className="seeker-jobs-toolbar__sort"><FaSortAmountDown /><span>Sort by</span><select aria-label="Sort jobs" value="newest" disabled><option value="newest">Newest</option></select><FaChevronDown className="seeker-jobs-toolbar__sort-chevron" /></label><button type="button" className="seeker-jobs-toolbar__filter" onClick={() => document.querySelector<HTMLInputElement>('[aria-label="Filter by location"]')?.focus()}><FaFilter /><span>Filters</span></button></section>
-        {!isLoading && !error && !search && !location && !jobType && recommendations.length > 0 && <section className="seeker-card seeker-jobs-results"><div className="seeker-section-heading"><h2>Recommended jobs</h2><span>Based on your skills</span></div><div className="seeker-job-list seeker-job-list--jobs-page">{recommendations.map((recommendation) => <SeekerJobCard key={recommendation.job.id} job={recommendation.job} listing matchScore={recommendation.matchScore} matchedSkills={recommendation.matchedSkills} />)}</div></section>}
-        <section className="seeker-card seeker-jobs-results"><div className="seeker-section-heading"><h2>Approved jobs</h2><span>{jobs.length} loaded</span></div>
-          {isLoading ? <p className="payment-copy">Loading approved jobs...</p> : error ? <div role="alert"><p className="payment-copy">{error}</p><button type="button" onClick={() => setRetryKey((current) => current + 1)}>Retry</button></div> : jobs.length === 0 ? <p className="payment-copy">No approved jobs are available right now.</p> : <><div className="seeker-job-list seeker-job-list--jobs-page">{jobs.map((job) => <SeekerJobCard job={job} listing key={job.id} />)}</div>{nextCursor && <button type="button" onClick={loadMore} disabled={isLoadingMore}>{isLoadingMore ? 'Loading...' : 'Load more jobs'}</button>}</>}
+        <div className="seeker-jobs-toolbar"><div><strong>{isLoading ? 'Finding jobs...' : `${jobs.length} ${jobs.length === 1 ? 'job' : 'jobs'}`}</strong>{(search || location || jobType) && <span>{search ? `Showing results for “${search}”` : 'Showing filtered results'}</span>}</div></div>
+        {!isLoading && !error && !search && !location && !jobType && recommendations.length > 0 && <section className="seeker-card seeker-jobs-results seeker-jobs-results--recommended"><div className="seeker-section-heading"><div><h2>Recommended for you</h2><span>Based on your skills and profile</span></div></div><div className="seeker-job-list seeker-job-list--jobs-page">{recommendations.filter((recommendation) => !jobs.some((job) => job.id === recommendation.job.id)).map((recommendation) => <SeekerJobCard key={recommendation.job.id} job={recommendation.job} listing showBookmark={false} matchScore={recommendation.matchScore} matchedSkills={recommendation.matchedSkills} />)}</div></section>}
+        <section className="seeker-card seeker-jobs-results"><div className="seeker-section-heading"><h2>Approved jobs</h2><span>Verified opportunities</span></div>
+          {isLoading ? renderSkeletons() : error ? <div className="seeker-jobs-error" role="alert"><p>{friendlyError}</p><button type="button" onClick={() => setRetryKey((current) => current + 1)}>Retry</button></div> : jobs.length === 0 ? <div className="seeker-jobs-empty"><p>{emptyMessage}</p>{(search || location || jobType) && <button type="button" onClick={() => { setSearchInput(''); clearFilters(); }}>Clear search and filters</button>}</div> : <><div className="seeker-job-list seeker-job-list--jobs-page">{jobs.map((job) => <SeekerJobCard job={job} listing showBookmark={false} key={job.id} />)}</div>{nextCursor ? <button className="seeker-jobs-load-more" type="button" onClick={loadMore} disabled={isLoadingMore}>{isLoadingMore ? 'Loading more jobs...' : 'Load more jobs'}</button> : <p className="seeker-jobs-end">You’ve reached the end of the results.</p>}</>}
         </section>
       </main>
-      <aside className="seeker-jobs-profile-match" aria-label="Job results summary"><div><span>Approved jobs</span><strong>{jobs.length} roles loaded</strong><p>Only approved jobs are shown.</p></div><FaChevronRight /></aside>
+      {isFilterOpen && <div className="seeker-filter-modal-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setIsFilterOpen(false); }}><section className="seeker-filter-modal" role="dialog" aria-modal="true" aria-labelledby="seeker-filter-title"><div className="seeker-filter-modal__header"><h2 id="seeker-filter-title">Filter jobs</h2><button type="button" aria-label="Close filters" onClick={() => setIsFilterOpen(false)}><FaTimes /></button></div><div className="seeker-filter-modal__fields"><div className="seeker-filter-fields">{renderFilterFields()}</div></div><div className="seeker-filter-modal__actions"><button type="button" className="seeker-filter-clear" onClick={clearFilters}>Clear filters</button><button type="button" className="seeker-filter-apply" onClick={() => setIsFilterOpen(false)}>Show jobs</button></div></section></div>}
     </div>
   );
 }

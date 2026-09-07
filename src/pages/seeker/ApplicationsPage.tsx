@@ -102,6 +102,18 @@ function ApplicationsPage() {
     return () => { isMounted = false; };
   }, [searchParams, token]);
 
+  useEffect(() => {
+    const modalIsOpen = Boolean(selectedJob || isJobLoading || jobError);
+    if (!modalIsOpen) return undefined;
+
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') closeApplication();
+    };
+
+    window.addEventListener('keydown', handleEscape);
+    return () => window.removeEventListener('keydown', handleEscape);
+  }, [selectedJob, isJobLoading, jobError]);
+
   const closeApplication = () => {
     setSelectedJob(null);
     setApplicationSent(false);

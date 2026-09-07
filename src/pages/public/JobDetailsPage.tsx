@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
-import { FaArrowLeft, FaBookmark, FaBuilding, FaCheck, FaChevronRight, FaClock, FaMapMarkerAlt } from 'react-icons/fa';
+import { FaArrowLeft, FaBuilding, FaCheck, FaChevronRight, FaClock, FaMapMarkerAlt } from 'react-icons/fa';
 import { useAuth } from '../../context/AuthContext';
 import { getSeekerJob, type SeekerDashboardJob } from '../../services/api';
 
@@ -93,9 +93,6 @@ function JobDetailsPage() {
             <h1>Job Details</h1>
             <p>Learn more about this opportunity</p>
           </div>
-          <button type="button" className="job-detail-icon-button" aria-label={`Save ${job.title}`}>
-            <FaBookmark />
-          </button>
         </div>
       </header>
 
