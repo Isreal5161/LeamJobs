@@ -1174,6 +1174,93 @@
   cursor: pointer;
 }
 
+.seeker-profile-validation-summary {
+  display: grid;
+  gap: 0.5rem;
+  padding: 1rem 1.1rem;
+  border: 1px solid #fecaca;
+  border-radius: 10px;
+  background: #fff7f7;
+  color: #7f1d1d;
+}
+
+.seeker-profile-validation-summary ul {
+  display: grid;
+  gap: 0.35rem;
+  margin: 0;
+  padding-left: 1.2rem;
+}
+
+.seeker-profile-validation-summary li small,
+.seeker-field-error small {
+  display: block;
+  margin-top: 0.2rem;
+  color: #92400e;
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+.seeker-field--invalid > input,
+.seeker-field--invalid > textarea,
+.seeker-field--invalid > select,
+.seeker-field--invalid .seeker-date-input input {
+  border-color: #dc2626;
+  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.1);
+}
+
+.seeker-field-error {
+  display: grid;
+  gap: 0.1rem;
+  color: #b91c1c;
+  font-size: 0.82rem;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.seeker-profile-confirmation-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  background: rgba(15, 23, 42, 0.42);
+}
+
+.seeker-profile-confirmation {
+  display: grid;
+  gap: 1.25rem;
+  width: min(100%, 480px);
+  padding: 1.4rem;
+  border: 1px solid rgba(15, 23, 42, 0.1);
+  border-radius: 12px;
+  background: #ffffff;
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.22);
+}
+
+.seeker-profile-confirmation h2,
+.seeker-profile-confirmation p {
+  margin: 0;
+}
+
+.seeker-profile-confirmation h2 {
+  margin-top: 0.8rem;
+  color: #0f172a;
+  font-size: 1.25rem;
+}
+
+.seeker-profile-confirmation p {
+  margin-top: 0.5rem;
+  color: #64748b;
+  line-height: 1.5;
+}
+
+.seeker-profile-confirmation__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.7rem;
+}
+
 @media (max-width: 1024px) {
   .seeker-profile-grid,
   .seeker-cv-summary {
@@ -1293,6 +1380,15 @@
   .seeker-profile-details,
   .seeker-step-review__grid {
     grid-template-columns: 1fr;
+  }
+
+  .seeker-profile-confirmation__actions {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .seeker-profile-confirmation__actions button {
+    width: 100%;
   }
 
   .seeker-step-actions {

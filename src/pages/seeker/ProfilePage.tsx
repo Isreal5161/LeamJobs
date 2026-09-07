@@ -138,6 +138,103 @@ type ProfileNotification = {
   tone: 'success' | 'info' | 'error';
 };
 
+type ProfileValidationIssue = {
+  path: string;
+  message: string;
+  displayMessage: string;
+  guidance?: string;
+  step: StepKey;
+};
+
+const validationFieldLabels: Record<string, string> = {
+  jobTitle: 'Job title',
+  company: 'Company name',
+  startDate: 'Start date',
+  endDate: 'End date',
+  degree: 'Degree',
+  school: 'School name',
+  year: 'Year',
+  name: 'Name',
+  issuer: 'Issuer',
+  proficiency: 'Proficiency',
+  description: 'Description',
+  technologies: 'Technologies',
+  projectUrl: 'Project URL',
+  githubUrl: 'GitHub URL',
+  bio: 'Profile summary',
+  linkedinUrl: 'LinkedIn URL',
+  fullName: 'Full name',
+  professionalTitle: 'Professional title',
+  country: 'Country',
+  state: 'State or region',
+  city: 'City',
+  skills: 'Skills',
+};
+
+const validationSectionLabels: Record<string, { label: string; step: StepKey }> = {
+  experience: { label: 'Experience', step: 'experience' },
+  education: { label: 'Education', step: 'education' },
+  certifications: { label: 'Certification', step: 'certifications' },
+  languages: { label: 'Language', step: 'languages' },
+  projects: { label: 'Project', step: 'projects' },
+  bio: { label: 'Profile summary', step: 'summary' },
+  linkedinUrl: { label: 'LinkedIn', step: 'linkedin' },
+  fullName: { label: 'Personal details', step: 'personal' },
+  professionalTitle: { label: 'Personal details', step: 'personal' },
+  country: { label: 'Personal details', step: 'personal' },
+  state: { label: 'Personal details', step: 'personal' },
+  city: { label: 'Personal details', step: 'personal' },
+  skills: { label: 'Skills', step: 'skills' },
+};
+
+const humanizeValidationPart = (part: string) => part
+  .replace(/([a-z])([A-Z])/g, '$1 $2')
+  .replace(/[-_]+/g, ' ')
+  .replace(/\b\w/g, (character) => character.toUpperCase());
+
+const formatProfileValidationIssues = (details: unknown): ProfileValidationIssue[] => {
+  const rawIssues = Array.isArray(details)
+    ? details
+    : details && typeof details === 'object' && Array.isArray((details as { errors?: unknown }).errors)
+      ? (details as { errors: unknown[] }).errors
+      : [];
+
+  return rawIssues.flatMap((entry) => {
+    if (!entry || typeof entry !== 'object') return [];
+    const rawPath = String((entry as { field?: unknown }).field ?? '').trim();
+    const message = String((entry as { message?: unknown }).message ?? 'Please check this field.').trim();
+    if (!rawPath) return [];
+
+    const parts = rawPath.split('.');
+    const sectionKey = parts[0];
+    const index = /^\d+$/.test(parts[1] ?? '') ? Number(parts[1]) : null;
+    const fieldKey = parts[index === null ? 1 : 2] ?? sectionKey;
+    const section = validationSectionLabels[sectionKey];
+    const fieldLabel = sectionKey === 'certifications' && fieldKey === 'name'
+      ? 'Certification name'
+      : sectionKey === 'languages' && fieldKey === 'name'
+        ? 'Language name'
+        : sectionKey === 'projects' && fieldKey === 'name'
+          ? 'Project name'
+          : validationFieldLabels[fieldKey] ?? humanizeValidationPart(fieldKey);
+    const prefix = section
+      ? `${section.label}${index === null ? '' : ` ${index + 1}`}`
+      : humanizeValidationPart(sectionKey);
+    const guidance = rawPath.match(/^experience\.\d+\.endDate$/)
+      ? 'Enter an end date, or select “Currently working here” if you still work there.'
+      : undefined;
+    const messageWithoutField = message.replace(new RegExp(`^${fieldKey.replace(/[A-Z]/g, (character) => ` ${character.toLowerCase()}`)}(?: name)?\\s*`, 'i'), '').trim();
+
+    return [{
+      path: rawPath,
+      message,
+      displayMessage: `${prefix} — ${fieldLabel}${messageWithoutField ? ` ${messageWithoutField}` : ''}`,
+      guidance,
+      step: section?.step ?? 'personal',
+    }];
+  });
+};
+
 const steps: Array<{ key: StepKey; label: string; description: string }> = [
   { key: 'personal', label: 'Personal Details', description: 'Add your basic details so employers know who you are.' },
   { key: 'summary', label: 'Profile Summary', description: 'Tell employers a little about your experience and the kind of work you do.' },
@@ -202,6 +299,8 @@ function ProfilePage() {
   const [importedCvData, setImportedCvData] = useState<ImportedCvData | null>(null);
   const [cvImportWarnings, setCvImportWarnings] = useState<string[]>([]);
   const [cvImportSourceFormat, setCvImportSourceFormat] = useState<string | null>(null);
+  const [validationIssues, setValidationIssues] = useState<ProfileValidationIssue[]>([]);
+  const [isImportConfirmationOpen, setIsImportConfirmationOpen] = useState(false);
   const [profile, setProfile] = useState<ProfileState>(createEmptyProfileState());
   const [loadedProfileSnapshot, setLoadedProfileSnapshot] = useState<ProfileState | null>(null);
   const [isLoadingProfile, setIsLoadingProfile] = useState(true);
@@ -332,6 +431,17 @@ function ProfilePage() {
     const timeout = window.setTimeout(() => setNotification(null), 4500);
     return () => window.clearTimeout(timeout);
   }, [notification]);
+
+  useEffect(() => {
+    if (!isImportConfirmationOpen) return undefined;
+
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setIsImportConfirmationOpen(false);
+    };
+
+    window.addEventListener('keydown', handleEscape);
+    return () => window.removeEventListener('keydown', handleEscape);
+  }, [isImportConfirmationOpen]);
 
   const showNotification = (nextNotification: ProfileNotification) => {
     setNotification(nextNotification);
@@ -619,6 +729,14 @@ function ProfilePage() {
     .filter((suggestion) => suggestion.toLowerCase().includes(addValue.trim().toLowerCase()))
     .slice(0, 8);
 
+  const getValidationIssue = (path: string) => validationIssues.find((issue) => issue.path === path);
+
+  const renderValidationMessage = (path: string) => {
+    const issue = getValidationIssue(path);
+    if (!issue) return null;
+    return <span className="seeker-field-error" id={`${path.replace(/[^a-z0-9]+/gi, '-')}-error`}><span>{issue.message}</span>{issue.guidance && <small>{issue.guidance}</small>}</span>;
+  };
+
   const renderAddPanel = (panel: Exclude<AddPanel, null>) => {
     const isSkillPanel = panel === 'skill';
     const suggestions = isSkillPanel ? skillSuggestions : qualificationSuggestions;
@@ -663,6 +781,8 @@ function ProfilePage() {
   const handleUpdateProfile = async () => {
     if (!token || isSaving) return;
 
+    setValidationIssues([]);
+
     const fullNameParts = profile.personalInfo.fullName.trim().split(/\s+/).filter(Boolean);
     if (fullNameParts.length < 2) {
       showNotification({
@@ -692,14 +812,21 @@ function ProfilePage() {
 
     if (!cvResult.ok) {
       setIsSaving(false);
-      const message = cvResult.status === 400
-        ? 'Please check the profile fields and try again.'
+      const issues = cvResult.status === 400 ? formatProfileValidationIssues(cvResult.error.details) : [];
+      if (issues.length > 0) {
+        setValidationIssues(issues);
+        setActiveStep(issues[0].step);
+      }
+      const message = issues.length > 0
+        ? 'Review the highlighted fields and correct them before saving.'
+        : cvResult.status === 400
+          ? 'Please check the profile fields and try again.'
         : cvResult.status === 401
           ? 'Your session has expired. Please sign in again.'
           : cvResult.status === 403
             ? 'You do not have permission to update this profile.'
             : 'We could not save your CV right now. Please try again.';
-      showNotification({ title: 'Save failed', message, tone: 'error' });
+      showNotification({ title: issues.length > 0 ? 'Please fix the following before saving' : 'Save failed', message, tone: 'error' });
       return;
     }
 
@@ -724,14 +851,21 @@ function ProfilePage() {
 
       if (!profileResult.ok) {
         setIsSaving(false);
-        const message = profileResult.status === 400
-          ? 'Your personal profile fields are incomplete or invalid.'
+        const issues = profileResult.status === 400 ? formatProfileValidationIssues(profileResult.error.details) : [];
+        if (issues.length > 0) {
+          setValidationIssues(issues);
+          setActiveStep(issues[0].step);
+        }
+        const message = issues.length > 0
+          ? 'Review the highlighted fields and correct them before saving.'
+          : profileResult.status === 400
+            ? 'Your personal profile fields are incomplete or invalid.'
           : profileResult.status === 401
             ? 'Your session has expired. Please sign in again.'
             : profileResult.status === 403
               ? 'You do not have permission to update this profile.'
               : 'Your CV was saved, but personal details could not be updated.';
-        showNotification({ title: 'Partial save', message, tone: 'error' });
+        showNotification({ title: issues.length > 0 ? 'Please fix the following before saving' : 'Partial save', message, tone: 'error' });
         return;
       }
     }
@@ -758,13 +892,10 @@ function ProfilePage() {
   const hasUnsavedProfileEdits = loadedProfileSnapshot !== null
     && JSON.stringify(profile) !== JSON.stringify(loadedProfileSnapshot);
 
-  const handleImportCv = async () => {
+  const startCvImport = async () => {
     if (!token || !resumeUrl || cvImportStatus === 'processing') return;
 
-    if (hasUnsavedProfileEdits && !window.confirm('Import this CV?\n\nImporting will replace the current unsaved CV information in the editor. Your previously saved profile will not be affected.')) {
-      return;
-    }
-
+    setIsImportConfirmationOpen(false);
     setCvImportStatus('processing');
     const result = await request<ResumeImportResponse>({
       method: 'POST',
@@ -840,6 +971,15 @@ function ProfilePage() {
         : 'Review the imported information in the guided editor before updating your profile.',
       tone: 'success',
     });
+  };
+
+  const handleImportCv = () => {
+    if (!token || !resumeUrl || cvImportStatus === 'processing') return;
+    if (hasUnsavedProfileEdits) {
+      setIsImportConfirmationOpen(true);
+      return;
+    }
+    void startCvImport();
   };
 
   const handleEditCvContent = () => {
@@ -1207,6 +1347,15 @@ function ProfilePage() {
               ))}
             </nav>
 
+            {validationIssues.length > 0 && (
+              <section className="seeker-profile-validation-summary" role="alert" aria-labelledby="profile-validation-title">
+                <strong id="profile-validation-title">Please fix the following before saving:</strong>
+                <ul>
+                  {validationIssues.map((issue, index) => <li key={`${issue.path}-${index}`}>{issue.displayMessage}{issue.guidance && <small>{issue.guidance}</small>}</li>)}
+                </ul>
+              </section>
+            )}
+
             <section className="seeker-profile-grid">
               <div className="seeker-profile-main">
                 {activeStep === 'personal' && (
@@ -1316,28 +1465,32 @@ function ProfilePage() {
                             </div>
 
                             <form className="seeker-profile-form">
-                              <label>
+                              <label className={getValidationIssue(`experience.${profile.experience.indexOf(item)}.jobTitle`) ? 'seeker-field--invalid' : ''}>
                                 <span>Job Title</span>
-                                <input type="text" value={item.jobTitle} onChange={(event) => updateExperience(item.id, 'jobTitle', event.target.value)} />
+                                <input type="text" value={item.jobTitle} aria-invalid={Boolean(getValidationIssue(`experience.${profile.experience.indexOf(item)}.jobTitle`))} aria-describedby={getValidationIssue(`experience.${profile.experience.indexOf(item)}.jobTitle`) ? `experience-${profile.experience.indexOf(item)}-jobTitle-error` : undefined} onChange={(event) => updateExperience(item.id, 'jobTitle', event.target.value)} />
+                                {renderValidationMessage(`experience.${profile.experience.indexOf(item)}.jobTitle`)}
                               </label>
-                              <label>
+                              <label className={getValidationIssue(`experience.${profile.experience.indexOf(item)}.company`) ? 'seeker-field--invalid' : ''}>
                                 <span>Company</span>
-                                <input type="text" value={item.company} onChange={(event) => updateExperience(item.id, 'company', event.target.value)} />
+                                <input type="text" value={item.company} aria-invalid={Boolean(getValidationIssue(`experience.${profile.experience.indexOf(item)}.company`))} aria-describedby={getValidationIssue(`experience.${profile.experience.indexOf(item)}.company`) ? `experience-${profile.experience.indexOf(item)}-company-error` : undefined} onChange={(event) => updateExperience(item.id, 'company', event.target.value)} />
+                                {renderValidationMessage(`experience.${profile.experience.indexOf(item)}.company`)}
                               </label>
                               <div className="seeker-profile-form__split">
-                                <label>
+                                <label className={getValidationIssue(`experience.${profile.experience.indexOf(item)}.startDate`) ? 'seeker-field--invalid' : ''}>
                                   <span>Start Date</span>
                                   <div className="seeker-date-input">
-                                    <input type="text" value={item.startDate} onChange={(event) => updateExperience(item.id, 'startDate', event.target.value)} />
+                                    <input type="text" value={item.startDate} aria-invalid={Boolean(getValidationIssue(`experience.${profile.experience.indexOf(item)}.startDate`))} aria-describedby={getValidationIssue(`experience.${profile.experience.indexOf(item)}.startDate`) ? `experience-${profile.experience.indexOf(item)}-startDate-error` : undefined} onChange={(event) => updateExperience(item.id, 'startDate', event.target.value)} />
                                     <FaCalendarAlt />
                                   </div>
+                                  {renderValidationMessage(`experience.${profile.experience.indexOf(item)}.startDate`)}
                                 </label>
-                                <label>
+                                <label className={getValidationIssue(`experience.${profile.experience.indexOf(item)}.endDate`) ? 'seeker-field--invalid' : ''}>
                                   <span>End Date</span>
                                   <div className="seeker-date-input">
-                                    <input type="text" value={item.endDate} onChange={(event) => updateExperience(item.id, 'endDate', event.target.value)} disabled={item.currentlyWorking} />
+                                    <input type="text" value={item.endDate} aria-invalid={Boolean(getValidationIssue(`experience.${profile.experience.indexOf(item)}.endDate`))} aria-describedby={getValidationIssue(`experience.${profile.experience.indexOf(item)}.endDate`) ? `experience-${profile.experience.indexOf(item)}-endDate-error` : undefined} onChange={(event) => updateExperience(item.id, 'endDate', event.target.value)} disabled={item.currentlyWorking} />
                                     <FaCalendarAlt />
                                   </div>
+                                  {renderValidationMessage(`experience.${profile.experience.indexOf(item)}.endDate`)}
                                 </label>
                               </div>
                               <label className="seeker-profile-check">
@@ -1378,9 +1531,9 @@ function ProfilePage() {
                         <div className="seeker-form-item" key={item.id}>
                           <div className="seeker-form-item__header"><strong>Education #{profile.education.indexOf(item) + 1}</strong><button type="button" className="seeker-delete-button" onClick={() => removeEducation(item.id)}><FaTrash /></button></div>
                           <form className="seeker-profile-form">
-                            <label><span>Degree</span><input type="text" value={item.degree} onChange={(event) => updateEducation(item.id, 'degree', event.target.value)} /></label>
-                            <label><span>School</span><input type="text" value={item.school} onChange={(event) => updateEducation(item.id, 'school', event.target.value)} /></label>
-                            <label><span>Year</span><input type="text" value={item.year} onChange={(event) => updateEducation(item.id, 'year', event.target.value)} /></label>
+                            <label className={getValidationIssue(`education.${profile.education.indexOf(item)}.degree`) ? 'seeker-field--invalid' : ''}><span>Degree</span><input type="text" value={item.degree} aria-invalid={Boolean(getValidationIssue(`education.${profile.education.indexOf(item)}.degree`))} onChange={(event) => updateEducation(item.id, 'degree', event.target.value)} />{renderValidationMessage(`education.${profile.education.indexOf(item)}.degree`)}</label>
+                            <label className={getValidationIssue(`education.${profile.education.indexOf(item)}.school`) ? 'seeker-field--invalid' : ''}><span>School</span><input type="text" value={item.school} aria-invalid={Boolean(getValidationIssue(`education.${profile.education.indexOf(item)}.school`))} onChange={(event) => updateEducation(item.id, 'school', event.target.value)} />{renderValidationMessage(`education.${profile.education.indexOf(item)}.school`)}</label>
+                            <label className={getValidationIssue(`education.${profile.education.indexOf(item)}.year`) ? 'seeker-field--invalid' : ''}><span>Year</span><input type="text" value={item.year} aria-invalid={Boolean(getValidationIssue(`education.${profile.education.indexOf(item)}.year`))} onChange={(event) => updateEducation(item.id, 'year', event.target.value)} />{renderValidationMessage(`education.${profile.education.indexOf(item)}.year`)}</label>
                           </form>
                         </div>
                       ))}</div>
@@ -1403,7 +1556,7 @@ function ProfilePage() {
                   <section className="seeker-card seeker-editor-card">
                     <div className="seeker-editor-card__heading"><div><h2>Qualifications</h2><p>Show qualifications, awards, and credentials that strengthen your profile.</p></div><button type="button" aria-label="Add qualification" onClick={() => openAddPanel('qualification')}><FaPlus /></button></div>
                     {addPanel === 'qualification' && renderAddPanel('qualification')}
-                    {profile.certifications.length === 0 ? <div className="seeker-step-empty-state"><p>No qualifications added yet. You can skip this step for now.</p></div> : <div className="seeker-form-list">{profile.certifications.map((item) => <div className="seeker-form-item" key={item.id}><div className="seeker-form-item__header"><strong>Certification</strong><button type="button" className="seeker-delete-button" onClick={() => removeCertification(item.id)}><FaTrash /></button></div><form className="seeker-profile-form"><label><span>Qualification or Certificate</span><input type="text" list="qualification-suggestions" value={item.name} placeholder="Type a qualification or choose a suggestion" onChange={(event) => updateCertification(item.id, 'name', event.target.value)} /></label><label><span>Issuer</span><input type="text" value={item.issuer} onChange={(event) => updateCertification(item.id, 'issuer', event.target.value)} /></label></form></div>)}</div>}
+                    {profile.certifications.length === 0 ? <div className="seeker-step-empty-state"><p>No qualifications added yet. You can skip this step for now.</p></div> : <div className="seeker-form-list">{profile.certifications.map((item) => <div className="seeker-form-item" key={item.id}><div className="seeker-form-item__header"><strong>Certification</strong><button type="button" className="seeker-delete-button" onClick={() => removeCertification(item.id)}><FaTrash /></button></div><form className="seeker-profile-form"><label className={getValidationIssue(`certifications.${profile.certifications.indexOf(item)}.name`) ? 'seeker-field--invalid' : ''}><span>Qualification or Certificate</span><input type="text" list="qualification-suggestions" value={item.name} placeholder="Type a qualification or choose a suggestion" aria-invalid={Boolean(getValidationIssue(`certifications.${profile.certifications.indexOf(item)}.name`))} onChange={(event) => updateCertification(item.id, 'name', event.target.value)} />{renderValidationMessage(`certifications.${profile.certifications.indexOf(item)}.name`)}</label><label className={getValidationIssue(`certifications.${profile.certifications.indexOf(item)}.issuer`) ? 'seeker-field--invalid' : ''}><span>Issuer</span><input type="text" value={item.issuer} aria-invalid={Boolean(getValidationIssue(`certifications.${profile.certifications.indexOf(item)}.issuer`))} onChange={(event) => updateCertification(item.id, 'issuer', event.target.value)} />{renderValidationMessage(`certifications.${profile.certifications.indexOf(item)}.issuer`)}</label></form></div>)}</div>}
                     <datalist id="qualification-suggestions">{qualificationSuggestions.map((qualification) => <option value={qualification} key={qualification} />)}</datalist>
                     {renderStepControls('certifications')}
                   </section>
@@ -1412,7 +1565,7 @@ function ProfilePage() {
                 {activeStep === 'languages' && (
                   <section className="seeker-card seeker-editor-card">
                     <div className="seeker-editor-card__heading"><div><h2>Languages</h2><p>Add languages you speak and choose your proficiency.</p></div><button type="button" aria-label="Add language" onClick={addLanguage}><FaPlus /></button></div>
-                    {profile.languages.length === 0 ? <div className="seeker-step-empty-state"><p>No languages added yet. You can skip this step and return later.</p></div> : <div className="seeker-form-list">{profile.languages.map((item) => <div className="seeker-form-item" key={item.id}><div className="seeker-form-item__header"><strong>Language</strong><button type="button" className="seeker-delete-button" onClick={() => removeLanguage(item.id)}><FaTrash /></button></div><div className="seeker-profile-form__split"><div className="seeker-combobox"><label htmlFor={`language-${item.id}`}>Language</label><input id={`language-${item.id}`} value={languageQueries[item.id] ?? item.name} placeholder="Search or type a language" onFocus={() => setOpenLanguageId(item.id)} onChange={(event) => { setLanguageQueries((current) => ({ ...current, [item.id]: event.target.value })); updateLanguage(item.id, 'name', event.target.value); setOpenLanguageId(item.id); }} onKeyDown={(event) => { const options = getLanguageSuggestions(onboardingLocation.country, languageQueries[item.id] ?? item.name); if (event.key === 'Escape') setOpenLanguageId(null); if (event.key === 'Enter' && options[0]) { event.preventDefault(); selectLanguage(item.id, options[0]); } }} />{openLanguageId === item.id && getLanguageSuggestions(onboardingLocation.country, languageQueries[item.id] ?? item.name).length > 0 && <div className="seeker-combobox__options" role="listbox">{getLanguageSuggestions(onboardingLocation.country, languageQueries[item.id] ?? item.name).map((language) => <button type="button" role="option" key={language} onMouseDown={(event) => event.preventDefault()} onClick={() => selectLanguage(item.id, language)}>{language}</button>)}</div>}</div><label><span>Proficiency</span><select value={item.proficiency} onChange={(event) => updateLanguage(item.id, 'proficiency', event.target.value)}>{['Basic', 'Conversational', 'Professional', 'Fluent', 'Native'].map((level) => <option key={level}>{level}</option>)}</select></label></div></div>)}</div>}
+                    {profile.languages.length === 0 ? <div className="seeker-step-empty-state"><p>No languages added yet. You can skip this step and return later.</p></div> : <div className="seeker-form-list">{profile.languages.map((item) => <div className="seeker-form-item" key={item.id}><div className="seeker-form-item__header"><strong>Language</strong><button type="button" className="seeker-delete-button" onClick={() => removeLanguage(item.id)}><FaTrash /></button></div><div className="seeker-profile-form__split"><div className={`seeker-combobox ${getValidationIssue(`languages.${profile.languages.indexOf(item)}.name`) ? 'seeker-field--invalid' : ''}`}><label htmlFor={`language-${item.id}`}>Language</label><input id={`language-${item.id}`} value={languageQueries[item.id] ?? item.name} placeholder="Search or type a language" aria-invalid={Boolean(getValidationIssue(`languages.${profile.languages.indexOf(item)}.name`))} onFocus={() => setOpenLanguageId(item.id)} onChange={(event) => { setLanguageQueries((current) => ({ ...current, [item.id]: event.target.value })); updateLanguage(item.id, 'name', event.target.value); setOpenLanguageId(item.id); }} onKeyDown={(event) => { const options = getLanguageSuggestions(onboardingLocation.country, languageQueries[item.id] ?? item.name); if (event.key === 'Escape') setOpenLanguageId(null); if (event.key === 'Enter' && options[0]) { event.preventDefault(); selectLanguage(item.id, options[0]); } }} />{openLanguageId === item.id && getLanguageSuggestions(onboardingLocation.country, languageQueries[item.id] ?? item.name).length > 0 && <div className="seeker-combobox__options" role="listbox">{getLanguageSuggestions(onboardingLocation.country, languageQueries[item.id] ?? item.name).map((language) => <button type="button" role="option" key={language} onMouseDown={(event) => event.preventDefault()} onClick={() => selectLanguage(item.id, language)}>{language}</button>)}</div>}{renderValidationMessage(`languages.${profile.languages.indexOf(item)}.name`)}</div><label className={getValidationIssue(`languages.${profile.languages.indexOf(item)}.proficiency`) ? 'seeker-field--invalid' : ''}><span>Proficiency</span><select value={item.proficiency} aria-invalid={Boolean(getValidationIssue(`languages.${profile.languages.indexOf(item)}.proficiency`))} onChange={(event) => updateLanguage(item.id, 'proficiency', event.target.value)}>{['Basic', 'Conversational', 'Professional', 'Fluent', 'Native'].map((level) => <option key={level}>{level}</option>)}</select>{renderValidationMessage(`languages.${profile.languages.indexOf(item)}.proficiency`)}</label></div></div>)}</div>}
                     {renderStepControls('languages')}
                   </section>
                 )}
@@ -1420,7 +1573,7 @@ function ProfilePage() {
                 {activeStep === 'projects' && (
                   <section className="seeker-card seeker-editor-card">
                     <div className="seeker-editor-card__heading"><div><h2>Projects &amp; Work Samples</h2><p>Show client jobs, creative work, services, repairs, business work, or software projects.</p></div><button type="button" aria-label="Add project" onClick={addProject}><FaPlus /></button></div>
-                    {profile.projects.length === 0 ? <div className="seeker-step-empty-state"><p>No work samples yet. You can skip this step and return later.</p></div> : <div className="seeker-form-list">{profile.projects.map((item) => <div className="seeker-form-item" key={item.id}><div className="seeker-form-item__header"><strong>Work Sample</strong><button type="button" className="seeker-delete-button" onClick={() => removeProject(item.id)}><FaTrash /></button></div><form className="seeker-profile-form"><label><span>Work or project name</span><input value={item.name} placeholder="e.g. Bridal Makeup for a Wedding" onChange={(event) => updateProject(item.id, 'name', event.target.value)} /></label><label><span>Description</span><textarea value={item.description} placeholder="Describe what you did and the result." onChange={(event) => updateProject(item.id, 'description', event.target.value)} /></label><label><span>Tools or technologies used (optional)</span><input value={item.technologies.join(', ')} placeholder="Optional: tools, materials, or technologies" onChange={(event) => updateProjectTechnologies(item.id, event.target.value)} /></label><div className="seeker-profile-form__split"><label><span>Work/project link (optional)</span><input type="url" value={item.projectUrl} placeholder="Website, portfolio, social media, or other link" onChange={(event) => updateProject(item.id, 'projectUrl', event.target.value)} /></label><label><span>GitHub URL (optional)</span><input type="url" value={item.githubUrl} onChange={(event) => updateProject(item.id, 'githubUrl', event.target.value)} /></label></div><div className="seeker-profile-form__split"><label><span>Start date (optional)</span><input type="month" value={item.startDate} onChange={(event) => updateProject(item.id, 'startDate', event.target.value)} /></label><label><span>End date (optional)</span><input type="month" value={item.endDate} onChange={(event) => updateProject(item.id, 'endDate', event.target.value)} /></label></div></form></div>)}</div>}
+                    {profile.projects.length === 0 ? <div className="seeker-step-empty-state"><p>No work samples yet. You can skip this step and return later.</p></div> : <div className="seeker-form-list">{profile.projects.map((item) => <div className="seeker-form-item" key={item.id}><div className="seeker-form-item__header"><strong>Work Sample</strong><button type="button" className="seeker-delete-button" onClick={() => removeProject(item.id)}><FaTrash /></button></div><form className="seeker-profile-form"><label className={getValidationIssue(`projects.${profile.projects.indexOf(item)}.name`) ? 'seeker-field--invalid' : ''}><span>Work or project name</span><input value={item.name} placeholder="e.g. Bridal Makeup for a Wedding" aria-invalid={Boolean(getValidationIssue(`projects.${profile.projects.indexOf(item)}.name`))} onChange={(event) => updateProject(item.id, 'name', event.target.value)} />{renderValidationMessage(`projects.${profile.projects.indexOf(item)}.name`)}</label><label><span>Description</span><textarea value={item.description} placeholder="Describe what you did and the result." onChange={(event) => updateProject(item.id, 'description', event.target.value)} /></label><label><span>Tools or technologies used (optional)</span><input value={item.technologies.join(', ')} placeholder="Optional: tools, materials, or technologies" onChange={(event) => updateProjectTechnologies(item.id, event.target.value)} /></label><div className="seeker-profile-form__split"><label><span>Work/project link (optional)</span><input type="url" value={item.projectUrl} placeholder="Website, portfolio, social media, or other link" onChange={(event) => updateProject(item.id, 'projectUrl', event.target.value)} /></label><label><span>GitHub URL (optional)</span><input type="url" value={item.githubUrl} onChange={(event) => updateProject(item.id, 'githubUrl', event.target.value)} /></label></div><div className="seeker-profile-form__split"><label><span>Start date (optional)</span><input type="month" value={item.startDate} onChange={(event) => updateProject(item.id, 'startDate', event.target.value)} /></label><label><span>End date (optional)</span><input type="month" value={item.endDate} onChange={(event) => updateProject(item.id, 'endDate', event.target.value)} /></label></div></form></div>)}</div>}
                     {renderStepControls('projects')}
                   </section>
                 )}
@@ -1505,6 +1658,28 @@ function ProfilePage() {
           <button type="button" onClick={() => setNotification(null)} aria-label="Dismiss notification">
             <FaTimes />
           </button>
+        </div>
+      )}
+
+      {isImportConfirmationOpen && (
+        <div
+          className="seeker-profile-confirmation-backdrop"
+          role="presentation"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) setIsImportConfirmationOpen(false);
+          }}
+        >
+          <section className="seeker-profile-confirmation" role="dialog" aria-modal="true" aria-labelledby="import-confirmation-title" aria-describedby="import-confirmation-message">
+            <div>
+              <span className="seeker-cv-summary__eyebrow">CV import</span>
+              <h2 id="import-confirmation-title">Replace your current CV information?</h2>
+              <p id="import-confirmation-message">Importing this CV will replace the CV information currently being edited. Your previously saved profile will not be affected.</p>
+            </div>
+            <div className="seeker-profile-confirmation__actions">
+              <button type="button" className="seeker-step-button seeker-step-button--secondary" onClick={() => setIsImportConfirmationOpen(false)}>Cancel</button>
+              <button type="button" className="seeker-step-button seeker-step-button--primary" onClick={() => void startCvImport()} disabled={cvImportStatus === 'processing'}>Import CV</button>
+            </div>
+          </section>
         </div>
       )}
 
