@@ -2,6 +2,17 @@
   min-height: 100vh;
   background: #f8fafc;
   overflow-x: hidden;
+  --seeker-hero: #123f68;
+  --seeker-accent: #0e4ae1;
+  --seeker-accent-hover: #0b3bcb;
+  --seeker-text: #172033;
+  --seeker-muted: #64748b;
+  --seeker-border: #dbe3ee;
+  --seeker-border-soft: #e1e8f1;
+  --seeker-card-radius: 12px;
+  --seeker-inner-radius: 8px;
+  --seeker-card-shadow: 0 10px 24px rgba(15, 23, 42, 0.045);
+  --seeker-section-gap: 1rem;
 }
 
 .seeker-layout__shell {
@@ -391,6 +402,49 @@
   align-items: center;
   gap: 1rem;
   min-width: 0;
+}
+
+.seeker-hero__top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  min-width: 0;
+}
+
+.seeker-hero__top > div:first-child {
+  min-width: 0;
+}
+
+.seeker-icon-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 42px;
+  width: 42px;
+  height: 42px;
+  border: 1px solid var(--seeker-border);
+  border-radius: var(--seeker-inner-radius);
+  background: #eef2f7;
+  color: var(--seeker-accent);
+  cursor: pointer;
+  transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+}
+
+.seeker-icon-button svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+.seeker-icon-button:hover {
+  border-color: rgba(14, 74, 225, 0.24);
+  background: #dfe9ff;
+  color: var(--seeker-accent-hover);
+}
+
+.seeker-icon-button:focus-visible {
+  outline: 3px solid rgba(14, 74, 225, 0.35);
+  outline-offset: 2px;
 }
 
 .seeker-home__avatar {
@@ -982,6 +1036,10 @@ input:focus-visible,
 
   .seeker-home__greeting {
     gap: 0.8rem;
+  }
+
+  .seeker-hero__top {
+    gap: 0.7rem;
   }
 
   .seeker-home__avatar {

@@ -131,16 +131,22 @@ function JobsPage() {
 
   const renderFilterFields = () => (
     <>
-      <input aria-label="Filter by location" placeholder="Location" value={locationInput} onChange={(event) => setLocationInput(event.target.value)} />
-      <select aria-label="Filter by job type" value={jobType} onChange={(event) => {
-        const nextJobType = event.target.value as typeof jobType;
-        setJobType(nextJobType);
-        updateQuery({ jobType: nextJobType });
-      }}>
-        <option value="">All job types</option>
-        <option value="NORMAL_EMPLOYMENT">Employment</option>
-        <option value="FREELANCE_PROJECT">Freelance projects</option>
-      </select>
+      <label className="seeker-filter-field">
+        <span>Location</span>
+        <input aria-label="Filter by location" placeholder="Any location" value={locationInput} onChange={(event) => setLocationInput(event.target.value)} />
+      </label>
+      <label className="seeker-filter-field">
+        <span>Job type</span>
+        <select aria-label="Filter by job type" value={jobType} onChange={(event) => {
+          const nextJobType = event.target.value as typeof jobType;
+          setJobType(nextJobType);
+          updateQuery({ jobType: nextJobType });
+        }}>
+          <option value="">All job types</option>
+          <option value="NORMAL_EMPLOYMENT">Employment</option>
+          <option value="FREELANCE_PROJECT">Freelance projects</option>
+        </select>
+      </label>
     </>
   );
 
