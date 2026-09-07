@@ -270,3 +270,84 @@
     max-width: 88%;
   }
 }
+
+.seeker-home.messages-page {
+  display: grid;
+  gap: 1rem;
+  min-width: 0;
+  padding-bottom: 1rem;
+}
+
+.seeker-home.messages-page .messages-hero {
+  padding: 1.5rem;
+  border: 1px solid rgba(14, 74, 225, 0.12);
+  border-radius: 12px;
+  background: #123f68;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
+}
+
+.seeker-home.messages-page .messages-list-panel,
+.seeker-home.messages-page .messages-chat-panel {
+  border-color: #dbe3ee;
+  border-radius: 10px;
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.04);
+}
+
+.seeker-home.messages-page .messages-thread,
+.seeker-home.messages-page .messages-search,
+.seeker-home.messages-page .messages-composer input {
+  border-color: #dbe3ee;
+  border-radius: 8px;
+}
+
+.seeker-home.messages-page .messages-thread strong,
+.seeker-home.messages-page .messages-thread small,
+.seeker-home.messages-page .messages-thread em,
+.seeker-home.messages-page .messages-chat-header h2,
+.seeker-home.messages-page .messages-chat-header p {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.seeker-home.messages-page .messages-thread em {
+  display: -webkit-box;
+  overflow: hidden;
+  white-space: normal;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.seeker-home.messages-page .messages-chat-body {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  border: 1px solid #e1e8f1;
+}
+
+.seeker-home.messages-page .messages-chat-actions button,
+.seeker-home.messages-page .messages-composer button,
+.seeker-home.messages-page .messages-chat-body > button,
+.seeker-home.messages-page .messages-empty button {
+  min-height: 40px;
+  border-radius: 8px;
+}
+
+.seeker-home.messages-page button:focus-visible,
+.seeker-home.messages-page input:focus-visible {
+  outline: 3px solid rgba(14, 74, 225, 0.3);
+  outline-offset: 2px;
+}
+
+.seeker-home.messages-page button:hover:not(:disabled) { filter: brightness(0.98); }
+
+@media (max-width: 767px) {
+  .seeker-home.messages-page { padding-bottom: 5.5rem; }
+  .seeker-home.messages-page .messages-hero { padding: 1.15rem 1rem; border-radius: 12px; }
+  .seeker-home.messages-page .messages-shell { width: min(calc(100% - 2rem), 520px); padding-top: 0; }
+  .seeker-home.messages-page .messages-chat-header { flex-wrap: wrap; }
+  .seeker-home.messages-page .messages-chat-header > div:nth-child(2) { min-width: 0; flex: 1 1 calc(100% - 64px); }
+  .seeker-home.messages-page .messages-chat-actions { width: 100%; margin-left: 0; }
+  .seeker-home.messages-page .messages-chat-actions button { flex: 1 1 0; }
+  .seeker-home.messages-page .messages-composer { grid-template-columns: minmax(0, 1fr) 44px; }
+  .seeker-home.messages-page .messages-thread { padding: 0.8rem; }
+  .seeker-home.messages-page .messages-thread i { min-width: 0; overflow-wrap: anywhere; }
+}

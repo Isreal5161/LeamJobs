@@ -966,3 +966,64 @@
     flex: 1 1 100%;
   }
 }
+
+.seeker-applications-page .seeker-applications-hero {
+  padding: 1.5rem;
+  border: 1px solid rgba(14, 74, 225, 0.12);
+  border-radius: 12px;
+  background: #123f68;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
+}
+
+.seeker-applications-page .seeker-search {
+  min-height: 48px;
+  border: 1px solid #dbe3ee;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.seeker-applications-page .seeker-application-stat,
+.seeker-applications-page .seeker-card,
+.seeker-applications-page .seeker-application-card {
+  border-color: #dbe3ee;
+  border-radius: 10px;
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.04);
+}
+
+.seeker-applications-page .seeker-application-card__content,
+.seeker-applications-page .seeker-application-card__top,
+.seeker-applications-page .seeker-application-card h3,
+.seeker-applications-page .seeker-application-card p {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.seeker-applications-page .seeker-application-status { white-space: nowrap; }
+
+.seeker-applications-page .seeker-applications-export,
+.seeker-applications-page .seeker-application-tabs button,
+.seeker-applications-page .seeker-application-card__link {
+  min-height: 40px;
+  border-radius: 8px;
+}
+
+.seeker-applications-page button:focus-visible,
+.seeker-applications-page a:focus-visible,
+.seeker-applications-page input:focus-visible,
+.seeker-applications-page textarea:focus-visible {
+  outline: 3px solid rgba(14, 74, 225, 0.3);
+  outline-offset: 2px;
+}
+
+.seeker-applications-page button:hover:not(:disabled),
+.seeker-applications-page a:hover { filter: brightness(0.98); }
+
+@media (max-width: 767px) {
+  .seeker-applications-page { padding-bottom: 5.5rem; }
+  .seeker-applications-page .seeker-applications-hero { padding: 1.15rem 1rem 1rem; border-radius: 12px; }
+  .seeker-applications-page .seeker-section-heading { align-items: stretch; flex-direction: column; gap: 0.7rem; }
+  .seeker-applications-page .seeker-applications-export { width: 100%; }
+  .seeker-applications-page .seeker-application-card__link { position: static; grid-column: 2; width: 100%; }
+  .seeker-applications-page .seeker-application-card__content { padding-right: 0; }
+  .seeker-applications-page .seeker-application-status { align-self: flex-start; }
+}
