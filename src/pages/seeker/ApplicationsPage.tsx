@@ -172,16 +172,40 @@ function ApplicationsPage() {
       </section>
 
       <main className="seeker-applications-content">
-        <section className="seeker-application-stats" aria-label="Application overview">
-          {isLoading ? <p>Loading application stats...</p> : applicationStats.map((stat) => <article className="seeker-application-stat" key={stat.label}><span className={`seeker-application-stat__icon seeker-application-stat__icon--${stat.tone}`}>{stat.icon}</span><div><strong>{stat.value}</strong><p>{stat.label}</p></div></article>)}
+        <section className="seeker-application-stats" aria-label="Application overview" aria-busy={isLoading}>
+          {isLoading ? (
+            <>
+              <span className="sr-only" role="status" aria-live="polite">Loading application stats</span>
+              {[1, 2].map((item) => (
+                <article className="seeker-application-stat" key={item} aria-hidden="true">
+                  <span className="leamjobs-skeleton-block seeker-application-stat__icon-skeleton" />
+                  <div><span className="leamjobs-skeleton-line" style={{ width: '2.5rem' }} /><span className="leamjobs-skeleton-line" style={{ width: '6rem', marginTop: '0.4rem' }} /></div>
+                </article>
+              ))}
+            </>
+          ) : applicationStats.map((stat) => <article className="seeker-application-stat" key={stat.label}><span className={`seeker-application-stat__icon seeker-application-stat__icon--${stat.tone}`}>{stat.icon}</span><div><strong>{stat.value}</strong><p>{stat.label}</p></div></article>)}
         </section>
 
         <section className="seeker-applications-grid">
           <div className="seeker-card seeker-application-list-card">
             <div className="seeker-section-heading"><div><h2>Recent applications</h2><p className="seeker-application-list-card__subtitle">Review your latest applications and their progress.</p></div></div>
             <div className="seeker-application-tabs" aria-label="Application status filters">{['All', 'Interview', 'Applied', 'Reviewing', 'Rejected'].map((tab) => <button className={tab === 'All' ? 'seeker-application-tab--active' : ''} type="button" key={tab}>{tab}</button>)}</div>
-            <div className="seeker-application-list">
+            <div className="seeker-application-list" aria-busy={isLoading}>
               {error ? <p role="alert">{error}</p> : null}
+              {isLoading ? (
+                <>
+                  <span className="sr-only" role="status" aria-live="polite">Loading applications</span>
+                  {[1, 2, 3].map((item) => (
+                    <article className="seeker-application-card" key={item} aria-hidden="true">
+                      <span className="leamjobs-skeleton-block seeker-application-card__logo-skeleton" />
+                      <div className="seeker-application-card__content">
+                        <div className="seeker-application-card__top"><div><span className="leamjobs-skeleton-line" style={{ width: '55%' }} /><span className="leamjobs-skeleton-line" style={{ width: '75%', marginTop: '0.4rem' }} /></div></div>
+                        <div className="seeker-application-card__meta"><span className="leamjobs-skeleton-line" style={{ width: '40%' }} /><span className="leamjobs-skeleton-line" style={{ width: '35%' }} /></div>
+                      </div>
+                    </article>
+                  ))}
+                </>
+              ) : null}
               {!isLoading && !error && applications.length === 0 ? <p>No applications yet.</p> : null}
               {!isLoading && !error ? applications.map(applicationCard) : null}
             </div>
@@ -193,8 +217,15 @@ function ApplicationsPage() {
       {(selectedJob || isJobLoading || jobError) && (
         <div className="seeker-application-modal-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) closeApplication(); }}>
           <section className="seeker-application-modal" role="dialog" aria-modal="true" aria-labelledby="application-modal-title">
-            <div className="seeker-application-modal__header"><div><span className="seeker-application-modal__eyebrow">Application workspace</span><h2 id="application-modal-title">{isJobLoading ? 'Loading job...' : selectedJob ? `Apply for ${selectedJob.title}` : 'Application unavailable'}</h2>{selectedJob ? <p>{selectedJob.company?.name || 'Company not provided'} · {selectedJob.location}</p> : null}</div><button type="button" className="seeker-application-modal__close" onClick={closeApplication} aria-label="Close application form"><FaTimes /></button></div>
-            {isJobLoading ? <div className="seeker-application-modal__body"><p>Loading this job...</p></div> : jobError ? <div className="seeker-application-success"><span><FaTimesCircle /></span><h3>Unable to apply</h3><p>{jobError}</p><button type="button" className="button button--primary" onClick={closeApplication}>Back to applications</button></div> : applicationSent ? <div className="seeker-application-success"><span><FaCheck /></span><h3>Application submitted</h3><p>Your application was sent. You can track it from Applications.</p><button type="button" className="button button--primary" onClick={closeApplication}>Back to applications</button></div> : selectedJob ? <><div className="seeker-application-modal__body"><div className="seeker-application-job-facts"><span><strong>Compensation</strong>{selectedJob.compensation?.type === 'FREELANCE' ? `${selectedJob.compensation.currency} ${selectedJob.compensation.projectAmount}` : selectedJob.compensation ? `${selectedJob.compensation.currency} ${selectedJob.compensation.salaryMin ?? 'Not specified'} - ${selectedJob.compensation.salaryMax ?? 'Not specified'}` : 'Not specified'}</span><span><strong>Job type</strong>{formatJobType(selectedJob.jobType)}</span><span><strong>Location</strong>{selectedJob.location}</span></div><div className="seeker-application-cv-choice"><div className="seeker-application-cv-choice__heading"><div><h3>Resume</h3><p>The JSON application API accepts a resume URL. Local file uploads are not connected.</p></div></div><span className="seeker-application-cv-note">Add or update your resume URL from your profile before applying.</span></div><div className="seeker-application-proposal"><label htmlFor="application-proposal">Cover letter or short introduction <small>(optional)</small></label><textarea id="application-proposal" value={proposal} onChange={(event) => setProposal(event.target.value)} placeholder="Share a concise introduction, relevant experience, and what you would bring to this role." rows={5} /><small>{proposal.trim().length ? `${proposal.trim().length} characters` : 'You can apply without a cover letter.'}</small></div>{submitError ? <p role="alert">{submitError}</p> : null}</div><div className="seeker-application-modal__footer"><button type="button" className="seeker-application-secondary-button" onClick={closeApplication}>Cancel</button><button type="button" className="button button--primary" disabled={isSubmitting} onClick={submitApplication}>{isSubmitting ? 'Submitting...' : 'Submit application'}</button></div></> : null}
+            <div className="seeker-application-modal__header"><div><span className="seeker-application-modal__eyebrow">Application workspace</span><h2 id="application-modal-title">{isJobLoading ? (<><span className="sr-only">Loading job details</span><span className="leamjobs-skeleton-line seeker-application-modal__title-skeleton" aria-hidden="true" /></>) : selectedJob ? `Apply for ${selectedJob.title}` : 'Application unavailable'}</h2>{selectedJob ? <p>{selectedJob.company?.name || 'Company not provided'} · {selectedJob.location}</p> : null}</div><button type="button" className="seeker-application-modal__close" onClick={closeApplication} aria-label="Close application form"><FaTimes /></button></div>
+            {isJobLoading ? (
+              <div className="seeker-application-modal__body" role="status" aria-live="polite">
+                <span className="sr-only">Loading job details</span>
+                <div className="seeker-application-job-facts" aria-hidden="true"><span className="leamjobs-skeleton-line" /><span className="leamjobs-skeleton-line" /><span className="leamjobs-skeleton-line" /></div>
+                <div className="leamjobs-skeleton-block seeker-application-skeleton-block" aria-hidden="true" />
+                <div className="leamjobs-skeleton-block seeker-application-skeleton-block seeker-application-skeleton-block--tall" aria-hidden="true" />
+              </div>
+            ) : jobError ? <div className="seeker-application-success"><span><FaTimesCircle /></span><h3>Unable to apply</h3><p>{jobError}</p><button type="button" className="button button--primary" onClick={closeApplication}>Back to applications</button></div> : applicationSent ? <div className="seeker-application-success"><span><FaCheck /></span><h3>Application submitted</h3><p>Your application was sent. You can track it from Applications.</p><button type="button" className="button button--primary" onClick={closeApplication}>Back to applications</button></div> : selectedJob ? <><div className="seeker-application-modal__body"><div className="seeker-application-job-facts"><span><strong>Compensation</strong>{selectedJob.compensation?.type === 'FREELANCE' ? `${selectedJob.compensation.currency} ${selectedJob.compensation.projectAmount}` : selectedJob.compensation ? `${selectedJob.compensation.currency} ${selectedJob.compensation.salaryMin ?? 'Not specified'} - ${selectedJob.compensation.salaryMax ?? 'Not specified'}` : 'Not specified'}</span><span><strong>Job type</strong>{formatJobType(selectedJob.jobType)}</span><span><strong>Location</strong>{selectedJob.location}</span></div><div className="seeker-application-cv-choice"><div className="seeker-application-cv-choice__heading"><div><h3>Resume</h3><p>The JSON application API accepts a resume URL. Local file uploads are not connected.</p></div></div><span className="seeker-application-cv-note">Add or update your resume URL from your profile before applying.</span></div><div className="seeker-application-proposal"><label htmlFor="application-proposal">Cover letter or short introduction <small>(optional)</small></label><textarea id="application-proposal" value={proposal} onChange={(event) => setProposal(event.target.value)} placeholder="Share a concise introduction, relevant experience, and what you would bring to this role." rows={5} /><small>{proposal.trim().length ? `${proposal.trim().length} characters` : 'You can apply without a cover letter.'}</small></div>{submitError ? <p role="alert">{submitError}</p> : null}</div><div className="seeker-application-modal__footer"><button type="button" className="seeker-application-secondary-button" onClick={closeApplication}>Cancel</button><button type="button" className="button button--primary" disabled={isSubmitting} onClick={submitApplication}>{isSubmitting ? 'Submitting...' : 'Submit application'}</button></div></> : null}
           </section>
         </div>
       )}

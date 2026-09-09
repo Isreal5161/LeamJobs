@@ -64,7 +64,48 @@ function JobDetailsPage() {
   }, [isSeekerRoute, jobId, token]);
 
   if (isLoading) {
-    return <article className="job-detail-page"><p>Loading job details...</p></article>;
+    return (
+      <article className="job-detail-page" role="status" aria-live="polite" aria-label="Loading job details">
+        <header className="job-detail-hero">
+          <div className="job-detail-hero__nav">
+            <button type="button" className="job-detail-icon-button" aria-label="Go back" onClick={() => navigate(-1)}>
+              <FaArrowLeft />
+            </button>
+            <div>
+              <h1>Job Details</h1>
+              <p>Learn more about this opportunity</p>
+            </div>
+          </div>
+        </header>
+        <div className="job-detail-layout" aria-hidden="true">
+          <section className="job-detail-summary card">
+            <span className="leamjobs-skeleton-circle" style={{ width: '112px', height: '112px', borderRadius: '20px' }} />
+            <div className="job-detail-summary__content">
+              <span className="leamjobs-skeleton-line" style={{ width: '70%', height: '1.8rem' }} />
+              <span className="leamjobs-skeleton-line" style={{ width: '40%' }} />
+              <span className="leamjobs-skeleton-line" style={{ width: '55%' }} />
+            </div>
+          </section>
+          <main className="job-detail-main">
+            <section className="job-detail-section">
+              <span className="leamjobs-skeleton-line" style={{ width: '30%', height: '1.2rem' }} />
+              <span className="leamjobs-skeleton-block" style={{ height: '90px', marginTop: '.6rem' }} />
+            </section>
+            <section className="job-detail-section">
+              <span className="leamjobs-skeleton-line" style={{ width: '35%', height: '1.2rem' }} />
+              <span className="leamjobs-skeleton-line" style={{ width: '80%', marginTop: '.6rem' }} />
+              <span className="leamjobs-skeleton-line" style={{ width: '65%', marginTop: '.4rem' }} />
+            </section>
+          </main>
+          <aside className="job-detail-sidebar">
+            <div className="job-detail-apply-card card">
+              <span className="leamjobs-skeleton-line" style={{ width: '60%', height: '1.2rem' }} />
+              <span className="leamjobs-skeleton-block" style={{ height: '120px', marginTop: '.8rem' }} />
+            </div>
+          </aside>
+        </div>
+      </article>
+    );
   }
 
   if (!job) {

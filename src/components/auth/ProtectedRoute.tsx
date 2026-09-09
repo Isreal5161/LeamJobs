@@ -63,7 +63,15 @@ function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) {
   }, [isLoading, location.pathname, navigate, token, user]);
 
   if (isLoading) {
-    return <div className="auth-loading">Loading...</div>;
+    return (
+      <div className="auth-loading" role="status" aria-live="polite" aria-label="Loading LeamJobs">
+        <div className="auth-loading__brand site-logo" aria-hidden="true">
+          <span className="site-logo__mark">LJ</span>
+          <span className="site-logo__text">LeamJobs</span>
+        </div>
+        <span className="leamjobs-spinner leamjobs-spinner--accent leamjobs-spinner--lg" aria-hidden="true" />
+      </div>
+    );
   }
 
   if (!user) {

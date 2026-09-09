@@ -1,5 +1,7 @@
 .employer-layout {
   min-height: 100vh;
+  display: flex;
+  flex-direction: column;
   background: #f8fafc;
   overflow-x: hidden;
 }
@@ -7,34 +9,11 @@
 .employer-layout__shell {
   position: relative;
   display: block;
+  flex: 1 0 auto;
   width: min(100% - 3rem, 1664px);
   margin: 0 auto;
   padding: 2rem 0 3rem;
   transition: none;
-}
-
-.employer-layout__sidebar {
-  position: absolute;
-  top: 6.85rem;
-  right: 0;
-  width: 286px;
-  z-index: 20;
-  transition: transform 0.42s ease, opacity 0.42s ease;
-}
-
-.employer-layout--menu-closed .employer-layout__sidebar {
-  transform: translateX(calc(100% + 1.5rem));
-  opacity: 0;
-  pointer-events: none;
-}
-
-.employer-layout__menu-backdrop {
-  position: fixed;
-  inset: 0;
-  z-index: 19;
-  border: 0;
-  background: rgba(15, 23, 42, 0.28);
-  cursor: pointer;
 }
 
 .employer-layout__main,
@@ -1059,12 +1038,6 @@
   .employer-layout__shell {
     width: min(100% - 2rem, 1240px);
     padding-bottom: 6rem;
-  }
-
-  .employer-layout__sidebar {
-    top: 6.85rem;
-    right: 0;
-    width: 246px;
   }
 
   .employer-stat-grid,

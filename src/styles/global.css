@@ -72,3 +72,90 @@ button {
     font-size: 14px;
   }
 }
+
+/* App/session initialization loader (shown by ProtectedRoute while auth state resolves) */
+.auth-loading {
+  position: fixed;
+  inset: 0;
+  z-index: 999;
+  display: grid;
+  place-items: center;
+  gap: 1.1rem;
+  padding: 1.5rem;
+  background: #f8fafc;
+  text-align: center;
+}
+
+.auth-loading__brand.site-logo {
+  justify-content: center;
+}
+
+/* Reusable CSS-only inline spinner for action/button-level loading states */
+.leamjobs-spinner {
+  display: inline-block;
+  width: 15px;
+  height: 15px;
+  flex: 0 0 auto;
+  border: 2px solid rgba(255, 255, 255, 0.4);
+  border-top-color: #ffffff;
+  border-radius: 50%;
+  vertical-align: -2px;
+  animation: leamjobs-spin 0.7s linear infinite;
+}
+
+.leamjobs-spinner--accent {
+  border-color: rgba(14, 74, 225, 0.2);
+  border-top-color: #0e4ae1;
+}
+
+.leamjobs-spinner--lg {
+  width: 34px;
+  height: 34px;
+  border-width: 3px;
+}
+
+@keyframes leamjobs-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Reusable skeleton primitives - built on the existing seeker-skeleton shimmer */
+.leamjobs-skeleton-line,
+.leamjobs-skeleton-block,
+.leamjobs-skeleton-circle {
+  display: block;
+  background: linear-gradient(90deg, #eef2f7, #f8fafc, #eef2f7);
+  background-size: 200% 100%;
+  animation: seeker-skeleton 1.3s ease-in-out infinite;
+}
+
+.leamjobs-skeleton-line {
+  height: 12px;
+  border-radius: 999px;
+}
+
+.leamjobs-skeleton-block {
+  border-radius: 8px;
+}
+
+.leamjobs-skeleton-circle {
+  border-radius: 50%;
+}
+
+.leamjobs-skeleton-card {
+  border: 1px solid #e1e8f1;
+  border-radius: 12px;
+  background: #ffffff;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .leamjobs-spinner {
+    animation: none;
+  }
+
+  .leamjobs-skeleton-line,
+  .leamjobs-skeleton-block,
+  .leamjobs-skeleton-circle {
+    animation: none;
+    background: #eef2f7;
+  }
+}

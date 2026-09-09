@@ -1,36 +1,21 @@
 import { Outlet } from 'react-router-dom';
-import { useState } from 'react';
-import DashboardSidebar from '../components/layout/DashboardSidebar';
+import { useAuth } from '../context/AuthContext';
 import DashboardTopbar from '../components/layout/DashboardTopbar';
 import MobileBottomNav from '../components/layout/MobileBottomNav';
+import Footer from '../components/layout/Footer';
 
 function EmployerLayout() {
-  const [menuOpen, setMenuOpen] = useState(true);
+  const { user, logout } = useAuth();
 
   return (
-    <div className={`employer-layout ${menuOpen ? 'employer-layout--menu-open' : 'employer-layout--menu-closed'}`}>
+    <div className="employer-layout">
       <div className="employer-layout__shell">
-        <DashboardTopbar isOpen={menuOpen} onToggle={() => setMenuOpen((open) => !open)} />
-        {menuOpen && (
-          <button
-            type="button"
-            className="employer-layout__menu-backdrop"
-            aria-label="Close navigation menu"
-            onClick={() => setMenuOpen(false)}
-          />
-        )}
-        <div className="employer-layout__sidebar">
-          <DashboardSidebar
-            role="employer"
-            isOpen={menuOpen}
-            onToggle={() => setMenuOpen((open) => !open)}
-            onNavigate={() => setMenuOpen(false)}
-          />
-        </div>
+        <DashboardTopbar role="employer" userName={user?.firstName} onLogout={logout} />
         <main className="employer-layout__main">
           <Outlet />
         </main>
       </div>
+      <Footer variant="compact" />
       <MobileBottomNav />
     </div>
   );

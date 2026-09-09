@@ -127,6 +127,46 @@
 .messages-thread i { display: grid; justify-items: end; gap: 0.35rem; min-width: 0; color: var(--seeker-muted); font-size: 0.72rem; font-style: normal; font-weight: 600; overflow-wrap: anywhere; }
 .messages-thread b { display: inline-flex; align-items: center; justify-content: center; min-width: 22px; height: 22px; border-radius: 999px; background: var(--seeker-accent); color: #ffffff; font-size: 0.72rem; }
 
+.messages-thread-skeleton {
+  display: grid;
+  grid-template-columns: 54px minmax(0, 1fr);
+  align-items: center;
+  gap: 0.8rem;
+  width: 100%;
+  padding: 0.8rem;
+  border: 1px solid var(--seeker-border-soft);
+  border-radius: var(--seeker-inner-radius);
+  background: #ffffff;
+}
+
+.messages-thread-skeleton__avatar {
+  width: 54px;
+  height: 54px;
+}
+
+.messages-thread-skeleton__lines {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.messages-bubble-skeleton {
+  display: block;
+  height: 42px;
+  border-radius: var(--seeker-inner-radius);
+  background: linear-gradient(90deg, #eef2f7, #f8fafc, #eef2f7);
+  background-size: 200% 100%;
+  animation: seeker-skeleton 1.3s ease-in-out infinite;
+}
+
+.messages-bubble-skeleton--me { justify-self: end; }
+.messages-bubble-skeleton--them { justify-self: start; }
+
+@media (prefers-reduced-motion: reduce) {
+  .messages-bubble-skeleton {
+    animation: none;
+  }
+}
+
 .messages-chat-panel { display: grid; gap: 1rem; }
 .messages-chat-header { display: flex; align-items: center; gap: 0.85rem; min-width: 0; }
 .messages-chat-header h2,

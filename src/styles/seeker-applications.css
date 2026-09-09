@@ -70,6 +70,12 @@
   color: #dc2626;
 }
 
+.seeker-application-stat__icon-skeleton {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+}
+
 .seeker-application-stat strong {
   display: block;
   color: #0f172a;
@@ -182,6 +188,12 @@
 .seeker-application-card__logo--figma {
   background: #f0edff;
   color: #7c3aed;
+}
+
+.seeker-application-card__logo-skeleton {
+  width: 52px;
+  height: 52px;
+  border-radius: 12px;
 }
 
 .seeker-application-card__content {
@@ -479,6 +491,19 @@
   color: #64748b;
 }
 
+.seeker-application-modal__title-skeleton {
+  width: 65%;
+  height: 1.2rem;
+}
+
+.seeker-application-skeleton-block {
+  height: 92px;
+}
+
+.seeker-application-skeleton-block--tall {
+  height: 150px;
+}
+
 .seeker-application-modal__eyebrow {
   display: block;
   margin-bottom: 0.35rem;
@@ -585,8 +610,7 @@
   gap: 0.85rem;
   padding: 1rem;
   border: 1px solid #dbe4f0;
-  border-radius: 8px;
-  background: #ffffff;
+  border-radius: 8px;  background: #ffffff;
 }
 
 .seeker-application-cv-choice__heading {

@@ -1,5 +1,7 @@
 .seeker-layout {
   min-height: 100vh;
+  display: flex;
+  flex-direction: column;
   background: #f8fafc;
   overflow-x: hidden;
   --seeker-hero: #123f68;
@@ -18,6 +20,7 @@
 .seeker-layout__shell {
   position: relative;
   display: block;
+  flex: 1 0 auto;
   width: min(100% - 3rem, 1664px);
   margin: 0 auto;
   padding: 2rem 0 3rem;
@@ -87,30 +90,188 @@
   cursor: pointer;
 }
 
-.seeker-layout__sidebar {
-  position: absolute;
-  top: 2rem;
-  right: 0;
-  width: 286px;
-  z-index: 20;
-  transition: transform 0.42s ease, opacity 0.42s ease;
+/* Seeker/employer horizontal dashboard header (admin keeps the legacy toggle header above) */
+.dashboard-topbar--dashboard {
+  display: flex;
+  position: relative;
+  z-index: 50;
+  min-height: 64px;
+  margin-bottom: 1rem;
+  padding: 0.65rem 0.85rem;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 14px 38px rgba(15, 23, 42, 0.08);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
 }
 
-.seeker-layout__menu-backdrop {
-  position: fixed;
-  z-index: 19;
-  inset: 0;
-  border: 0;
-  background: rgba(15, 23, 42, 0.28);
+.dashboard-topbar__nav {
+  display: none;
+}
+
+.dashboard-topbar__link {
+  padding: 0.55rem 0.9rem;
+  border-radius: 8px;
+  color: #64748b;
+  font-weight: 700;
+  font-size: 0.92rem;
+  white-space: nowrap;
+  transition: background-color 0.18s ease, color 0.18s ease;
+}
+
+.dashboard-topbar__link:hover {
+  color: #172033;
+  background: #f1f5f9;
+}
+
+.dashboard-topbar__link--active {
+  color: #0e4ae1;
+  background: #eef4ff;
+}
+
+.account-menu {
+  position: relative;
+  flex: 0 0 auto;
+  margin-left: auto;
+}
+
+.account-menu__trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  height: 42px;
+  padding: 0 0.7rem;
+  border: 1px solid rgba(14, 74, 225, 0.16);
+  border-radius: 8px;
+  background: #ffffff;
+  color: #172033;
+  font-weight: 700;
+  font-size: 0.88rem;
   cursor: pointer;
 }
 
-.seeker-layout--menu-closed .seeker-layout__sidebar {
-  width: 58px;
-  position: fixed;
-  top: auto;
-  bottom: 1rem;
-  left: 1rem;
+.account-menu__trigger:hover {
+  border-color: rgba(14, 74, 225, 0.32);
+}
+
+.account-menu__avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: #0e4ae1;
+  color: #ffffff;
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.account-menu__name {
+  max-width: 110px;
+  overflow: hidden;
+  color: inherit;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.account-menu__chevron {
+  width: 0.65rem;
+  height: 0.65rem;
+  flex: 0 0 auto;
+  color: #64748b;
+}
+
+.account-menu__panel {
+  position: absolute;
+  top: calc(100% + 0.5rem);
+  right: 0;
+  z-index: 55;
+  display: grid;
+  gap: 0.15rem;
+  min-width: 190px;
+  max-width: min(240px, calc(100vw - 2rem));
+  padding: 0.4rem;
+  border: 1px solid #dbe3ee;
+  border-radius: 12px;
+  background: #ffffff;
+  box-shadow: 0 20px 45px rgba(15, 23, 42, 0.12);
+}
+
+.account-menu__item {
+  display: block;
+  width: 100%;
+  padding: 0.6rem 0.7rem;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: #334155;
+  font-weight: 600;
+  font-size: 0.88rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+.account-menu__item:hover {
+  background: #eef4ff;
+  color: #0e4ae1;
+}
+
+.account-menu__item--logout {
+  margin-top: 0.2rem;
+  padding-top: 0.7rem;
+  border-top: 1px solid #e1e8f1;
+  color: #b91c1c;
+}
+
+.account-menu__item--logout:hover {
+  background: #fff1f2;
+  color: #b91c1c;
+}
+
+.account-menu__trigger:focus-visible,
+.account-menu__item:focus-visible {
+  outline: 3px solid rgba(14, 74, 225, 0.35);
+  outline-offset: 2px;
+}
+
+@media (max-width: 767px) {
+  .account-menu__name {
+    display: none;
+  }
+}
+
+@media (min-width: 768px) {
+  .dashboard-topbar--dashboard {
+    position: sticky;
+    top: 0.75rem;
+  }
+
+  .dashboard-topbar__nav {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    flex: 1;
+    justify-content: center;
+  }
+}
+
+@media (min-width: 768px) and (max-width: 1024px) {
+  .dashboard-topbar__nav {
+    gap: 0.1rem;
+  }
+
+  .dashboard-topbar__link {
+    padding: 0.5rem 0.6rem;
+    font-size: 0.85rem;
+  }
+
+  .dashboard-topbar--dashboard .dashboard-topbar__copy span,
+  .dashboard-topbar--dashboard .account-menu__name {
+    display: none;
+  }
 }
 
 .dashboard-menu {
@@ -317,26 +478,15 @@
     -webkit-backdrop-filter: blur(18px);
   }
 
-  .seeker-layout__sidebar {
-    top: 6.85rem;
-    right: 0;
-  }
-
-  .seeker-layout--menu-closed .seeker-layout__sidebar {
-    transform: translateX(calc(100% + 1.5rem));
-    opacity: 0;
-    pointer-events: none;
-  }
-
-  .seeker-layout--menu-closed .seeker-layout__main {
+  /* No sidebar/drawer on desktop/tablet for seeker or employer; mobile bottom nav stays mobile-only */
+  .seeker-layout__main,
+  .employer-layout__main {
     padding-bottom: 0;
   }
 
   .seeker-layout .mobile-bottom-nav,
   .employer-layout .mobile-bottom-nav,
-  .admin-layout .mobile-bottom-nav,
-  .seeker-layout--menu-closed .mobile-bottom-nav,
-  .employer-layout--menu-closed .mobile-bottom-nav {
+  .admin-layout .mobile-bottom-nav {
     display: none;
   }
 }
@@ -369,13 +519,6 @@
 
   .dashboard-menu__toggle {
     display: inline-flex;
-  }
-
-  .seeker-layout--menu-closed .seeker-layout__sidebar,
-  .employer-layout--menu-closed .employer-layout__sidebar {
-    transform: translateX(calc(100% + 1.5rem));
-    opacity: 0;
-    pointer-events: none;
   }
 }
 

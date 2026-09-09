@@ -1,6 +1,26 @@
 import { Link } from 'react-router-dom';
 
-function Footer() {
+type FooterProps = {
+  /** 'compact' is the short authenticated seeker/employer footer; default is the full public footer. */
+  variant?: 'full' | 'compact';
+};
+
+function Footer({ variant = 'full' }: FooterProps) {
+  if (variant === 'compact') {
+    return (
+      <footer className="site-footer site-footer--compact">
+        <div className="site-footer--compact__inner">
+          <p>&copy; {new Date().getFullYear()} LeamJobs</p>
+          <nav aria-label="Footer navigation">
+            <Link to="/about">About</Link>
+            <Link to="/companies">Companies</Link>
+            <Link to="/how-it-works">How it works</Link>
+          </nav>
+        </div>
+      </footer>
+    );
+  }
+
   return (
     <footer className="site-footer">
       <div className="container site-footer__inner">

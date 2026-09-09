@@ -144,7 +144,36 @@ function PaymentsPage() {
     await loadPaymentData();
   };
 
-  if (isLoading) return <div className="payment-page"><section className="payment-hero"><div><span>Seeker wallet</span><h1>Your earnings</h1><p>Loading your financial data...</p></div><FaMoneyBillWave /></section></div>;
+  if (isLoading) {
+    return (
+      <div className="payment-page" role="status" aria-live="polite" aria-label="Loading financial data">
+        <section className="payment-hero"><div><span>Seeker wallet</span><h1>Your earnings</h1><p className="leamjobs-skeleton-line" style={{ width: '55%', marginTop: '.5rem' }} aria-hidden="true" /></div><FaMoneyBillWave aria-hidden="true" /></section>
+        <section className="payment-stat-grid" aria-hidden="true">
+          {[1, 2, 3, 4].map((item) => (
+            <article key={item}>
+              <span className="leamjobs-skeleton-line" style={{ width: '60%' }} />
+              <span className="leamjobs-skeleton-line" style={{ width: '75%', height: '1.4rem', marginTop: '.35rem' }} />
+              <span className="leamjobs-skeleton-line" style={{ width: '45%' }} />
+            </article>
+          ))}
+        </section>
+        <main className="payment-content-grid" aria-hidden="true">
+          <section className="payment-panel payment-panel--withdrawal">
+            <div className="payment-heading"><div><span className="leamjobs-skeleton-line" style={{ width: '40%' }} /><span className="leamjobs-skeleton-line" style={{ width: '60%', height: '1.1rem', marginTop: '.35rem' }} /></div></div>
+            <span className="leamjobs-skeleton-block" style={{ height: '190px' }} />
+          </section>
+          <section className="payment-panel">
+            <div className="payment-heading"><div><span className="leamjobs-skeleton-line" style={{ width: '40%' }} /><span className="leamjobs-skeleton-line" style={{ width: '55%', height: '1.1rem', marginTop: '.35rem' }} /></div></div>
+            <div className="payment-account-list">{[1, 2].map((item) => <span className="leamjobs-skeleton-block" style={{ height: '64px' }} key={item} />)}</div>
+          </section>
+        </main>
+        <section className="payment-panel" aria-hidden="true">
+          <div className="payment-heading"><div><span className="leamjobs-skeleton-line" style={{ width: '30%' }} /><span className="leamjobs-skeleton-line" style={{ width: '50%', height: '1.1rem', marginTop: '.35rem' }} /></div></div>
+          <div className="payment-list">{[1, 2, 3].map((item) => <span className="leamjobs-skeleton-block" style={{ height: '64px' }} key={item} />)}</div>
+        </section>
+      </div>
+    );
+  }
   if (error) return <div className="payment-page"><section className="payment-panel" role="alert"><div className="payment-heading"><div><h2>Unable to load financial data</h2><p className="payment-copy">{error}</p></div></div><div className="payment-actions"><button type="button" onClick={() => setRetryKey((current) => current + 1)}>Retry</button></div></section></div>;
 
   return <div className="payment-page">

@@ -1,36 +1,21 @@
 import { Outlet } from 'react-router-dom';
-import { useState } from 'react';
-import DashboardSidebar from '../components/layout/DashboardSidebar';
+import { useAuth } from '../context/AuthContext';
 import DashboardTopbar from '../components/layout/DashboardTopbar';
 import MobileBottomNav from '../components/layout/MobileBottomNav';
+import Footer from '../components/layout/Footer';
 
 function SeekerLayout() {
-  const [menuOpen, setMenuOpen] = useState(false);
+  const { user, logout } = useAuth();
 
   return (
-    <div className={`seeker-layout ${menuOpen ? 'seeker-layout--menu-open' : 'seeker-layout--menu-closed'}`}>
+    <div className="seeker-layout">
       <div className="seeker-layout__shell">
-        <DashboardTopbar isOpen={menuOpen} onToggle={() => setMenuOpen((open) => !open)} />
-        {menuOpen && (
-          <button
-            type="button"
-            className="seeker-layout__menu-backdrop"
-            aria-label="Close navigation menu"
-            onClick={() => setMenuOpen(false)}
-          />
-        )}
-        <div className="seeker-layout__sidebar">
-          <DashboardSidebar
-            role="seeker"
-            isOpen={menuOpen}
-            onToggle={() => setMenuOpen((open) => !open)}
-            onNavigate={() => setMenuOpen(false)}
-          />
-        </div>
+        <DashboardTopbar role="seeker" userName={user?.firstName} onLogout={logout} />
         <main className="seeker-layout__main">
           <Outlet />
         </main>
       </div>
+      <Footer variant="compact" />
       <MobileBottomNav />
     </div>
   );

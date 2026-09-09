@@ -521,7 +521,8 @@ function ProfilePage() {
               Skip for now
             </button>
           )}
-          <button type="button" className="seeker-step-button seeker-step-button--primary" onClick={isFinalStep ? handleUpdateProfile : () => goToStep(1)} disabled={isFinalStep && isSaving}>
+          <button type="button" className="seeker-step-button seeker-step-button--primary" onClick={isFinalStep ? handleUpdateProfile : () => goToStep(1)} disabled={isFinalStep && isSaving} aria-busy={isFinalStep && isSaving}>
+            {isFinalStep && isSaving ? <span className="leamjobs-spinner" aria-hidden="true" /> : null}
             {isFinalStep ? (isSaving ? 'Updating...' : 'Finish CV') : 'Next'}
           </button>
         </div>
@@ -1149,11 +1150,24 @@ function ProfilePage() {
 
       <main className="seeker-profile-content">
         {isLoadingProfile ? (
-          <section className="seeker-card">
-            <div className="seeker-cv-summary__content" style={{ textAlign: 'center', padding: '3rem' }}>
-              <p style={{ fontSize: '1rem', color: '#666' }}>Loading your profile...</p>
+          <div className="seeker-profile-skeleton" role="status" aria-live="polite" aria-label="Loading your profile">
+            <span className="sr-only">Loading your profile</span>
+            <section className="seeker-card seeker-profile-skeleton__summary" aria-hidden="true">
+              <span className="leamjobs-skeleton-circle seeker-profile-skeleton__avatar" />
+              <div className="seeker-profile-skeleton__lines">
+                <span className="leamjobs-skeleton-line" style={{ width: '40%', height: '1.2rem' }} />
+                <span className="leamjobs-skeleton-line" style={{ width: '75%' }} />
+                <span className="leamjobs-skeleton-line" style={{ width: '55%' }} />
+              </div>
+            </section>
+            <section className="seeker-card leamjobs-skeleton-block seeker-profile-skeleton__block" aria-hidden="true" />
+            <div className="seeker-profile-skeleton__grid" aria-hidden="true">
+              <div className="seeker-card leamjobs-skeleton-block seeker-profile-skeleton__card" />
+              <div className="seeker-card leamjobs-skeleton-block seeker-profile-skeleton__card" />
+              <div className="seeker-card leamjobs-skeleton-block seeker-profile-skeleton__card" />
+              <div className="seeker-card leamjobs-skeleton-block seeker-profile-skeleton__card" />
             </div>
-          </section>
+          </div>
         ) : profileError ? (
           <section className="seeker-card">
             <div className="seeker-cv-summary__content" style={{ textAlign: 'center', padding: '3rem', color: '#d32f2f' }}>
@@ -1231,7 +1245,8 @@ function ProfilePage() {
                     Choose CV
                     <input type="file" accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document" onChange={handleCvFileUpload} />
                   </label>
-                  <button type="button" className="seeker-cv-upload-action" onClick={handleUploadResume} disabled={!uploadedCvFile || isUploadingFile}>
+                  <button type="button" className="seeker-cv-upload-action" onClick={handleUploadResume} disabled={!uploadedCvFile || isUploadingFile} aria-busy={isUploadingFile}>
+                    {isUploadingFile ? <span className="leamjobs-spinner" aria-hidden="true" /> : null}
                     {isUploadingFile ? 'Uploading...' : 'Upload CV'}
                   </button>
                   <button type="button" className="seeker-delete-button seeker-cv-remove-action" onClick={handleRemoveResume} disabled={!resumeUrl || isUploadingFile}>
@@ -1371,7 +1386,8 @@ function ProfilePage() {
                       <div className="seeker-profile-picture-control">
                         <span>Profile Photo</span>
                         {profilePictureUrl ? <img src={profilePictureUrl} alt="Profile" /> : <span aria-hidden="true">{profile.personalInfo.fullName.split(/\s+/).filter(Boolean).map((part) => part[0]).join('').slice(0, 2).toUpperCase() || 'ME'}</span>}
-                        <label className="seeker-cv-upload-control">
+                        <label className="seeker-cv-upload-control" aria-busy={isUploadingFile}>
+                          {isUploadingFile ? <span className="leamjobs-spinner leamjobs-spinner--accent" aria-hidden="true" /> : null}
                           {isUploadingFile ? 'Uploading...' : 'Upload Photo'}
                           <input type="file" accept="image/jpeg,image/png,image/webp" onChange={handleProfilePictureSelect} disabled={isUploadingFile} />
                         </label>
@@ -1639,7 +1655,9 @@ function ProfilePage() {
       </main>
 
       <div className="seeker-profile-actions">
-        <button type="button" onClick={handleUpdateProfile} disabled={isSaving}><FaRegSave /> {isSaving ? 'Updating...' : 'Update Profile'}</button>
+        <button type="button" onClick={handleUpdateProfile} disabled={isSaving} aria-busy={isSaving}>
+          {isSaving ? <span className="leamjobs-spinner" aria-hidden="true" /> : <FaRegSave />} {isSaving ? 'Updating...' : 'Update Profile'}
+        </button>
       </div>
 
       {notification && (

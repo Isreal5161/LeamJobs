@@ -55,9 +55,9 @@
 }
 
 .seeker-onboarding-loading {
+  display: grid;
+  gap: 1.25rem;
   padding: 1rem 0;
-  color: #475569;
-  font-weight: 600;
 }
 
 .seeker-onboarding-form {

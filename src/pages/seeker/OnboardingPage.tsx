@@ -319,7 +319,20 @@ function OnboardingPage() {
         ) : null}
 
         {isLoadingProfile ? (
-          <div className="seeker-onboarding-loading">Loading your profile...</div>
+          <div className="seeker-onboarding-loading" role="status" aria-live="polite" aria-label="Loading your profile">
+            <div className="seeker-onboarding-welcome" aria-hidden="true">
+              <span className="leamjobs-skeleton-circle" style={{ width: '42px', height: '42px' }} />
+              <span className="leamjobs-skeleton-line" style={{ width: '45%', height: '1.3rem' }} />
+            </div>
+            <div className="seeker-onboarding-grid" aria-hidden="true">
+              {[1, 2, 3, 4].map((item) => (
+                <div className="seeker-onboarding-field" key={item}>
+                  <span className="leamjobs-skeleton-line" style={{ width: '35%' }} />
+                  <span className="leamjobs-skeleton-block" style={{ height: '44px' }} />
+                </div>
+              ))}
+            </div>
+          </div>
         ) : (
           <form className="seeker-onboarding-form" onSubmit={handleSubmit} noValidate>
             <div className="seeker-onboarding-welcome">

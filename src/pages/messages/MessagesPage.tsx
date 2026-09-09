@@ -288,8 +288,21 @@ function MessagesPage({ role }: MessagesPageProps) {
             />
           </label>
 
-          <div className="messages-list">
-            {role === 'seeker' && isLoadingConversations ? <p className="messages-empty">Loading conversations...</p> : null}
+          <div className="messages-list" aria-busy={role === 'seeker' && isLoadingConversations}>
+            {role === 'seeker' && isLoadingConversations ? (
+              <>
+                <span className="sr-only" role="status" aria-live="polite">Loading conversations</span>
+                {[1, 2, 3, 4].map((item) => (
+                  <div className="messages-thread-skeleton" key={item} aria-hidden="true">
+                    <span className="leamjobs-skeleton-circle messages-thread-skeleton__avatar" />
+                    <span className="messages-thread-skeleton__lines">
+                      <span className="leamjobs-skeleton-line" style={{ width: '55%' }} />
+                      <span className="leamjobs-skeleton-line" style={{ width: '80%' }} />
+                    </span>
+                  </div>
+                ))}
+              </>
+            ) : null}
             {role === 'seeker' && conversationError ? <p className="messages-empty" role="alert">{conversationError} <button type="button" onClick={() => setConversationRetry((current) => current + 1)}>Retry</button></p> : null}
             {role === 'seeker' && !isLoadingConversations && !conversationError && !filteredConversations.length ? <p className="messages-empty">No conversations yet.</p> : null}
             {filteredConversations.map((conversation) => (
@@ -333,11 +346,24 @@ function MessagesPage({ role }: MessagesPageProps) {
             </div>
           </div>
 
-          <div className="messages-chat-body" aria-label={`Conversation with ${selectedConversation.name}`}>
-            {role === 'seeker' && isLoadingMessages ? <p className="messages-empty">Loading messages...</p> : null}
+          <div className="messages-chat-body" aria-label={`Conversation with ${selectedConversation.name}`} aria-busy={role === 'seeker' && isLoadingMessages}>
+            {role === 'seeker' && isLoadingMessages && !selectedConversation.messages.length ? (
+              <>
+                <span className="sr-only" role="status" aria-live="polite">Loading messages</span>
+                <span className="messages-bubble-skeleton messages-bubble-skeleton--them" style={{ width: '48%' }} aria-hidden="true" />
+                <span className="messages-bubble-skeleton messages-bubble-skeleton--me" style={{ width: '38%' }} aria-hidden="true" />
+                <span className="messages-bubble-skeleton messages-bubble-skeleton--them" style={{ width: '62%' }} aria-hidden="true" />
+                <span className="messages-bubble-skeleton messages-bubble-skeleton--me" style={{ width: '30%' }} aria-hidden="true" />
+              </>
+            ) : null}
             {role === 'seeker' && messagesError ? <p className="messages-empty" role="alert">{messagesError} <button type="button" onClick={() => setMessagesRetry((current) => current + 1)}>Retry</button></p> : null}
             {role === 'seeker' && !isLoadingMessages && !messagesError && !selectedConversation.messages.length ? <p className="messages-empty">No messages yet. Start the conversation.</p> : null}
-            {role === 'seeker' && nextCursor ? <button type="button" onClick={handleLoadOlderMessages} disabled={isLoadingMessages}>Load older messages</button> : null}
+            {role === 'seeker' && nextCursor ? (
+              <button type="button" onClick={handleLoadOlderMessages} disabled={isLoadingMessages} aria-busy={isLoadingMessages}>
+                {isLoadingMessages && selectedConversation.messages.length ? <span className="leamjobs-spinner leamjobs-spinner--accent" aria-hidden="true" /> : null}
+                {isLoadingMessages && selectedConversation.messages.length ? 'Loading older messages…' : 'Load older messages'}
+              </button>
+            ) : null}
             {selectedConversation.messages.map((message, index) => (
               <p className={`messages-bubble messages-bubble--${message.sender}`} key={message.id || `${message.sender}-${index}`}>
                 {message.text}
@@ -353,7 +379,9 @@ function MessagesPage({ role }: MessagesPageProps) {
               onChange={(event) => setDraftMessage(event.target.value)}
               disabled={role === 'seeker' && (!selectedConversation.id || isSending)}
             />
-            <button type="submit" aria-label="Send message" disabled={role === 'seeker' && (!selectedConversation.id || isSending)}><FaPaperPlane /></button>
+            <button type="submit" aria-label="Send message" aria-busy={role === 'seeker' && isSending} disabled={role === 'seeker' && (!selectedConversation.id || isSending)}>
+              {role === 'seeker' && isSending ? <span className="leamjobs-spinner" aria-hidden="true" /> : <FaPaperPlane />}
+            </button>
           </form>
           </>}
         </section>
