@@ -115,6 +115,8 @@ function ApplicationsPage() {
 
   const closeApplication = () => {
     setSelectedJob(null);
+    setIsJobLoading(false);
+    setJobError('');
     setApplicationSent(false);
     setProposal('');
     setSubmitError('');

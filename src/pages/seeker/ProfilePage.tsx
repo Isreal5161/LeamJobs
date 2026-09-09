@@ -1255,8 +1255,8 @@ function ProfilePage() {
                 </div>
                 {(uploadedCvFile || resumeUrl) && (
                   <div className="seeker-cv-file-meta" aria-live="polite">
-                    <span className="seeker-cv-file-status"><FaCheck /> {uploadedCvName || 'Uploaded CV'}</span>
-                    <small>{uploadedCvFile ? 'Ready to upload' : 'Uploaded CV'}</small>
+                    <span className="seeker-cv-file-status"><FaCheck /> {uploadedCvName || 'Uploaded resume'}</span>
+                    {uploadedCvFile && <small>Ready to upload</small>}
                   </div>
                 )}
                 {resumeUrl && !uploadedCvFile && (
