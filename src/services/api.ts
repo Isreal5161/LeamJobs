@@ -95,6 +95,47 @@ export type SeekerDashboardResponse = {
   data: SeekerDashboardData;
 };
 
+export type EmployerDashboardJob = {
+  id: string;
+  title: string;
+  location: string;
+  jobType: string;
+  status: string;
+  applicantCount: number;
+  createdAt: string;
+};
+
+export type EmployerDashboardApplication = {
+  id: string;
+  seekerName: string;
+  jobTitle: string;
+  status: string;
+  appliedAt: string;
+};
+
+export type EmployerDashboardData = {
+  stats: {
+    openRoles: number;
+    newApplicants: number;
+    interviews: number;
+    averageMatchScore: number | null;
+  };
+  pipeline: {
+    applied: number;
+    reviewing: number;
+    shortlisted: number;
+    interview: number;
+    accepted: number;
+  };
+  recentJobs: EmployerDashboardJob[];
+  recentApplications: EmployerDashboardApplication[];
+};
+
+export type EmployerDashboardResponse = {
+  success: true;
+  data: EmployerDashboardData;
+};
+
 export type SeekerJobResponse = {
   success: true;
   data: {
@@ -344,6 +385,14 @@ export function getSeekerJob(jobId: string, token: string) {
   return request<SeekerJobResponse>({
     method: 'GET',
     endpoint: `/seeker/jobs/${encodeURIComponent(jobId)}`,
+    token,
+  });
+}
+
+export function getEmployerDashboard(token: string) {
+  return request<EmployerDashboardResponse>({
+    method: 'GET',
+    endpoint: '/employer/dashboard',
     token,
   });
 }

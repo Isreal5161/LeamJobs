@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   FaBell,
@@ -12,16 +13,83 @@ import {
   FaUsers,
 } from 'react-icons/fa';
 import ApplicantAvatar from '../../components/employer/ApplicantAvatar';
-import { applicants, employerJobs } from './employerData';
+import { useAuth } from '../../context/AuthContext';
+import { getEmployerDashboard, type EmployerDashboardData } from '../../services/api';
 
-const stats = [
-  { label: 'Open roles', value: '12', icon: <FaBriefcase />, tone: 'blue' },
-  { label: 'New applicants', value: '84', icon: <FaUsers />, tone: 'green' },
-  { label: 'Interviews', value: '18', icon: <FaClipboardCheck />, tone: 'yellow' },
-  { label: 'Avg. match score', value: '88%', icon: <FaStar />, tone: 'purple' },
-];
+const pipelineItems = [
+  { key: 'applied', label: 'New' },
+  { key: 'reviewing', label: 'Review' },
+  { key: 'shortlisted', label: 'Shortlisted' },
+  { key: 'interview', label: 'Interview' },
+  { key: 'accepted', label: 'Accepted' },
+] as const;
+
+const formatDate = (value: string) => new Intl.DateTimeFormat(undefined, {
+  month: 'short',
+  day: 'numeric',
+  year: 'numeric',
+}).format(new Date(value));
 
 function EmployerDashboardPage() {
+  const { token } = useAuth();
+  const [dashboard, setDashboard] = useState<EmployerDashboardData | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [reloadKey, setReloadKey] = useState(0);
+
+  useEffect(() => {
+    if (!token) return;
+
+    let isActive = true;
+    setIsLoading(true);
+    setError('');
+
+    const loadDashboard = async () => {
+      const result = await getEmployerDashboard(token);
+
+      if (!isActive) return;
+
+      if (!result.ok) {
+        setError(result.error.message || 'Unable to load your dashboard.');
+        setIsLoading(false);
+        return;
+      }
+
+      setDashboard(result.data.data);
+      setIsLoading(false);
+    };
+
+    void loadDashboard();
+
+    return () => {
+      isActive = false;
+    };
+  }, [reloadKey, token]);
+
+  if (isLoading) {
+    return <div className="employer-page employer-empty-state" role="status">Loading your hiring dashboard...</div>;
+  }
+
+  if (error || !dashboard) {
+    return (
+      <div className="employer-page employer-empty-state" role="alert">
+        <strong>Dashboard unavailable</strong>
+        <p>{error || 'We could not load your dashboard data.'}</p>
+        <button className="employer-button employer-button--ghost" type="button" onClick={() => setReloadKey((value) => value + 1)}>
+          Try again
+        </button>
+      </div>
+    );
+  }
+
+  const stats = [
+    { label: 'Open roles', value: String(dashboard.stats.openRoles), icon: <FaBriefcase />, tone: 'blue' },
+    { label: 'New applicants', value: String(dashboard.stats.newApplicants), icon: <FaUsers />, tone: 'green' },
+    { label: 'Interviews', value: String(dashboard.stats.interviews), icon: <FaClipboardCheck />, tone: 'yellow' },
+    { label: 'Avg. match score', value: dashboard.stats.averageMatchScore === null ? '—' : `${dashboard.stats.averageMatchScore}%`, icon: <FaStar />, tone: 'purple' },
+  ];
+  const pipelineMaximum = Math.max(...pipelineItems.map(({ key }) => dashboard.pipeline[key]), 1);
+
   return (
     <div className="employer-page">
       <section className="employer-hero">
@@ -70,22 +138,28 @@ function EmployerDashboardPage() {
             </div>
 
             <div className="employer-job-stack">
-              {employerJobs.slice(0, 3).map((job) => (
+              {dashboard.recentJobs.map((job) => (
                 <article className="employer-job-row" key={job.id}>
-                  <span className="employer-job-row__mark">{job.team.slice(0, 2)}</span>
+                  <span className="employer-job-row__mark">{job.title.slice(0, 2).toUpperCase()}</span>
                   <div>
                     <h3>{job.title}</h3>
-                    <p>{job.location} / {job.type} / {job.mode}</p>
+                    <p>{job.location} / {job.jobType} / {job.status}</p>
                   </div>
                   <div className="employer-job-row__metrics">
-                    <strong>{job.applicants}</strong>
+                    <strong>{job.applicantCount}</strong>
                     <span>Applicants</span>
                   </div>
-                  <Link to="/employer/jobs" className="employer-row-action" aria-label={`Edit ${job.title}`}>
+                  <Link to="/employer/jobs" className="employer-row-action" aria-label={`View ${job.title}`}>
                     <FaEdit />
                   </Link>
                 </article>
               ))}
+              {dashboard.recentJobs.length === 0 ? (
+                <div className="employer-empty-state">
+                  <strong>No job posts yet</strong>
+                  <p>Your active and pending job posts will appear here.</p>
+                </div>
+              ) : null}
             </div>
           </div>
 
@@ -97,28 +171,27 @@ function EmployerDashboardPage() {
               </div>
               <FaChartLine />
             </div>
-            {[
-              { label: 'New', value: 42 },
-              { label: 'Review', value: 28 },
-              { label: 'Interview', value: 18 },
-              { label: 'Offer', value: 6 },
-            ].map((item) => (
-              <div className="employer-pipeline-item" key={item.label}>
-                <div>
-                  <span>{item.label}</span>
-                  <strong>{item.value}</strong>
+            {pipelineItems.map(({ key, label }) => {
+              const value = dashboard.pipeline[key];
+
+              return (
+                <div className="employer-pipeline-item" key={key}>
+                  <div>
+                    <span>{label}</span>
+                    <strong>{value}</strong>
+                  </div>
+                  <span className="employer-pipeline-bar"><i style={{ width: `${(value / pipelineMaximum) * 100}%` }} /></span>
                 </div>
-                <span className="employer-pipeline-bar"><i style={{ width: `${item.value * 2}%` }} /></span>
-              </div>
-            ))}
+              );
+            })}
           </aside>
         </section>
 
         <section className="employer-panel">
           <div className="employer-section-heading">
             <div>
-              <h2>Top applicants</h2>
-              <p>Highest scoring profiles across open roles.</p>
+              <h2>Recent applicants</h2>
+              <p>Latest applications across your job posts.</p>
             </div>
             <Link to="/employer/applicants">
               Review all
@@ -127,19 +200,25 @@ function EmployerDashboardPage() {
           </div>
 
           <div className="employer-applicant-strip">
-            {applicants.slice(0, 3).map((applicant) => (
-              <article className="employer-applicant-mini" key={applicant.id}>
-                <ApplicantAvatar name={applicant.name} imageUrl={applicant.avatarUrl} size="sm" />
+            {dashboard.recentApplications.map((application) => (
+              <article className="employer-applicant-mini" key={application.id}>
+                <ApplicantAvatar name={application.seekerName} size="sm" />
                 <div>
-                  <h3>{applicant.name}</h3>
-                  <p>{applicant.role}</p>
+                  <h3>{application.seekerName}</h3>
+                  <p>{application.jobTitle} / {formatDate(application.appliedAt)}</p>
                 </div>
-                <strong>{applicant.score}%</strong>
-                <Link to="/employer/applicants" aria-label={`View ${applicant.name}`}>
+                <strong>{application.status}</strong>
+                <Link to="/employer/applicants" aria-label={`View ${application.seekerName}`}>
                   <FaEye />
                 </Link>
               </article>
             ))}
+            {dashboard.recentApplications.length === 0 ? (
+              <div className="employer-empty-state">
+                <strong>No applications yet</strong>
+                <p>Applications for your job posts will appear here.</p>
+              </div>
+            ) : null}
           </div>
         </section>
       </main>

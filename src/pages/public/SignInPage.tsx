@@ -84,13 +84,22 @@ function SignInPage({ role = 'seeker' }: SignInPageProps) {
         return;
       }
 
+      const expectedRole = role === 'employer' ? 'EMPLOYER' : 'SEEKER';
+      const actualRole = user.role;
+
       const destinationMap = {
         SEEKER: '/seeker/dashboard',
         EMPLOYER: '/employer/jobs',
         ADMIN: '/admin',
       } as const;
 
-      const route = destinationMap[user.role] ?? '/';
+      const route = destinationMap[actualRole] ?? '/';
+
+      if (expectedRole !== actualRole && actualRole !== 'ADMIN') {
+        navigate(route, { replace: true });
+        return;
+      }
+
       const from = (location.state as { from?: Location } | null)?.from;
       navigate(from && from.pathname ? from.pathname : route, { replace: true });
     } catch (loginError) {
