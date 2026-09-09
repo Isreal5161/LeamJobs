@@ -609,16 +609,40 @@ export function getSeekerWithdrawals(token: string) {
 export type SeekerPayoutAccount = {
   id: string;
   provider: string;
-  bankCode: string;
+  payoutMethod: string;
+  country: string;
+  currency: string;
+  bankCode: string | null;
+  bankName: string | null;
   accountName: string;
   accountNumberLast4: string;
+  maskedAccountNumber: string;
   isDefault: boolean;
-  verifiedAt: string;
+  verifiedAt: string | null;
+  verified: boolean;
+  status: 'ACTIVE' | 'PENDING_VERIFICATION' | 'DISABLED' | string;
 };
 
 export type SeekerPayoutAccountsResponse = {
   success: true;
   data: { payoutAccounts: SeekerPayoutAccount[] };
+};
+
+export type CreateSeekerPayoutAccountPayload = {
+  country: string;
+  accountHolderName: string;
+  bankName?: string;
+  accountNumber?: string;
+  payoutIdentifier?: string;
+  currency?: string;
+  isDefault?: boolean;
+};
+
+export type UpdateSeekerPayoutAccountPayload = CreateSeekerPayoutAccountPayload | { isDefault: boolean };
+
+export type SeekerPayoutAccountResponse = {
+  success: true;
+  data: { payoutAccount: SeekerPayoutAccount };
 };
 
 export type SeekerWithdrawalRequest = {
@@ -643,7 +667,15 @@ export type SeekerWithdrawalResponse = {
 };
 
 export function getSeekerPayoutAccounts(token: string) {
-  return request<SeekerPayoutAccountsResponse>({ method: 'GET', endpoint: '/seeker/payout-accounts', token });
+  return request<SeekerPayoutAccountsResponse>({ method: 'GET', endpoint: '/seeker/payout-accounts?scope=all', token });
+}
+
+export function createSeekerPayoutAccount(payload: CreateSeekerPayoutAccountPayload, token: string) {
+  return request<SeekerPayoutAccountResponse>({ method: 'POST', endpoint: '/seeker/payout-accounts', body: payload, token });
+}
+
+export function updateSeekerPayoutAccount(id: string, payload: UpdateSeekerPayoutAccountPayload, token: string) {
+  return request<SeekerPayoutAccountResponse>({ method: 'PATCH', endpoint: `/seeker/payout-accounts/${encodeURIComponent(id)}`, body: payload, token });
 }
 
 export function requestSeekerWithdrawal(payload: SeekerWithdrawalRequest, idempotencyKey: string, token: string) {
