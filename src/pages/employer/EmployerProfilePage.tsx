@@ -127,7 +127,66 @@ function EmployerProfilePage() {
   const websiteLabel = form.website ? form.website.replace(/^https?:\/\//, '') : 'Not provided';
   const companyLabel = form.companyName || 'Company name not provided';
 
-  if (isLoading) return <div className="employer-page employer-empty-state" role="status">Loading your company profile...</div>;
+  if (isLoading) {
+    return (
+      <div className="employer-page" aria-live="polite" aria-label="Loading company profile">
+        <section className="employer-hero employer-hero--compact">
+          <div className="employer-hero__top">
+            <div>
+              <span className="employer-eyebrow">Company profile</span>
+              <h1>Complete your company profile</h1>
+              <p>Keep the company information shown beside your job posts accurate.</p>
+            </div>
+            <span className="leamjobs-skeleton-block" style={{ width: '40px', height: '40px', borderRadius: '12px' }} />
+          </div>
+        </section>
+
+        <main className="employer-content employer-profile-grid">
+          <section className="employer-panel employer-company-card" aria-hidden="true">
+            <span className="employer-company-card__logo leamjobs-skeleton-block" style={{ width: '64px', height: '64px', borderRadius: '18px' }} />
+            <div>
+              <span className="leamjobs-skeleton-line" style={{ width: '58%', height: '1.05rem' }} />
+              <span className="leamjobs-skeleton-line" style={{ width: '90%', height: '0.85rem', marginTop: '0.55rem' }} />
+            </div>
+            <span className="employer-profile-deferred leamjobs-skeleton-line" style={{ width: '76%', height: '0.85rem', marginTop: '1rem' }} />
+          </section>
+
+          <section className="employer-panel" aria-hidden="true">
+            <div className="employer-section-heading">
+              <div>
+                <span className="leamjobs-skeleton-line" style={{ width: '40%', height: '0.95rem' }} />
+                <span className="leamjobs-skeleton-line" style={{ width: '52%', height: '1.1rem', marginTop: '0.35rem' }} />
+              </div>
+              <span className="leamjobs-skeleton-block" style={{ width: '24px', height: '24px', borderRadius: '6px' }} />
+            </div>
+
+            <div className="employer-form">
+              <span className="leamjobs-skeleton-line" style={{ width: '100%', height: '44px', marginTop: '0.8rem' }} />
+              <span className="leamjobs-skeleton-line" style={{ width: '100%', height: '44px', marginTop: '0.8rem' }} />
+              <div className="employer-form__split">
+                <span className="leamjobs-skeleton-line" style={{ width: '100%', height: '44px' }} />
+                <span className="leamjobs-skeleton-line" style={{ width: '100%', height: '44px' }} />
+              </div>
+              <div className="employer-form__split">
+                <span className="leamjobs-skeleton-line" style={{ width: '100%', height: '44px' }} />
+                <span className="leamjobs-skeleton-line" style={{ width: '100%', height: '44px' }} />
+              </div>
+              <span className="leamjobs-skeleton-line" style={{ width: '100%', height: '96px', marginTop: '0.8rem' }} />
+            </div>
+          </section>
+
+          <aside className="employer-panel employer-profile-facts" aria-hidden="true">
+            <span className="leamjobs-skeleton-line" style={{ width: '44%', height: '1.15rem' }} />
+            <span className="leamjobs-skeleton-line" style={{ width: '100%', height: '80px', marginTop: '0.8rem' }} />
+            <span className="leamjobs-skeleton-line" style={{ width: '72%', height: '0.9rem', marginTop: '0.8rem' }} />
+            <span className="leamjobs-skeleton-line" style={{ width: '70%', height: '0.9rem', marginTop: '0.55rem' }} />
+            <span className="leamjobs-skeleton-line" style={{ width: '76%', height: '0.9rem', marginTop: '0.55rem' }} />
+            <span className="leamjobs-skeleton-line" style={{ width: '68%', height: '0.9rem', marginTop: '0.55rem' }} />
+          </aside>
+        </main>
+      </div>
+    );
+  }
 
   if (error && !email) {
     return <div className="employer-page employer-empty-state" role="alert"><strong>Company profile unavailable</strong><p>{error}</p><button className="employer-button employer-button--ghost" type="button" onClick={() => setReloadKey((value) => value + 1)}>Try again</button></div>;

@@ -67,7 +67,110 @@ function EmployerDashboardPage() {
   }, [reloadKey, token]);
 
   if (isLoading) {
-    return <div className="employer-page employer-empty-state" role="status">Loading your hiring dashboard...</div>;
+    return (
+      <div className="employer-page" aria-live="polite" aria-label="Loading dashboard">
+        <section className="employer-hero">
+          <div className="employer-hero__top">
+            <div>
+              <span className="employer-eyebrow">Employer workspace</span>
+              <h1>Hiring command center</h1>
+              <p>Post roles, review talent, and keep your pipeline moving.</p>
+            </div>
+            <div className="employer-hero__actions">
+              <span className="leamjobs-skeleton-block" style={{ width: '40px', height: '40px', borderRadius: '12px' }} />
+              <span className="leamjobs-skeleton-line" style={{ width: '120px', height: '40px', borderRadius: '12px' }} />
+            </div>
+          </div>
+        </section>
+
+        <main className="employer-content">
+          <section className="employer-stat-grid" aria-hidden="true">
+            {[1, 2, 3, 4].map((item) => (
+              <article className="employer-stat-card" key={item}>
+                <span className="employer-stat-card__icon leamjobs-skeleton-block" style={{ width: '42px', height: '42px', borderRadius: '12px' }} />
+                <div>
+                  <span className="leamjobs-skeleton-line" style={{ width: '2.4rem', height: '1.2rem' }} />
+                  <span className="leamjobs-skeleton-line" style={{ width: '5rem', height: '0.85rem', marginTop: '0.45rem' }} />
+                </div>
+              </article>
+            ))}
+          </section>
+
+          <section className="employer-dashboard-grid" aria-hidden="true">
+            <div className="employer-panel">
+              <div className="employer-section-heading">
+                <div>
+                  <span className="leamjobs-skeleton-line" style={{ width: '35%', height: '0.95rem' }} />
+                  <span className="leamjobs-skeleton-line" style={{ width: '40%', height: '1.1rem', marginTop: '0.35rem' }} />
+                </div>
+                <span className="leamjobs-skeleton-line" style={{ width: '72px', height: '24px', borderRadius: '999px' }} />
+              </div>
+
+              <div className="employer-job-stack">
+                {[1, 2, 3].map((item) => (
+                  <article className="employer-job-row" key={item}>
+                    <span className="employer-job-row__mark leamjobs-skeleton-block" style={{ width: '34px', height: '34px', borderRadius: '10px' }} />
+                    <div>
+                      <span className="leamjobs-skeleton-line" style={{ width: '58%', height: '1rem' }} />
+                      <span className="leamjobs-skeleton-line" style={{ width: '70%', height: '0.85rem', marginTop: '0.45rem' }} />
+                    </div>
+                    <div className="employer-job-row__metrics">
+                      <span className="leamjobs-skeleton-line" style={{ width: '30px', height: '1rem' }} />
+                      <span className="leamjobs-skeleton-line" style={{ width: '46px', height: '0.75rem', marginTop: '0.2rem' }} />
+                    </div>
+                    <span className="leamjobs-skeleton-block" style={{ width: '32px', height: '32px', borderRadius: '10px', justifySelf: 'end' }} />
+                  </article>
+                ))}
+              </div>
+            </div>
+
+            <aside className="employer-panel employer-pipeline-card">
+              <div className="employer-section-heading">
+                <div>
+                  <span className="leamjobs-skeleton-line" style={{ width: '42%', height: '0.95rem' }} />
+                  <span className="leamjobs-skeleton-line" style={{ width: '50%', height: '1.1rem', marginTop: '0.35rem' }} />
+                </div>
+                <span className="leamjobs-skeleton-block" style={{ width: '22px', height: '22px', borderRadius: '6px' }} />
+              </div>
+
+              {[1, 2, 3, 4, 5].map((item) => (
+                <div className="employer-pipeline-item" key={item}>
+                  <div>
+                    <span className="leamjobs-skeleton-line" style={{ width: '64px', height: '0.8rem' }} />
+                    <span className="leamjobs-skeleton-line" style={{ width: '28px', height: '1rem', marginTop: '0.25rem' }} />
+                  </div>
+                  <span className="employer-pipeline-bar leamjobs-skeleton-block" style={{ width: '100%', height: '10px', borderRadius: '999px' }} />
+                </div>
+              ))}
+            </aside>
+          </section>
+
+          <section className="employer-panel" aria-hidden="true">
+            <div className="employer-section-heading">
+              <div>
+                <span className="leamjobs-skeleton-line" style={{ width: '35%', height: '0.95rem' }} />
+                <span className="leamjobs-skeleton-line" style={{ width: '52%', height: '1.1rem', marginTop: '0.35rem' }} />
+              </div>
+              <span className="leamjobs-skeleton-line" style={{ width: '86px', height: '24px', borderRadius: '999px' }} />
+            </div>
+
+            <div className="employer-applicant-strip">
+              {[1, 2, 3].map((item) => (
+                <article className="employer-applicant-mini" key={item}>
+                  <span className="leamjobs-skeleton-circle" style={{ width: '40px', height: '40px', borderRadius: '50%' }} />
+                  <div>
+                    <span className="leamjobs-skeleton-line" style={{ width: '60%', height: '0.85rem' }} />
+                    <span className="leamjobs-skeleton-line" style={{ width: '80%', height: '0.8rem', marginTop: '0.35rem' }} />
+                  </div>
+                  <span className="leamjobs-skeleton-line" style={{ width: '72px', height: '22px', borderRadius: '999px' }} />
+                  <span className="leamjobs-skeleton-block" style={{ width: '22px', height: '22px', borderRadius: '6px' }} />
+                </article>
+              ))}
+            </div>
+          </section>
+        </main>
+      </div>
+    );
   }
 
   if (error || !dashboard) {

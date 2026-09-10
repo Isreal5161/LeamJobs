@@ -452,8 +452,70 @@ function EmployerJobsPage() {
     }
   };
 
+  const renderLoadingSkeleton = () => (
+    <div className="employer-page employer-jobs-page" aria-live="polite" aria-label="Loading jobs">
+      <section className="employer-hero employer-hero--compact">
+        <div className="employer-hero__top">
+          <div>
+            <span className="employer-eyebrow">Job posting and editing</span>
+            <h1>Manage open positions</h1>
+            <p>Create, update, and monitor your real job posts.</p>
+          </div>
+          <div className="employer-hero__actions">
+            <span className="leamjobs-skeleton-block" style={{ width: '40px', height: '40px', borderRadius: '12px' }} />
+            <span className="leamjobs-skeleton-line" style={{ width: '120px', height: '40px', borderRadius: '12px' }} />
+          </div>
+        </div>
+      </section>
+
+      <main className="employer-content employer-jobs-grid">
+        <section className="employer-panel employer-job-editor">
+          <div className="employer-form" aria-hidden="true">
+            <div className="employer-form__section">
+              <span className="leamjobs-skeleton-line" style={{ width: '26%', height: '1.1rem' }} />
+              <span className="leamjobs-skeleton-line" style={{ width: '100%', height: '44px', marginTop: '1rem' }} />
+              <span className="leamjobs-skeleton-line" style={{ width: '100%', height: '44px', marginTop: '0.8rem' }} />
+              <span className="leamjobs-skeleton-line" style={{ width: '100%', height: '44px', marginTop: '0.8rem' }} />
+            </div>
+            <div className="employer-form__section">
+              <span className="leamjobs-skeleton-line" style={{ width: '24%', height: '1.1rem' }} />
+              <span className="leamjobs-skeleton-line" style={{ width: '100%', height: '44px', marginTop: '1rem' }} />
+              <span className="leamjobs-skeleton-line" style={{ width: '100%', height: '90px', marginTop: '0.8rem' }} />
+            </div>
+          </div>
+        </section>
+
+        <aside className="employer-panel employer-open-jobs">
+          <div className="employer-list-tools">
+            <span className="leamjobs-skeleton-line" style={{ width: '100%', height: '42px', borderRadius: '12px' }} />
+            <span className="leamjobs-skeleton-block" style={{ width: '40px', height: '40px', borderRadius: '12px' }} />
+          </div>
+
+          <div className="employer-tabs employer-tabs--compact" aria-hidden="true">
+            {[1, 2, 3, 4, 5].map((item) => (
+              <span key={item} className="leamjobs-skeleton-line" style={{ width: `${item === 1 ? 86 : item === 2 ? 70 : item === 3 ? 94 : item === 4 ? 80 : 72}px`, height: '36px', borderRadius: '999px' }} />
+            ))}
+          </div>
+
+          <div className="employer-job-list">
+            {[1, 2, 3].map((item) => (
+              <article className="employer-job-card employer-job-card--skeleton" key={item} aria-hidden="true">
+                <div>
+                  <span className="leamjobs-skeleton-line" style={{ width: '78px', height: '24px', borderRadius: '999px' }} />
+                  <span className="leamjobs-skeleton-line" style={{ width: '58%', height: '1.1rem', marginTop: '0.7rem' }} />
+                  <span className="leamjobs-skeleton-line" style={{ width: '74%', height: '0.8rem', marginTop: '0.45rem' }} />
+                </div>
+                <span className="leamjobs-skeleton-line" style={{ width: '36px', height: '36px', borderRadius: '10px', justifySelf: 'end' }} />
+              </article>
+            ))}
+          </div>
+        </aside>
+      </main>
+    </div>
+  );
+
   if (isLoading) {
-    return <div className="employer-page employer-empty-state" role="status">Loading your job posts...</div>;
+    return renderLoadingSkeleton();
   }
 
   if (error) {

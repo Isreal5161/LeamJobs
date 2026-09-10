@@ -56,7 +56,6 @@ function JobCard({
           </div>
           <h3 className="job-card__role">{role}</h3>
           <p className="job-card__meta">{salary} · {location} · {workArrangement}</p>
-          <p className="job-card__description">{description}</p>
         </div>
 
         <div className="job-card__actions">

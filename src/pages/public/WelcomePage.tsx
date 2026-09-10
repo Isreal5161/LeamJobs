@@ -129,6 +129,53 @@ function WelcomePage() {
     });
   }, [activeFilter, keywordQuery, locationQuery, publicJobs]);
 
+  const renderPublicJobsSkeleton = () => (
+    <div className="recommended-jobs-panel" aria-live="polite" aria-label="Loading jobs">
+      <div className="recommended-jobs__header">
+        <h2>Recommended jobs</h2>
+        <div className="recommended-jobs__sort">
+          <span>Sort by:</span>
+          <div className="sort-select">
+            <span className="leamjobs-skeleton-line" style={{ width: '120px', height: '38px', borderRadius: '14px' }} />
+          </div>
+        </div>
+      </div>
+
+      <div className="recommended-jobs__list">
+        {[1, 2, 3].map((item) => (
+          <article className="job-card" key={item} aria-hidden="true">
+            <div className="job-card__inner">
+              <div className="job-card__logo-column">
+                <span className="company-logo">
+                  <span className="company-logo__symbol leamjobs-skeleton-block" style={{ width: '28px', height: '28px', borderRadius: '8px' }} />
+                </span>
+              </div>
+
+              <div className="job-card__content">
+                <span className="leamjobs-skeleton-line" style={{ width: '34%', height: '0.85rem' }} />
+                <span className="leamjobs-skeleton-line" style={{ width: '52%', height: '1.05rem', marginTop: '0.3rem' }} />
+                <span className="leamjobs-skeleton-line" style={{ width: '74%', height: '0.82rem', marginTop: '0.2rem' }} />
+              </div>
+
+              <div className="job-card__actions">
+                <div className="job-card__tags">
+                  <span className="leamjobs-skeleton-line" style={{ width: '82px', height: '24px', borderRadius: '999px' }} />
+                  <span className="leamjobs-skeleton-line" style={{ width: '88px', height: '24px', borderRadius: '999px' }} />
+                  <span className="leamjobs-skeleton-line" style={{ width: '76px', height: '24px', borderRadius: '999px' }} />
+                </div>
+                <div className="job-card__buttons">
+                  <span className="leamjobs-skeleton-block" style={{ width: '34px', height: '34px', borderRadius: '12px' }} />
+                  <span className="leamjobs-skeleton-line" style={{ width: '76px', height: '36px', borderRadius: '12px' }} />
+                  <span className="leamjobs-skeleton-line" style={{ width: '82px', height: '36px', borderRadius: '12px' }} />
+                </div>
+              </div>
+            </div>
+          </article>
+        ))}
+      </div>
+    </div>
+  );
+
   return (
     <main>
       <section className="hero hero--welcome">
@@ -223,7 +270,7 @@ function WelcomePage() {
             </div>
           </aside>
 
-          {isLoadingJobs ? <p className="recommended-jobs__empty">Loading jobs...</p> : null}
+          {isLoadingJobs ? renderPublicJobsSkeleton() : null}
           {!isLoadingJobs && jobsError ? <p className="recommended-jobs__empty">{jobsError}</p> : null}
           {!isLoadingJobs && !jobsError ? <RecommendedJobs jobs={filteredJobs} /> : null}
         </div>

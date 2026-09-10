@@ -193,7 +193,22 @@ function EmployerApplicantsPage() {
           <div className="employer-list-tools"><label className="employer-search" aria-label="Search applicants"><FaSearch /><input type="search" placeholder="Search applicants, titles, or skills" value={query} onChange={(event) => setQuery(event.target.value)} /></label><span className="employer-sort-caption">Newest first / {filteredApplications.length} applicants</span></div>
           <div className="employer-tabs" aria-label="Application status filters">{statuses.map((status) => <button className={status === activeStatus ? 'employer-tab--active' : ''} type="button" key={status} onClick={() => setActiveStatus(status)} aria-pressed={status === activeStatus}>{statusLabels[status]}</button>)}</div>
           <div className="employer-applicant-list" aria-busy={isLoadingApplications}>
-            {isLoadingApplications ? <div className="employer-empty-state" role="status"><FaSpinner className="leamjobs-spin" /> Loading applications...</div> : null}
+            {isLoadingApplications ? (
+              <div aria-live="polite" aria-label="Loading applications" role="status">
+                {[1, 2, 3].map((item) => (
+                  <article className="employer-applicant-card employer-applicant-card--skeleton" key={item} aria-hidden="true">
+                    <div className="employer-applicant-card__skeleton">
+                      <span className="leamjobs-skeleton-circle" style={{ width: '42px', height: '42px', borderRadius: '50%' }} />
+                      <div>
+                        <span className="leamjobs-skeleton-line" style={{ width: '62%', height: '0.9rem' }} />
+                        <span className="leamjobs-skeleton-line" style={{ width: '74%', height: '0.8rem', marginTop: '0.45rem' }} />
+                        <span className="leamjobs-skeleton-line" style={{ width: '85%', height: '0.72rem', marginTop: '0.35rem' }} />
+                      </div>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            ) : null}
             {error ? <div className="employer-empty-state" role="alert"><strong>Applications unavailable</strong><p>{error}</p></div> : null}
             {!isLoadingApplications && !error && !jobs.length ? <div className="employer-empty-state"><strong>Post your first job to start receiving applications.</strong><p>Your applications will appear here once candidates apply.</p></div> : null}
             {!isLoadingApplications && !error && jobs.length > 0 && !filteredApplications.length ? <div className="employer-empty-state"><strong>{applications.length ? 'No applicants match your current filters.' : 'No applications yet for this job.'}</strong><p>Try another job or adjust your search and status filters.</p></div> : null}
@@ -202,7 +217,16 @@ function EmployerApplicantsPage() {
         </section>
         <aside className="employer-panel employer-candidate-detail">
           <button className="employer-mobile-back" type="button" onClick={() => setSelectedApplicationId('')}><FaArrowLeft /> Back to applicants</button>
-          {isLoadingDetail ? <div className="employer-empty-state" role="status"><FaSpinner className="leamjobs-spin" /> Loading applicant details...</div> : null}
+          {isLoadingDetail ? (
+            <div className="employer-candidate-detail__skeleton" aria-live="polite" aria-label="Loading applicant details" role="status">
+              <span className="leamjobs-skeleton-circle" style={{ width: '68px', height: '68px', borderRadius: '50%' }} />
+              <span className="leamjobs-skeleton-line" style={{ width: '56%', height: '1.35rem', marginTop: '0.9rem' }} />
+              <span className="leamjobs-skeleton-line" style={{ width: '38%', height: '0.9rem', marginTop: '0.5rem' }} />
+              <span className="leamjobs-skeleton-line" style={{ width: '100%', height: '44px', marginTop: '1rem' }} />
+              <span className="leamjobs-skeleton-line" style={{ width: '100%', height: '120px', marginTop: '1rem' }} />
+              <span className="leamjobs-skeleton-line" style={{ width: '100%', height: '120px', marginTop: '1rem' }} />
+            </div>
+          ) : null}
           {!isLoadingDetail && detailError ? <div className="employer-empty-state" role="alert"><strong>Application unavailable</strong><p>{detailError}</p></div> : null}
           {!isLoadingDetail && !detailError && selectedApplication && applicant ? <>
             <div className="employer-candidate-detail__header"><ApplicantAvatar name={applicant.fullName} imageUrl={applicant.profilePictureUrl ?? undefined} size="lg" /><div><h2>{applicant.fullName}</h2><p>{applicant.professionalTitle || 'Professional title not provided'}</p></div><span className={statusClass(selectedApplication.status)}>{statusLabels[selectedApplication.status]}</span></div>

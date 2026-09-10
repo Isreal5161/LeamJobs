@@ -215,7 +215,82 @@ function AdminModerationPage() {
   };
 
   if (isLoading) {
-    return <div className="admin-page admin-empty-state" role="status">Loading pending jobs...</div>;
+    return (
+      <div className="admin-page" aria-live="polite" aria-label="Loading pending jobs">
+        <section className="admin-hero">
+          <div>
+            <span className="admin-eyebrow">Review queue</span>
+            <h1>Employer job approvals</h1>
+            <p>Review submitted jobs, confirm the posted details, and approve or reject them before they go live.</p>
+          </div>
+          <span className="admin-icon-button leamjobs-skeleton-block" style={{ width: '42px', height: '42px', borderRadius: '12px' }} />
+        </section>
+
+        <section className="admin-stat-grid" aria-hidden="true">
+          {[1, 2, 3, 4].map((item) => (
+            <article className="admin-stat-card" key={item}>
+              <span className="admin-stat-card__icon leamjobs-skeleton-block" style={{ width: '42px', height: '42px', borderRadius: '12px' }} />
+              <div>
+                <span className="leamjobs-skeleton-line" style={{ width: '2.2rem', height: '1.2rem' }} />
+                <span className="leamjobs-skeleton-line" style={{ width: '4.6rem', height: '0.85rem', marginTop: '0.4rem' }} />
+              </div>
+            </article>
+          ))}
+        </section>
+
+        <section className="admin-moderation-workspace">
+          <div className="admin-panel admin-review-list-panel">
+            <div className="admin-section-heading">
+              <div>
+                <span><FaBriefcase /> Job queue</span>
+                <h2>Employer posts waiting for admin decision</h2>
+              </div>
+            </div>
+
+            <div className="admin-review-list admin-review-list--rows" aria-hidden="true">
+              {[1, 2, 3].map((item) => (
+                <div className="admin-review-item admin-review-job-card" key={item}>
+                  <span className="admin-job-company-mark leamjobs-skeleton-block" style={{ width: '42px', height: '42px', borderRadius: '14px' }} />
+                  <div className="admin-review-job-card__content">
+                    <span className="leamjobs-skeleton-line" style={{ width: '70%', height: '1rem' }} />
+                    <span className="leamjobs-skeleton-line" style={{ width: '55%', height: '0.8rem', marginTop: '0.5rem' }} />
+                    <span className="leamjobs-skeleton-line" style={{ width: '66%', height: '0.75rem', marginTop: '0.45rem' }} />
+                  </div>
+                  <div className="admin-review-job-card__meta">
+                    <span className="leamjobs-skeleton-line" style={{ width: '128px', height: '0.78rem' }} />
+                    <span className="leamjobs-skeleton-line" style={{ width: '88px', height: '0.78rem' }} />
+                  </div>
+                  <span className="leamjobs-skeleton-line" style={{ width: '70px', height: '22px', borderRadius: '999px' }} />
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <article className="admin-panel admin-review-detail" aria-hidden="true">
+            <div className="admin-review-detail__header">
+              <div>
+                <span className="admin-review-kicker"><FaEye /> Review details</span>
+                <span className="leamjobs-skeleton-line" style={{ width: '58%', height: '1.5rem', marginTop: '0.75rem' }} />
+                <span className="leamjobs-skeleton-line" style={{ width: '38%', height: '0.85rem', marginTop: '0.5rem' }} />
+              </div>
+            </div>
+            <div className="admin-review-facts">
+              {[1, 2, 3, 4].map((item) => (
+                <span key={item} className="leamjobs-skeleton-line" style={{ width: '120px', height: '1rem' }} />
+              ))}
+            </div>
+            <section className="admin-review-section">
+              <span className="leamjobs-skeleton-line" style={{ width: '30%', height: '1rem' }} />
+              <span className="leamjobs-skeleton-line" style={{ width: '100%', height: '70px', marginTop: '0.7rem' }} />
+            </section>
+            <section className="admin-review-section">
+              <span className="leamjobs-skeleton-line" style={{ width: '25%', height: '1rem' }} />
+              <span className="leamjobs-skeleton-line" style={{ width: '100%', height: '80px', marginTop: '0.7rem' }} />
+            </section>
+          </article>
+        </section>
+      </div>
+    );
   }
 
   if (error) {
@@ -310,7 +385,23 @@ function AdminModerationPage() {
         {selectedJobId || isLoadingDetail || detailError ? (
           <article className="admin-panel admin-review-detail">
             {isLoadingDetail ? (
-              <div className="admin-page admin-empty-state" role="status">Loading job details...</div>
+              <div className="admin-page" role="status" aria-live="polite" aria-label="Loading job details">
+                <div className="admin-review-detail__header">
+                  <div>
+                    <span className="admin-review-kicker"><FaEye /> Review details</span>
+                    <span className="leamjobs-skeleton-line" style={{ width: '58%', height: '1.5rem', marginTop: '0.75rem' }} />
+                  </div>
+                </div>
+                <div className="admin-review-facts">
+                  {[1, 2, 3, 4].map((item) => (
+                    <span key={item} className="leamjobs-skeleton-line" style={{ width: '120px', height: '1rem' }} />
+                  ))}
+                </div>
+                <section className="admin-review-section">
+                  <span className="leamjobs-skeleton-line" style={{ width: '30%', height: '1rem' }} />
+                  <span className="leamjobs-skeleton-line" style={{ width: '100%', height: '70px', marginTop: '0.7rem' }} />
+                </section>
+              </div>
             ) : detailError ? (
               <div className="admin-page admin-empty-state" role="alert">
                 <strong>Job details unavailable</strong>
