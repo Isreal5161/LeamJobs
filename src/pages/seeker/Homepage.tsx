@@ -9,30 +9,13 @@ import {
   FaSearch,
   FaUserFriends,
 } from 'react-icons/fa';
+import SeekerJobCard from '../../components/jobs/SeekerJobCard';
 import { useAuth } from '../../context/AuthContext';
 import { getSeekerProfile, request, type SeekerDashboardData, type SeekerDashboardJob, type SeekerDashboardResponse, type GetSeekerProfileResponse } from '../../services/api';
 
 const formatDate = (value: string) => new Intl.DateTimeFormat(undefined, {
   dateStyle: 'medium',
 }).format(new Date(value));
-
-const formatJobType = (value: string) => value.replaceAll('_', ' ').toLowerCase().replace(/\b\w/g, (character) => character.toUpperCase());
-
-const formatCompensation = (job: SeekerDashboardJob) => {
-  if (!job.compensation) return 'Compensation not specified';
-
-  if (job.compensation.type === 'FREELANCE') {
-    return `${job.compensation.currency} ${job.compensation.projectAmount} project`;
-  }
-
-  if (job.compensation.type === 'CONTRACT') {
-    return `${job.compensation.currency} ${job.compensation.amount} contract`;
-  }
-
-  const minimum = job.compensation.salaryMin ?? 'Not specified';
-  const maximum = job.compensation.salaryMax ?? 'Not specified';
-  return `${job.compensation.currency} ${minimum} - ${maximum} / ${job.compensation.salaryPeriod.toLowerCase()}`;
-};
 
 const getInitials = (name: string) => name.split(' ').filter(Boolean).map((part) => part[0]).join('').slice(0, 2).toUpperCase();
 
@@ -42,37 +25,7 @@ const formatStatus = (status: string) => status
   .replace(/\b\w/g, (character) => character.toUpperCase());
 
 function ApprovedJobCard({ job }: { job: SeekerDashboardJob }) {
-  const companyName = job.company?.name ?? 'Company not provided';
-  const logoUrl = job.company?.logoUrl;
-
-  return (
-    <article className="seeker-job-card">
-      <Link className="seeker-job-card__body-link" to={`/seeker/jobs/${job.id}`} aria-label={`View ${job.title} at ${companyName}`}>
-        {logoUrl ? (
-          <img className="company-logo seeker-job-card__logo" src={logoUrl} alt="" />
-        ) : (
-          <span className="company-logo seeker-job-card__logo" aria-hidden="true">{getInitials(companyName)}</span>
-        )}
-        <div className="seeker-job-card__content">
-          <div className="seeker-job-card__top">
-            <h3>{companyName}</h3>
-          </div>
-          <h4>{job.title}</h4>
-          <p className="seeker-job-card__metadata"><span className="seeker-job-card__compensation">{formatCompensation(job)}</span><span>{job.location}</span></p>
-          <div className="seeker-job-card__tags">
-            <small className="seeker-tag seeker-tag--0">{formatJobType(job.jobType)}</small>
-            {job.company?.industry ? <small className="seeker-tag seeker-tag--1">{job.company.industry}</small> : null}
-            {job.skills.slice(0, 2).map((skill, index) => <small className={`seeker-tag seeker-tag--${(index + 2)}`} key={`${job.id}-${skill}`}>{skill}</small>)}
-          </div>
-          <p className="seeker-job-card__description">{job.description}</p>
-        </div>
-      </Link>
-      <div className="seeker-job-card__actions">
-        <Link className="seeker-job-card__apply-btn seeker-job-card__apply-btn--primary" to={`/seeker/applications?jobId=${job.id}&apply=true`}>Apply Now</Link>
-        <Link className="seeker-job-card__details-link" to={`/seeker/jobs/${job.id}`}>View Details</Link>
-      </div>
-    </article>
-  );
+  return <SeekerJobCard job={job} listing showBookmark={false} />;
 }
 
 function Homepage() {
@@ -316,7 +269,7 @@ function Homepage() {
           )}
         </section>
 
-        <section className="seeker-card seeker-recommendations" aria-labelledby="approved-jobs-heading">
+        <section className="seeker-card seeker-recommendations seeker-jobs-page" aria-labelledby="approved-jobs-heading">
           <div className="seeker-section-heading">
             <div>
               <p className="seeker-card__label">Discover</p>

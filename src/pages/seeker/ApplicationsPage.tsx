@@ -152,14 +152,13 @@ function ApplicationsPage() {
   };
 
   const submitApplication = async () => {
-    if (!selectedJob || !token || isSubmitting) return;
+    if (!selectedJob || !token || isSubmitting || !resumeUrl) return;
 
     setIsSubmitting(true);
     setSubmitError('');
     const result = await createSeekerApplication({
       jobId: selectedJob.id,
       ...(proposal.trim() ? { coverLetter: proposal.trim() } : {}),
-      ...(resumeUrl ? { resumeUrl } : {}),
     }, token);
 
     if (!result.ok) {

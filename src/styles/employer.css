@@ -641,6 +641,11 @@
   margin-bottom: 0.85rem;
 }
 
+.employer-list-tools .employer-search {
+  flex: 1 1 auto;
+  max-width: none;
+}
+
 .employer-search {
   display: flex;
   align-items: center;

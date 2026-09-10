@@ -494,7 +494,6 @@ export type SeekerApplicationsResponse = {
 export type CreateSeekerApplicationPayload = {
   jobId: string;
   coverLetter?: string;
-  resumeUrl?: string;
 };
 
 export type CreateSeekerApplicationResponse = {
