@@ -90,18 +90,21 @@ function SignInPage({ role = 'seeker' }: SignInPageProps) {
       const destinationMap = {
         SEEKER: '/seeker/dashboard',
         EMPLOYER: '/employer/jobs',
-        ADMIN: '/admin',
+        ADMIN: '/admin/moderation',
       } as const;
 
-      const route = destinationMap[actualRole] ?? '/';
+      if (actualRole === 'ADMIN') {
+        navigate('/admin/moderation', { replace: true });
+        return;
+      }
 
-      if (expectedRole !== actualRole && actualRole !== 'ADMIN') {
-        navigate(route, { replace: true });
+      if (expectedRole !== actualRole) {
+        navigate(destinationMap[actualRole] ?? '/', { replace: true });
         return;
       }
 
       const from = (location.state as { from?: Location } | null)?.from;
-      navigate(from && from.pathname ? from.pathname : route, { replace: true });
+      navigate(from && from.pathname ? from.pathname : destinationMap[actualRole], { replace: true });
     } catch (loginError) {
       const message = loginError instanceof Error ? loginError.message : 'We could not sign you in. Please try again.';
       setError(message);

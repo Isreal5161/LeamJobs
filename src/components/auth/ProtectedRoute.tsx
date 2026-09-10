@@ -11,13 +11,13 @@ type ProtectedRouteProps = {
 const ROLE_LOGIN_PATH: Record<AuthRole, string> = {
   SEEKER: '/login',
   EMPLOYER: '/employers/login',
-  ADMIN: '/login',
+  ADMIN: '/admin/login',
 };
 
 const ROLE_DASHBOARD_PATH: Record<AuthRole, string> = {
   SEEKER: '/seeker/dashboard',
   EMPLOYER: '/employer/jobs',
-  ADMIN: '/admin',
+  ADMIN: '/admin/moderation',
 };
 
 function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) {
@@ -75,14 +75,20 @@ function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) {
   }
 
   if (!user) {
-    const loginPath = location.pathname.startsWith('/employer')
-      ? '/employers/login'
-      : '/login';
+    const loginPath = location.pathname.startsWith('/admin')
+      ? '/admin/login'
+      : location.pathname.startsWith('/employer')
+        ? '/employers/login'
+        : '/login';
 
     return <Navigate to={loginPath} replace state={{ from: location }} />;
   }
 
   if (allowedRoles && !allowedRoles.includes(user.role)) {
+    if (user.role === 'ADMIN') {
+      return <Navigate to={ROLE_DASHBOARD_PATH.ADMIN} replace />;
+    }
+
     return <Navigate to={ROLE_DASHBOARD_PATH[user.role]} replace />;
   }
 

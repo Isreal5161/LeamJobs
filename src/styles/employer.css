@@ -970,6 +970,26 @@
   flex-wrap: wrap;
 }
 
+.employer-page-notice {
+  padding: 0.8rem 0.95rem;
+  border-radius: 8px;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.employer-page-notice--success {
+  border-color: rgba(22, 128, 60, 0.18);
+  background: #e8f7ee;
+  color: #166534;
+}
+
+.employer-page-notice--error {
+  border-color: rgba(220, 38, 38, 0.18);
+  background: #fff1f2;
+  color: #b91c1c;
+}
+
 .employer-empty-state {
   padding: 1rem;
   color: #64748b;

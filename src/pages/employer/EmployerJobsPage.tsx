@@ -77,7 +77,7 @@ function EmployerJobsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState('');
-  const [actionError, setActionError] = useState('');
+  const [submitFeedback, setSubmitFeedback] = useState<{ tone: 'success' | 'error'; message: string } | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
@@ -118,14 +118,14 @@ function EmployerJobsPage() {
   const startEditing = (job: EmployerJob) => {
     setSelectedJobId(job.id);
     setIsCreating(false);
-    setActionError('');
+    setSubmitFeedback(null);
     setForm(formFromJob(job));
   };
 
   const startCreating = () => {
     setIsCreating(true);
     setSelectedJobId('');
-    setActionError('');
+    setSubmitFeedback(null);
     setForm({ ...emptyJobForm, requirements: [''], responsibilities: [''], skills: [''], benefits: [] });
   };
 
@@ -133,7 +133,7 @@ function EmployerJobsPage() {
     setIsCreating(false);
     setSelectedJobId(jobs[0]?.id ?? '');
     setForm(selectedJob ? formFromJob(selectedJob) : emptyJobForm);
-    setActionError('');
+    setSubmitFeedback(null);
   };
 
   const buildPayload = (): EmployerJobPayload => {
@@ -169,33 +169,44 @@ function EmployerJobsPage() {
   const saveJob = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!token) return;
+
     setIsSaving(true);
-    setActionError('');
+    setSubmitFeedback(null);
+
     const result = isCreating ? await createEmployerJob(buildPayload(), token) : selectedJob ? await updateEmployerJob(selectedJob.id, buildPayload(), token) : null;
+
     if (!result) {
-      setActionError('Select a job before editing it.');
+      setSubmitFeedback({ tone: 'error', message: 'Select a job before editing it.' });
       setIsSaving(false);
       return;
     }
+
     if (!result.ok) {
-      setActionError(result.error.message || 'We could not save this job.');
+      setSubmitFeedback({ tone: 'error', message: result.error.message || 'We could not save this job.' });
       setIsSaving(false);
       return;
     }
+
     const savedJob = result.data.data.job;
     setJobs((current) => isCreating ? [savedJob, ...current] : current.map((job) => job.id === savedJob.id ? savedJob : job));
     setSelectedJobId(savedJob.id);
     setIsCreating(false);
     setForm(formFromJob(savedJob));
+    setSubmitFeedback({
+      tone: 'success',
+      message: isCreating
+        ? 'Job submitted successfully. It is now awaiting admin approval.'
+        : 'Job updated successfully.',
+    });
     setIsSaving(false);
   };
 
   const handleClose = async (job: EmployerJob) => {
     if (!token || !window.confirm(`Close ${job.title}?`)) return;
-    setActionError('');
+    setSubmitFeedback(null);
     const result = await closeEmployerJob(job.id, token);
     if (!result.ok) {
-      setActionError(result.error.message || 'We could not close this job.');
+      setSubmitFeedback({ tone: 'error', message: result.error.message || 'We could not close this job.' });
       return;
     }
     setJobs((current) => current.map((item) => item.id === job.id ? result.data.data.job : item));
@@ -218,7 +229,14 @@ function EmployerJobsPage() {
       <main className="employer-content employer-jobs-grid">
         <section className="employer-panel employer-job-editor">
           <div className="employer-section-heading"><div><h2>{isCreating ? 'Create job post' : selectedJob ? 'Edit job post' : 'Create your first job post'}</h2><p>Job posts are submitted as pending for review.</p></div></div>
-          {actionError ? <p role="alert" className="employer-empty-state">{actionError}</p> : null}
+          {submitFeedback ? (
+            <div
+              className={`employer-page-notice employer-page-notice--${submitFeedback.tone}`}
+              role={submitFeedback.tone === 'error' ? 'alert' : 'status'}
+            >
+              {submitFeedback.message}
+            </div>
+          ) : null}
           <form className="employer-form" onSubmit={saveJob}>
             <label><span>Job title</span><input required maxLength={160} value={form.title} onChange={(event) => setField('title', event.target.value)} /></label>
             <div className="employer-form__split"><label><span>Department</span><select value={form.department} onChange={(event) => setField('department', event.target.value)}><option value="">Select department</option>{departments.map((department) => <option key={department}>{department}</option>)}</select></label><label><span>Location</span><input required maxLength={160} value={form.location} onChange={(event) => setField('location', event.target.value)} /></label></div>
@@ -227,7 +245,13 @@ function EmployerJobsPage() {
             <div className="employer-form__split"><label><span>Currency</span><input required maxLength={3} value={form.currency} onChange={(event) => setField('currency', event.target.value.toUpperCase())} /></label>{form.engagementType === 'MONTHLY' ? <><label><span>Minimum monthly salary</span><input type="number" min="0" step="0.01" value={form.salaryMin} onChange={(event) => setField('salaryMin', event.target.value)} /></label><label><span>Maximum monthly salary</span><input type="number" min="0" step="0.01" value={form.salaryMax} onChange={(event) => setField('salaryMax', event.target.value)} /></label></> : null}{form.engagementType === 'CONTRACT' ? <><label><span>Contract amount</span><input required type="number" min="0" step="0.01" value={form.contractAmount} onChange={(event) => setField('contractAmount', event.target.value)} /></label><label><span>Contract duration</span><input required maxLength={100} value={form.contractDuration} onChange={(event) => setField('contractDuration', event.target.value)} placeholder="e.g. 6 months" /></label></> : null}{form.engagementType === 'FREELANCE' ? <label><span>Project amount</span><input required type="number" min="0" step="0.01" value={form.freelanceAmount} onChange={(event) => setField('freelanceAmount', event.target.value)} /></label> : null}</div>
             <label><span>Application deadline</span><input type="date" value={form.applicationDeadline} onChange={(event) => setField('applicationDeadline', event.target.value)} /></label>
             {listFields.map(([field, label]) => <div className="employer-form__detail-section" key={field}><span className="employer-form__detail-heading">{label}</span><div className="employer-detail-list-editor">{form[field].map((item, index) => <div className="employer-detail-list-editor__row" key={`${field}-${index}`}><input required={field !== 'benefits'} value={item} onChange={(event) => setListField(field, index, event.target.value)} placeholder={`${label.replace(' (optional)', '')} ${index + 1}`} /><button type="button" aria-label={`Remove ${label} item ${index + 1}`} onClick={() => removeListField(field, index)}><FaTrashAlt /></button></div>)}</div><button className="employer-add-detail" type="button" onClick={() => addListField(field)}><FaPlus /> Add item</button></div>)}
-            <div className="employer-editor-actions"><button className="employer-button employer-button--ghost" type="button" onClick={cancelEditing}>Cancel</button><button className="employer-button employer-button--primary" type="submit" disabled={isSaving}><FaCheckCircle /> {isSaving ? 'Saving...' : isCreating ? 'Submit Job' : 'Update Job'}</button></div>
+            <div className="employer-editor-actions">
+              <button className="employer-button employer-button--ghost" type="button" onClick={cancelEditing}>Cancel</button>
+              <button className="employer-button employer-button--primary" type="submit" disabled={isSaving}>
+                <FaCheckCircle />
+                {isSaving ? (isCreating ? 'Posting Job...' : 'Saving Changes...') : (isCreating ? 'Post Job' : 'Update Job')}
+              </button>
+            </div>
           </form>
         </section>
         <aside className="employer-panel employer-open-jobs"><div className="employer-list-tools"><label className="employer-search" aria-label="Search job posts"><FaSearch /><input type="search" placeholder="Search job posts" value={query} onChange={(event) => setQuery(event.target.value)} /></label><button type="button" aria-label="Filter job posts" onClick={() => setStatusFilter(statusFilters[(statusFilters.indexOf(statusFilter) + 1) % statusFilters.length])} title={`Showing ${statusFilter}`}><FaSlidersH /></button></div><div className="employer-tabs employer-tabs--compact" aria-label="Job status filters">{statusFilters.map((filter) => <button className={filter === statusFilter ? 'employer-tab--active' : ''} type="button" key={filter} onClick={() => setStatusFilter(filter)}>{filter === 'All posts' ? filter : formatStatus(filter as EmployerJob['status'])}</button>)}</div><div className="employer-job-list">{filteredJobs.map((job) => <article className={`employer-job-card ${selectedJobId === job.id ? 'employer-job-card--active' : ''}`} key={job.id}><button type="button" onClick={() => startEditing(job)}><div><span className={`employer-status employer-status--${job.status.toLowerCase()}`}>{formatStatus(job.status)}</span><h3>{job.title}</h3><p>{job.location} / {job.engagementType.toLowerCase()}</p></div><strong>{job.applicantCount}</strong></button><div className="employer-job-card__footer"><span><FaCalendarAlt /> Apply by {formatDate(job.applicationDeadline)}</span><div><button type="button" aria-label={`View ${job.title}`} onClick={() => startEditing(job)}><FaEye /></button><button type="button" aria-label={`Edit ${job.title}`} onClick={() => startEditing(job)}><FaEdit /></button>{job.status !== 'CLOSED' ? <button type="button" aria-label={`Close ${job.title}`} onClick={() => void handleClose(job)}><FaLayerGroup /></button> : null}</div></div></article>)}{filteredJobs.length === 0 ? <div className="employer-empty-state"><strong>{jobs.length === 0 ? 'No job posts yet' : 'No matching posts'}</strong><p>{jobs.length === 0 ? 'Create your first real job post to start hiring.' : 'Try another title, department, location, or status filter.'}</p></div> : null}</div></aside>

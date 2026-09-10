@@ -27,6 +27,7 @@ import AdminDashboardPage from './pages/admin/AdminDashboardPage';
 import AdminOverviewPage from './pages/admin/AdminOverviewPage';
 import AdminModerationPage from './pages/admin/AdminModerationPage';
 import AdminJobsPage from './pages/admin/AdminJobsPage';
+import AdminLoginPage from './pages/admin/AdminLoginPage';
 import AdminContentPage from './pages/admin/AdminContentPage';
 import AdminSeekersPage from './pages/admin/AdminSeekersPage';
 import AdminAnalyticsPage from './pages/admin/AdminAnalyticsPage';
@@ -62,6 +63,7 @@ function App() {
             <Route path="jobs/:jobId" element={<JobDetailsPage />} />
             <Route path="*" element={<NotFoundPage />} />
           </Route>
+          <Route path="/admin/login" element={<AdminLoginPage />} />
           <Route path="/seeker" element={<ProtectedRoute allowedRoles={['SEEKER']}><SeekerLayout /></ProtectedRoute>}>
             <Route index element={<Navigate to="dashboard" replace />} />
             <Route path="dashboard" element={<Homepage />} />
@@ -82,7 +84,7 @@ function App() {
             <Route path="profile" element={<EmployerProfilePage />} />
           </Route>
           <Route path="/admin" element={<ProtectedRoute allowedRoles={['ADMIN']}><AdminLayout /></ProtectedRoute>}>
-            <Route index element={<AdminOverviewPage />} />
+            <Route index element={<Navigate to="moderation" replace />} />
             <Route path="dashboard" element={<AdminOverviewPage />} />
             <Route path="moderation" element={<AdminModerationPage />} />
             <Route path="jobs" element={<AdminJobsPage />} />

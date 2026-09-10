@@ -215,13 +215,13 @@ function AdminModerationPage() {
   };
 
   if (isLoading) {
-    return <div className="admin-page admin-empty-state" role="status">Loading moderation queue...</div>;
+    return <div className="admin-page admin-empty-state" role="status">Loading pending jobs...</div>;
   }
 
   if (error) {
     return (
       <div className="admin-page admin-empty-state" role="alert">
-        <strong>Moderation queue unavailable</strong>
+        <strong>Unable to load pending jobs</strong>
         <p>{error}</p>
         <button type="button" className="admin-review-action admin-review-action--approve" onClick={() => void loadPendingJobs()}>
           Retry
@@ -279,7 +279,7 @@ function AdminModerationPage() {
 
           <div className="admin-review-list admin-review-list--rows">
             {pendingJobs.length === 0 ? (
-              <div className="admin-empty-state">No pending jobs to review right now.</div>
+              <div className="admin-empty-state">No pending jobs.</div>
             ) : (
               pendingJobs.map((job) => (
                 <button
