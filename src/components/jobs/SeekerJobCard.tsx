@@ -27,14 +27,15 @@ function SeekerJobCard({ job, saved = false, listing = false, onToggleBookmark, 
       ? `${job.compensation.currency} ${job.compensation.projectAmount}`
       : job.compensation?.type === 'CONTRACT'
         ? `${job.compensation.currency} ${job.compensation.amount} contract`
-      : job.compensation
-        ? `${job.compensation.currency} ${job.compensation.salaryMin ?? '-'} - ${job.compensation.salaryMax ?? '-'}`
-        : 'Compensation not specified'
+        : job.compensation
+          ? `${job.compensation.currency} ${job.compensation.salaryMin ?? '-'} - ${job.compensation.salaryMax ?? '-'}`
+          : 'Compensation not specified'
     : job.salary;
   const deadline = isBackendJob && job.applicationDeadline
     ? `Apply by ${new Intl.DateTimeFormat(undefined, { dateStyle: 'medium' }).format(new Date(job.applicationDeadline))}`
     : null;
   const detailPath = `/seeker/jobs/${job.id}`;
+  const visibleSkills = isBackendJob ? job.skills.slice(0, 3) : [job.level, job.workArrangement];
 
   return (
     <article className={`seeker-job-card${listing ? ' seeker-job-card--listing' : ''}`}>
@@ -47,19 +48,19 @@ function SeekerJobCard({ job, saved = false, listing = false, onToggleBookmark, 
           <h3>{title}</h3>
           <h4>{company}</h4>
           <div className="seeker-job-card__metadata">
-            <span>{compensation}</span>
+            <span className="seeker-job-card__compensation">{compensation}</span>
             <span>{location}</span>
             {deadline && <span>{deadline}</span>}
           </div>
           <div className="seeker-job-card__tags">
-            {[jobType, ...(isBackendJob ? job.skills.slice(0, 2) : [job.level, job.workArrangement])].map((tag, index) => (
-              <small className={`seeker-tag seeker-tag--${index}`} key={tag}>
+            {[jobType, ...visibleSkills].map((tag, index) => (
+              <small className={`seeker-tag seeker-tag--${index}`} key={`${tag}-${index}`}>
                 {tag}
               </small>
             ))}
           </div>
           <p className="seeker-job-card__description">{description}</p>
-          {matchedSkills && matchedSkills.length > 0 && <small>Matched skills: {matchedSkills.join(', ')}</small>}
+          {matchedSkills && matchedSkills.length > 0 && <small className="seeker-job-card__matched-skills">Matched skills: {matchedSkills.join(', ')}</small>}
         </div>
       </Link>
 

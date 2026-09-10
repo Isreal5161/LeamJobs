@@ -18,6 +18,7 @@ import {
   createSeekerApplication,
   getSeekerApplications,
   getSeekerJob,
+  getSeekerProfile,
   type SeekerApplication,
   type SeekerDashboardJob,
 } from '../../services/api';
@@ -43,6 +44,7 @@ function ApplicationsPage() {
   const [error, setError] = useState('');
   const [jobError, setJobError] = useState('');
   const [submitError, setSubmitError] = useState('');
+  const [resumeUrl, setResumeUrl] = useState<string | null>(null);
 
   const loadApplications = async () => {
     if (!token) {
@@ -67,6 +69,32 @@ function ApplicationsPage() {
 
   useEffect(() => {
     void loadApplications();
+  }, [token]);
+
+  useEffect(() => {
+    if (!token) {
+      setResumeUrl(null);
+      return undefined;
+    }
+
+    let isMounted = true;
+
+    const loadResume = async () => {
+      const result = await getSeekerProfile(token);
+      if (!isMounted) return;
+
+      if (result.ok) {
+        setResumeUrl(result.data.data.profile.resumeUrl ?? null);
+      } else {
+        setResumeUrl(null);
+      }
+    };
+
+    void loadResume();
+
+    return () => {
+      isMounted = false;
+    };
   }, [token]);
 
   useEffect(() => {
@@ -131,6 +159,7 @@ function ApplicationsPage() {
     const result = await createSeekerApplication({
       jobId: selectedJob.id,
       ...(proposal.trim() ? { coverLetter: proposal.trim() } : {}),
+      ...(resumeUrl ? { resumeUrl } : {}),
     }, token);
 
     if (!result.ok) {
@@ -227,7 +256,7 @@ function ApplicationsPage() {
                 <div className="leamjobs-skeleton-block seeker-application-skeleton-block" aria-hidden="true" />
                 <div className="leamjobs-skeleton-block seeker-application-skeleton-block seeker-application-skeleton-block--tall" aria-hidden="true" />
               </div>
-            ) : jobError ? <div className="seeker-application-success"><span><FaTimesCircle /></span><h3>Unable to apply</h3><p>{jobError}</p><button type="button" className="button button--primary" onClick={closeApplication}>Back to applications</button></div> : applicationSent ? <div className="seeker-application-success"><span><FaCheck /></span><h3>Application submitted</h3><p>Your application was sent. You can track it from Applications.</p><button type="button" className="button button--primary" onClick={closeApplication}>Back to applications</button></div> : selectedJob ? <><div className="seeker-application-modal__body"><div className="seeker-application-job-facts"><span><strong>Compensation</strong>{selectedJob.compensation?.type === 'FREELANCE' ? `${selectedJob.compensation.currency} ${selectedJob.compensation.projectAmount}` : selectedJob.compensation ? `${selectedJob.compensation.currency} ${selectedJob.compensation.salaryMin ?? 'Not specified'} - ${selectedJob.compensation.salaryMax ?? 'Not specified'}` : 'Not specified'}</span><span><strong>Job type</strong>{formatJobType(selectedJob.jobType)}</span><span><strong>Location</strong>{selectedJob.location}</span></div><div className="seeker-application-cv-choice"><div className="seeker-application-cv-choice__heading"><div><h3>Resume</h3><p>The JSON application API accepts a resume URL. Local file uploads are not connected.</p></div></div><span className="seeker-application-cv-note">Add or update your resume URL from your profile before applying.</span></div><div className="seeker-application-proposal"><label htmlFor="application-proposal">Cover letter or short introduction <small>(optional)</small></label><textarea id="application-proposal" value={proposal} onChange={(event) => setProposal(event.target.value)} placeholder="Share a concise introduction, relevant experience, and what you would bring to this role." rows={5} /><small>{proposal.trim().length ? `${proposal.trim().length} characters` : 'You can apply without a cover letter.'}</small></div>{submitError ? <p role="alert">{submitError}</p> : null}</div><div className="seeker-application-modal__footer"><button type="button" className="seeker-application-secondary-button" onClick={closeApplication}>Cancel</button><button type="button" className="button button--primary" disabled={isSubmitting} onClick={submitApplication}>{isSubmitting ? 'Submitting...' : 'Submit application'}</button></div></> : null}
+            ) : jobError ? <div className="seeker-application-success"><span><FaTimesCircle /></span><h3>Unable to apply</h3><p>{jobError}</p><button type="button" className="button button--primary" onClick={closeApplication}>Back to applications</button></div> : applicationSent ? <div className="seeker-application-success"><span><FaCheck /></span><h3>Application submitted</h3><p>Your application was sent. You can track it from Applications.</p><button type="button" className="button button--primary" onClick={closeApplication}>Back to applications</button></div> : selectedJob ? <><div className="seeker-application-modal__body"><div className="seeker-application-job-facts"><span><strong>Compensation</strong>{selectedJob.compensation?.type === 'FREELANCE' ? `${selectedJob.compensation.currency} ${selectedJob.compensation.projectAmount}` : selectedJob.compensation ? `${selectedJob.compensation.currency} ${selectedJob.compensation.salaryMin ?? 'Not specified'} - ${selectedJob.compensation.salaryMax ?? 'Not specified'}` : 'Not specified'}</span><span><strong>Job type</strong>{formatJobType(selectedJob.jobType)}</span><span><strong>Location</strong>{selectedJob.location}</span></div><div className="seeker-application-cv-choice"><div className="seeker-application-cv-choice__heading"><div><h3>Resume</h3><p>{resumeUrl ? 'Your saved profile resume will be attached automatically to this application.' : 'No resume is currently saved in your profile.'}</p></div></div>{resumeUrl ? <span className="seeker-application-cv-note">This resume will be included when you submit your application.</span> : <span className="seeker-application-cv-note">Add or update your resume in your profile before applying.</span>} {!resumeUrl ? <Link to="/seeker/profile#seeker-profile-editor" className="button button--secondary" onClick={closeApplication}>Update profile</Link> : null}</div><div className="seeker-application-proposal"><label htmlFor="application-proposal">Cover letter or short introduction <small>(optional)</small></label><textarea id="application-proposal" value={proposal} onChange={(event) => setProposal(event.target.value)} placeholder="Share a concise introduction, relevant experience, and what you would bring to this role." rows={5} /><small>{proposal.trim().length ? `${proposal.trim().length} characters` : 'You can apply without a cover letter.'}</small></div>{submitError ? <p role="alert">{submitError}</p> : null}</div><div className="seeker-application-modal__footer"><button type="button" className="seeker-application-secondary-button" onClick={closeApplication}>Cancel</button><button type="button" className="button button--primary" disabled={isSubmitting} onClick={submitApplication}>{isSubmitting ? 'Submitting...' : 'Submit application'}</button></div></> : null}
           </section>
         </div>
       )}

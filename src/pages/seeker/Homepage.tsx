@@ -58,10 +58,11 @@ function ApprovedJobCard({ job }: { job: SeekerDashboardJob }) {
             <h3>{companyName}</h3>
           </div>
           <h4>{job.title}</h4>
-          <p>{formatCompensation(job)} <span /> {job.location}</p>
+          <p className="seeker-job-card__metadata"><span className="seeker-job-card__compensation">{formatCompensation(job)}</span><span>{job.location}</span></p>
           <div className="seeker-job-card__tags">
             <small className="seeker-tag seeker-tag--0">{formatJobType(job.jobType)}</small>
             {job.company?.industry ? <small className="seeker-tag seeker-tag--1">{job.company.industry}</small> : null}
+            {job.skills.slice(0, 2).map((skill, index) => <small className={`seeker-tag seeker-tag--${(index + 2)}`} key={`${job.id}-${skill}`}>{skill}</small>)}
           </div>
           <p className="seeker-job-card__description">{job.description}</p>
         </div>
