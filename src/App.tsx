@@ -34,7 +34,6 @@ import { JobStoreProvider } from './context/JobStoreContext';
 import { SiteContentProvider } from './context/SiteContentContext';
 import { PaymentProvider } from './context/PaymentContext';
 import SeekerPaymentsPage from './pages/seeker/PaymentsPage';
-import EmployerPaymentsPage from './pages/employer/PaymentsPage';
 import AdminPaymentsPage from './pages/admin/AdminPaymentsPage';
 import AdminSubscriptionsPage from './pages/admin/AdminSubscriptionsPage';
 import { SubscriptionProvider } from './context/SubscriptionContext';
@@ -81,7 +80,6 @@ function App() {
             <Route path="applicants" element={<EmployerApplicantsPage />} />
             <Route path="messages" element={<MessagesPage role="employer" />} />
             <Route path="profile" element={<EmployerProfilePage />} />
-            <Route path="payments" element={<EmployerPaymentsPage />} />
           </Route>
           <Route path="/admin" element={<ProtectedRoute allowedRoles={['ADMIN']}><AdminLayout /></ProtectedRoute>}>
             <Route index element={<AdminOverviewPage />} />

@@ -113,7 +113,7 @@ function MobileBottomNav() {
   const applicationsPath = seekerMode ? '/seeker/applications' : employerMode ? '/employer/applicants' : '/applications';
   const messagesPath = seekerMode ? '/seeker/messages' : employerMode ? '/employer/messages' : '/messages';
   const profilePath = seekerMode ? '/seeker/profile' : employerMode ? '/employer/profile' : '/profile';
-  const paymentsPath = seekerMode ? '/seeker/payments' : employerMode ? '/employer/payments' : '/payments';
+  const paymentsPath = seekerMode ? '/seeker/payments' : '/payments';
   const applicationsLabel = employerMode ? 'Applicants' : 'Applications';
 
   return (
@@ -134,7 +134,7 @@ function MobileBottomNav() {
         <FaComments />
         <span>Messages</span>
       </Link>
-      {seekerMode || employerMode ? <Link to={paymentsPath} className={`mobile-bottom-nav__item ${pathname.startsWith(paymentsPath) ? 'mobile-bottom-nav__item--active' : ''}`}>
+      {seekerMode ? <Link to={paymentsPath} className={`mobile-bottom-nav__item ${pathname.startsWith(paymentsPath) ? 'mobile-bottom-nav__item--active' : ''}`}>
         <FaMoneyBillWave />
         <span>Payments</span>
       </Link> : null}

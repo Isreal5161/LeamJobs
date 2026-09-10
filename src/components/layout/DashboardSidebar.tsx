@@ -36,7 +36,6 @@ const sidebarLinks = {
     { label: 'Applicants', to: '/employer/applicants', icon: FaClipboardList },
     { label: 'Messages', to: '/employer/messages', icon: FaComments },
     { label: 'Company Profile', to: '/employer/profile', icon: FaUser },
-    { label: 'Payments', to: '/employer/payments', icon: FaMoneyBillWave },
   ],
   admin: [
     { label: 'Overview', to: '/admin/dashboard', icon: FaHome },

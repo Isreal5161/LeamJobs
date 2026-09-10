@@ -245,6 +245,65 @@ export type EmployerJobResponse = {
   data: { job: EmployerJob };
 };
 
+export type AdminJob = {
+  id: string;
+  employerId: string;
+  title: string;
+  description: string;
+  location: string;
+  department: string | null;
+  workArrangement: 'REMOTE' | 'HYBRID' | 'ONSITE' | null;
+  engagementType: 'MONTHLY' | 'CONTRACT' | 'FREELANCE';
+  jobType: 'NORMAL_EMPLOYMENT' | 'FREELANCE_PROJECT';
+  skills: string[];
+  requirements: string[] | Record<string, unknown> | null;
+  responsibilities: string[];
+  benefits: string[];
+  status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'CLOSED';
+  applicationDeadline: string | null;
+  rejectionReason: string | null;
+  reviewedById: string | null;
+  reviewedAt: string | null;
+  closedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+  company: {
+    name: string;
+    description: string | null;
+    website: string | null;
+    industry: string | null;
+    location: string | null;
+    logoUrl: string | null;
+  } | null;
+  compensation: {
+    type: 'MONTHLY';
+    salaryMin: string | null;
+    salaryMax: string | null;
+    currency: string;
+    salaryPeriod: string;
+  } | {
+    type: 'CONTRACT';
+    amount: string;
+    currency: string;
+    duration: string | null;
+  } | {
+    type: 'FREELANCE';
+    projectAmount: string;
+    currency: string;
+  } | null;
+  applicantCount: number;
+};
+
+export type AdminJobsResponse = {
+  success: true;
+  data: { jobs: AdminJob[] };
+};
+
+export type AdminJobResponse = {
+  success: true;
+  data: { job: AdminJob };
+};
+
 export type EmployerApplicationStatus = 'APPLIED' | 'REVIEWING' | 'SHORTLISTED' | 'INTERVIEW' | 'REJECTED' | 'ACCEPTED' | 'WITHDRAWN';
 
 export type EmployerApplicant = {
@@ -654,6 +713,28 @@ export function updateEmployerProfile(payload: EmployerProfilePayload, token: st
 
 export function getEmployerJobs(token: string) {
   return request<EmployerJobsResponse>({ method: 'GET', endpoint: '/employer/jobs', token });
+}
+
+export function getAdminJobs(token: string, status?: 'PENDING' | 'APPROVED' | 'REJECTED' | 'CLOSED') {
+  const endpoint = status ? `/admin/jobs?status=${encodeURIComponent(status)}` : '/admin/jobs';
+  return request<AdminJobsResponse>({ method: 'GET', endpoint, token });
+}
+
+export function getAdminJob(jobId: string, token: string) {
+  return request<AdminJobResponse>({ method: 'GET', endpoint: `/admin/jobs/${encodeURIComponent(jobId)}`, token });
+}
+
+export function approveAdminJob(jobId: string, token: string) {
+  return request<AdminJobResponse>({ method: 'PATCH', endpoint: `/admin/jobs/${encodeURIComponent(jobId)}/approve`, token });
+}
+
+export function rejectAdminJob(jobId: string, rejectionReason: string, token: string) {
+  return request<AdminJobResponse>({
+    method: 'PATCH',
+    endpoint: `/admin/jobs/${encodeURIComponent(jobId)}/reject`,
+    body: { rejectionReason },
+    token,
+  });
 }
 
 export function createEmployerJob(payload: EmployerJobPayload, token: string) {

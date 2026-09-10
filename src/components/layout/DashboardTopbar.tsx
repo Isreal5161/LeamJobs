@@ -32,7 +32,6 @@ const accountNav: Record<'seeker' | 'employer', { label: string; to: string }[]>
     { label: 'Profile', to: '/seeker/profile' },
   ],
   employer: [
-    { label: 'Payments', to: '/employer/payments' },
     { label: 'Company Profile', to: '/employer/profile' },
   ],
 };
