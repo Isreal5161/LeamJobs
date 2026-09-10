@@ -1011,6 +1011,33 @@
   flex-wrap: wrap;
 }
 
+.employer-detail-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.85fr) minmax(280px, 0.95fr);
+  gap: 1rem;
+  align-items: start;
+}
+
+.employer-detail-main,
+.employer-detail-sidebar {
+  display: grid;
+  gap: 1rem;
+}
+
+.employer-detail-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.85rem;
+}
+
+.employer-detail-section-header h2 {
+  margin: 0;
+  color: #0f172a;
+  font-size: 1.05rem;
+}
+
 .employer-candidate-section {
   padding-top: 1rem;
   border-top: 1px solid rgba(15, 23, 42, 0.08);
@@ -1019,6 +1046,168 @@
 .employer-candidate-section h2 {
   color: #0f172a;
   font-size: 1.05rem;
+}
+
+.employer-detail-main .employer-candidate-section:first-child,
+.employer-detail-sidebar .employer-candidate-section:first-child {
+  border-top: 0;
+  padding-top: 0;
+}
+
+.employer-profile-entry-list {
+  display: grid;
+  gap: 0.9rem;
+}
+
+.employer-profile-entry {
+  padding: 0.9rem 1rem;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 12px;
+  background: #f8fafc;
+}
+
+.employer-profile-entry__top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.8rem;
+}
+
+.employer-profile-entry h3 {
+  margin: 0;
+  color: #0f172a;
+  font-size: 1rem;
+}
+
+.employer-profile-entry p {
+  margin: 0.25rem 0 0;
+  color: #475569;
+  line-height: 1.55;
+}
+
+.employer-profile-entry__meta {
+  color: #64748b;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.employer-profile-entry__links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.7rem;
+  margin-top: 0.7rem;
+}
+
+.employer-profile-entry__links a {
+  color: #0e4ae1;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.employer-inline-badge,
+.employer-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.28rem 0.62rem;
+  border-radius: 999px;
+  font-size: 0.74rem;
+  font-weight: 800;
+}
+
+.employer-inline-badge {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.employer-tag-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+}
+
+.employer-tag-list--compact {
+  margin-top: 0.75rem;
+}
+
+.employer-tag {
+  background: #eef4ff;
+  color: #1d4ed8;
+}
+
+.employer-tag--muted {
+  background: #e2e8f0;
+  color: #334155;
+}
+
+.employer-summary-list {
+  display: grid;
+  gap: 0.8rem;
+  margin-top: 0.8rem;
+}
+
+.employer-summary-list div {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.7rem 0.85rem;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 10px;
+  background: #f8fafc;
+}
+
+.employer-summary-list span {
+  color: #64748b;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.employer-summary-list strong {
+  color: #0f172a;
+  font-size: 0.84rem;
+  text-align: right;
+}
+
+.employer-status-field {
+  display: grid;
+  gap: 0.45rem;
+  margin-top: 1rem;
+  color: #475569;
+  font-size: 0.84rem;
+  font-weight: 700;
+}
+
+.employer-candidate-detail__header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+}
+
+.employer-candidate-detail__header-copy {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.employer-candidate-detail__header-copy h2 {
+  margin: 0;
+  color: #0f172a;
+  font-size: 1.35rem;
+}
+
+.employer-candidate-detail__header-copy p {
+  margin: 0.25rem 0 0;
+  color: #64748b;
+}
+
+.employer-candidate-detail__header-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.65rem;
+  margin-left: auto;
 }
 
 .employer-score-meter {

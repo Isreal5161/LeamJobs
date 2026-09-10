@@ -12,10 +12,15 @@ import {
   getEmployerApplicationResume,
   getEmployerApplications,
   getEmployerJobs,
+  type CertificationItem,
+  type EducationItem,
   type EmployerApplicationDetail,
   type EmployerApplicationListItem,
   type EmployerApplicationStatus,
   type EmployerJob,
+  type ExperienceItem,
+  type LanguageItem,
+  type ProjectItem,
   updateEmployerApplicationStatus,
 } from '../../services/api';
 
@@ -179,9 +184,146 @@ function EmployerApplicantsPage() {
   };
 
   const applicant = selectedApplication?.applicant;
-  const renderList = (value: unknown) => {
-    const items = Array.isArray(value) ? value : value && typeof value === 'object' ? Object.entries(value).map(([key, item]) => `${key}: ${String(item)}`) : [];
-    return items.length ? <ul>{items.map((item, index) => <li key={`${String(item)}-${index}`}>{typeof item === 'string' ? item : JSON.stringify(item)}</li>)}</ul> : null;
+
+  const renderBadgeList = (skills: string[] | null | undefined) => {
+    if (!skills?.length) return null;
+    return (
+      <div className="employer-skill-list">
+        {skills.filter((skill) => skill && skill.trim()).map((skill) => <span key={skill}>{skill}</span>)}
+      </div>
+    );
+  };
+
+  const formatDateRange = (startDate?: string, endDate?: string, currentlyWorking?: boolean) => {
+    const range = [startDate, currentlyWorking ? 'Present' : endDate].filter(Boolean);
+    return range.length ? range.join(' — ') : 'Dates not provided';
+  };
+
+  const renderExperience = (items: ExperienceItem[] | null | undefined) => {
+    if (!items?.length) return null;
+
+    return (
+      <section className="employer-candidate-section">
+        <div className="employer-detail-section-header">
+          <h2>Professional Experience</h2>
+        </div>
+        <div className="employer-profile-entry-list">
+          {items.map((item) => (
+            <article className="employer-profile-entry" key={item.id || `${item.company}-${item.jobTitle}`}>
+              <div className="employer-profile-entry__top">
+                <div>
+                  <h3>{item.jobTitle || 'Role not provided'}</h3>
+                  <p>{item.company || 'Company not provided'}</p>
+                </div>
+                {item.currentlyWorking ? <span className="employer-inline-badge">Current</span> : null}
+              </div>
+              <p className="employer-profile-entry__meta">{formatDateRange(item.startDate, item.endDate, item.currentlyWorking)}</p>
+              {item.description ? <p>{item.description}</p> : null}
+            </article>
+          ))}
+        </div>
+      </section>
+    );
+  };
+
+  const renderEducation = (items: EducationItem[] | null | undefined) => {
+    if (!items?.length) return null;
+
+    return (
+      <section className="employer-candidate-section">
+        <div className="employer-detail-section-header">
+          <h2>Education</h2>
+        </div>
+        <div className="employer-profile-entry-list">
+          {items.map((item) => (
+            <article className="employer-profile-entry" key={item.id || `${item.school}-${item.degree}`}>
+              <div className="employer-profile-entry__top">
+                <div>
+                  <h3>{item.degree || 'Degree not provided'}</h3>
+                  <p>{item.school || 'School not provided'}</p>
+                </div>
+              </div>
+              {item.year ? <p className="employer-profile-entry__meta">{item.year}</p> : null}
+            </article>
+          ))}
+        </div>
+      </section>
+    );
+  };
+
+  const renderCertifications = (items: CertificationItem[] | null | undefined) => {
+    if (!items?.length) return null;
+
+    return (
+      <section className="employer-candidate-section">
+        <div className="employer-detail-section-header">
+          <h2>Certifications</h2>
+        </div>
+        <div className="employer-profile-entry-list">
+          {items.map((item) => (
+            <article className="employer-profile-entry" key={item.id || `${item.name}-${item.issuer}`}>
+              <div className="employer-profile-entry__top">
+                <div>
+                  <h3>{item.name || 'Certification not provided'}</h3>
+                  {item.issuer ? <p>{item.issuer}</p> : null}
+                </div>
+              </div>
+            </article>
+          ))}
+        </div>
+      </section>
+    );
+  };
+
+  const renderLanguages = (items: LanguageItem[] | null | undefined) => {
+    if (!items?.length) return null;
+
+    return (
+      <section className="employer-candidate-section">
+        <div className="employer-detail-section-header">
+          <h2>Languages</h2>
+        </div>
+        <div className="employer-tag-list">
+          {items.filter((item) => item && (item.name || item.proficiency)).map((item) => (
+            <span className="employer-tag" key={item.id || `${item.name}-${item.proficiency}`}>
+              {item.name || 'Language'}{item.proficiency ? ` — ${item.proficiency}` : ''}
+            </span>
+          ))}
+        </div>
+      </section>
+    );
+  };
+
+  const renderProjects = (items: ProjectItem[] | null | undefined) => {
+    if (!items?.length) return null;
+
+    return (
+      <section className="employer-candidate-section">
+        <div className="employer-detail-section-header">
+          <h2>Projects</h2>
+        </div>
+        <div className="employer-profile-entry-list">
+          {items.map((item) => (
+            <article className="employer-profile-entry" key={item.id || `${item.name}-${item.startDate}-${item.endDate}`}>
+              <div className="employer-profile-entry__top">
+                <div>
+                  <h3>{item.name || 'Project not provided'}</h3>
+                  {item.startDate || item.endDate ? <p className="employer-profile-entry__meta">{formatDateRange(item.startDate, item.endDate, false)}</p> : null}
+                </div>
+              </div>
+              {item.description ? <p>{item.description}</p> : null}
+              {item.technologies?.length ? <div className="employer-tag-list employer-tag-list--compact"><span className="employer-tag employer-tag--muted">Technologies</span>{item.technologies.filter(Boolean).map((technology) => <span className="employer-tag" key={`${item.id}-${technology}`}>{technology}</span>)}</div> : null}
+              {item.projectUrl || item.githubUrl ? (
+                <div className="employer-profile-entry__links">
+                  {item.projectUrl ? <a href={item.projectUrl} target="_blank" rel="noreferrer">Project link</a> : null}
+                  {item.githubUrl ? <a href={item.githubUrl} target="_blank" rel="noreferrer">GitHub link</a> : null}
+                </div>
+              ) : null}
+            </article>
+          ))}
+        </div>
+      </section>
+    );
   };
 
   return (
@@ -229,21 +371,77 @@ function EmployerApplicantsPage() {
           ) : null}
           {!isLoadingDetail && detailError ? <div className="employer-empty-state" role="alert"><strong>Application unavailable</strong><p>{detailError}</p></div> : null}
           {!isLoadingDetail && !detailError && selectedApplication && applicant ? <>
-            <div className="employer-candidate-detail__header"><ApplicantAvatar name={applicant.fullName} imageUrl={applicant.profilePictureUrl ?? undefined} size="lg" /><div><h2>{applicant.fullName}</h2><p>{applicant.professionalTitle || 'Professional title not provided'}</p></div><span className={statusClass(selectedApplication.status)}>{statusLabels[selectedApplication.status]}</span></div>
-            <div className="employer-candidate-facts"><span><FaMapMarkerAlt /> {applicant.location || 'Location not provided'}</span><span><FaCalendarCheck /> Applied {formatDate(selectedApplication.createdAt)}</span><span><FaBriefcase /> {selectedApplication.job.title}</span></div>
-            <section className="employer-candidate-section"><div className="employer-section-heading"><div><h2>Application status</h2><p>Update the current stage for this application.</p></div></div><select className="employer-status-select" value={selectedApplication.status} onChange={(event) => void updateStatus(event.target.value as EmployerApplicationStatus)} disabled={isMutating} aria-label="Application status">{statuses.filter((status) => status !== 'ALL').map((status) => <option value={status} key={status}>{statusLabels[status]}</option>)}</select></section>
-            {actionError ? <p className="employer-action-error" role="alert">{actionError}</p> : null}
-            <section className="employer-cv-card" aria-label={`${applicant.fullName} CV`}><span className="employer-cv-card__icon"><FaFileAlt /></span><div><h2>Candidate CV</h2><p>{selectedApplication.resume.available ? 'Application CV is available through the protected employer endpoint.' : 'CV not available for this application.'}</p>{selectedApplication.resume.submittedAt ? <small>Submitted {formatDate(selectedApplication.resume.submittedAt)}</small> : null}</div><div className="employer-cv-card__actions"><button className="employer-button employer-button--primary" type="button" onClick={() => void openResume()} disabled={!selectedApplication.resume.available || isOpeningResume}>{isOpeningResume ? <FaSpinner className="leamjobs-spin" /> : <FaExternalLinkAlt />} View CV</button><button className="employer-button employer-button--ghost" type="button" onClick={() => void openResume()} disabled={!selectedApplication.resume.available || isOpeningResume} aria-label="Download CV"><FaDownload /></button></div></section>
-            {applicant.bio ? <section className="employer-candidate-section"><h2>About the applicant</h2><p>{applicant.bio}</p></section> : null}
-            {applicant.skills.length ? <section className="employer-candidate-section"><h2>Skills</h2><div className="employer-skill-list">{applicant.skills.map((skill) => <span key={skill}>{skill}</span>)}</div></section> : null}
-            {applicant.experience?.length ? <section className="employer-candidate-section"><h2>Experience</h2>{renderList(applicant.experience)}</section> : null}
-            {applicant.education?.length ? <section className="employer-candidate-section"><h2>Education</h2>{renderList(applicant.education)}</section> : null}
-            {applicant.certifications?.length ? <section className="employer-candidate-section"><h2>Certifications</h2>{renderList(applicant.certifications)}</section> : null}
-            {applicant.languages?.length ? <section className="employer-candidate-section"><h2>Languages</h2><p>{applicant.languages.map((item) => `${item.name} (${item.proficiency})`).join(', ')}</p></section> : null}
-            {applicant.projects?.length ? <section className="employer-candidate-section"><h2>Projects</h2>{renderList(applicant.projects)}</section> : null}
-            {applicant.linkedinUrl ? <p className="employer-profile-link"><FaGlobe /> <a href={applicant.linkedinUrl} target="_blank" rel="noreferrer">View LinkedIn profile</a></p> : null}
-            <section className="employer-candidate-section"><h2>Cover letter</h2><p>{selectedApplication.coverLetter || 'No cover letter submitted.'}</p></section>
-            <div className="employer-review-actions"><button className="employer-button employer-button--danger" type="button" onClick={() => void updateStatus('REJECTED')} disabled={isMutating}><FaTimes /> Reject</button><button className="employer-button employer-button--ghost" type="button" onClick={() => void startConversation()} disabled={isMutating}><FaEnvelope /> Message</button><button className="employer-button employer-button--primary" type="button" onClick={() => void updateStatus('SHORTLISTED')} disabled={isMutating}><FaCheck /> Shortlist</button></div>
+            <div className="employer-candidate-detail__header">
+              <ApplicantAvatar name={applicant.fullName} imageUrl={applicant.profilePictureUrl ?? undefined} size="lg" />
+              <div className="employer-candidate-detail__header-copy">
+                <h2>{applicant.fullName}</h2>
+                <p>{applicant.professionalTitle || 'Professional title not provided'}</p>
+              </div>
+              <div className="employer-candidate-detail__header-actions">
+                <span className={statusClass(selectedApplication.status)}>{statusLabels[selectedApplication.status]}</span>
+                <button className="employer-button employer-button--primary" type="button" onClick={() => void openResume()} disabled={!selectedApplication.resume.available || isOpeningResume}>
+                  {isOpeningResume ? <FaSpinner className="leamjobs-spin" /> : <FaFileAlt />} View CV
+                </button>
+              </div>
+            </div>
+            <div className="employer-candidate-facts">
+              <span><FaMapMarkerAlt /> {applicant.location || 'Location not provided'}</span>
+              <span><FaCalendarCheck /> Applied {formatDate(selectedApplication.createdAt)}</span>
+              <span><FaBriefcase /> {selectedApplication.job.title}</span>
+            </div>
+            <div className="employer-detail-grid">
+              <div className="employer-detail-main">
+                {applicant.bio ? <section className="employer-candidate-section"><div className="employer-detail-section-header"><h2>About the applicant</h2></div><p>{applicant.bio}</p></section> : null}
+                {renderBadgeList(applicant.skills)}
+                {renderExperience(applicant.experience)}
+                {renderEducation(applicant.education)}
+                {renderCertifications(applicant.certifications)}
+                {renderLanguages(applicant.languages)}
+                {renderProjects(applicant.projects)}
+                {applicant.linkedinUrl ? <section className="employer-candidate-section"><div className="employer-detail-section-header"><h2>Profile links</h2></div><p className="employer-profile-link"><FaGlobe /> <a href={applicant.linkedinUrl} target="_blank" rel="noreferrer">View LinkedIn profile</a></p></section> : null}
+                <section className="employer-candidate-section">
+                  <div className="employer-detail-section-header"><h2>Cover letter</h2></div>
+                  <p>{selectedApplication.coverLetter || 'No cover letter submitted.'}</p>
+                </section>
+              </div>
+              <div className="employer-detail-sidebar">
+                <section className="employer-candidate-section">
+                  <div className="employer-detail-section-header">
+                    <h2>Application summary</h2>
+                  </div>
+                  <div className="employer-summary-list">
+                    <div><span>Submitted</span><strong>{formatDate(selectedApplication.createdAt)}</strong></div>
+                    <div><span>Resume</span><strong>{selectedApplication.resume.available ? 'Available' : 'Unavailable'}</strong></div>
+                    <div><span>Version</span><strong>{selectedApplication.resume.version || 'N/A'}</strong></div>
+                    <div><span>Job</span><strong>{selectedApplication.job.title}</strong></div>
+                  </div>
+                  <label className="employer-status-field">
+                    <span>Application status</span>
+                    <select className="employer-status-select" value={selectedApplication.status} onChange={(event) => void updateStatus(event.target.value as EmployerApplicationStatus)} disabled={isMutating} aria-label="Application status">
+                      {statuses.filter((status) => status !== 'ALL').map((status) => <option value={status} key={status}>{statusLabels[status]}</option>)}
+                    </select>
+                  </label>
+                </section>
+                {actionError ? <p className="employer-action-error" role="alert">{actionError}</p> : null}
+                <section className="employer-cv-card" aria-label={`${applicant.fullName} CV`}>
+                  <span className="employer-cv-card__icon"><FaFileAlt /></span>
+                  <div>
+                    <h2>Candidate CV</h2>
+                    <p>{selectedApplication.resume.available ? 'Protected application CV is available.' : 'CV not available for this application.'}</p>
+                    {selectedApplication.resume.submittedAt ? <small>Submitted {formatDate(selectedApplication.resume.submittedAt)}</small> : null}
+                  </div>
+                  <div className="employer-cv-card__actions">
+                    <button className="employer-button employer-button--primary" type="button" onClick={() => void openResume()} disabled={!selectedApplication.resume.available || isOpeningResume}>{isOpeningResume ? <FaSpinner className="leamjobs-spin" /> : <FaExternalLinkAlt />} View CV</button>
+                    <button className="employer-button employer-button--ghost" type="button" onClick={() => void openResume()} disabled={!selectedApplication.resume.available || isOpeningResume} aria-label="Download CV"><FaDownload /></button>
+                  </div>
+                </section>
+                <div className="employer-review-actions">
+                  <button className="employer-button employer-button--danger" type="button" onClick={() => void updateStatus('REJECTED')} disabled={isMutating}><FaTimes /> Reject</button>
+                  <button className="employer-button employer-button--ghost" type="button" onClick={() => void startConversation()} disabled={isMutating}><FaEnvelope /> Message</button>
+                  <button className="employer-button employer-button--primary" type="button" onClick={() => void updateStatus('SHORTLISTED')} disabled={isMutating}><FaCheck /> Shortlist</button>
+                </div>
+              </div>
+            </div>
           </> : null}
           {!isLoadingDetail && !detailError && !selectedApplication && !filteredApplications.length ? <div className="employer-empty-state"><strong>Select an applicant to review details.</strong></div> : null}
         </aside>
