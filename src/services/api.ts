@@ -691,6 +691,22 @@ export function getSeekerJob(jobId: string, token: string) {
   });
 }
 
+export function getPublicJobs(query: Partial<SeekerJobsQuery> = {}) {
+  const params = new URLSearchParams();
+
+  if (query.search?.trim()) params.set('search', query.search.trim());
+  if (query.location?.trim()) params.set('location', query.location.trim());
+  if (query.jobType) params.set('jobType', query.jobType);
+  if (query.skills?.length) params.set('skills', query.skills.join(','));
+  params.set('limit', String(query.limit ?? 25));
+  if (query.cursor) params.set('cursor', query.cursor);
+
+  return request<SeekerJobsResponse>({
+    method: 'GET',
+    endpoint: `/jobs?${params.toString()}`,
+  });
+}
+
 export function getPublicJob(jobId: string) {
   return request<SeekerJobResponse>({ method: 'GET', endpoint: `/jobs/${encodeURIComponent(jobId)}` });
 }

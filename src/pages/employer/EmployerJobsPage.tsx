@@ -188,19 +188,11 @@ function EmployerJobsPage() {
 
       const nextJobs = result.data.data.jobs;
       setJobs(nextJobs);
-
-      if (nextJobs.length > 0) {
-        setSelectedJobId((current) => {
-          const fallbackJob = nextJobs.find((job) => job.id === current) ?? nextJobs[0];
-          if (fallbackJob) {
-            setForm(formFromJob(fallbackJob));
-          }
-          return fallbackJob?.id ?? '';
-        });
-      } else {
-        setSelectedJobId('');
-        setForm(emptyJobForm);
-      }
+      setSelectedJobId('');
+      setIsCreating(false);
+      setForm(emptyJobForm);
+      setSubmitFeedback(null);
+      setValidationErrors({});
 
       setIsLoading(false);
     });
@@ -268,17 +260,9 @@ function EmployerJobsPage() {
 
   const cancelEditing = () => {
     setIsCreating(false);
+    setSelectedJobId('');
     setSubmitFeedback(null);
     setValidationErrors({});
-
-    if (jobs.length > 0) {
-      const fallbackJob = jobs[0];
-      setSelectedJobId(fallbackJob.id);
-      setForm(formFromJob(fallbackJob));
-      return;
-    }
-
-    setSelectedJobId('');
     setForm({ ...emptyJobForm, requirements: [''], responsibilities: [''], skills: [''], benefits: [] });
   };
 
@@ -437,9 +421,9 @@ function EmployerJobsPage() {
 
     const savedJob = result.data.data.job;
     setJobs((current) => (isCreating ? [savedJob, ...current] : current.map((job) => job.id === savedJob.id ? savedJob : job)));
-    setSelectedJobId(savedJob.id);
+    setSelectedJobId('');
     setIsCreating(false);
-    setForm(formFromJob(savedJob));
+    setForm({ ...emptyJobForm, requirements: [''], responsibilities: [''], skills: [''], benefits: [] });
     setSubmitFeedback({
       tone: 'success',
       message: isCreating
@@ -492,6 +476,7 @@ function EmployerJobsPage() {
   ] as const;
 
   const showEmptyState = jobs.length === 0 && !isCreating;
+  const isEditorOpen = isCreating || Boolean(selectedJobId && jobs.some((job) => job.id === selectedJobId));
 
   return (
     <div className="employer-page employer-jobs-page">
@@ -515,17 +500,17 @@ function EmployerJobsPage() {
 
       <main className="employer-content employer-jobs-grid">
         <section className="employer-panel employer-job-editor">
-          {showEmptyState ? (
+          {!isEditorOpen ? (
             <div className="employer-empty-state employer-empty-state--large">
               <div className="employer-empty-state__icon">
                 <FaPlus />
               </div>
               <h2>Your jobs</h2>
               <p>
-                Manage and publish opportunities from one place. Create your first job post to start receiving applications.
+                Select an existing job to review or edit it, or create a new post when you are ready.
               </p>
               <button className="employer-button employer-button--primary" type="button" onClick={startCreating}>
-                <FaPlus /> Post your first job
+                <FaPlus /> Post a new job
               </button>
             </div>
           ) : (

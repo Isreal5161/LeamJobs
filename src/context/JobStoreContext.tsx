@@ -1,5 +1,5 @@
 import { createContext, useContext, useMemo, useState, type ReactNode } from 'react';
-import { initialJobs, type ModerationStatus, type PublicJob } from '../data/jobData';
+import type { ModerationStatus, PublicJob } from '../data/jobData';
 
 type JobStoreContextValue = {
   jobs: PublicJob[];
@@ -12,7 +12,7 @@ type JobStoreContextValue = {
 const JobStoreContext = createContext<JobStoreContextValue | undefined>(undefined);
 
 export function JobStoreProvider({ children }: { children: ReactNode }) {
-  const [jobs, setJobs] = useState(initialJobs);
+  const [jobs, setJobs] = useState<PublicJob[]>([]);
 
   const value = useMemo<JobStoreContextValue>(() => {
     const addJob = (job: PublicJob) => {

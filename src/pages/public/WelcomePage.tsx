@@ -1,16 +1,61 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import Button from '../../components/common/Button';
 import Input from '../../components/common/Input';
 import RecommendedJobs from '../../components/jobs/RecommendedJobs';
 import { FaArrowRight, FaBriefcase, FaBuilding, FaUsers, FaWifi, FaClock, FaPencilAlt, FaMapMarkerAlt, FaDollarSign, FaCode, FaBullhorn } from 'react-icons/fa';
 import { useSiteContent } from '../../context/SiteContentContext';
-import { useJobStore } from '../../context/JobStoreContext';
+import { getPublicJobs, type SeekerDashboardJob } from '../../services/api';
 
+const mapJob = (job: SeekerDashboardJob) => {
+  const companyName = job.company?.name ?? 'Company not provided';
+  const requirements = Array.isArray(job.requirements)
+    ? job.requirements.filter((item): item is string => typeof item === 'string')
+    : job.requirements && typeof job.requirements === 'object'
+      ? Object.values(job.requirements).flatMap((item) => typeof item === 'string' ? [item] : Array.isArray(item) ? item.filter((value): value is string => typeof value === 'string') : [])
+      : [];
+  const salaryHigh = (() => {
+    if (job.compensation?.type === 'FREELANCE') return Number(job.compensation.projectAmount || 0);
+    if (job.compensation?.type === 'CONTRACT') return Number(job.compensation.amount || 0);
+    return Number(job.compensation?.salaryMax ?? job.compensation?.salaryMin ?? 0);
+  })();
+
+  return {
+    id: job.id,
+    company: companyName,
+    logoText: companyName.slice(0, 2).toUpperCase() || 'C',
+    logoClass: 'brand-logo--neutral',
+    role: job.title,
+    salary: (() => {
+      if (!job.compensation) return 'Compensation not specified';
+      if (job.compensation.type === 'FREELANCE') return `${job.compensation.currency} ${job.compensation.projectAmount} project`;
+      if (job.compensation.type === 'CONTRACT') return `${job.compensation.currency} ${job.compensation.amount} contract`;
+      return `${job.compensation.currency} ${job.compensation.salaryMin ?? 'Not specified'} - ${job.compensation.salaryMax ?? 'Not specified'} / ${job.compensation.salaryPeriod.toLowerCase()}`;
+    })(),
+    location: job.location,
+    workArrangement: job.workArrangement ?? 'Remote',
+    workType: job.jobType === 'FREELANCE_PROJECT' ? 'Freelance' : 'Full-time',
+    level: job.department ?? 'General',
+    description: job.description,
+    postedAt: new Date(job.createdAt).getTime(),
+    salaryHigh,
+    applicants: 0,
+    views: 0,
+    conversion: '0%',
+    expires: job.applicationDeadline ? new Intl.DateTimeFormat(undefined, { dateStyle: 'medium' }).format(new Date(job.applicationDeadline)) : 'No deadline',
+    status: 'Approved' as const,
+    details: {
+      overview: job.description,
+      responsibilities: job.responsibilities ?? [],
+      requirements,
+      skills: job.skills ?? [],
+      company: job.company?.description ?? 'Company information is not available.',
+    },
+  };
+};
 
 function WelcomePage() {
   const { content } = useSiteContent();
-  const { visibleJobs } = useJobStore();
   const {
     heroTitle,
     heroSubtitle,
@@ -27,12 +72,43 @@ function WelcomePage() {
   const [keywordQuery, setKeywordQuery] = useState('');
   const [locationQuery, setLocationQuery] = useState('');
   const [activeFilter, setActiveFilter] = useState<string | null>(null);
+  const [publicJobs, setPublicJobs] = useState<ReturnType<typeof mapJob>[]>([]);
+  const [isLoadingJobs, setIsLoadingJobs] = useState(true);
+  const [jobsError, setJobsError] = useState('');
+
+  useEffect(() => {
+    let isActive = true;
+
+    const loadJobs = async () => {
+      setIsLoadingJobs(true);
+      setJobsError('');
+
+      const result = await getPublicJobs({ limit: 25 });
+
+      if (!isActive) return;
+
+      if (!result.ok) {
+        setPublicJobs([]);
+        setJobsError(result.error.message || 'We could not load jobs right now.');
+      } else {
+        setPublicJobs(result.data.data.jobs.map(mapJob));
+      }
+
+      setIsLoadingJobs(false);
+    };
+
+    void loadJobs();
+
+    return () => {
+      isActive = false;
+    };
+  }, []);
 
   const filteredJobs = useMemo(() => {
     const keyword = keywordQuery.trim().toLowerCase();
     const location = locationQuery.trim().toLowerCase();
 
-    return visibleJobs.filter((job) => {
+    return publicJobs.filter((job) => {
       const searchableText = [
         job.company,
         job.role,
@@ -51,7 +127,7 @@ function WelcomePage() {
       if (activeFilter === '$100k+') return job.salaryHigh >= 100;
       return searchableText.includes(activeFilter.toLowerCase());
     });
-  }, [activeFilter, keywordQuery, locationQuery, visibleJobs]);
+  }, [activeFilter, keywordQuery, locationQuery, publicJobs]);
 
   return (
     <main>
@@ -147,7 +223,9 @@ function WelcomePage() {
             </div>
           </aside>
 
-          <RecommendedJobs jobs={filteredJobs} />
+          {isLoadingJobs ? <p className="recommended-jobs__empty">Loading jobs...</p> : null}
+          {!isLoadingJobs && jobsError ? <p className="recommended-jobs__empty">{jobsError}</p> : null}
+          {!isLoadingJobs && !jobsError ? <RecommendedJobs jobs={filteredJobs} /> : null}
         </div>
       </section>
     </main>
