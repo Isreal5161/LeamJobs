@@ -25,6 +25,8 @@ function SeekerJobCard({ job, saved = false, listing = false, onToggleBookmark, 
   const compensation = isBackendJob
     ? job.compensation?.type === 'FREELANCE'
       ? `${job.compensation.currency} ${job.compensation.projectAmount}`
+      : job.compensation?.type === 'CONTRACT'
+        ? `${job.compensation.currency} ${job.compensation.amount} contract`
       : job.compensation
         ? `${job.compensation.currency} ${job.compensation.salaryMin ?? '-'} - ${job.compensation.salaryMax ?? '-'}`
         : 'Compensation not specified'

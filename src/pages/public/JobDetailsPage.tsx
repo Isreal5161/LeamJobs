@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { FaArrowLeft, FaBuilding, FaCheck, FaChevronRight, FaClock, FaMapMarkerAlt } from 'react-icons/fa';
 import { useAuth } from '../../context/AuthContext';
-import { getSeekerJob, type SeekerDashboardJob } from '../../services/api';
+import { getPublicJob, getSeekerJob, type SeekerDashboardJob } from '../../services/api';
 
 const skillClasses = ['job-detail-skill--pink', 'job-detail-skill--purple', 'job-detail-skill--green', 'job-detail-skill--yellow', 'job-detail-skill--blue'];
 
@@ -11,7 +11,14 @@ const formatJobType = (value: string) => value.replaceAll('_', ' ').toLowerCase(
 const formatCompensation = (job: SeekerDashboardJob) => {
   if (!job.compensation) return 'Compensation not specified';
   if (job.compensation.type === 'FREELANCE') return `${job.compensation.currency} ${job.compensation.projectAmount} project`;
+  if (job.compensation.type === 'CONTRACT') return `${job.compensation.currency} ${job.compensation.amount} contract${job.compensation.duration ? ` / ${job.compensation.duration}` : ''}`;
   return `${job.compensation.currency} ${job.compensation.salaryMin ?? 'Not specified'} - ${job.compensation.salaryMax ?? 'Not specified'} / ${job.compensation.salaryPeriod.toLowerCase()}`;
+};
+
+const formatList = (items: string[] | Record<string, unknown> | null) => {
+  if (Array.isArray(items)) return items.length ? items : ['No information provided.'];
+  if (items && typeof items === 'object') return Object.entries(items).map(([key, value]) => `${key}: ${String(value)}`);
+  return ['No information provided.'];
 };
 
 const getInitials = (value: string) => value.split(' ').filter(Boolean).map((part) => part[0]).join('').slice(0, 2).toUpperCase();
@@ -24,16 +31,14 @@ function JobDetailsPage() {
   const isSeekerRoute = pathname.startsWith('/seeker/');
   const [job, setJob] = useState<SeekerDashboardJob | null>(null);
   const [alreadyApplied, setAlreadyApplied] = useState(false);
-  const [isLoading, setIsLoading] = useState(isSeekerRoute);
+  const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
 
   useEffect(() => {
-    if (!isSeekerRoute) return;
-
     let isMounted = true;
 
     const loadJob = async () => {
-      if (!jobId || !token) {
+      if (!jobId || (isSeekerRoute && !token)) {
         setError('This job could not be loaded. Please sign in again.');
         setIsLoading(false);
         return;
@@ -41,7 +46,7 @@ function JobDetailsPage() {
 
       setIsLoading(true);
       setError('');
-      const result = await getSeekerJob(jobId, token);
+      const result = isSeekerRoute ? await getSeekerJob(jobId, token as string) : await getPublicJob(jobId);
 
       if (!isMounted) return;
 
@@ -150,8 +155,9 @@ function JobDetailsPage() {
               <span>{job.location}</span>
             </p>
             <div className="job-detail-tags">
-              <span className="job-tag job-tag--yellow">{formatJobType(job.jobType)}</span>
+              <span className="job-tag job-tag--yellow">{formatJobType(job.engagementType ?? job.jobType)}</span>
               {job.company?.industry ? <span className="job-tag job-tag--blue">{job.company.industry}</span> : null}
+              {job.workArrangement ? <span className="job-tag job-tag--green">{formatJobType(job.workArrangement)}</span> : null}
             </div>
           </div>
         </section>
@@ -160,6 +166,18 @@ function JobDetailsPage() {
           <section className="job-detail-section">
             <h2>Job Description</h2>
             <p>{job.description}</p>
+          </section>
+
+          {job.department ? <section className="job-detail-section"><h2>Department</h2><p>{job.department}</p></section> : null}
+
+          <section className="job-detail-section">
+            <h2>Responsibilities</h2>
+            <ul className="job-detail-check-list">{formatList(job.responsibilities).map((item) => <li key={item}><FaCheck /><span>{item}</span></li>)}</ul>
+          </section>
+
+          <section className="job-detail-section">
+            <h2>Requirements</h2>
+            <ul className="job-detail-check-list">{formatList(job.requirements).map((item) => <li key={item}><FaCheck /><span>{item}</span></li>)}</ul>
           </section>
 
           <section className="job-detail-section">
@@ -180,10 +198,11 @@ function JobDetailsPage() {
           <section className="job-detail-section">
             <h2>Required Skills</h2>
             <div className="job-detail-skills">
-              <span className={`job-detail-skill ${skillClasses[0]}`}>{formatJobType(job.jobType)}</span>
-              {job.company?.industry ? <span className={`job-detail-skill ${skillClasses[1]}`}>{job.company.industry}</span> : null}
+              {job.skills.length ? job.skills.map((skill, index) => <span className={`job-detail-skill ${skillClasses[index % skillClasses.length]}`} key={skill}>{skill}</span>) : <span>No skills provided.</span>}
             </div>
           </section>
+
+          {job.benefits.length ? <section className="job-detail-section"><h2>Benefits</h2><ul className="job-detail-check-list">{job.benefits.map((benefit) => <li key={benefit}><FaCheck /><span>{benefit}</span></li>)}</ul></section> : null}
 
           <section className="job-detail-company-card card">
             {logoUrl ? <img className="company-logo" src={logoUrl} alt="" /> : <span className="company-logo" aria-hidden="true">{getInitials(companyName)}</span>}

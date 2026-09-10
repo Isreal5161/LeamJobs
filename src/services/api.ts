@@ -55,7 +55,14 @@ export type SeekerDashboardJob = {
   title: string;
   description: string;
   location: string;
+  department?: string | null;
+  workArrangement?: string | null;
+  engagementType?: 'MONTHLY' | 'CONTRACT' | 'FREELANCE';
   jobType: string;
+  skills: string[];
+  requirements: string[] | Record<string, unknown> | null;
+  responsibilities: string[];
+  benefits: string[];
   applicationDeadline?: string | null;
   company: {
     name: string;
@@ -68,12 +75,23 @@ export type SeekerDashboardJob = {
   } | null;
   compensation: {
     type: 'EMPLOYMENT';
+    engagementType: 'MONTHLY';
     salaryMin: string | null;
     salaryMax: string | null;
     currency: string;
     salaryPeriod: string;
   } | {
+    type: 'CONTRACT';
+    engagementType: 'CONTRACT';
+    amount: string;
+    salaryMin: string;
+    salaryMax: string | null;
+    salaryPeriod: string;
+    currency: string;
+    duration: string | null;
+  } | {
     type: 'FREELANCE';
+    engagementType: 'FREELANCE';
     projectAmount: string;
     currency: string;
   } | null;
@@ -136,6 +154,96 @@ export type EmployerDashboardResponse = {
   data: EmployerDashboardData;
 };
 
+export type EmployerJob = {
+  id: string;
+  employerId: string;
+  title: string;
+  description: string;
+  location: string;
+  department: string | null;
+  workArrangement: 'REMOTE' | 'HYBRID' | 'ONSITE' | null;
+  engagementType: 'MONTHLY' | 'CONTRACT' | 'FREELANCE';
+  jobType: 'NORMAL_EMPLOYMENT' | 'FREELANCE_PROJECT';
+  skills: string[];
+  requirements: string[] | Record<string, unknown> | null;
+  responsibilities: string[];
+  benefits: string[];
+  status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'CLOSED';
+  applicationDeadline: string | null;
+  rejectionReason: string | null;
+  reviewedAt: string | null;
+  closedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+  company: {
+    name: string;
+    description: string | null;
+    website: string | null;
+    industry: string | null;
+    location: string | null;
+    logoUrl: string | null;
+  } | null;
+  compensation: {
+    type: 'MONTHLY';
+    salaryMin: string | null;
+    salaryMax: string | null;
+    currency: string;
+    salaryPeriod: string;
+  } | {
+    type: 'CONTRACT';
+    amount: string;
+    salaryMin: string;
+    salaryMax: string | null;
+    salaryPeriod: string;
+    currency: string;
+    duration: string | null;
+  } | {
+    type: 'FREELANCE';
+    projectAmount: string;
+    currency: string;
+  } | null;
+  applicantCount: number;
+};
+
+export type EmployerJobsResponse = {
+  success: true;
+  data: { jobs: EmployerJob[] };
+};
+
+export type EmployerJobResponse = {
+  success: true;
+  data: { job: EmployerJob };
+};
+
+export type EmployerJobPayload = {
+  title: string;
+  description: string;
+  location: string;
+  department?: string | null;
+  workArrangement: 'REMOTE' | 'HYBRID' | 'ONSITE' | null;
+  engagementType: 'MONTHLY' | 'CONTRACT' | 'FREELANCE';
+  jobType: 'NORMAL_EMPLOYMENT' | 'FREELANCE_PROJECT';
+  requirements: string[];
+  responsibilities: string[];
+  skills: string[];
+  benefits: string[];
+  applicationDeadline?: string | null;
+  monthlyCompensation?: {
+    salaryMin?: number | null;
+    salaryMax?: number | null;
+    currency: string;
+  } | null;
+  contractCompensation?: {
+    amount: number;
+    currency: string;
+    duration: string;
+  } | null;
+  freelanceCompensation?: {
+    projectAmount: number;
+    currency: string;
+  } | null;
+};
+
 export type SeekerJobResponse = {
   success: true;
   data: {
@@ -145,8 +253,6 @@ export type SeekerJobResponse = {
 };
 
 export type SeekerJobListItem = SeekerDashboardJob & {
-  skills: string[];
-  requirements: unknown | null;
 };
 
 export type SeekerJobsResponse = {
@@ -389,12 +495,32 @@ export function getSeekerJob(jobId: string, token: string) {
   });
 }
 
+export function getPublicJob(jobId: string) {
+  return request<SeekerJobResponse>({ method: 'GET', endpoint: `/jobs/${encodeURIComponent(jobId)}` });
+}
+
 export function getEmployerDashboard(token: string) {
   return request<EmployerDashboardResponse>({
     method: 'GET',
     endpoint: '/employer/dashboard',
     token,
   });
+}
+
+export function getEmployerJobs(token: string) {
+  return request<EmployerJobsResponse>({ method: 'GET', endpoint: '/employer/jobs', token });
+}
+
+export function createEmployerJob(payload: EmployerJobPayload, token: string) {
+  return request<EmployerJobResponse>({ method: 'POST', endpoint: '/employer/jobs', body: payload, token });
+}
+
+export function updateEmployerJob(jobId: string, payload: EmployerJobPayload, token: string) {
+  return request<EmployerJobResponse>({ method: 'PATCH', endpoint: `/employer/jobs/${encodeURIComponent(jobId)}`, body: payload, token });
+}
+
+export function closeEmployerJob(jobId: string, token: string) {
+  return request<EmployerJobResponse>({ method: 'PATCH', endpoint: `/employer/jobs/${encodeURIComponent(jobId)}/close`, token });
 }
 
 export function getSeekerJobs(query: SeekerJobsQuery, token: string) {

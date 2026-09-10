@@ -25,6 +25,10 @@ const formatCompensation = (job: SeekerDashboardJob) => {
     return `${job.compensation.currency} ${job.compensation.projectAmount} project`;
   }
 
+  if (job.compensation.type === 'CONTRACT') {
+    return `${job.compensation.currency} ${job.compensation.amount} contract`;
+  }
+
   const minimum = job.compensation.salaryMin ?? 'Not specified';
   const maximum = job.compensation.salaryMax ?? 'Not specified';
   return `${job.compensation.currency} ${minimum} - ${maximum} / ${job.compensation.salaryPeriod.toLowerCase()}`;
