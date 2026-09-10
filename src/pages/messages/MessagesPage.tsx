@@ -1,12 +1,19 @@
 import { type FormEvent, useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { FaBell, FaBriefcase, FaPaperPlane, FaPhoneAlt, FaSearch, FaVideo } from 'react-icons/fa';
 import ApplicantAvatar from '../../components/employer/ApplicantAvatar';
 import { useAuth } from '../../context/AuthContext';
 import {
+  getEmployerConversationMessages,
+  getEmployerConversations,
   getSeekerConversationMessages,
   getSeekerConversations,
+  markEmployerConversationAsRead,
   markSeekerConversationAsRead,
+  sendEmployerMessage,
   sendSeekerMessage,
+  type EmployerConversation,
+  type EmployerMessage,
   type SeekerConversation,
   type SeekerMessage,
 } from '../../services/api';
@@ -38,79 +45,17 @@ type MessagesPageProps = {
   role: MessageRole;
 };
 
-const initialConversations: Record<MessageRole, Conversation[]> = {
-  seeker: [
-    {
-      id: 'leamjobs-studio',
-      name: 'LeamJobs Studio',
-      role: 'Hiring team',
-      subject: 'Senior Product Designer',
-      initials: 'LS',
-      lastMessage: 'Thanks for applying. Are you available for a quick interview this week?',
-      time: '10:42 AM',
-      unread: 2,
-      messages: [
-        { sender: 'them', text: 'Hi Sarah, your product systems work stood out to our team.' },
-        { sender: 'me', text: 'Thank you. I would be happy to share more context on the case studies.' },
-        { sender: 'them', text: 'Great. Are you available for a quick interview this week?' },
-      ],
-    },
-    {
-      id: 'nova-cloud',
-      name: 'Nova Cloud',
-      role: 'Recruiter',
-      subject: 'UX Research Lead',
-      initials: 'NC',
-      lastMessage: 'We reviewed your CV and would like to keep you in our shortlist.',
-      time: 'Yesterday',
-      unread: 0,
-      messages: [
-        { sender: 'them', text: 'We reviewed your CV and would like to keep you in our shortlist.' },
-        { sender: 'me', text: 'That sounds good. Please let me know the next step.' },
-      ],
-    },
-  ],
-  employer: [
-    {
-      id: 'sarah-johnson',
-      name: 'Sarah Johnson',
-      role: 'Senior Product Designer',
-      subject: 'Senior Product Designer',
-      imageUrl: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=160&q=80',
-      lastMessage: 'Thank you. I would be happy to share more context on the case studies.',
-      time: '10:42 AM',
-      unread: 1,
-      messages: [
-        { sender: 'me', text: 'Hi Sarah, your product systems work stood out to our team.' },
-        { sender: 'them', text: 'Thank you. I would be happy to share more context on the case studies.' },
-        { sender: 'me', text: 'Great. Are you available for a quick interview this week?' },
-      ],
-    },
-    {
-      id: 'michael-chen',
-      name: 'Michael Chen',
-      role: 'Frontend Engineer',
-      subject: 'Frontend Engineer',
-      lastMessage: 'I can send more details about the dashboard performance project.',
-      time: 'Mon',
-      unread: 0,
-      messages: [
-        { sender: 'me', text: 'Your React architecture experience is a strong match for our frontend role.' },
-        { sender: 'them', text: 'I can send more details about the dashboard performance project.' },
-      ],
-    },
-  ],
-};
-
 function MessagesPage({ role }: MessagesPageProps) {
   const { user, token } = useAuth();
-  const [conversationState, setConversationState] = useState(initialConversations);
+  const [messageSearchParams] = useSearchParams();
   const [seekerConversations, setSeekerConversations] = useState<SeekerConversation[]>([]);
+  const [employerConversations, setEmployerConversations] = useState<EmployerConversation[]>([]);
   const [seekerMessages, setSeekerMessages] = useState<SeekerMessage[]>([]);
-  const [selectedConversationId, setSelectedConversationId] = useState(role === 'seeker' ? '' : initialConversations[role][0].id);
+  const [employerMessages, setEmployerMessages] = useState<EmployerMessage[]>([]);
+  const [selectedConversationId, setSelectedConversationId] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [draftMessage, setDraftMessage] = useState('');
-  const [isLoadingConversations, setIsLoadingConversations] = useState(role === 'seeker');
+  const [isLoadingConversations, setIsLoadingConversations] = useState(true);
   const [isLoadingMessages, setIsLoadingMessages] = useState(false);
   const [isSending, setIsSending] = useState(false);
   const [messagesError, setMessagesError] = useState('');
@@ -132,20 +77,37 @@ function MessagesPage({ role }: MessagesPageProps) {
           .filter((message) => message.conversationId === conversation.id)
           .map((message) => ({ id: message.id, sender: message.senderId === user?.id ? 'me' : 'them', text: message.body, createdAt: message.createdAt })),
       }))
-    : conversationState[role];
+      : employerConversations.map((conversation) => ({
+          id: conversation.id,
+          name: `${conversation.seeker.firstName} ${conversation.seeker.lastName}`.trim(),
+          role: conversation.seeker.professionalTitle || 'Job seeker',
+          subject: conversation.job?.title || 'Application conversation',
+          imageUrl: conversation.seeker.profilePictureUrl || undefined,
+          lastMessage: conversation.lastMessage?.body || 'No messages yet',
+          time: conversation.lastMessageAt ? new Date(conversation.lastMessageAt).toLocaleString() : '',
+          unread: conversation.unreadCount,
+          messages: employerMessages
+            .filter((message) => message.conversationId === conversation.id)
+            .map((message) => ({ id: message.id, sender: message.senderId === user?.id ? 'me' : 'them', text: message.body, createdAt: message.createdAt })),
+        }));
 
   useEffect(() => {
-    if (role !== 'seeker' || !token) return undefined;
+    if (!token) return undefined;
     let isMounted = true;
     setIsLoadingConversations(true);
     setConversationError('');
-    void getSeekerConversations(token).then((result) => {
+    const load = async () => role === 'seeker' ? getSeekerConversations(token) : getEmployerConversations(token);
+    void load().then((result) => {
       if (!isMounted) return;
       if (!result.ok) {
         setConversationError(result.error.message || 'We could not load your conversations.');
         setSeekerConversations([]);
       } else {
-        setSeekerConversations(result.data.data.conversations);
+        if (role === 'seeker') {
+          setSeekerConversations(result.data.data.conversations as SeekerConversation[]);
+        } else {
+          setEmployerConversations(result.data.data.conversations as EmployerConversation[]);
+        }
         setSelectedConversationId((current) => current || result.data.data.conversations[0]?.id || '');
       }
       setIsLoadingConversations(false);
@@ -154,24 +116,40 @@ function MessagesPage({ role }: MessagesPageProps) {
   }, [role, token, conversationRetry]);
 
   useEffect(() => {
-    if (role !== 'seeker' || !token || !selectedConversationId) return undefined;
+    const requestedConversationId = messageSearchParams.get('conversationId');
+    if (requestedConversationId && conversations.some((conversation) => conversation.id === requestedConversationId)) {
+      setSelectedConversationId(requestedConversationId);
+    }
+  }, [conversations, messageSearchParams]);
+
+  useEffect(() => {
+    if (!token || !selectedConversationId) return undefined;
     let isMounted = true;
     setIsLoadingMessages(true);
     setMessagesError('');
     setSeekerMessages([]);
+    setEmployerMessages([]);
+    const loadMessages = role === 'seeker'
+      ? getSeekerConversationMessages(selectedConversationId, token)
+      : getEmployerConversationMessages(selectedConversationId, token);
+    const markRead = role === 'seeker'
+      ? markSeekerConversationAsRead(selectedConversationId, token)
+      : markEmployerConversationAsRead(selectedConversationId, token);
     void Promise.all([
-      getSeekerConversationMessages(selectedConversationId, token),
-      markSeekerConversationAsRead(selectedConversationId, token),
+      loadMessages,
+      markRead,
     ]).then(([messagesResult, readResult]) => {
       if (!isMounted) return;
       if (!messagesResult.ok) {
         setMessagesError(messagesResult.error.message || 'We could not load these messages.');
       } else {
-        setSeekerMessages([...messagesResult.data.data.messages].reverse());
+        if (role === 'seeker') setSeekerMessages([...messagesResult.data.data.messages].reverse());
+        else setEmployerMessages([...messagesResult.data.data.messages].reverse());
         setNextCursor(messagesResult.data.data.nextCursor);
       }
       if (readResult.ok) {
-        setSeekerConversations((current) => current.map((conversation) => conversation.id === selectedConversationId ? { ...conversation, unreadCount: readResult.data.data.unreadCount } : conversation));
+        if (role === 'seeker') setSeekerConversations((current) => current.map((conversation) => conversation.id === selectedConversationId ? { ...conversation, unreadCount: readResult.data.data.unreadCount } : conversation));
+        else setEmployerConversations((current) => current.map((conversation) => conversation.id === selectedConversationId ? { ...conversation, unreadCount: readResult.data.data.unreadCount } : conversation));
       }
       setIsLoadingMessages(false);
     });
@@ -198,21 +176,17 @@ function MessagesPage({ role }: MessagesPageProps) {
 
   const handleSelectConversation = (conversationId: string) => {
     setSelectedConversationId(conversationId);
-    if (role === 'seeker') return;
-    setConversationState((current) => ({
-      ...current,
-      [role]: current[role].map((conversation) =>
-        conversation.id === conversationId ? { ...conversation, unread: 0 } : conversation
-      ),
-    }));
   };
 
   const handleLoadOlderMessages = async () => {
-    if (role !== 'seeker' || !token || !selectedConversationId || !nextCursor || isLoadingMessages) return;
+    if (!token || !selectedConversationId || !nextCursor || isLoadingMessages) return;
     setIsLoadingMessages(true);
-    const result = await getSeekerConversationMessages(selectedConversationId, token, { cursor: nextCursor });
+    const result = role === 'seeker'
+      ? await getSeekerConversationMessages(selectedConversationId, token, { cursor: nextCursor })
+      : await getEmployerConversationMessages(selectedConversationId, token, { cursor: nextCursor });
     if (result.ok) {
-      setSeekerMessages((current) => [...result.data.data.messages].reverse().concat(current.filter((currentMessage) => !result.data.data.messages.some((message) => message.id === currentMessage.id))));
+      if (role === 'seeker') setSeekerMessages((current) => [...result.data.data.messages].reverse().concat(current.filter((currentMessage) => !result.data.data.messages.some((message) => message.id === currentMessage.id))));
+      else setEmployerMessages((current) => [...result.data.data.messages].reverse().concat(current.filter((currentMessage) => !result.data.data.messages.some((message) => message.id === currentMessage.id))));
       setNextCursor(result.data.data.nextCursor);
     } else {
       setMessagesError(result.error.message || 'We could not load older messages.');
@@ -229,36 +203,29 @@ function MessagesPage({ role }: MessagesPageProps) {
       return;
     }
 
-    if (role === 'seeker' && token && selectedConversationId) {
+    if (token && selectedConversationId) {
       setIsSending(true);
       setMessagesError('');
       const clientMessageId = globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random()}`;
-      const result = await sendSeekerMessage(selectedConversationId, text, token, clientMessageId);
+      const result = role === 'seeker'
+        ? await sendSeekerMessage(selectedConversationId, text, token, clientMessageId)
+        : await sendEmployerMessage(selectedConversationId, text, token, clientMessageId);
       setIsSending(false);
       if (!result.ok) {
         setMessagesError(result.error.message || 'Message could not be sent.');
         return;
       }
-      setSeekerMessages((current) => current.some((message) => message.id === result.data.data.message.id) ? current : [...current, result.data.data.message]);
-      setSeekerConversations((current) => current.map((conversation) => conversation.id === selectedConversationId ? { ...conversation, lastMessage: result.data.data.message, lastMessageAt: result.data.data.message.createdAt } : conversation));
+      if (role === 'seeker') {
+        setSeekerMessages((current) => current.some((message) => message.id === result.data.data.message.id) ? current : [...current, result.data.data.message]);
+        setSeekerConversations((current) => current.map((conversation) => conversation.id === selectedConversationId ? { ...conversation, lastMessage: result.data.data.message, lastMessageAt: result.data.data.message.createdAt } : conversation));
+      } else {
+        setEmployerMessages((current) => current.some((message) => message.id === result.data.data.message.id) ? current : [...current, result.data.data.message]);
+        setEmployerConversations((current) => current.map((conversation) => conversation.id === selectedConversationId ? { ...conversation, lastMessage: result.data.data.message, lastMessageAt: result.data.data.message.createdAt } : conversation));
+      }
       setDraftMessage('');
       return;
     }
 
-    setConversationState((current) => ({
-      ...current,
-      [role]: current[role].map((conversation) =>
-        conversation.id === selectedConversation.id
-          ? {
-              ...conversation,
-              lastMessage: text,
-              time: 'Now',
-              messages: [...conversation.messages, { sender: 'me', text }],
-            }
-          : conversation
-      ),
-    }));
-    setDraftMessage('');
   };
 
   return (
@@ -288,8 +255,8 @@ function MessagesPage({ role }: MessagesPageProps) {
             />
           </label>
 
-          <div className="messages-list" aria-busy={role === 'seeker' && isLoadingConversations}>
-            {role === 'seeker' && isLoadingConversations ? (
+          <div className="messages-list" aria-busy={isLoadingConversations}>
+            {isLoadingConversations ? (
               <>
                 <span className="sr-only" role="status" aria-live="polite">Loading conversations</span>
                 {[1, 2, 3, 4].map((item) => (
@@ -303,8 +270,8 @@ function MessagesPage({ role }: MessagesPageProps) {
                 ))}
               </>
             ) : null}
-            {role === 'seeker' && conversationError ? <p className="messages-empty" role="alert">{conversationError} <button type="button" onClick={() => setConversationRetry((current) => current + 1)}>Retry</button></p> : null}
-            {role === 'seeker' && !isLoadingConversations && !conversationError && !filteredConversations.length ? <p className="messages-empty">No conversations yet.</p> : null}
+            {conversationError ? <p className="messages-empty" role="alert">{conversationError} <button type="button" onClick={() => setConversationRetry((current) => current + 1)}>Retry</button></p> : null}
+            {!isLoadingConversations && !conversationError && !filteredConversations.length ? <p className="messages-empty">No conversations yet.</p> : null}
             {filteredConversations.map((conversation) => (
               <button
                 className={`messages-thread ${conversation.id === selectedConversationId ? 'messages-thread--active' : ''}`}
@@ -324,14 +291,12 @@ function MessagesPage({ role }: MessagesPageProps) {
                 </i>
               </button>
             ))}
-            {role !== 'seeker' && !filteredConversations.length ? (
-              <p className="messages-empty">No conversations match your search.</p>
-            ) : null}
+            {!isLoadingConversations && !conversationError && filteredConversations.length === 0 && searchTerm ? <p className="messages-empty">No conversations match your search.</p> : null}
           </div>
         </section>
 
         <section className={`${panelClass} messages-chat-panel`}>
-          {!selectedConversation.id && role === 'seeker' ? (
+          {!selectedConversation.id ? (
             <div className="messages-empty">Select a conversation to start messaging.</div>
           ) : <>
           <div className="messages-chat-header">
@@ -346,8 +311,8 @@ function MessagesPage({ role }: MessagesPageProps) {
             </div>
           </div>
 
-          <div className="messages-chat-body" aria-label={`Conversation with ${selectedConversation.name}`} aria-busy={role === 'seeker' && isLoadingMessages}>
-            {role === 'seeker' && isLoadingMessages && !selectedConversation.messages.length ? (
+          <div className="messages-chat-body" aria-label={`Conversation with ${selectedConversation.name}`} aria-busy={isLoadingMessages}>
+            {isLoadingMessages && !selectedConversation.messages.length ? (
               <>
                 <span className="sr-only" role="status" aria-live="polite">Loading messages</span>
                 <span className="messages-bubble-skeleton messages-bubble-skeleton--them" style={{ width: '48%' }} aria-hidden="true" />
@@ -356,9 +321,9 @@ function MessagesPage({ role }: MessagesPageProps) {
                 <span className="messages-bubble-skeleton messages-bubble-skeleton--me" style={{ width: '30%' }} aria-hidden="true" />
               </>
             ) : null}
-            {role === 'seeker' && messagesError ? <p className="messages-empty" role="alert">{messagesError} <button type="button" onClick={() => setMessagesRetry((current) => current + 1)}>Retry</button></p> : null}
-            {role === 'seeker' && !isLoadingMessages && !messagesError && !selectedConversation.messages.length ? <p className="messages-empty">No messages yet. Start the conversation.</p> : null}
-            {role === 'seeker' && nextCursor ? (
+            {messagesError ? <p className="messages-empty" role="alert">{messagesError} <button type="button" onClick={() => setMessagesRetry((current) => current + 1)}>Retry</button></p> : null}
+            {!isLoadingMessages && !messagesError && !selectedConversation.messages.length ? <p className="messages-empty">No messages yet. Start the conversation.</p> : null}
+            {nextCursor ? (
               <button type="button" onClick={handleLoadOlderMessages} disabled={isLoadingMessages} aria-busy={isLoadingMessages}>
                 {isLoadingMessages && selectedConversation.messages.length ? <span className="leamjobs-spinner leamjobs-spinner--accent" aria-hidden="true" /> : null}
                 {isLoadingMessages && selectedConversation.messages.length ? 'Loading older messages…' : 'Load older messages'}
@@ -377,10 +342,10 @@ function MessagesPage({ role }: MessagesPageProps) {
               placeholder="Write a message"
               value={draftMessage}
               onChange={(event) => setDraftMessage(event.target.value)}
-              disabled={role === 'seeker' && (!selectedConversation.id || isSending)}
+              disabled={!selectedConversation.id || isSending}
             />
-            <button type="submit" aria-label="Send message" aria-busy={role === 'seeker' && isSending} disabled={role === 'seeker' && (!selectedConversation.id || isSending)}>
-              {role === 'seeker' && isSending ? <span className="leamjobs-spinner" aria-hidden="true" /> : <FaPaperPlane />}
+            <button type="submit" aria-label="Send message" aria-busy={isSending} disabled={!selectedConversation.id || isSending}>
+              {isSending ? <span className="leamjobs-spinner" aria-hidden="true" /> : <FaPaperPlane />}
             </button>
           </form>
           </>}

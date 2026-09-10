@@ -215,6 +215,113 @@ export type EmployerJobResponse = {
   data: { job: EmployerJob };
 };
 
+export type EmployerApplicationStatus = 'APPLIED' | 'REVIEWING' | 'SHORTLISTED' | 'INTERVIEW' | 'REJECTED' | 'ACCEPTED' | 'WITHDRAWN';
+
+export type EmployerApplicant = {
+  id?: string;
+  firstName: string;
+  lastName: string;
+  fullName: string;
+  professionalTitle: string | null;
+  profilePictureUrl: string | null;
+  location: string | null;
+  country: string | null;
+  state: string | null;
+  city: string | null;
+  bio: string | null;
+  skills: string[];
+  education: EducationItem[] | null;
+  experience: ExperienceItem[] | null;
+  certifications: CertificationItem[] | null;
+  languages: LanguageItem[] | null;
+  projects: ProjectItem[] | null;
+  linkedinUrl: string | null;
+};
+
+export type EmployerApplicationListItem = {
+  id: string;
+  jobId: string;
+  jobTitle: string;
+  applicant: EmployerApplicant;
+  status: EmployerApplicationStatus;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type EmployerApplicationDetail = {
+  id: string;
+  jobId: string;
+  status: EmployerApplicationStatus;
+  coverLetter: string | null;
+  createdAt: string;
+  updatedAt: string;
+  resume: { available: boolean; submittedAt: string; version: string | null };
+  job: { id: string; title: string };
+  applicant: EmployerApplicant;
+};
+
+export type EmployerApplicationsResponse = {
+  success: true;
+  data: { applications: EmployerApplicationListItem[] };
+};
+
+export type EmployerApplicationResponse = {
+  success: true;
+  data: { application: EmployerApplicationDetail };
+};
+
+export type EmployerConversation = {
+  id: string;
+  seeker: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    professionalTitle: string | null;
+    profilePictureUrl: string | null;
+    location: string | null;
+  };
+  job: { id: string; title: string; location: string; jobType: string } | null;
+  application: { id: string; status: string; jobId: string } | null;
+  lastMessage: EmployerMessage | null;
+  lastMessageAt: string | null;
+  unreadCount: number;
+};
+
+export type EmployerMessage = {
+  id: string;
+  conversationId: string;
+  senderId: string;
+  body: string;
+  clientMessageId: string | null;
+  createdAt: string;
+  readAt: string | null;
+};
+
+export type EmployerConversationsResponse = {
+  success: true;
+  data: { conversations: EmployerConversation[] };
+};
+
+export type EmployerConversationResponse = {
+  success: true;
+  data: { conversation: EmployerConversation };
+};
+
+export type EmployerMessagesResponse = {
+  success: true;
+  data: { messages: EmployerMessage[]; nextCursor: string | null };
+};
+
+export type EmployerMessageResponse = {
+  success: true;
+  data: { message: EmployerMessage };
+};
+
+export type EmployerReadResponse = {
+  success: true;
+  data: { conversationId: string; unreadCount: number };
+};
+
 export type EmployerJobPayload = {
   title: string;
   description: string;
@@ -521,6 +628,75 @@ export function updateEmployerJob(jobId: string, payload: EmployerJobPayload, to
 
 export function closeEmployerJob(jobId: string, token: string) {
   return request<EmployerJobResponse>({ method: 'PATCH', endpoint: `/employer/jobs/${encodeURIComponent(jobId)}/close`, token });
+}
+
+export function getEmployerApplications(jobId: string, token: string) {
+  return request<EmployerApplicationsResponse>({ method: 'GET', endpoint: `/employer/jobs/${encodeURIComponent(jobId)}/applications`, token });
+}
+
+export function getEmployerApplication(jobId: string, applicationId: string, token: string) {
+  return request<EmployerApplicationResponse>({ method: 'GET', endpoint: `/employer/jobs/${encodeURIComponent(jobId)}/applications/${encodeURIComponent(applicationId)}`, token });
+}
+
+export function updateEmployerApplicationStatus(jobId: string, applicationId: string, status: EmployerApplicationStatus, token: string) {
+  return request<EmployerApplicationResponse>({
+    method: 'PATCH',
+    endpoint: `/employer/jobs/${encodeURIComponent(jobId)}/applications/${encodeURIComponent(applicationId)}/status`,
+    body: { status },
+    token,
+  });
+}
+
+export function createEmployerApplicationConversation(jobId: string, applicationId: string, token: string) {
+  return request<EmployerConversationResponse>({
+    method: 'POST',
+    endpoint: `/employer/jobs/${encodeURIComponent(jobId)}/applications/${encodeURIComponent(applicationId)}/conversation`,
+    token,
+  });
+}
+
+export async function getEmployerApplicationResume(jobId: string, applicationId: string, token: string): Promise<ApiResponse<Blob>> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/employer/jobs/${encodeURIComponent(jobId)}/applications/${encodeURIComponent(applicationId)}/resume`, {
+      method: 'GET',
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!response.ok) {
+      const data = await response.json().catch(() => undefined) as { message?: string } | undefined;
+      return { ok: false, status: response.status, error: { message: data?.message ?? 'CV could not be loaded.' } };
+    }
+    return { ok: true, status: response.status, data: await response.blob() };
+  } catch (error) {
+    return { ok: false, status: 0, error: { message: error instanceof Error ? error.message : 'CV could not be loaded.' } };
+  }
+}
+
+export function getEmployerConversations(token: string) {
+  return request<EmployerConversationsResponse>({ method: 'GET', endpoint: '/employer/conversations', token });
+}
+
+export function getEmployerConversation(conversationId: string, token: string) {
+  return request<EmployerConversationResponse>({ method: 'GET', endpoint: `/employer/conversations/${encodeURIComponent(conversationId)}`, token });
+}
+
+export function getEmployerConversationMessages(conversationId: string, token: string, options: { limit?: number; cursor?: string } = {}) {
+  const params = new URLSearchParams();
+  params.set('limit', String(options.limit ?? 50));
+  if (options.cursor) params.set('cursor', options.cursor);
+  return request<EmployerMessagesResponse>({ method: 'GET', endpoint: `/employer/conversations/${encodeURIComponent(conversationId)}/messages?${params.toString()}`, token });
+}
+
+export function sendEmployerMessage(conversationId: string, body: string, token: string, clientMessageId?: string) {
+  return request<EmployerMessageResponse>({
+    method: 'POST',
+    endpoint: `/employer/conversations/${encodeURIComponent(conversationId)}/messages`,
+    body: { body, ...(clientMessageId ? { clientMessageId } : {}) },
+    token,
+  });
+}
+
+export function markEmployerConversationAsRead(conversationId: string, token: string) {
+  return request<EmployerReadResponse>({ method: 'PATCH', endpoint: `/employer/conversations/${encodeURIComponent(conversationId)}/read`, token });
 }
 
 export function getSeekerJobs(query: SeekerJobsQuery, token: string) {

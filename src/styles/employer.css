@@ -830,6 +830,75 @@
   font-size: 1.02rem;
 }
 
+.employer-applicants-heading {
+  align-items: flex-start;
+}
+
+.employer-job-selector select,
+.employer-status-select {
+  min-height: 40px;
+  max-width: 100%;
+  padding: 0 0.7rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #0f172a;
+  font: inherit;
+}
+
+.employer-application-status {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  padding: 0.25rem 0.5rem;
+  border-radius: 999px;
+  background: #e2e8f0;
+  color: #334155;
+  font-size: 0.72rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.employer-application-status--applied { background: #e0f2fe; color: #075985; }
+.employer-application-status--reviewing { background: #fef3c7; color: #92400e; }
+.employer-application-status--shortlisted,
+.employer-application-status--accepted { background: #dcfce7; color: #166534; }
+.employer-application-status--interview { background: #ede9fe; color: #5b21b6; }
+.employer-application-status--rejected,
+.employer-application-status--withdrawn { background: #fee2e2; color: #991b1b; }
+
+.employer-action-error {
+  margin: 0 0 1rem;
+  color: #b91c1c;
+  font-weight: 700;
+}
+
+.employer-profile-link {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.employer-mobile-back {
+  display: none;
+  align-items: center;
+  gap: 0.45rem;
+  margin-bottom: 1rem;
+  border: 0;
+  background: transparent;
+  color: #0e4ae1;
+  font: inherit;
+  font-weight: 800;
+}
+
+.leamjobs-spin {
+  animation: employer-spin 0.9s linear infinite;
+}
+
+@keyframes employer-spin {
+  to { transform: rotate(360deg); }
+}
+
 .employer-cv-card strong {
   display: block;
   margin-top: 0.25rem;
@@ -1194,5 +1263,22 @@
   .employer-cv-card__icon {
     width: 44px;
     height: 44px;
+  }
+
+  .employer-applicants-heading {
+    gap: 0.8rem;
+  }
+
+  .employer-job-selector,
+  .employer-job-selector select {
+    width: 100%;
+  }
+
+  .employer-mobile-back {
+    display: inline-flex;
+  }
+
+  .employer-candidate-detail:not(:has(.employer-application-status)) {
+    display: none;
   }
 }
