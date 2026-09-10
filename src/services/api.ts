@@ -154,6 +154,36 @@ export type EmployerDashboardResponse = {
   data: EmployerDashboardData;
 };
 
+export type EmployerProfile = {
+  id: string;
+  companyName: string;
+  companyDescription: string | null;
+  website: string | null;
+  industry: string | null;
+  companySize: string | null;
+  location: string | null;
+  companyLogoUrl: string | null;
+};
+
+export type EmployerProfileData = {
+  profile: EmployerProfile | null;
+  account: { email: string };
+};
+
+export type EmployerProfileResponse = {
+  success: true;
+  data: EmployerProfileData;
+};
+
+export type EmployerProfilePayload = {
+  companyName?: string;
+  companyDescription?: string | null;
+  website?: string | null;
+  industry?: string | null;
+  companySize?: string | null;
+  location?: string | null;
+};
+
 export type EmployerJob = {
   id: string;
   employerId: string;
@@ -612,6 +642,14 @@ export function getEmployerDashboard(token: string) {
     endpoint: '/employer/dashboard',
     token,
   });
+}
+
+export function getEmployerProfile(token: string) {
+  return request<EmployerProfileResponse>({ method: 'GET', endpoint: '/employer/profile', token });
+}
+
+export function updateEmployerProfile(payload: EmployerProfilePayload, token: string) {
+  return request<EmployerProfileResponse>({ method: 'PATCH', endpoint: '/employer/profile', body: payload, token });
 }
 
 export function getEmployerJobs(token: string) {
