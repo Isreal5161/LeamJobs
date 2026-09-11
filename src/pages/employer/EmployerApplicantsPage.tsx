@@ -27,6 +27,7 @@ import {
 } from '../../services/api';
 
 const statuses: Array<'ALL' | EmployerApplicationStatus> = ['ALL', 'APPLIED', 'REVIEWING', 'SHORTLISTED', 'INTERVIEW', 'REJECTED', 'ACCEPTED', 'PAYMENT_PENDING', 'WITHDRAWN'];
+const normalApplicationStatuses: EmployerApplicationStatus[] = ['APPLIED', 'REVIEWING', 'SHORTLISTED', 'INTERVIEW', 'REJECTED', 'ACCEPTED', 'WITHDRAWN'];
 const statusLabels: Record<typeof statuses[number], string> = {
   ALL: 'All', APPLIED: 'Applied', REVIEWING: 'Reviewing', SHORTLISTED: 'Shortlisted', INTERVIEW: 'Interview',
   REJECTED: 'Rejected', ACCEPTED: 'Accepted', PAYMENT_PENDING: 'Selected — Awaiting Payment', WITHDRAWN: 'Withdrawn',
@@ -187,6 +188,10 @@ function EmployerApplicantsPage() {
     : null;
   const anotherCandidateSelected = Boolean(selectedContractApplication && selectedContractApplication.id !== selectedListItem?.id);
   const canSelectContract = Boolean(isContractApplication && selectedListItem && !selectedListItem.contractId && !anotherCandidateSelected && !['ACCEPTED', 'PAYMENT_PENDING'].includes(selectedListItem.status));
+  const applicationStatusOptions: EmployerApplicationStatus[] = isContractApplication
+    ? normalApplicationStatuses.filter((status) => status !== 'ACCEPTED' || Boolean(selectedApplication?.contractId))
+      .concat(selectedApplication?.status === 'PAYMENT_PENDING' ? ['PAYMENT_PENDING'] : [])
+    : normalApplicationStatuses;
   const selectJob = (jobId: string) => {
     setSelectedJobId(jobId);
     setSelectedApplicationId('');
@@ -588,7 +593,7 @@ function EmployerApplicantsPage() {
                   <label className="employer-status-field">
                     <span>Application status</span>
                     <select className="employer-status-select" value={selectedApplication.status} onChange={(event) => void updateStatus(event.target.value as EmployerApplicationStatus)} disabled={isMutating} aria-label="Application status">
-                      {statuses.filter((status) => status !== 'ALL' && !(isContractApplication && status === 'ACCEPTED' && !selectedApplication.contractId)).map((status) => <option value={status} key={status}>{statusLabels[status]}</option>)}
+                      {applicationStatusOptions.map((status) => <option value={status} key={status}>{statusLabels[status]}</option>)}
                     </select>
                   </label>
                   {anotherCandidateSelected ? <p className="employer-action-error" role="alert">Another candidate has already been selected for this job. Payment must be completed for that candidate before the engagement can continue.</p> : null}
