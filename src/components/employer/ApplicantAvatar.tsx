@@ -14,9 +14,15 @@ function getInitials(name: string) {
 }
 
 function ApplicantAvatar({ name, imageUrl, size = 'md' }: ApplicantAvatarProps) {
+  const className = `employer-applicant-avatar employer-applicant-avatar--${size}`;
+
+  if (imageUrl) {
+    return <span className={className}><img src={imageUrl} alt={`${name} profile`} /></span>;
+  }
+
   return (
-    <span className={`employer-applicant-avatar employer-applicant-avatar--${size}`} aria-label={name}>
-      {imageUrl ? <img src={imageUrl} alt="" /> : getInitials(name)}
+    <span className={className} role="img" aria-label={`${name} profile placeholder`}>
+      {getInitials(name)}
     </span>
   );
 }

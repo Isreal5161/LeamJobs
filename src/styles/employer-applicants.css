@@ -1,0 +1,710 @@
+.applicant-workspace {
+  --applicant-border: #dfe7f1;
+  --applicant-border-strong: #c9d8e8;
+  --applicant-surface: #ffffff;
+  --applicant-soft: #f7f9fc;
+  --applicant-muted: #64748b;
+  --applicant-text: #0f172a;
+  --applicant-accent: #1d4ed8;
+  grid-template-columns: minmax(300px, 360px) minmax(0, 1fr);
+  align-items: start;
+  gap: 1.25rem;
+}
+
+.applicant-workspace > .employer-panel {
+  min-width: 0;
+}
+
+.applicant-list-panel {
+  position: sticky;
+  top: 5.75rem;
+  max-height: calc(100vh - 7rem);
+  overflow: hidden;
+}
+
+.applicant-list-panel .employer-applicant-list {
+  max-height: calc(100vh - 18rem);
+  overflow-y: auto;
+  padding: 0.15rem 0.2rem 0.25rem 0.05rem;
+}
+
+.applicant-list-card {
+  border: 1px solid var(--applicant-border);
+  border-radius: 12px;
+  box-shadow: none;
+  transition: border-color 160ms ease, background-color 160ms ease, box-shadow 160ms ease;
+}
+
+.applicant-list-card:hover,
+.applicant-list-card:focus-within {
+  border-color: #9db8df;
+  background: #fbfdff;
+}
+
+.applicant-list-card--active {
+  border-color: #7da4de;
+  background: #f3f7ff;
+  box-shadow: 0 0 0 2px rgba(29, 78, 216, 0.08);
+}
+
+.applicant-list-card > button {
+  grid-template-columns: 48px minmax(0, 1fr);
+  gap: 0.75rem;
+  padding: 0.85rem;
+}
+
+.applicant-list-card > button:focus-visible {
+  outline: 3px solid rgba(29, 78, 216, 0.28);
+  outline-offset: -3px;
+}
+
+.applicant-list-card .employer-applicant-avatar {
+  width: 46px;
+  height: 46px;
+}
+
+.applicant-list-card h3 {
+  font-size: 0.94rem;
+  overflow-wrap: anywhere;
+}
+
+.applicant-list-card p {
+  margin-top: 0.2rem;
+  font-size: 0.8rem;
+  overflow-wrap: anywhere;
+}
+
+.applicant-list-card .employer-applicant-card__meta {
+  gap: 0.35rem 0.6rem;
+  margin-top: 0.5rem;
+  font-size: 0.72rem;
+}
+
+.applicant-list-card .employer-applicant-card__meta span {
+  min-width: 0;
+}
+
+.applicant-list-card .employer-applicant-card__meta span:nth-child(1) {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+
+.applicant-list-loading {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.applicant-list-loading__item {
+  display: grid;
+  grid-template-columns: 46px minmax(0, 1fr);
+  gap: 0.75rem;
+  align-items: center;
+  padding: 0.85rem;
+  border: 1px solid var(--applicant-border);
+  border-radius: 12px;
+}
+
+.applicant-list-loading__item > .leamjobs-skeleton-circle {
+  width: 46px;
+  height: 46px;
+}
+
+.applicant-list-loading__item > span:last-child {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.applicant-list-loading__item .leamjobs-skeleton-line:first-child {
+  width: 72%;
+}
+
+.applicant-list-loading__item .leamjobs-skeleton-line:last-child {
+  width: 48%;
+}
+
+.applicant-filter-tabs {
+  margin-bottom: 0.75rem;
+}
+
+.applicant-filter-tabs button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding-inline: 0.7rem;
+  font-size: 0.76rem;
+}
+
+.applicant-filter-tabs button span {
+  opacity: 0.72;
+  font-size: 0.7rem;
+}
+
+.applicant-filter-tabs .employer-tab--active span {
+  opacity: 0.9;
+}
+
+.applicant-search-clear {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 28px;
+  width: 28px;
+  height: 28px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: #64748b;
+}
+
+.applicant-search-clear:hover:not(:disabled),
+.applicant-search-clear:focus-visible {
+  background: #e8eef8;
+  color: #1d4ed8;
+}
+
+.applicant-search-clear:disabled {
+  visibility: hidden;
+}
+
+.applicant-filter-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin: -0.2rem 0 0.75rem;
+  color: var(--applicant-muted);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.applicant-filter-summary button {
+  border: 0;
+  background: transparent;
+  color: var(--applicant-accent);
+  font: inherit;
+  font-size: 0.76rem;
+  font-weight: 800;
+}
+
+.applicant-detail-pane {
+  display: grid;
+  gap: 1rem;
+  min-width: 0;
+  overflow: visible;
+}
+
+.applicant-detail-skeleton {
+  display: grid;
+  gap: 1rem;
+}
+
+.applicant-detail-skeleton__header {
+  display: grid;
+  grid-template-columns: 64px minmax(0, 1fr);
+  gap: 1rem;
+  align-items: center;
+}
+
+.applicant-detail-skeleton__header > .leamjobs-skeleton-circle {
+  width: 64px;
+  height: 64px;
+}
+
+.applicant-detail-skeleton__header > span:last-child,
+.applicant-detail-skeleton__facts,
+.applicant-detail-skeleton__board {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.applicant-detail-skeleton__header .leamjobs-skeleton-line:first-child {
+  width: min(62%, 320px);
+  height: 1.2rem;
+}
+
+.applicant-detail-skeleton__header .leamjobs-skeleton-line:last-child {
+  width: min(44%, 220px);
+}
+
+.applicant-detail-skeleton__facts {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  padding: 0.85rem;
+  border: 1px solid var(--applicant-border);
+  border-radius: 12px;
+}
+
+.applicant-detail-skeleton__board {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  min-height: 150px;
+  padding: 1rem;
+  border: 1px solid var(--applicant-border);
+  border-radius: 14px;
+}
+
+.applicant-detail-skeleton__board > .leamjobs-skeleton-line {
+  grid-column: 1 / -1;
+  width: 28%;
+}
+
+.applicant-detail-skeleton__board > .leamjobs-skeleton-block {
+  min-height: 82px;
+}
+
+.applicant-detail-skeleton__board--application {
+  grid-template-columns: 1.2fr 0.8fr;
+  min-height: 120px;
+}
+
+.applicant-detail-pane .employer-candidate-detail__header {
+  display: grid;
+  grid-template-columns: 64px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 1rem;
+  padding: 0;
+  border: 0;
+}
+
+.applicant-detail-pane .employer-candidate-detail__header-copy h2 {
+  font-size: clamp(1.35rem, 2vw, 1.8rem);
+  line-height: 1.15;
+  overflow-wrap: anywhere;
+}
+
+.applicant-detail-pane .employer-candidate-detail__header-copy p {
+  font-size: 0.92rem;
+  overflow-wrap: anywhere;
+}
+
+.applicant-detail-pane .employer-candidate-detail__header-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+  margin-left: 0;
+}
+
+.applicant-detail-pane .employer-candidate-detail__header-actions .employer-button {
+  min-height: 40px;
+  padding-inline: 0.85rem;
+}
+
+.applicant-detail-pane .employer-candidate-facts {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.65rem;
+  margin: 0;
+  padding: 0.75rem;
+  border: 1px solid var(--applicant-border);
+  border-radius: 12px;
+  background: var(--applicant-soft);
+}
+
+.applicant-detail-pane .employer-candidate-facts span {
+  min-width: 0;
+  padding: 0.45rem 0.55rem;
+  color: #475569;
+  font-size: 0.78rem;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.applicant-detail-pane .employer-detail-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1rem;
+}
+
+.applicant-detail-pane .employer-detail-main,
+.applicant-detail-pane .employer-detail-sidebar {
+  display: grid;
+  gap: 1rem;
+  min-width: 0;
+  padding: 1.1rem;
+  border: 1px solid var(--applicant-border);
+  border-radius: 14px;
+  background: var(--applicant-surface);
+}
+
+.applicant-detail-pane .employer-detail-main {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
+}
+
+.applicant-detail-pane .employer-detail-main > .employer-candidate-section:first-child,
+.applicant-detail-pane .employer-detail-main > .applicant-skills-section,
+.applicant-detail-pane .employer-detail-main > .employer-candidate-section:nth-last-child(1) {
+  grid-column: 1 / -1;
+}
+
+.applicant-detail-pane .applicant-skills-section {
+  padding: 0.1rem 0;
+}
+
+.applicant-detail-pane .employer-detail-sidebar {
+  grid-template-columns: minmax(0, 1.2fr) minmax(280px, 0.8fr);
+  align-items: start;
+}
+
+.applicant-detail-pane .employer-detail-sidebar > .employer-candidate-section,
+.applicant-detail-pane .employer-detail-sidebar > .employer-cv-card,
+.applicant-detail-pane .employer-detail-sidebar > .employer-review-actions,
+.applicant-detail-pane .employer-detail-sidebar > .employer-action-error,
+.applicant-detail-pane .employer-detail-sidebar > .employer-action-success {
+  min-width: 0;
+}
+
+.applicant-detail-pane .employer-detail-sidebar > .employer-candidate-section {
+  grid-row: auto;
+}
+
+.applicant-detail-pane .applicant-cover-letter {
+  grid-column: 1;
+  grid-row: 1 / span 3;
+}
+
+.applicant-detail-pane .employer-detail-sidebar > .employer-candidate-section:not(.applicant-cover-letter),
+.applicant-detail-pane .employer-detail-sidebar > .employer-cv-card,
+.applicant-detail-pane .employer-detail-sidebar > .employer-review-actions,
+.applicant-detail-pane .employer-detail-sidebar > .employer-action-error,
+.applicant-detail-pane .employer-detail-sidebar > .employer-action-success {
+  grid-column: 2;
+}
+
+.applicant-detail-pane .employer-detail-section-header {
+  margin-bottom: 0.65rem;
+}
+
+.applicant-detail-pane .employer-detail-section-header h2 {
+  color: var(--applicant-text);
+  font-size: 0.96rem;
+  letter-spacing: 0;
+}
+
+.applicant-detail-pane .employer-candidate-section {
+  min-width: 0;
+  padding-top: 0;
+  border-top: 0;
+}
+
+.applicant-detail-pane .employer-candidate-section > p {
+  color: #475569;
+  font-size: 0.9rem;
+  line-height: 1.65;
+  overflow-wrap: anywhere;
+}
+
+.applicant-detail-pane .applicant-cover-letter > p {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 8;
+}
+
+.applicant-detail-pane .employer-profile-entry-list {
+  gap: 0.65rem;
+}
+
+.applicant-detail-pane .employer-profile-entry {
+  padding: 0.75rem 0.85rem;
+  border: 1px solid var(--applicant-border);
+  border-radius: 10px;
+  background: var(--applicant-soft);
+}
+
+.applicant-detail-pane .employer-profile-entry h3 {
+  font-size: 0.9rem;
+}
+
+.applicant-detail-pane .employer-profile-entry p {
+  font-size: 0.82rem;
+  line-height: 1.5;
+}
+
+.applicant-detail-pane .employer-profile-entry p:not(.employer-profile-entry__meta) {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 4;
+}
+
+.applicant-detail-pane .employer-skill-list span,
+.applicant-detail-pane .employer-tag {
+  padding: 0.3rem 0.6rem;
+  border-radius: 999px;
+  background: #eef4ff;
+  color: #1d4ed8;
+  font-size: 0.76rem;
+  font-weight: 700;
+}
+
+.applicant-section-empty {
+  margin: 0;
+  color: var(--applicant-muted);
+  font-size: 0.82rem;
+}
+
+.applicant-detail-pane .employer-summary-list {
+  margin-top: 0;
+  gap: 0.55rem;
+}
+
+.applicant-detail-pane .employer-summary-list div {
+  padding: 0.65rem 0.75rem;
+}
+
+.applicant-detail-pane .employer-summary-list strong {
+  max-width: 62%;
+  overflow-wrap: anywhere;
+}
+
+.applicant-detail-pane .employer-status-field {
+  margin-top: 0.8rem;
+}
+
+.applicant-detail-pane .employer-cv-card {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.75rem;
+  min-width: 0;
+  margin: 0;
+  padding: 0.85rem;
+  border-radius: 12px;
+}
+
+.applicant-detail-pane .employer-cv-card__icon {
+  width: 44px;
+  height: 44px;
+}
+
+.applicant-detail-pane .employer-cv-card h2 {
+  font-size: 0.92rem;
+}
+
+.applicant-detail-pane .employer-cv-card p,
+.applicant-detail-pane .employer-cv-card small {
+  font-size: 0.78rem;
+  line-height: 1.4;
+}
+
+.applicant-cv-retry {
+  min-height: 36px;
+  padding-inline: 0.7rem;
+  white-space: nowrap;
+}
+
+.applicant-detail-pane .employer-review-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.6rem;
+  margin: 0;
+}
+
+.applicant-detail-pane .employer-review-actions .employer-button:first-child {
+  grid-column: 1 / -1;
+}
+
+.applicant-detail-pane .employer-action-error,
+.applicant-detail-pane .employer-action-success {
+  margin: 0;
+  padding: 0.7rem 0.8rem;
+  border-radius: 10px;
+  font-size: 0.82rem;
+}
+
+.applicant-confirmation {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.8rem;
+  border: 1px solid #fecaca;
+  border-radius: 10px;
+  background: #fff7f7;
+}
+
+.applicant-confirmation div {
+  display: grid;
+  gap: 0.2rem;
+  min-width: 0;
+}
+
+.applicant-confirmation strong {
+  color: #991b1b;
+  font-size: 0.84rem;
+}
+
+.applicant-confirmation span {
+  color: #7f1d1d;
+  font-size: 0.76rem;
+}
+
+.applicant-detail-pane .employer-action-error {
+  border: 1px solid #fecaca;
+  background: #fff7f7;
+}
+
+.applicant-detail-pane .employer-action-success {
+  border: 1px solid #bbf7d0;
+  background: #f0fdf4;
+  color: #166534;
+  font-weight: 700;
+}
+
+.applicant-state {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.applicant-state .employer-button {
+  justify-self: start;
+}
+
+@media (max-width: 1100px) {
+  .applicant-workspace {
+    grid-template-columns: minmax(260px, 320px) minmax(0, 1fr);
+  }
+
+  .applicant-detail-pane .employer-detail-main {
+    grid-template-columns: 1fr;
+  }
+
+  .applicant-detail-pane .employer-detail-main > * {
+    grid-column: 1;
+  }
+}
+
+@media (max-width: 900px) {
+  .applicant-workspace {
+    grid-template-columns: 1fr;
+  }
+
+  .applicant-list-panel,
+  .applicant-detail-pane {
+    position: static;
+    max-height: none;
+  }
+
+  .applicant-list-panel .employer-applicant-list {
+    max-height: none;
+  }
+
+  .applicant-detail-pane .employer-detail-sidebar {
+    grid-template-columns: 1fr;
+  }
+
+  .applicant-detail-pane .employer-detail-sidebar > .employer-candidate-section {
+    grid-row: auto;
+  }
+
+  .applicant-detail-pane .applicant-cover-letter,
+  .applicant-detail-pane .employer-detail-sidebar > .employer-candidate-section:not(.applicant-cover-letter),
+  .applicant-detail-pane .employer-detail-sidebar > .employer-cv-card,
+  .applicant-detail-pane .employer-detail-sidebar > .employer-review-actions,
+  .applicant-detail-pane .employer-detail-sidebar > .employer-action-error,
+  .applicant-detail-pane .employer-detail-sidebar > .employer-action-success {
+    grid-column: 1;
+  }
+}
+
+@media (max-width: 767px) {
+  .applicant-workspace {
+    display: block;
+  }
+
+  .applicant-workspace .applicant-list-panel,
+  .applicant-workspace .applicant-detail-pane {
+    width: 100%;
+  }
+
+  .applicant-workspace:not(.applicant-workspace--detail) .applicant-detail-pane {
+    display: none !important;
+  }
+
+  .applicant-workspace.applicant-workspace--detail .applicant-list-panel {
+    display: none;
+  }
+
+  .applicant-workspace.applicant-workspace--detail .applicant-detail-pane {
+    display: grid !important;
+  }
+
+  .applicant-detail-pane .employer-candidate-detail__header {
+    grid-template-columns: 52px minmax(0, 1fr);
+    align-items: start;
+    gap: 0.75rem;
+  }
+
+  .applicant-detail-skeleton__facts,
+  .applicant-detail-skeleton__board,
+  .applicant-detail-skeleton__board--application {
+    grid-template-columns: 1fr;
+  }
+
+  .applicant-detail-skeleton__board > .leamjobs-skeleton-block {
+    min-height: 64px;
+  }
+
+  .applicant-detail-pane .employer-candidate-detail__header-actions {
+    grid-column: 1 / -1;
+    justify-content: stretch;
+  }
+
+  .applicant-detail-pane .employer-candidate-detail__header-actions .employer-button {
+    flex: 1 1 0;
+  }
+
+  .applicant-detail-pane .employer-candidate-facts {
+    grid-template-columns: 1fr;
+    gap: 0.3rem;
+  }
+
+  .applicant-detail-pane .employer-detail-main,
+  .applicant-detail-pane .employer-detail-sidebar {
+    padding: 0.9rem;
+  }
+
+  .applicant-detail-pane .employer-cv-card {
+    grid-template-columns: 44px minmax(0, 1fr);
+  }
+
+  .applicant-cv-retry {
+    grid-column: 1 / -1;
+    width: 100%;
+  }
+
+  .applicant-detail-pane .employer-review-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .applicant-confirmation {
+    grid-template-columns: 1fr;
+  }
+
+  .applicant-confirmation .employer-button {
+    width: 100%;
+  }
+
+  .applicant-detail-pane .employer-review-actions .employer-button:first-child {
+    grid-column: auto;
+  }
+}
+
+@media (max-width: 420px) {
+  .applicant-detail-pane .employer-candidate-detail__header-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .applicant-detail-pane .employer-candidate-detail__header-actions .employer-application-status {
+    grid-column: 1 / -1;
+    justify-self: start;
+  }
+
+  .applicant-filter-summary {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+}

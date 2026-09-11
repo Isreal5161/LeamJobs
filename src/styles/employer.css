@@ -264,6 +264,10 @@
   align-items: start;
 }
 
+.employer-applicants-grid {
+  grid-template-columns: minmax(300px, 360px) minmax(0, 1fr);
+}
+
 .employer-job-stack,
 .employer-job-list,
 .employer-applicant-list,
@@ -384,20 +388,6 @@
 }
 
 .employer-pipeline-bar i,
-.employer-score-meter i {
-  display: block;
-  height: 100%;
-  border-radius: inherit;
-  background: #0e4ae1;
-}
-
-.employer-applicant-strip {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 0.85rem;
-  margin-top: 1rem;
-}
-
 .employer-applicant-mini {
   display: grid;
   grid-template-columns: 52px minmax(0, 1fr) auto 38px;
@@ -811,12 +801,6 @@
   padding: 1rem;
 }
 
-.employer-applicant-card__avatar {
-  width: 54px;
-  height: 54px;
-  font-size: 1.8rem;
-}
-
 .employer-applicant-card__meta {
   display: flex;
   flex-wrap: wrap;
@@ -828,15 +812,10 @@
   font-weight: 600;
 }
 
-.employer-applicant-card > button > strong {
-  color: #16803c;
-  font-size: 1rem;
-  font-weight: 700;
-}
-
 .employer-candidate-detail {
   position: sticky;
   top: 1rem;
+  min-width: 0;
 }
 
 .employer-candidate-detail__header,
@@ -1003,17 +982,14 @@
   font-weight: 600;
 }
 
-.employer-cv-card__actions {
-  grid-column: 1 / -1;
-  display: flex;
-  justify-content: flex-end;
-  gap: 0.65rem;
-  flex-wrap: wrap;
+.employer-review-actions .employer-button {
+  flex: 1 1 0;
+  min-width: 130px;
 }
 
 .employer-detail-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1.85fr) minmax(280px, 0.95fr);
+  grid-template-columns: minmax(0, 1fr);
   gap: 1rem;
   align-items: start;
 }
@@ -1022,6 +998,11 @@
 .employer-detail-sidebar {
   display: grid;
   gap: 1rem;
+  min-width: 0;
+  padding: 1rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  background: #ffffff;
 }
 
 .employer-detail-section-header {
@@ -1210,13 +1191,8 @@
   margin-left: auto;
 }
 
-.employer-score-meter {
-  display: grid;
-  gap: 0.55rem;
-}
-
-.employer-score-meter strong {
-  color: #0f172a;
+.employer-candidate-detail__header-actions .employer-button {
+  white-space: nowrap;
 }
 
 .employer-skill-list {
@@ -1434,6 +1410,15 @@
     grid-template-columns: 1fr;
   }
 
+  .employer-detail-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .employer-detail-main,
+  .employer-detail-sidebar {
+    padding: 0.85rem;
+  }
+
   .employer-pipeline-card,
   .employer-candidate-detail,
   .employer-open-jobs {
@@ -1476,36 +1461,18 @@
     flex-direction: column;
   }
 
-  .employer-hero__actions {
-    width: 100%;
-    justify-content: flex-start;
-  }
-
-  .employer-hero__actions .employer-button {
-    min-height: 44px;
-    white-space: nowrap;
-  }
-
-  .employer-content {
-    width: min(calc(100% - 2rem), 520px);
-    max-width: 520px;
-    margin: 0 auto;
-    padding: 0.8rem 0 0;
-  }
-
   .employer-panel {
     width: 100%;
     max-width: 100%;
   }
 
   .employer-list-tools {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) 46px;
-    align-items: center;
-    gap: 0.65rem;
+    display: block;
   }
 
   .employer-search {
+    display: flex;
+    width: 100%;
     min-width: 0;
   }
 
@@ -1544,15 +1511,12 @@
   }
 
   .employer-applicant-mini > strong,
-  .employer-applicant-mini a,
-  .employer-applicant-card > button > strong {
+  .employer-applicant-mini a {
     grid-column: 2;
     justify-self: start;
   }
 
-  .employer-review-actions,
-  .employer-editor-actions,
-  .employer-cv-card__actions {
+  .employer-editor-actions {
     display: grid;
     grid-template-columns: 1fr;
   }
@@ -1594,7 +1558,4 @@
     display: inline-flex;
   }
 
-  .employer-candidate-detail:not(:has(.employer-application-status)) {
-    display: none;
-  }
 }

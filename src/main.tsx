@@ -20,6 +20,7 @@ import './styles/seeker-profile.css';
 import './styles/seeker-onboarding.css';
 import './styles/seeker-typography.css';
 import './styles/employer.css';
+import './styles/employer-applicants.css';
 import './styles/messages.css';
 import './styles/admin.css';
 import './styles/payments.css';
