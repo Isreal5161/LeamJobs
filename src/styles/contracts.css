@@ -1,7 +1,7 @@
 .contract-page {
-  max-width: 1120px;
+  width: min(100% - 2.5rem, 1440px);
   margin: 0 auto;
-  padding: 2rem clamp(1rem, 4vw, 3rem) 4rem;
+  padding: 1.75rem 0 2.5rem;
 }
 
 .contract-back,
@@ -17,7 +17,8 @@
   background: transparent;
   color: var(--text-secondary);
   cursor: pointer;
-  padding: .5rem 0;
+  padding: .45rem 0;
+  font-weight: 600;
 }
 
 .contract-header {
@@ -25,7 +26,12 @@
   justify-content: space-between;
   align-items: flex-start;
   gap: 1rem;
-  margin: 2rem 0;
+  margin: 1rem 0;
+  padding: 1.35rem 1.5rem;
+  border: 1px solid #dfeaf5;
+  border-radius: 18px;
+  background: #f8fbff;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.03);
 }
 
 .contract-eyebrow {
@@ -36,29 +42,29 @@
   text-transform: uppercase;
 }
 
-.contract-header h1 { margin: .35rem 0; font-size: clamp(1.8rem, 4vw, 3rem); }
+.contract-header h1 { margin: .35rem 0; color: var(--text-primary); font-size: clamp(1.8rem, 4vw, 2.5rem); line-height: 1.1; }
 .contract-header p, .contract-panel-heading p, .contract-muted { color: var(--text-secondary); margin: 0; }
 .contract-status { border-radius: 999px; background: #e0f2fe; color: #075985; padding: .5rem .8rem; font-size: .82rem; font-weight: 700; white-space: nowrap; }
 .contract-status--funded { background: #dcfce7; color: #166534; }
 .contract-status--release_eligible { background: #ede9fe; color: #6d28d9; }
 .contract-status--active { background: #fef3c7; color: #92400e; }
 
-.contract-message, .contract-error { border-radius: .75rem; padding: .8rem 1rem; margin: 1rem 0; }
+.contract-message, .contract-error { display: flex; align-items: center; gap: .55rem; border-radius: 12px; padding: .8rem 1rem; margin: 1rem 0; }
 .contract-message { background: #ecfdf5; color: #166534; }
 .contract-error, .contract-state--error { background: #fef2f2; color: #991b1b; }
-.contract-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
-.contract-panel { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: clamp(1rem, 3vw, 1.5rem); box-shadow: var(--shadow); }
+.contract-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; }
+.contract-panel { min-width: 0; background: var(--surface); border: 1px solid #dfe7f1; border-radius: 16px; padding: clamp(1rem, 2.5vw, 1.5rem); box-shadow: 0 10px 24px rgba(15, 23, 42, 0.045); }
 .contract-panel-heading { display: flex; align-items: flex-start; gap: .8rem; margin-bottom: 1.25rem; }
 .contract-panel-heading > svg { color: var(--accent); margin-top: .25rem; }
 .contract-panel h2 { margin: 0; font-size: 1.05rem; }
 .contract-terms { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
 .contract-terms div { display: grid; gap: .2rem; }
 .contract-terms span { color: var(--text-secondary); font-size: .82rem; }
-.contract-terms strong { font-size: 1.05rem; }
+.contract-terms strong { color: var(--text-primary); font-size: 1.02rem; overflow-wrap: anywhere; }
 .contract-escrow-status { display: grid; gap: .25rem; padding: 1rem; background: var(--surface-muted); border-radius: .75rem; margin-bottom: 1rem; }
 .contract-escrow-status strong { font-size: 1.2rem; }
 .contract-escrow-status span { color: var(--text-secondary); font-size: .85rem; }
-.contract-action { width: 100%; justify-content: center; }
+.contract-action { width: 100%; min-height: 44px; justify-content: center; border-radius: 12px; font-weight: 700; }
 .contract-workflow { margin-top: 1rem; }
 .contract-workflow form, .contract-review { display: grid; gap: .75rem; max-width: 680px; }
 .contract-workflow label { font-weight: 700; }
@@ -69,9 +75,15 @@
 .contract-spin { animation: contract-spin 1s linear infinite; }
 @keyframes contract-spin { to { transform: rotate(360deg); } }
 
+@media (max-width: 980px) {
+  .contract-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
 @media (max-width: 720px) {
+  .contract-page { width: min(100% - 1.5rem, 560px); padding: 1rem 0 5rem; }
   .contract-header, .contract-grid { display: grid; }
+  .contract-grid { grid-template-columns: 1fr; }
   .contract-header { gap: .75rem; }
   .contract-status { justify-self: start; }
-  .contract-terms { grid-template-columns: 1fr 1fr; }
+  .contract-terms { grid-template-columns: 1fr; gap: .8rem; }
 }
