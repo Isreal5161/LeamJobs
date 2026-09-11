@@ -308,11 +308,22 @@
   width: 100%;
   min-width: 0;
   border: 0;
+  border-radius: 0;
   outline: 0;
   background: transparent;
   color: #334155;
   font: inherit;
   font-size: 0.9rem;
+  box-shadow: none;
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+.seeker-applications-page .seeker-search input[type='search']::-webkit-search-decoration,
+.seeker-applications-page .seeker-search input[type='search']::-webkit-search-cancel-button,
+.seeker-applications-page .seeker-search input[type='search']::-webkit-search-results-button,
+.seeker-applications-page .seeker-search input[type='search']::-webkit-search-results-decoration {
+  display: none;
 }
 
 .seeker-applications-page .seeker-search input::placeholder {
