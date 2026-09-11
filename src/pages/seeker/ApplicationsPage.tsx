@@ -190,7 +190,7 @@ function ApplicationsPage() {
           <span><FaBriefcase /> Updated {formatDate(application.updatedAt)}</span>
         </div>
       </div>
-      <Link to={`/seeker/jobs/${application.jobId}`} className="seeker-application-card__link" aria-label={`View ${application.jobTitle} details`}><FaExternalLinkAlt /></Link>
+      {application.contractId ? <Link to={`/seeker/contracts/${application.contractId}`} className="seeker-application-card__link" aria-label={`Open ${application.jobTitle} contract`}>Contract</Link> : <Link to={`/seeker/jobs/${application.jobId}`} className="seeker-application-card__link" aria-label={`View ${application.jobTitle} details`}><FaExternalLinkAlt /></Link>}
     </article>
   );
 

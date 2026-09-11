@@ -25,6 +25,8 @@ import './styles/messages.css';
 import './styles/admin.css';
 import './styles/payments.css';
 import './styles/subscriptions.css';
+import './styles/contracts.css';
+import './styles/admin-release.css';
 
 ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
   <React.StrictMode>

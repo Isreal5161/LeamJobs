@@ -428,6 +428,155 @@
   -webkit-line-clamp: 4;
 }
 
+.employer-cv-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  background: rgba(15, 23, 42, 0.58);
+}
+
+.employer-cv-modal {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  width: min(100%, 1120px);
+  height: min(92vh, 920px);
+  overflow: hidden;
+  border: 1px solid #dbe3ee;
+  border-radius: 16px;
+  background: #ffffff;
+  box-shadow: 0 26px 80px rgba(15, 23, 42, 0.28);
+}
+
+.employer-cv-modal__header,
+.employer-cv-modal__footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem 1.25rem;
+  background: #ffffff;
+}
+
+.employer-cv-modal__header {
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.employer-cv-modal__header h2,
+.employer-cv-modal__header p {
+  margin: 0;
+}
+
+.employer-cv-modal__header h2 {
+  color: #0f172a;
+  font-size: 1.15rem;
+  overflow-wrap: anywhere;
+}
+
+.employer-cv-modal__header .employer-eyebrow {
+  display: block;
+  margin-bottom: 0.25rem;
+}
+
+.employer-cv-modal__body {
+  min-height: 0;
+  overflow: auto;
+  padding: 1.25rem;
+  background: #f1f5f9;
+}
+
+.employer-cv-modal__document {
+  display: block;
+  width: 100%;
+  min-height: 100%;
+  border: 0;
+  background: #ffffff;
+}
+
+.employer-cv-modal__template {
+  width: min(100%, 820px);
+  min-height: 100%;
+  margin: 0 auto;
+  padding: 1.25rem;
+  background: #ffffff;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
+}
+
+.employer-cv-modal__template-note {
+  margin: 0 0 1rem;
+  padding: 0.65rem 0.75rem;
+  border: 1px solid #bfdbfe;
+  border-radius: 8px;
+  background: #eff6ff;
+  color: #1e40af;
+  font-size: 0.78rem;
+  line-height: 1.45;
+}
+
+.employer-cv-modal__state {
+  display: grid;
+  justify-items: center;
+  gap: 0.65rem;
+  min-height: 260px;
+  padding: 4rem 1.25rem;
+  color: #475569;
+  text-align: center;
+}
+
+.employer-cv-modal__state svg {
+  color: #1d4ed8;
+  font-size: 1.5rem;
+}
+
+.employer-cv-modal__state strong {
+  color: #0f172a;
+  font-size: 1rem;
+}
+
+.employer-cv-modal__state p {
+  max-width: 420px;
+  margin: 0;
+  line-height: 1.5;
+}
+
+.employer-cv-modal__footer {
+  justify-content: flex-end;
+  border-top: 1px solid #e2e8f0;
+}
+
+@media (max-width: 767px) {
+  .employer-cv-modal-backdrop {
+    align-items: end;
+    padding: 0;
+  }
+
+  .employer-cv-modal {
+    width: 100%;
+    height: min(94vh, 920px);
+    border-radius: 16px 16px 0 0;
+  }
+
+  .employer-cv-modal__header,
+  .employer-cv-modal__footer,
+  .employer-cv-modal__body {
+    padding: 0.9rem;
+  }
+
+  .employer-cv-modal__body {
+    overflow-x: hidden;
+  }
+
+  .employer-cv-modal__document {
+    min-height: 100%;
+  }
+
+  .employer-cv-modal__template {
+    padding: 0.75rem;
+  }
+}
+
 .applicant-detail-pane .employer-skill-list span,
 .applicant-detail-pane .employer-tag {
   padding: 0.3rem 0.6rem;

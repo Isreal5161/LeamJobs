@@ -1,4 +1,12 @@
-.messages-page { min-width: 0; }
+.messages-page {
+  --messages-text: #172033;
+  --messages-muted: #64748b;
+  --messages-border: #dbe3ee;
+  --messages-border-soft: #e7edf4;
+  --messages-accent: #0e4ae1;
+  --messages-accent-hover: #0b3bcb;
+  min-width: 0;
+}
 
 .seeker-home.messages-page {
   display: grid;
@@ -64,12 +72,12 @@
 }
 
 .messages-search input,
-.messages-composer input {
+.messages-composer textarea {
   width: 100%;
   min-width: 0;
   border: 0;
   outline: 0;
-  color: var(--seeker-text);
+  color: var(--messages-text);
 }
 
 .messages-list { display: grid; gap: 0.7rem; margin-top: 1rem; }
@@ -107,25 +115,33 @@
   border: 1px solid var(--seeker-border-soft);
   border-radius: var(--seeker-inner-radius);
   background: #ffffff;
-  color: inherit;
+  color: var(--messages-text);
   text-align: left;
   cursor: pointer;
+  transition: border-color 160ms ease, background-color 160ms ease, box-shadow 160ms ease;
+}
+
+.messages-thread:hover,
+.messages-thread:focus-visible {
+  border-color: #9db8df;
+  background: #fbfdff;
 }
 
 .messages-thread--active {
   border-color: rgba(14, 74, 225, 0.36);
-  box-shadow: inset 4px 0 0 var(--seeker-accent);
+  background: #f3f7ff;
+  box-shadow: inset 4px 0 0 var(--messages-accent);
 }
 
 .messages-thread span { display: grid; min-width: 0; }
 .messages-thread strong,
-.messages-chat-header h2 { color: var(--seeker-text); font-size: 1rem; font-weight: 700; overflow-wrap: anywhere; }
+.messages-chat-header h2 { color: var(--messages-text); font-size: 1rem; font-weight: 700; overflow-wrap: anywhere; }
 .messages-thread small,
 .messages-chat-header p,
-.messages-thread em { color: var(--seeker-muted); font-size: 0.8rem; font-style: normal; overflow-wrap: anywhere; }
+.messages-thread em { color: var(--messages-muted); font-size: 0.8rem; font-style: normal; overflow-wrap: anywhere; }
 .messages-thread em { display: -webkit-box; overflow: hidden; margin-top: 0.3rem; white-space: normal; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
-.messages-thread i { display: grid; justify-items: end; gap: 0.35rem; min-width: 0; color: var(--seeker-muted); font-size: 0.72rem; font-style: normal; font-weight: 600; overflow-wrap: anywhere; }
-.messages-thread b { display: inline-flex; align-items: center; justify-content: center; min-width: 22px; height: 22px; border-radius: 999px; background: var(--seeker-accent); color: #ffffff; font-size: 0.72rem; }
+.messages-thread i { display: grid; justify-items: end; gap: 0.35rem; min-width: 0; color: var(--messages-muted); font-size: 0.72rem; font-style: normal; font-weight: 600; overflow-wrap: anywhere; }
+.messages-thread b { display: inline-flex; align-items: center; justify-content: center; min-width: 22px; height: 22px; border-radius: 999px; background: var(--messages-accent); color: #ffffff; font-size: 0.72rem; }
 
 .messages-thread-skeleton {
   display: grid;
@@ -168,14 +184,11 @@
 }
 
 .messages-chat-panel { display: grid; gap: 1rem; }
-.messages-chat-header { display: flex; align-items: center; gap: 0.85rem; min-width: 0; }
+.messages-chat-header { display: flex; align-items: center; gap: 0.85rem; min-width: 0; padding-bottom: 0.85rem; border-bottom: 1px solid var(--messages-border-soft); }
+.messages-chat-header__copy { min-width: 0; }
 .messages-chat-header h2,
 .messages-chat-header p { margin: 0; }
 .messages-chat-header p { display: inline-flex; align-items: center; gap: 0.45rem; margin-top: 0.25rem; overflow-wrap: anywhere; }
-.messages-chat-actions { display: flex; gap: 0.5rem; margin-left: auto; }
-.messages-chat-actions button,
-.messages-composer button { display: inline-flex; align-items: center; justify-content: center; border: 0; border-radius: var(--seeker-inner-radius); cursor: pointer; }
-.messages-chat-actions button { width: 40px; height: 40px; background: #eef2f7; color: var(--seeker-accent); }
 
 .messages-chat-body {
   display: grid;
@@ -190,18 +203,26 @@
   background: #f8fafc;
 }
 
-.messages-bubble { max-width: min(72%, 520px); margin: 0; padding: 0.75rem 0.9rem; border-radius: var(--seeker-inner-radius); color: #334155; font-size: 0.88rem; line-height: 1.45; overflow-wrap: anywhere; }
-.messages-bubble--me { justify-self: end; background: var(--seeker-accent); color: #ffffff; }
-.messages-bubble--them { justify-self: start; border: 1px solid var(--seeker-border-soft); background: #ffffff; }
+.messages-bubble { max-width: min(72%, 520px); margin: 0; padding: 0.8rem 0.95rem; border-radius: 14px; color: #334155; font-size: 0.88rem; line-height: 1.5; overflow-wrap: anywhere; word-break: break-word; white-space: pre-wrap; }
+.messages-bubble--me { justify-self: end; border-bottom-right-radius: 4px; background: var(--messages-accent); color: #ffffff; }
+.messages-bubble--them { justify-self: start; border: 1px solid var(--messages-border-soft); border-bottom-left-radius: 4px; background: #ffffff; }
 
-.messages-composer { display: grid; grid-template-columns: minmax(0, 1fr) 44px; gap: 0.65rem; }
-.messages-composer input { min-height: 44px; padding: 0 0.8rem; border: 1px solid var(--seeker-border); border-radius: var(--seeker-inner-radius); }
-.messages-composer button { width: 44px; height: 44px; background: var(--seeker-accent); color: #ffffff; }
+.messages-composer { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 0.8rem; align-items: end; }
+.messages-composer textarea { min-height: 76px; max-height: 180px; padding: 0.75rem 0.85rem; border: 1px solid var(--messages-border); border-radius: 10px; background: #ffffff; font: inherit; font-size: 0.9rem; line-height: 1.45; resize: vertical; }
+.messages-composer textarea:focus { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12); outline: none; }
+.messages-composer__action { display: grid; justify-items: end; gap: 0.4rem; }
+.messages-composer__hint { color: var(--messages-muted); font-size: 0.7rem; white-space: nowrap; }
+.messages-composer button { display: inline-flex; align-items: center; justify-content: center; gap: 0.45rem; min-width: 92px; min-height: 44px; padding: 0 0.9rem; border: 0; border-radius: 9px; background: var(--messages-accent); color: #ffffff; font-weight: 750; cursor: pointer; }
+.messages-composer button:disabled { background: #cbd5e1; color: #64748b; cursor: not-allowed; }
 
 .seeker-home.messages-page button:focus-visible,
-.seeker-home.messages-page input:focus-visible { outline: 3px solid rgba(14, 74, 225, 0.35); outline-offset: 2px; }
+.seeker-home.messages-page input:focus-visible,
+.seeker-home.messages-page textarea:focus-visible,
+.employer-page.messages-page button:focus-visible,
+.employer-page.messages-page input:focus-visible,
+.employer-page.messages-page textarea:focus-visible { outline: 3px solid rgba(14, 74, 225, 0.35); outline-offset: 2px; }
 .seeker-home.messages-page button:hover:not(:disabled) { background: var(--seeker-accent-hover); color: #ffffff; }
-.seeker-home.messages-page .messages-chat-actions button:hover:not(:disabled) { background: #dfe9ff; color: var(--seeker-accent); }
+.employer-page.messages-page button:hover:not(:disabled) { background: var(--messages-accent-hover); color: #ffffff; }
 
 @media (max-width: 1024px) {
   .messages-shell { grid-template-columns: 1fr; }
@@ -215,12 +236,11 @@
   .messages-chat-panel { padding: 1rem; }
   .messages-thread { grid-template-columns: 54px minmax(0, 1fr); }
   .messages-thread i { grid-column: 2; display: flex; align-items: center; justify-items: start; gap: 0.5rem; }
-  .messages-chat-header { flex-wrap: wrap; align-items: flex-start; }
-  .messages-chat-header > div:nth-child(2) { min-width: 0; flex: 1 1 calc(100% - 64px); }
-  .messages-chat-actions { width: 100%; margin-left: 0; }
-  .messages-chat-actions button { flex: 1 1 0; }
+  .messages-chat-header { align-items: flex-start; }
   .messages-chat-body { min-height: 220px; max-height: 45vh; padding: 0.8rem; }
   .messages-bubble { max-width: 88%; }
+  .messages-composer { grid-template-columns: 1fr; }
+  .messages-composer__action { display: flex; align-items: center; justify-content: space-between; flex-direction: row-reverse; }
 }
 
 @media (max-width: 480px) {

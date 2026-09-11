@@ -10,11 +10,15 @@ type AccountMenuItem = {
 type AccountMenuProps = {
   items: AccountMenuItem[];
   userName?: string;
+  roleLabel?: string;
+  imageUrl?: string | null;
+  isImageLoading?: boolean;
   onLogout?: () => void;
 };
 
-function AccountMenu({ items, userName, onLogout }: AccountMenuProps) {
+function AccountMenu({ items, userName, roleLabel, imageUrl, isImageLoading = false, onLogout }: AccountMenuProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const [imageFailed, setImageFailed] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -37,6 +41,10 @@ function AccountMenu({ items, userName, onLogout }: AccountMenuProps) {
     };
   }, [isOpen]);
 
+  useEffect(() => {
+    setImageFailed(false);
+  }, [imageUrl]);
+
   const initial = userName ? userName.charAt(0).toUpperCase() : 'U';
 
   return (
@@ -48,8 +56,10 @@ function AccountMenu({ items, userName, onLogout }: AccountMenuProps) {
         aria-expanded={isOpen}
         onClick={() => setIsOpen((open) => !open)}
       >
-        <span className="account-menu__avatar" aria-hidden="true">{initial}</span>
-        {userName ? <span className="account-menu__name">{userName}</span> : null}
+        <span className={`account-menu__avatar${isImageLoading ? ' account-menu__avatar--loading' : ''}`}>
+          {imageUrl && !imageFailed ? <img src={imageUrl} alt={`${userName || 'Account'} profile`} onError={() => setImageFailed(true)} /> : <span aria-hidden="true">{initial}</span>}
+        </span>
+        {userName ? <span className="account-menu__identity"><span className="account-menu__name">{userName}</span>{roleLabel ? <small>{roleLabel}</small> : null}</span> : null}
         <FaChevronDown className="account-menu__chevron" aria-hidden="true" />
       </button>
       {isOpen ? (

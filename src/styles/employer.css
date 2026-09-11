@@ -634,6 +634,10 @@
 .employer-list-tools .employer-search {
   flex: 1 1 auto;
   max-width: none;
+  min-height: 46px;
+  padding-inline: 0.8rem;
+  border-radius: 10px;
+  background: #f8fafc;
 }
 
 .employer-search {
@@ -645,6 +649,15 @@
   border-color: #d7e0ea;
   background: #f8fafc;
   color: #64748b;
+}
+
+.employer-applicants-page .employer-list-tools .employer-search {
+  margin: 0;
+  box-shadow: none;
+}
+
+.employer-applicants-page .employer-list-tools {
+  margin-bottom: 0.75rem;
 }
 
 .employer-search input {
@@ -980,6 +993,19 @@
   margin-top: 0.35rem;
   color: #64748b;
   font-weight: 600;
+}
+
+.employer-profile-logo-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+  align-items: center;
+}
+
+.employer-profile-logo-actions .employer-button {
+  min-height: 36px;
+  padding-inline: 0.75rem;
+  cursor: pointer;
 }
 
 .employer-review-actions .employer-button {

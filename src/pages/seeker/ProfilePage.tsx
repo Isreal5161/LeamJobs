@@ -33,6 +33,7 @@ import {
   uploadSeekerProfilePicture,
   uploadSeekerResume,
   deleteSeekerProfilePicture,
+  PROFILE_IMAGE_UPDATED_EVENT,
   deleteSeekerResume,
   type CertificationItem as ApiCertificationItem,
   type EducationItem as ApiEducationItem,
@@ -1045,6 +1046,7 @@ function ProfilePage() {
       if (result.ok) {
         setProfilePictureUrl(result.data.data.profilePictureUrl ?? null);
         setProfilePictureFile(null);
+        window.dispatchEvent(new Event(PROFILE_IMAGE_UPDATED_EVENT));
         showNotification({ title: 'Profile picture updated', message: 'Your profile picture has been uploaded.', tone: 'success' });
       } else {
         showNotification({ title: 'Upload failed', message: result.error.message, tone: 'error' });
@@ -1060,6 +1062,7 @@ function ProfilePage() {
     if (result.ok) {
       setProfilePictureUrl(null);
       setProfilePictureFile(null);
+      window.dispatchEvent(new Event(PROFILE_IMAGE_UPDATED_EVENT));
       showNotification({ title: 'Profile picture removed', message: 'Your profile picture has been removed.', tone: 'success' });
     } else showNotification({ title: 'Remove failed', message: result.error.message, tone: 'error' });
   };

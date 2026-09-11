@@ -1,6 +1,6 @@
-import { type FormEvent, useEffect, useState } from 'react';
+import { type FormEvent, type KeyboardEvent, useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { FaBell, FaBriefcase, FaPaperPlane, FaPhoneAlt, FaSearch, FaVideo } from 'react-icons/fa';
+import { FaBell, FaBriefcase, FaPaperPlane, FaSearch } from 'react-icons/fa';
 import ApplicantAvatar from '../../components/employer/ApplicantAvatar';
 import { useAuth } from '../../context/AuthContext';
 import {
@@ -199,7 +199,7 @@ function MessagesPage({ role }: MessagesPageProps) {
 
     const text = draftMessage.trim();
 
-    if (!text) {
+    if (!text || isSending) {
       return;
     }
 
@@ -226,6 +226,13 @@ function MessagesPage({ role }: MessagesPageProps) {
       return;
     }
 
+  };
+
+  const handleComposerKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
+    if (event.key === 'Enter' && (event.ctrlKey || event.metaKey)) {
+      event.preventDefault();
+      event.currentTarget.form?.requestSubmit();
+    }
   };
 
   return (
@@ -301,13 +308,9 @@ function MessagesPage({ role }: MessagesPageProps) {
           ) : <>
           <div className="messages-chat-header">
             <ApplicantAvatar name={selectedConversation.name} imageUrl={selectedConversation.imageUrl} />
-            <div>
+            <div className="messages-chat-header__copy">
               <h2>{selectedConversation.name}</h2>
               <p><FaBriefcase /> {selectedConversation.subject}</p>
-            </div>
-            <div className="messages-chat-actions">
-              <button type="button" aria-label="Start voice call"><FaPhoneAlt /></button>
-              <button type="button" aria-label="Start video call"><FaVideo /></button>
             </div>
           </div>
 
@@ -337,16 +340,23 @@ function MessagesPage({ role }: MessagesPageProps) {
           </div>
 
           <form className="messages-composer" onSubmit={handleSendMessage}>
-            <input
-              type="text"
+            <textarea
+              rows={2}
+              aria-label="Message"
+              aria-describedby="messages-composer-help"
               placeholder="Write a message"
               value={draftMessage}
               onChange={(event) => setDraftMessage(event.target.value)}
+              onKeyDown={handleComposerKeyDown}
               disabled={!selectedConversation.id || isSending}
             />
-            <button type="submit" aria-label="Send message" aria-busy={isSending} disabled={!selectedConversation.id || isSending}>
-              {isSending ? <span className="leamjobs-spinner" aria-hidden="true" /> : <FaPaperPlane />}
-            </button>
+            <div className="messages-composer__action">
+              <span id="messages-composer-help" className="messages-composer__hint">Ctrl+Enter to send</span>
+              <button type="submit" aria-label="Send message" aria-busy={isSending} disabled={!selectedConversation.id || isSending || !draftMessage.trim()}>
+                {isSending ? <span className="leamjobs-spinner" aria-hidden="true" /> : <FaPaperPlane />}
+                <span>{isSending ? 'Sending' : 'Send'}</span>
+              </button>
+            </div>
           </form>
           </>}
         </section>

@@ -169,6 +169,36 @@
   font-weight: 800;
 }
 
+.account-menu__avatar img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
+  object-fit: cover;
+}
+
+.account-menu__avatar--loading {
+  background: #e2e8f0;
+  animation: account-menu-avatar-pulse 1.2s ease-in-out infinite alternate;
+}
+
+.account-menu__identity {
+  display: grid;
+  min-width: 0;
+  text-align: left;
+}
+
+.account-menu__identity small {
+  color: #64748b;
+  font-size: 0.68rem;
+  font-weight: 600;
+}
+
+@keyframes account-menu-avatar-pulse {
+  from { opacity: 0.55; }
+  to { opacity: 1; }
+}
+
 .account-menu__name {
   max-width: 110px;
   overflow: hidden;
@@ -239,6 +269,10 @@
 
 @media (max-width: 767px) {
   .account-menu__name {
+    display: none;
+  }
+
+  .account-menu__identity small {
     display: none;
   }
 }
@@ -973,8 +1007,9 @@ input:focus-visible,
   gap: 1rem;
   padding: 1rem;
   border: 1px solid rgba(15, 23, 42, 0.08);
-  border-radius: 12px;
+  border-radius: 14px;
   background: #ffffff;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.04);
 }
 
 .seeker-job-card__body-link {
@@ -1009,6 +1044,19 @@ input:focus-visible,
   align-items: center;
   gap: 0.5rem;
   flex-wrap: wrap;
+}
+
+.seeker-job-card__top span {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  padding: 0 0.55rem;
+  border: 1px solid rgba(14, 74, 225, 0.12);
+  border-radius: 999px;
+  background: #eef4ff;
+  color: #0e4ae1;
+  font-size: 0.72rem;
+  font-weight: 700;
 }
 
 .seeker-job-card h3,
@@ -1051,6 +1099,43 @@ input:focus-visible,
   margin-top: 0.7rem;
 }
 
+.seeker-job-card__metadata {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.75rem;
+  margin-top: 0.55rem;
+  color: #475569;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.seeker-job-card__metadata span + span::before {
+  content: '•';
+  margin-right: 0.8rem;
+  color: #94a3b8;
+}
+
+.seeker-job-card__compensation {
+  display: inline-flex;
+  align-items: center;
+  min-height: 26px;
+  padding: 0 0.65rem;
+  border-radius: 999px;
+  background: #edf5ff;
+  color: #113fbd;
+  font-weight: 800;
+}
+
+.seeker-job-card__description {
+  margin-top: 0.7rem;
+  line-height: 1.5;
+  color: #475569;
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+}
+
 .seeker-tag {
   display: inline-flex;
   align-items: center;
@@ -1066,11 +1151,6 @@ input:focus-visible,
 .seeker-tag--1 {
   background: #f1f5f9;
   color: #334155;
-}
-
-.seeker-job-card__description {
-  margin-top: 0.5rem;
-  line-height: 1.5;
 }
 
 .seeker-job-card__actions {

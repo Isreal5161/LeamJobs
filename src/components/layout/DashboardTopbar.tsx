@@ -1,6 +1,9 @@
+import { useEffect, useState } from 'react';
 import { Link, NavLink } from 'react-router-dom';
 import { FaBars, FaTimes } from 'react-icons/fa';
 import AccountMenu from './AccountMenu';
+import { getEmployerProfile, getEmployerProfileLogo, getSeekerProfile, getSeekerProfilePicture, PROFILE_IMAGE_UPDATED_EVENT } from '../../services/api';
+import { useAuth } from '../../context/AuthContext';
 
 type DashboardTopbarProps = {
   isOpen?: boolean;
@@ -37,6 +40,67 @@ const accountNav: Record<'seeker' | 'employer', { label: string; to: string }[]>
 };
 
 function DashboardTopbar({ isOpen = false, onToggle, role, userName, onLogout }: DashboardTopbarProps) {
+  const { token } = useAuth();
+  const [accountName, setAccountName] = useState(userName || '');
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const [isImageLoading, setIsImageLoading] = useState(false);
+
+  useEffect(() => {
+    setAccountName(userName || '');
+  }, [userName]);
+
+  useEffect(() => {
+    if (!role || !token) return undefined;
+    let active = true;
+    let objectUrl: string | null = null;
+
+    const loadAccountProfile = async () => {
+      setIsImageLoading(true);
+      let imageReference: string | null = null;
+      if (role === 'employer') {
+        const profileResult = await getEmployerProfile(token);
+        if (!active) return;
+        const employerProfile = profileResult.ok ? profileResult.data.data.profile : null;
+        setAccountName(employerProfile?.companyName || userName || 'Employer');
+        imageReference = employerProfile?.companyLogoUrl ?? null;
+      } else {
+        const profileResult = await getSeekerProfile(token);
+        if (!active) return;
+        if (profileResult.ok) {
+          const seekerProfile = profileResult.data.data.profile;
+          const seekerUser = profileResult.data.data.user;
+          setAccountName(`${seekerUser.firstName} ${seekerUser.lastName}`.trim() || userName || 'Job seeker');
+          imageReference = seekerProfile?.profilePictureUrl ?? null;
+        }
+      }
+      if (!imageReference) {
+        setImageUrl(null);
+        setIsImageLoading(false);
+        return;
+      }
+
+      const imageResult = role === 'employer' ? await getEmployerProfileLogo(token) : await getSeekerProfilePicture(token);
+      if (!active) return;
+      if (imageResult.ok) {
+        objectUrl = URL.createObjectURL(imageResult.data);
+        setImageUrl(objectUrl);
+      } else {
+        setImageUrl(null);
+      }
+      setIsImageLoading(false);
+    };
+
+    const handleImageUpdate = () => { void loadAccountProfile(); };
+    window.addEventListener(PROFILE_IMAGE_UPDATED_EVENT, handleImageUpdate);
+    void loadAccountProfile();
+
+    return () => {
+      active = false;
+      window.removeEventListener(PROFILE_IMAGE_UPDATED_EVENT, handleImageUpdate);
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+    };
+  }, [role, token, userName]);
+
   const brand = (
     <Link className="dashboard-topbar__brand" to="/" aria-label="Go to LeamJobs welcome page">
       <span className="dashboard-topbar__mark">LJ</span>
@@ -62,7 +126,7 @@ function DashboardTopbar({ isOpen = false, onToggle, role, userName, onLogout }:
             </NavLink>
           ))}
         </nav>
-        <AccountMenu items={accountNav[role]} userName={userName} onLogout={onLogout} />
+        <AccountMenu items={accountNav[role]} userName={accountName} roleLabel={role === 'employer' ? 'Employer' : 'Job Seeker'} imageUrl={imageUrl} isImageLoading={isImageLoading} onLogout={onLogout} />
       </header>
     );
   }

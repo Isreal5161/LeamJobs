@@ -5,6 +5,7 @@ import {
   FaExternalLinkAlt, FaFileAlt, FaGlobe, FaMapMarkerAlt, FaSearch, FaSpinner, FaTimes,
 } from 'react-icons/fa';
 import ApplicantAvatar from '../../components/employer/ApplicantAvatar';
+import CVTemplateRenderer, { type CVData } from '../../components/cv-templates/CVTemplateRenderer';
 import { useAuth } from '../../context/AuthContext';
 import {
   createEmployerApplicationConversation,
@@ -51,6 +52,11 @@ function EmployerApplicantsPage() {
   const [isOpeningResume, setIsOpeningResume] = useState(false);
   const [resumeState, setResumeState] = useState<'idle' | 'success' | 'error'>('idle');
   const [resumeError, setResumeError] = useState('');
+  const [cvModalOpen, setCvModalOpen] = useState(false);
+  const [cvModalState, setCvModalState] = useState<'loading' | 'pdf' | 'template' | 'unavailable' | 'error'>('loading');
+  const [cvDocumentUrl, setCvDocumentUrl] = useState<string | null>(null);
+  const cvModalCloseRef = useRef<HTMLButtonElement>(null);
+  const lastFocusedElementRef = useRef<HTMLElement | null>(null);
   const [error, setError] = useState('');
   const [detailError, setDetailError] = useState('');
   const [actionError, setActionError] = useState('');
@@ -219,28 +225,97 @@ function EmployerApplicantsPage() {
     setIsMutating(false);
   };
 
+  const templateDataForApplicant = (applicantData: EmployerApplicationDetail['applicant']): CVData => ({
+    personalInfo: {
+      fullName: applicantData.fullName,
+      title: applicantData.professionalTitle || 'Professional',
+      email: applicantData.email,
+      phone: applicantData.phone ?? undefined,
+      location: applicantData.location ?? undefined,
+      linkedin: applicantData.linkedinUrl ?? undefined,
+    },
+    summary: applicantData.bio ?? '',
+    experience: (applicantData.experience ?? []).map((item) => ({
+      jobTitle: item.jobTitle || '',
+      company: item.company || '',
+      startDate: item.startDate || '',
+      endDate: item.endDate || '',
+      currentlyWorking: Boolean(item.currentlyWorking),
+      description: item.description || '',
+    })),
+    education: (applicantData.education ?? []).map((item) => ({ degree: item.degree || '', school: item.school || '', year: item.year || '' })),
+    skills: applicantData.skills ?? [],
+    certifications: (applicantData.certifications ?? []).map((item) => ({ name: item.name || '', issuer: item.issuer || '' })),
+    languages: (applicantData.languages ?? []).map((item) => ({ name: item.name || '', proficiency: item.proficiency || '' })),
+    projects: (applicantData.projects ?? []).map((item) => ({
+      name: item.name || '', description: item.description || '', technologies: item.technologies ?? [],
+      projectUrl: item.projectUrl || '', githubUrl: item.githubUrl || '', startDate: item.startDate || '', endDate: item.endDate || '',
+    })),
+  });
+
+  const closeCvModal = () => {
+    setCvModalOpen(false);
+    if (cvDocumentUrl) URL.revokeObjectURL(cvDocumentUrl);
+    setCvDocumentUrl(null);
+    window.setTimeout(() => lastFocusedElementRef.current?.focus(), 0);
+  };
+
   const openResume = async () => {
-    if (!token || !selectedListItem || !selectedApplication?.resume.available || isOpeningResume) return;
-    const resumeWindow = window.open('', '_blank', 'noopener,noreferrer');
+    if (!token || !selectedListItem || !selectedApplication || isOpeningResume) return;
+    lastFocusedElementRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    setCvModalOpen(true);
+    setCvModalState('loading');
+    setCvDocumentUrl(null);
     setIsOpeningResume(true);
     setActionError('');
     setResumeError('');
     setResumeState('idle');
+    if (selectedApplication.resume.source === 'template') {
+      setCvModalState('template');
+      setResumeState('success');
+      setIsOpeningResume(false);
+      return;
+    }
+    if (!selectedApplication.resume.source) {
+      setCvModalState('unavailable');
+      setIsOpeningResume(false);
+      return;
+    }
     const result = await getEmployerApplicationResume(selectedListItem.jobId, selectedListItem.id, token);
     if (!result.ok) {
-      resumeWindow?.close();
-      setResumeError('We could not retrieve this candidate\'s submitted resume.');
+      setResumeError('The CV could not be retrieved.');
       setResumeState('error');
-    }
-    else {
-      const url = URL.createObjectURL(result.data);
-      if (resumeWindow) resumeWindow.location.href = url;
-      else window.open(url, '_blank', 'noopener,noreferrer');
-      window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
+      setCvModalState('error');
+    } else {
+      setCvDocumentUrl(URL.createObjectURL(result.data));
+      setCvModalState('pdf');
       setResumeState('success');
     }
     setIsOpeningResume(false);
   };
+
+  useEffect(() => {
+    if (!cvModalOpen) return undefined;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    const focusTimer = window.setTimeout(() => cvModalCloseRef.current?.focus(), 0);
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        closeCvModal();
+      }
+      if (event.key === 'Tab' && cvModalCloseRef.current) {
+        event.preventDefault();
+        cvModalCloseRef.current.focus();
+      }
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.clearTimeout(focusTimer);
+      document.body.style.overflow = previousOverflow;
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [cvModalOpen]);
 
   const startConversation = async () => {
     if (!token || !selectedListItem || isMutating) return;
@@ -490,6 +565,7 @@ function EmployerApplicantsPage() {
                       {statuses.filter((status) => status !== 'ALL').map((status) => <option value={status} key={status}>{statusLabels[status]}</option>)}
                     </select>
                   </label>
+                  {selectedApplication.contractId ? <button className="employer-button employer-button--primary" type="button" onClick={() => navigate(`/employer/contracts/${selectedApplication.contractId}`)}>Open contract workspace</button> : null}
                 </section>
                 {actionError ? <p className="employer-action-error" role="alert">{actionError}</p> : null}
                 {actionMessage ? <p className="employer-action-success" role="status">{actionMessage}</p> : null}
@@ -497,7 +573,7 @@ function EmployerApplicantsPage() {
                   <span className="employer-cv-card__icon"><FaFileAlt /></span>
                   <div>
                     <h2>Candidate CV</h2>
-                    <p>{resumeState === 'error' ? resumeError : selectedApplication.resume.available ? 'Submitted with this application.' : 'No CV was submitted with this application.'}</p>
+                    <p>{resumeState === 'error' ? resumeError : selectedApplication.resume.source === 'application' ? 'Submitted with this application.' : selectedApplication.resume.source === 'profile' ? 'Using the seeker\'s saved profile CV.' : selectedApplication.resume.source === 'template' ? 'Using the seeker\'s saved LeamJobs CV template.' : 'No CV is available for this applicant.'}</p>
                     {selectedApplication.resume.submittedAt ? <small>Submitted {formatDate(selectedApplication.resume.submittedAt)}</small> : null}
                   </div>
                   {resumeState === 'error' ? <button className="employer-button employer-button--ghost applicant-cv-retry" type="button" onClick={() => void openResume()} disabled={isOpeningResume}>{isOpeningResume ? <FaSpinner className="leamjobs-spin" /> : <FaExternalLinkAlt />} Try again</button> : null}
@@ -513,6 +589,24 @@ function EmployerApplicantsPage() {
           {!isLoadingDetail && !detailError && !selectedApplication && !filteredApplications.length ? <div className="employer-empty-state"><strong>Select an applicant to review details.</strong></div> : null}
         </aside>
       </main>
+      {cvModalOpen && selectedApplication && applicant ? (
+        <div className="employer-cv-modal-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) closeCvModal(); }}>
+          <section className="employer-cv-modal" role="dialog" aria-modal="true" aria-labelledby="employer-cv-modal-title">
+            <header className="employer-cv-modal__header">
+              <div><span className="employer-eyebrow">Candidate CV</span><h2 id="employer-cv-modal-title">{applicant.fullName}</h2></div>
+              <button ref={cvModalCloseRef} className="employer-icon-button" type="button" aria-label="Close CV" onClick={closeCvModal}><FaTimes /></button>
+            </header>
+            <div className="employer-cv-modal__body">
+              {cvModalState === 'loading' ? <div className="employer-cv-modal__state" role="status" aria-live="polite"><FaSpinner className="leamjobs-spin" /><strong>Loading CV...</strong></div> : null}
+              {cvModalState === 'error' ? <div className="employer-cv-modal__state" role="alert"><FaFileAlt /><strong>Unable to load CV</strong><p>The CV could not be retrieved.</p><button className="employer-button employer-button--primary" type="button" onClick={() => void openResume()}>Retry</button></div> : null}
+              {cvModalState === 'unavailable' ? <div className="employer-cv-modal__state"><FaFileAlt /><strong>CV unavailable</strong><p>This applicant does not currently have a CV available to view.</p></div> : null}
+              {cvModalState === 'pdf' && cvDocumentUrl ? <iframe className="employer-cv-modal__document" src={cvDocumentUrl} title={`${applicant.fullName} CV document`} /> : null}
+              {cvModalState === 'template' ? <div className="employer-cv-modal__template"><p className="employer-cv-modal__template-note">Saved LeamJobs CV template. This application does not include a historical CV snapshot.</p><CVTemplateRenderer data={templateDataForApplicant(applicant)} template={applicant.cvTemplate || 'professional'} /></div> : null}
+            </div>
+            <footer className="employer-cv-modal__footer"><button className="employer-button employer-button--ghost" type="button" onClick={closeCvModal}>Close</button></footer>
+          </section>
+        </div>
+      ) : null}
     </div>
   );
 }

@@ -1,9 +1,18 @@
-import { FormEvent, useEffect, useMemo, useState } from 'react';
+import { FormEvent, useEffect, useMemo, useRef, useState, type ChangeEvent } from 'react';
 import {
   FaBell, FaBriefcase, FaBuilding, FaEnvelope, FaGlobe, FaMapMarkerAlt, FaRegSave, FaUsers,
 } from 'react-icons/fa';
 import { useAuth } from '../../context/AuthContext';
-import { getEmployerProfile, updateEmployerProfile, type EmployerProfile, type EmployerProfilePayload } from '../../services/api';
+import {
+  deleteEmployerProfileLogo,
+  getEmployerProfile,
+  getEmployerProfileLogo,
+  PROFILE_IMAGE_UPDATED_EVENT,
+  updateEmployerProfile,
+  uploadEmployerProfileLogo,
+  type EmployerProfile,
+  type EmployerProfilePayload,
+} from '../../services/api';
 
 type ProfileForm = {
   companyName: string;
@@ -43,29 +52,45 @@ function EmployerProfilePage() {
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [isLogoUploading, setIsLogoUploading] = useState(false);
   const [error, setError] = useState('');
   const [saveMessage, setSaveMessage] = useState('');
   const [fieldErrors, setFieldErrors] = useState<FormErrors>({});
   const [reloadKey, setReloadKey] = useState(0);
+  const logoObjectUrlRef = useRef<string | null>(null);
+
+  const replaceLogoUrl = (nextUrl: string | null) => {
+    if (logoObjectUrlRef.current) URL.revokeObjectURL(logoObjectUrlRef.current);
+    logoObjectUrlRef.current = nextUrl?.startsWith('blob:') ? nextUrl : null;
+    setLogoUrl(nextUrl);
+  };
 
   useEffect(() => {
     if (!token) return;
     let active = true;
     setIsLoading(true);
     setError('');
-    void getEmployerProfile(token).then((result) => {
+    void getEmployerProfile(token).then(async (result) => {
       if (!active) return;
       if (!result.ok) {
         setError(result.error.message || 'We could not load your company profile.');
       } else {
         setEmail(result.data.data.account.email);
         setForm(result.data.data.profile ? formFromProfile(result.data.data.profile) : emptyForm);
-        setLogoUrl(result.data.data.profile?.companyLogoUrl ?? null);
+        if (result.data.data.profile?.companyLogoUrl) {
+          const logoResult = await getEmployerProfileLogo(token);
+          if (active && logoResult.ok) replaceLogoUrl(URL.createObjectURL(logoResult.data));
+          else if (active) replaceLogoUrl(null);
+        } else replaceLogoUrl(null);
       }
       setIsLoading(false);
     });
     return () => { active = false; };
   }, [reloadKey, token]);
+
+  useEffect(() => () => {
+    if (logoObjectUrlRef.current) URL.revokeObjectURL(logoObjectUrlRef.current);
+  }, []);
 
   const setField = <Field extends keyof ProfileForm>(field: Field, value: ProfileForm[Field]) => {
     setForm((current) => ({ ...current, [field]: value }));
@@ -116,11 +141,46 @@ function EmployerProfilePage() {
       } else {
         setForm(formFromProfile(savedProfile));
         setEmail(result.data.data.account.email);
-        setLogoUrl(savedProfile.companyLogoUrl);
         setSaveMessage('Company profile saved.');
       }
     }
     setIsSaving(false);
+  };
+
+  const handleLogoSelect = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = '';
+    if (!file || !token || isLogoUploading) return;
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type) || file.size > 10 * 1024 * 1024) {
+      setError('Choose a JPEG, PNG, or WebP image under 10 MB.');
+      return;
+    }
+
+    setIsLogoUploading(true);
+    setError('');
+    const result = await uploadEmployerProfileLogo(file, token);
+    if (!result.ok) {
+      setError(result.error.message || 'We could not upload the company logo.');
+    } else {
+      replaceLogoUrl(URL.createObjectURL(file));
+      window.dispatchEvent(new Event(PROFILE_IMAGE_UPDATED_EVENT));
+      setSaveMessage('Company logo updated.');
+    }
+    setIsLogoUploading(false);
+  };
+
+  const handleLogoRemove = async () => {
+    if (!token || isLogoUploading || !logoUrl) return;
+    setIsLogoUploading(true);
+    setError('');
+    const result = await deleteEmployerProfileLogo(token);
+    if (!result.ok) setError(result.error.message || 'We could not remove the company logo.');
+    else {
+      replaceLogoUrl(null);
+      window.dispatchEvent(new Event(PROFILE_IMAGE_UPDATED_EVENT));
+      setSaveMessage('Company logo removed.');
+    }
+    setIsLogoUploading(false);
   };
 
   const brandInitials = useMemo(() => initialsFor(form.companyName), [form.companyName]);
@@ -203,9 +263,13 @@ function EmployerProfilePage() {
 
       <main className="employer-content employer-profile-grid">
         <section className="employer-panel employer-company-card">
-          <span className="employer-company-card__logo">{logoUrl ? <img src={logoUrl} alt="" /> : brandInitials || 'Logo'}</span>
+          <span className="employer-company-card__logo">{logoUrl ? <img src={logoUrl} alt={`${companyLabel} logo`} onError={() => replaceLogoUrl(null)} /> : brandInitials || 'Logo'}</span>
           <div><h2>{companyLabel}</h2><p>{form.companyDescription || 'Company description not provided'}</p></div>
-          <span className="employer-profile-deferred">Logo upload is not available yet.</span>
+          <div className="employer-profile-logo-actions">
+            <label className="employer-button employer-button--ghost" htmlFor="company-logo-upload">{logoUrl ? 'Change logo' : 'Upload logo'}</label>
+            <input id="company-logo-upload" className="sr-only" type="file" accept="image/jpeg,image/png,image/webp" onChange={handleLogoSelect} disabled={isLogoUploading} />
+            {logoUrl ? <button className="employer-button employer-button--ghost" type="button" onClick={() => void handleLogoRemove()} disabled={isLogoUploading}>Remove</button> : null}
+          </div>
         </section>
 
         <section className="employer-panel">
@@ -224,7 +288,7 @@ function EmployerProfilePage() {
 
         <aside className="employer-panel employer-profile-facts">
           <h2>Public preview</h2>
-          <div className="employer-brand-preview"><span className="employer-brand-preview__logo">{logoUrl ? <img src={logoUrl} alt="" /> : brandInitials || 'Logo'}</span><strong>{companyLabel}</strong><p>{form.companyDescription || 'Description not provided'}</p></div>
+          <div className="employer-brand-preview"><span className="employer-brand-preview__logo">{logoUrl ? <img src={logoUrl} alt={`${companyLabel} logo`} onError={() => replaceLogoUrl(null)} /> : brandInitials || 'Logo'}</span><strong>{companyLabel}</strong><p>{form.companyDescription || 'Description not provided'}</p></div>
           <span><FaMapMarkerAlt /> {form.location || 'Location not provided'}</span>
           <span><FaUsers /> {form.companySize || 'Company size not provided'}</span>
           <span><FaBriefcase /> {form.industry || 'Industry not provided'}</span>

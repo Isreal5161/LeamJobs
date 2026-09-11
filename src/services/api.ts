@@ -1,4 +1,5 @@
 export const API_BASE_URL = 'https://leamjobs.com/api';
+export const PROFILE_IMAGE_UPDATED_EVENT = 'leamjobs-profile-image-updated';
 
 export type HttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
 
@@ -175,6 +176,16 @@ export type EmployerProfileResponse = {
   data: EmployerProfileData;
 };
 
+export type EmployerLogoResponse = {
+  success: true;
+  data: { profile: EmployerProfile };
+};
+
+export type EmployerLogoDeleteResponse = {
+  success: true;
+  data: { companyLogoUrl: null };
+};
+
 export type EmployerProfilePayload = {
   companyName?: string;
   companyDescription?: string | null;
@@ -310,6 +321,8 @@ export type EmployerApplicant = {
   id?: string;
   firstName: string;
   lastName: string;
+  email: string;
+  phone: string | null;
   fullName: string;
   professionalTitle: string | null;
   profilePictureUrl: string | null;
@@ -325,6 +338,7 @@ export type EmployerApplicant = {
   languages: LanguageItem[] | null;
   projects: ProjectItem[] | null;
   linkedinUrl: string | null;
+  cvTemplate: 'modern' | 'professional' | 'creative' | 'minimalist' | null;
 };
 
 export type EmployerApplicationListItem = {
@@ -335,6 +349,7 @@ export type EmployerApplicationListItem = {
   status: EmployerApplicationStatus;
   createdAt: string;
   updatedAt: string;
+  contractId: string | null;
 };
 
 export type EmployerApplicationDetail = {
@@ -344,7 +359,8 @@ export type EmployerApplicationDetail = {
   coverLetter: string | null;
   createdAt: string;
   updatedAt: string;
-  resume: { available: boolean; submittedAt: string; version: string | null };
+  contractId: string | null;
+  resume: { available: boolean; source: 'application' | 'profile' | 'template' | null; submittedAt: string | null; version: string | null };
   job: { id: string; title: string };
   applicant: EmployerApplicant;
 };
@@ -478,6 +494,7 @@ export type SeekerApplication = {
   status: string;
   appliedAt: string;
   updatedAt: string;
+  contractId: string | null;
 };
 
 export type SeekerApplicationsResponse = {
@@ -722,6 +739,36 @@ export function getEmployerProfile(token: string) {
   return request<EmployerProfileResponse>({ method: 'GET', endpoint: '/employer/profile', token });
 }
 
+async function getProtectedBlob(endpoint: string, token: string, fallbackMessage: string): Promise<ApiResponse<Blob>> {
+  try {
+    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+      method: 'GET',
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!response.ok) {
+      const data = await response.json().catch(() => undefined) as { message?: string } | undefined;
+      return { ok: false, status: response.status, error: { message: data?.message ?? fallbackMessage } };
+    }
+    return { ok: true, status: response.status, data: await response.blob() };
+  } catch (error) {
+    return { ok: false, status: 0, error: { message: error instanceof Error ? error.message : fallbackMessage } };
+  }
+}
+
+export function getEmployerProfileLogo(token: string) {
+  return getProtectedBlob('/employer/profile/logo', token, 'Company logo could not be loaded.');
+}
+
+export function uploadEmployerProfileLogo(file: File, token: string) {
+  const body = new FormData();
+  body.append('file', file);
+  return request<EmployerLogoResponse>({ method: 'POST', endpoint: '/employer/profile/logo', body, token });
+}
+
+export function deleteEmployerProfileLogo(token: string) {
+  return request<EmployerLogoDeleteResponse>({ method: 'DELETE', endpoint: '/employer/profile/logo', token });
+}
+
 export function updateEmployerProfile(payload: EmployerProfilePayload, token: string) {
   return request<EmployerProfileResponse>({ method: 'PATCH', endpoint: '/employer/profile', body: payload, token });
 }
@@ -737,6 +784,50 @@ export function getAdminJobs(token: string, status?: 'PENDING' | 'APPROVED' | 'R
 
 export function getAdminJob(jobId: string, token: string) {
   return request<AdminJobResponse>({ method: 'GET', endpoint: `/admin/jobs/${encodeURIComponent(jobId)}`, token });
+}
+
+export type AdminReleaseCandidate = {
+  contractId: string;
+  job: { id: string; title: string };
+  employer: { id: string; firstName: string; lastName: string; email: string };
+  seeker: { id: string; firstName: string; lastName: string; email: string };
+  freelance: {
+    agreedAmount: string;
+    currency: string;
+    platformFeePercentage: string;
+    platformFeeAmount: string;
+    seekerNetAmount: string;
+    completionSubmittedAt: string | null;
+    employerCompletionConfirmedAt: string | null;
+    workStatus: string;
+    escrow: {
+      id: string;
+      grossAmount: string;
+      platformFeeAmount: string;
+      seekerNetAmount: string;
+      status: string;
+      releaseEligibleAt: string | null;
+      releasedAmount: string;
+      releasedAt: string | null;
+    };
+  };
+};
+
+export type AdminReleaseCandidatesResponse = {
+  success: true;
+  data: { contracts: AdminReleaseCandidate[] };
+};
+
+export function getAdminReleaseCandidates(token: string) {
+  return request<AdminReleaseCandidatesResponse>({ method: 'GET', endpoint: '/admin/contracts/release-eligible', token });
+}
+
+export function releaseAdminContract(contractId: string, token: string) {
+  return request<{ success: true; message: string; data: { alreadyReleased: boolean; escrow: { escrowId: string; contractId: string; status: string; releasedAmount: string; currency: string; releasedAt: string } } }>({
+    method: 'POST',
+    endpoint: `/admin/contracts/${encodeURIComponent(contractId)}/release`,
+    token,
+  });
 }
 
 export function approveAdminJob(jobId: string, token: string) {
@@ -779,6 +870,93 @@ export function updateEmployerApplicationStatus(jobId: string, applicationId: st
     body: { status },
     token,
   });
+}
+
+export type ContractPayment = {
+  id: string;
+  amount: string;
+  currency: string;
+  status: string;
+  paymentType: string;
+  verifiedAt: string | null;
+  createdAt: string;
+};
+
+export type ContractData = {
+  id: string;
+  applicationId: string;
+  jobId: string;
+  employerId: string;
+  seekerId: string;
+  type: string;
+  status: string;
+  job: { id: string; title: string };
+  employer: { id: string; firstName: string; lastName: string };
+  seeker: { id: string; firstName: string; lastName: string };
+  createdAt: string;
+  updatedAt: string;
+  freelance: {
+    id: string;
+    agreedAmount: string;
+    currency: string;
+    platformFeePercentage: string | null;
+    platformFeeAmount: string | null;
+    seekerNetAmount: string | null;
+    employerConfirmedAt: string | null;
+    seekerConfirmedAt: string | null;
+    employerCompletionConfirmedAt: string | null;
+    completionSubmittedAt: string | null;
+    completionNote: string | null;
+    workStatus: string;
+    escrow: {
+      id: string;
+      grossAmount: string;
+      platformFeeAmount: string;
+      seekerNetAmount: string;
+      currency: string;
+      fundedAmount: string;
+      releasedAmount: string;
+      refundedAmount: string;
+      status: string;
+      fundedAt: string | null;
+      releaseEligibleAt: string | null;
+      payments: ContractPayment[];
+    } | null;
+  } | null;
+};
+
+export type ContractResponse = { success: true; data: { contract: ContractData } };
+export type ContractPaymentResponse = {
+  success: true;
+  data: {
+    alreadyFunded: boolean;
+    payment: ContractPayment & { providerReference: string; transactionId: string | null; checkoutUrl: string | null };
+    contract?: ContractData;
+  };
+};
+
+export function getEmployerContract(contractId: string, token: string) {
+  return request<ContractResponse>({ method: 'GET', endpoint: `/employer/contracts/${encodeURIComponent(contractId)}`, token });
+}
+
+export function initializeEmployerContractPayment(contractId: string, token: string, idempotencyKey: string) {
+  return request<ContractPaymentResponse>({ method: 'POST', endpoint: `/employer/contracts/${encodeURIComponent(contractId)}/payment`, body: { idempotencyKey }, token });
+}
+
+export function verifyEmployerContractPayment(contractId: string, payload: { providerReference?: string; transactionId: string }, token: string) {
+  return request<{ success: true; data: { payment: ContractPayment; contract: ContractData } }>({ method: 'POST', endpoint: `/employer/contracts/${encodeURIComponent(contractId)}/payment/verify`, body: payload, token });
+}
+
+export function confirmEmployerCompletion(contractId: string, token: string) {
+  return request<ContractResponse>({ method: 'POST', endpoint: `/employer/contracts/${encodeURIComponent(contractId)}/confirm-completion`, token });
+}
+
+export function getSeekerContract(contractId: string, token: string) {
+  return request<ContractResponse>({ method: 'GET', endpoint: `/seeker/contracts/${encodeURIComponent(contractId)}`, token });
+}
+
+export function submitSeekerCompletion(contractId: string, completionNote: string, token: string) {
+  return request<ContractResponse>({ method: 'POST', endpoint: `/seeker/contracts/${encodeURIComponent(contractId)}/submit-completion`, body: { completionNote }, token });
 }
 
 export function createEmployerApplicationConversation(jobId: string, applicationId: string, token: string) {
@@ -928,6 +1106,10 @@ export function uploadSeekerProfilePicture(file: File, token: string) {
   const body = new FormData();
   body.append('file', file);
   return request<ProfileFileResponse>({ method: 'POST', endpoint: '/seeker/profile/picture', body, token });
+}
+
+export function getSeekerProfilePicture(token: string) {
+  return getProtectedBlob('/seeker/profile/picture', token, 'Profile picture could not be loaded.');
 }
 
 export function deleteSeekerProfilePicture(token: string) {

@@ -33,17 +33,16 @@ import AdminSeekersPage from './pages/admin/AdminSeekersPage';
 import AdminAnalyticsPage from './pages/admin/AdminAnalyticsPage';
 import { JobStoreProvider } from './context/JobStoreContext';
 import { SiteContentProvider } from './context/SiteContentContext';
-import { PaymentProvider } from './context/PaymentContext';
 import SeekerPaymentsPage from './pages/seeker/PaymentsPage';
 import AdminPaymentsPage from './pages/admin/AdminPaymentsPage';
 import AdminSubscriptionsPage from './pages/admin/AdminSubscriptionsPage';
+import ContractPage from './pages/contracts/ContractPage';
 import { SubscriptionProvider } from './context/SubscriptionContext';
 
 function App() {
   return (
     <JobStoreProvider>
       <SiteContentProvider>
-        <PaymentProvider>
           <SubscriptionProvider>
         <Routes>
           <Route path="/" element={<PublicLayout />}>
@@ -70,6 +69,7 @@ function App() {
             <Route path="jobs" element={<JobsPage />} />
             <Route path="jobs/:jobId" element={<JobDetailsPage />} />
             <Route path="applications" element={<ApplicationsPage />} />
+            <Route path="contracts/:contractId" element={<ContractPage role="SEEKER" />} />
             <Route path="messages" element={<MessagesPage role="seeker" />} />
             <Route path="profile" element={<ProfilePage />} />
             <Route path="onboarding" element={<OnboardingPage />} />
@@ -80,6 +80,7 @@ function App() {
             <Route path="dashboard" element={<EmployerDashboardPage />} />
             <Route path="jobs" element={<EmployerJobsPage />} />
             <Route path="applicants" element={<EmployerApplicantsPage />} />
+            <Route path="contracts/:contractId" element={<ContractPage role="EMPLOYER" />} />
             <Route path="messages" element={<MessagesPage role="employer" />} />
             <Route path="profile" element={<EmployerProfilePage />} />
           </Route>
@@ -100,7 +101,6 @@ function App() {
           </Route>
         </Routes>
           </SubscriptionProvider>
-        </PaymentProvider>
       </SiteContentProvider>
     </JobStoreProvider>
   );

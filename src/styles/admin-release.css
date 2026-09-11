@@ -1,0 +1,31 @@
+.admin-release-card { gap: 1rem; }
+.admin-release-success { border-color: #86efac; background: #f0fdf4; }
+.admin-release-card__heading,
+.admin-release-card__people,
+.admin-release-card__money,
+.admin-release-card__status { display: grid; gap: .75rem; }
+.admin-release-card__heading { grid-template-columns: 1fr auto; align-items: start; }
+.admin-release-card__heading p { margin: .25rem 0 0; color: var(--text-secondary); font-size: .82rem; }
+.admin-release-card__people { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.admin-release-card__people > div,
+.admin-release-card__money > div { display: grid; gap: .2rem; }
+.admin-release-card__people span,
+.admin-release-card__money span,
+.admin-release-card__status { color: var(--text-secondary); font-size: .82rem; }
+.admin-release-card__people small { color: var(--text-secondary); overflow-wrap: anywhere; }
+.admin-release-card__money { grid-template-columns: repeat(4, minmax(0, 1fr)); padding: 1rem 0; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+.admin-release-card__status { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.admin-release-confirmation { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 1rem; border: 1px solid #fbbf24; border-radius: .75rem; background: #fffbeb; }
+.admin-release-confirmation p { margin: 0; }
+.admin-release-confirmation div { display: flex; gap: .5rem; flex-wrap: wrap; }
+.admin-release-confirmation button,
+.admin-release-page .payment-heading button { border: 1px solid var(--border); border-radius: .5rem; background: var(--surface); padding: .55rem .8rem; cursor: pointer; }
+.admin-release-confirmation button:first-child { background: var(--accent); border-color: var(--accent); color: white; }
+.admin-release-page .button { display: inline-flex; align-items: center; justify-content: center; gap: .5rem; }
+.payment-copy--success { color: #166534; }
+
+@media (max-width: 760px) {
+  .admin-release-card__money,
+  .admin-release-card__status { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .admin-release-confirmation { align-items: stretch; flex-direction: column; }
+}
