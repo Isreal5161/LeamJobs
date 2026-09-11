@@ -27,7 +27,11 @@ const formatDate = (value: string) => new Intl.DateTimeFormat(undefined, { dateS
 const formatJobType = (value: string) => value.replaceAll('_', ' ').toLowerCase().replace(/\b\w/g, (character) => character.toUpperCase());
 const getInitials = (value: string) => value.split(' ').filter(Boolean).map((part) => part[0]).join('').slice(0, 2).toUpperCase();
 
-const mapApplicationStatus = (status: string) => status === 'INTERVIEW' ? 'Interview' : status.charAt(0) + status.slice(1).toLowerCase();
+const mapApplicationStatus = (status: string) => status === 'INTERVIEW'
+  ? 'Interview'
+  : status === 'PAYMENT_PENDING'
+    ? 'Selected - Awaiting Employer Payment'
+    : status.charAt(0) + status.slice(1).toLowerCase();
 
 function ApplicationsPage() {
   const [searchParams] = useSearchParams();

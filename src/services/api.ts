@@ -90,6 +90,9 @@ export type SeekerDashboardJob = {
     salaryPeriod: string;
     currency: string;
     duration: string | null;
+    startMode: 'IMMEDIATE' | 'SCHEDULED';
+    scheduledStartDate: string | null;
+    expectedCompletionDate: string | null;
   } | {
     type: 'FREELANCE';
     engagementType: 'FREELANCE';
@@ -238,6 +241,9 @@ export type EmployerJob = {
     salaryPeriod: string;
     currency: string;
     duration: string | null;
+    startMode: 'IMMEDIATE' | 'SCHEDULED';
+    scheduledStartDate: string | null;
+    expectedCompletionDate: string | null;
   } | {
     type: 'FREELANCE';
     projectAmount: string;
@@ -297,6 +303,9 @@ export type AdminJob = {
     amount: string;
     currency: string;
     duration: string | null;
+    startMode: 'IMMEDIATE' | 'SCHEDULED';
+    scheduledStartDate: string | null;
+    expectedCompletionDate: string | null;
   } | {
     type: 'FREELANCE';
     projectAmount: string;
@@ -315,7 +324,7 @@ export type AdminJobResponse = {
   data: { job: AdminJob };
 };
 
-export type EmployerApplicationStatus = 'APPLIED' | 'REVIEWING' | 'SHORTLISTED' | 'INTERVIEW' | 'REJECTED' | 'ACCEPTED' | 'WITHDRAWN';
+export type EmployerApplicationStatus = 'APPLIED' | 'REVIEWING' | 'SHORTLISTED' | 'INTERVIEW' | 'REJECTED' | 'ACCEPTED' | 'PAYMENT_PENDING' | 'WITHDRAWN';
 
 export type EmployerApplicant = {
   id?: string;
@@ -449,6 +458,9 @@ export type EmployerJobPayload = {
     amount: number;
     currency: string;
     duration: string;
+    startMode: 'IMMEDIATE' | 'SCHEDULED';
+    scheduledStartDate?: string | null;
+    expectedCompletionDate?: string | null;
   } | null;
   freelanceCompensation?: {
     projectAmount: number;
@@ -794,6 +806,8 @@ export type AdminReleaseCandidate = {
   freelance: {
     agreedAmount: string;
     currency: string;
+    duration: string | null;
+    startMode: 'IMMEDIATE' | 'SCHEDULED' | null;
     platformFeePercentage: string;
     platformFeeAmount: string;
     seekerNetAmount: string;
@@ -872,6 +886,14 @@ export function updateEmployerApplicationStatus(jobId: string, applicationId: st
   });
 }
 
+export function selectContractApplication(jobId: string, applicationId: string, token: string) {
+  return request<{ success: true; data: { selection: { contractId: string; applicationId: string; status: 'PAYMENT_PENDING' } } }>({
+    method: 'POST',
+    endpoint: `/employer/jobs/${encodeURIComponent(jobId)}/applications/${encodeURIComponent(applicationId)}/select-contract`,
+    token,
+  });
+}
+
 export type ContractPayment = {
   id: string;
   amount: string;
@@ -890,6 +912,8 @@ export type ContractData = {
   seekerId: string;
   type: string;
   status: string;
+  startDate: string | null;
+  expectedEndDate: string | null;
   job: { id: string; title: string };
   employer: { id: string; firstName: string; lastName: string };
   seeker: { id: string; firstName: string; lastName: string };
@@ -899,6 +923,8 @@ export type ContractData = {
     id: string;
     agreedAmount: string;
     currency: string;
+    duration: string | null;
+    startMode: 'IMMEDIATE' | 'SCHEDULED' | null;
     platformFeePercentage: string | null;
     platformFeeAmount: string | null;
     seekerNetAmount: string | null;
@@ -1213,6 +1239,7 @@ export type SeekerPaymentSummary = {
   currency: string | null;
   availableBalance: string;
   pendingWithdrawalBalance: string;
+  pendingEarnings: string;
   totalEarnings: string;
   totalWithdrawn: string;
 };

@@ -11,7 +11,7 @@ const formatJobType = (value: string) => value.replaceAll('_', ' ').toLowerCase(
 const formatCompensation = (job: SeekerDashboardJob) => {
   if (!job.compensation) return 'Compensation not specified';
   if (job.compensation.type === 'FREELANCE') return `${job.compensation.currency} ${job.compensation.projectAmount} project`;
-  if (job.compensation.type === 'CONTRACT') return `${job.compensation.currency} ${job.compensation.amount} contract${job.compensation.duration ? ` / ${job.compensation.duration}` : ''}`;
+  if (job.compensation.type === 'CONTRACT') return `${job.compensation.currency} ${job.compensation.amount} Contract Job${job.compensation.duration ? ` / ${job.compensation.duration}` : ''}`;
   return `${job.compensation.currency} ${job.compensation.salaryMin ?? 'Not specified'} - ${job.compensation.salaryMax ?? 'Not specified'} / ${job.compensation.salaryPeriod.toLowerCase()}`;
 };
 
@@ -155,10 +155,11 @@ function JobDetailsPage() {
               <span>{job.location}</span>
             </p>
             <div className="job-detail-tags">
-              <span className="job-tag job-tag--yellow">{formatJobType(job.engagementType ?? job.jobType)}</span>
+              <span className="job-tag job-tag--yellow">{job.engagementType === 'CONTRACT' ? 'Contract Job' : formatJobType(job.engagementType ?? job.jobType)}</span>
               {job.company?.industry ? <span className="job-tag job-tag--blue">{job.company.industry}</span> : null}
               {job.workArrangement ? <span className="job-tag job-tag--green">{formatJobType(job.workArrangement)}</span> : null}
             </div>
+            {job.compensation?.type === 'CONTRACT' ? <div className="job-detail-contract-dates"><span>{job.compensation.startMode === 'SCHEDULED' && job.compensation.scheduledStartDate ? `Starts ${new Date(job.compensation.scheduledStartDate).toLocaleDateString()}` : 'Starts immediately'}</span>{job.compensation.expectedCompletionDate ? <span>Expected completion {new Date(job.compensation.expectedCompletionDate).toLocaleDateString()}</span> : null}</div> : null}
           </div>
         </section>
 
@@ -232,7 +233,7 @@ function JobDetailsPage() {
               </span>
               <span>
                 <FaBuilding />
-                {formatJobType(job.jobType)}
+                {formatJobType(job.engagementType ?? job.jobType)}
               </span>
             </div>
             <Link className="button button--primary job-detail-apply-link" to={alreadyApplied ? '/seeker/applications' : detailPath}>{alreadyApplied ? 'View application' : 'Apply Now'}</Link>
@@ -255,7 +256,7 @@ function JobDetailsPage() {
             </span>
             <span>
               <FaBuilding />
-                {formatJobType(job.jobType)}
+                {formatJobType(job.engagementType ?? job.jobType)}
             </span>
           </div>
         </div>

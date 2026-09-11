@@ -76,6 +76,9 @@ type JobForm = {
   salaryMax: string;
   contractAmount: string;
   contractDuration: string;
+  contractStartMode: 'IMMEDIATE' | 'SCHEDULED';
+  scheduledStartDate: string;
+  expectedCompletionDate: string;
   freelanceAmount: string;
   currency: string;
   requirements: string[];
@@ -98,6 +101,9 @@ const emptyJobForm: JobForm = {
   salaryMax: '',
   contractAmount: '',
   contractDuration: '',
+  contractStartMode: 'IMMEDIATE',
+  scheduledStartDate: '',
+  expectedCompletionDate: '',
   freelanceAmount: '',
   currency: 'NGN',
   requirements: [''],
@@ -124,6 +130,9 @@ const formFromJob = (job: EmployerJob): JobForm => {
     salaryMax: job.compensation?.type === 'MONTHLY' ? job.compensation.salaryMax ?? '' : '',
     contractAmount: job.compensation?.type === 'CONTRACT' ? job.compensation.amount : '',
     contractDuration: job.compensation?.type === 'CONTRACT' ? job.compensation.duration ?? '' : '',
+    contractStartMode: job.compensation?.type === 'CONTRACT' ? job.compensation.startMode ?? 'IMMEDIATE' : 'IMMEDIATE',
+    scheduledStartDate: job.compensation?.type === 'CONTRACT' && job.compensation.scheduledStartDate ? job.compensation.scheduledStartDate.slice(0, 10) : '',
+    expectedCompletionDate: job.compensation?.type === 'CONTRACT' && job.compensation.expectedCompletionDate ? job.compensation.expectedCompletionDate.slice(0, 10) : '',
     freelanceAmount: job.compensation?.type === 'FREELANCE' ? job.compensation.projectAmount : '',
     currency: job.compensation?.currency ?? 'NGN',
     requirements: Array.isArray(job.requirements)
@@ -310,6 +319,9 @@ function EmployerJobsPage() {
           amount: Number(form.contractAmount),
           currency: form.currency.trim().toUpperCase() || 'NGN',
           duration: form.contractDuration.trim(),
+          startMode: form.contractStartMode,
+          scheduledStartDate: form.contractStartMode === 'SCHEDULED' ? form.scheduledStartDate || null : null,
+          expectedCompletionDate: form.expectedCompletionDate || null,
         },
         freelanceCompensation: null,
       };
@@ -345,8 +357,8 @@ function EmployerJobsPage() {
       nextErrors.departmentCustom = 'Please enter the department name.';
     }
 
-    if (!form.currency.trim()) {
-      nextErrors.currency = 'Currency is required.';
+    if (!/^[A-Za-z]{3}$/.test(form.currency.trim())) {
+      nextErrors.currency = 'Enter a valid 3-letter currency code, such as NGN.';
     }
 
     if (form.engagementType === 'MONTHLY') {
@@ -365,12 +377,22 @@ function EmployerJobsPage() {
     }
 
     if (form.engagementType === 'CONTRACT') {
-      if (!form.contractAmount.trim()) {
+      const contractAmount = Number(form.contractAmount);
+      if (!form.contractAmount.trim() || !Number.isFinite(contractAmount) || contractAmount <= 0) {
         nextErrors.contractAmount = 'Contract amount is required.';
       }
 
       if (!form.contractDuration.trim()) {
         nextErrors.contractDuration = 'Contract duration is required.';
+      }
+      if (form.contractStartMode === 'SCHEDULED' && !form.scheduledStartDate) {
+        nextErrors.scheduledStartDate = 'Scheduled start date is required.';
+      }
+      if (form.contractStartMode === 'IMMEDIATE' && form.scheduledStartDate) {
+        nextErrors.scheduledStartDate = 'Clear the scheduled date when starting immediately.';
+      }
+      if (form.scheduledStartDate && form.expectedCompletionDate && form.expectedCompletionDate <= form.scheduledStartDate) {
+        nextErrors.expectedCompletionDate = 'Expected completion must be after the scheduled start date.';
       }
     }
 
@@ -839,6 +861,23 @@ function EmployerJobsPage() {
                             {validationErrors.contractDuration}
                           </span>
                         ) : null}
+                      </label>
+                      <label className="employer-form__field">
+                        <span>Start option</span>
+                        <select value={form.contractStartMode} onChange={(event) => { const mode = event.target.value as JobForm['contractStartMode']; setField('contractStartMode', mode); if (mode === 'IMMEDIATE') setField('scheduledStartDate', ''); }}>
+                          <option value="IMMEDIATE">Start immediately</option>
+                          <option value="SCHEDULED">Scheduled start date</option>
+                        </select>
+                      </label>
+                      {form.contractStartMode === 'SCHEDULED' ? <label className="employer-form__field">
+                        <span>Scheduled start date</span>
+                        <input id="scheduledStartDate" type="date" value={form.scheduledStartDate} onChange={(event) => setField('scheduledStartDate', event.target.value)} aria-invalid={Boolean(validationErrors.scheduledStartDate)} />
+                        {validationErrors.scheduledStartDate ? <span className="employer-form__error" role="alert">{validationErrors.scheduledStartDate}</span> : null}
+                      </label> : null}
+                      <label className="employer-form__field">
+                        <span>Expected completion date (optional)</span>
+                        <input id="expectedCompletionDate" type="date" value={form.expectedCompletionDate} onChange={(event) => setField('expectedCompletionDate', event.target.value)} aria-invalid={Boolean(validationErrors.expectedCompletionDate)} />
+                        {validationErrors.expectedCompletionDate ? <span className="employer-form__error" role="alert">{validationErrors.expectedCompletionDate}</span> : null}
                       </label>
                     </div>
                   ) : null}

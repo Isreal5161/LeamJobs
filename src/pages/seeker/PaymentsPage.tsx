@@ -297,6 +297,7 @@ function PaymentsPage() {
     <section className="payment-hero"><div><span>Seeker wallet</span><h1>Your earnings</h1><p>Track completed work, available balance, and withdrawal requests.</p></div><FaMoneyBillWave aria-hidden="true" /></section>
     <section className="payment-stat-grid" aria-label="Wallet summary">
       <article className="payment-stat-card payment-stat-card--primary"><span>Available balance</span><strong>{formatMoney(summary?.availableBalance, displayCurrency)}</strong><small>Ready for withdrawal</small></article>
+      <article><span>Pending earnings</span><strong>{formatMoney(summary?.pendingEarnings, displayCurrency)}</strong><small>Secured by LeamJobs until completion and release</small></article>
       <article><span>Pending withdrawal</span><strong>{formatMoney(summary?.pendingWithdrawalBalance, displayCurrency)}</strong><small>Reserved for processing</small></article>
       <article><span>Total earnings</span><strong>{formatMoney(summary?.totalEarnings, displayCurrency)}</strong><small>Credited wallet earnings</small></article>
       <article><span>Total withdrawn</span><strong>{formatMoney(summary?.totalWithdrawn, displayCurrency)}</strong><small>Successful withdrawals</small></article>

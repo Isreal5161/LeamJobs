@@ -22,13 +22,14 @@ import {
   type ExperienceItem,
   type LanguageItem,
   type ProjectItem,
+  selectContractApplication,
   updateEmployerApplicationStatus,
 } from '../../services/api';
 
-const statuses: Array<'ALL' | EmployerApplicationStatus> = ['ALL', 'APPLIED', 'REVIEWING', 'SHORTLISTED', 'INTERVIEW', 'REJECTED', 'ACCEPTED', 'WITHDRAWN'];
+const statuses: Array<'ALL' | EmployerApplicationStatus> = ['ALL', 'APPLIED', 'REVIEWING', 'SHORTLISTED', 'INTERVIEW', 'REJECTED', 'ACCEPTED', 'PAYMENT_PENDING', 'WITHDRAWN'];
 const statusLabels: Record<typeof statuses[number], string> = {
   ALL: 'All', APPLIED: 'Applied', REVIEWING: 'Reviewing', SHORTLISTED: 'Shortlisted', INTERVIEW: 'Interview',
-  REJECTED: 'Rejected', ACCEPTED: 'Accepted', WITHDRAWN: 'Withdrawn',
+  REJECTED: 'Rejected', ACCEPTED: 'Accepted', PAYMENT_PENDING: 'Selected — Awaiting Payment', WITHDRAWN: 'Withdrawn',
 };
 const formatDate = (value: string) => new Intl.DateTimeFormat(undefined, { dateStyle: 'medium' }).format(new Date(value));
 const statusClass = (status: EmployerApplicationStatus) => `employer-application-status employer-application-status--${status.toLowerCase()}`;
@@ -179,6 +180,13 @@ function EmployerApplicantsPage() {
   }, [detailRetryKey, selectedListItem, token]);
 
   const selectedJob = jobs.find((job) => job.id === selectedJobId);
+  const selectedJobForApplication = selectedListItem ? jobs.find((job) => job.id === selectedListItem.jobId) : undefined;
+  const isContractApplication = selectedJobForApplication?.engagementType === 'CONTRACT';
+  const selectedContractApplication = selectedListItem
+    ? applications.find((application) => application.jobId === selectedListItem.jobId && Boolean(application.contractId)) ?? null
+    : null;
+  const anotherCandidateSelected = Boolean(selectedContractApplication && selectedContractApplication.id !== selectedListItem?.id);
+  const canSelectContract = Boolean(isContractApplication && selectedListItem && !selectedListItem.contractId && !anotherCandidateSelected && !['ACCEPTED', 'PAYMENT_PENDING'].includes(selectedListItem.status));
   const selectJob = (jobId: string) => {
     setSelectedJobId(jobId);
     setSelectedApplicationId('');
@@ -211,6 +219,24 @@ function EmployerApplicantsPage() {
       setPendingRejection(true);
       return;
     }
+    if (status === 'ACCEPTED' && selectedJobForApplication?.engagementType === 'CONTRACT') {
+      if (selectedListItem.contractId) {
+        navigate(`/employer/contracts/${selectedListItem.contractId}`);
+        return;
+      }
+      if (anotherCandidateSelected) {
+        setActionError('Another candidate has already been selected for this job.');
+        return;
+      }
+      setIsMutating(true);
+      setActionError('');
+      const selection = await selectContractApplication(selectedListItem.jobId, selectedListItem.id, token);
+      if (!selection.ok) setActionError(selection.status === 409 ? 'Another candidate has already been selected for this job.' : 'The candidate could not be selected for payment. Please try again.');
+      else navigate(`/employer/contracts/${selection.data.data.selection.contractId}`);
+      setIsMutating(false);
+      return;
+    }
+
     setIsMutating(true);
     setActionError('');
     setActionMessage('');
@@ -562,9 +588,11 @@ function EmployerApplicantsPage() {
                   <label className="employer-status-field">
                     <span>Application status</span>
                     <select className="employer-status-select" value={selectedApplication.status} onChange={(event) => void updateStatus(event.target.value as EmployerApplicationStatus)} disabled={isMutating} aria-label="Application status">
-                      {statuses.filter((status) => status !== 'ALL').map((status) => <option value={status} key={status}>{statusLabels[status]}</option>)}
+                      {statuses.filter((status) => status !== 'ALL' && !(isContractApplication && status === 'ACCEPTED' && !selectedApplication.contractId)).map((status) => <option value={status} key={status}>{statusLabels[status]}</option>)}
                     </select>
                   </label>
+                  {anotherCandidateSelected ? <p className="employer-action-error" role="alert">Another candidate has already been selected for this job. Payment must be completed for that candidate before the engagement can continue.</p> : null}
+                  {canSelectContract ? <button className="employer-button employer-button--primary" type="button" onClick={() => void updateStatus('ACCEPTED')} disabled={isMutating}>Select &amp; fund contract</button> : null}
                   {selectedApplication.contractId ? <button className="employer-button employer-button--primary" type="button" onClick={() => navigate(`/employer/contracts/${selectedApplication.contractId}`)}>Open contract workspace</button> : null}
                 </section>
                 {actionError ? <p className="employer-action-error" role="alert">{actionError}</p> : null}
