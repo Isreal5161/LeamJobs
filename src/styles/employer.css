@@ -916,6 +916,36 @@
   font-size: 1.02rem;
 }
 
+.employer-acceptance-contact {
+  display: grid;
+  gap: 0.85rem;
+  padding: 1rem;
+  border: 1px solid #bfdbfe;
+  border-radius: 12px;
+  background: #f8fbff;
+}
+
+.employer-acceptance-contact strong,
+.employer-acceptance-contact p {
+  margin: 0;
+}
+
+.employer-acceptance-contact strong {
+  color: #0f172a;
+}
+
+.employer-acceptance-contact p {
+  margin-top: 0.25rem;
+  color: #475569;
+  font-size: 0.86rem;
+}
+
+.employer-acceptance-contact__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+}
+
 .employer-applicants-heading {
   display: grid;
   gap: 0.75rem;

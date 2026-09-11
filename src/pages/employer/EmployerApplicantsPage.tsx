@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   FaArrowLeft, FaBell, FaBriefcase, FaCalendarCheck, FaCheck, FaEnvelope,
-  FaExternalLinkAlt, FaFileAlt, FaGlobe, FaMapMarkerAlt, FaSearch, FaSpinner, FaTimes,
+  FaExternalLinkAlt, FaFileAlt, FaGlobe, FaMapMarkerAlt, FaSearch, FaSpinner, FaTimes, FaWhatsapp,
 } from 'react-icons/fa';
 import ApplicantAvatar from '../../components/employer/ApplicantAvatar';
 import CVTemplateRenderer, { type CVData } from '../../components/cv-templates/CVTemplateRenderer';
@@ -183,6 +183,7 @@ function EmployerApplicantsPage() {
   const selectedJob = jobs.find((job) => job.id === selectedJobId);
   const selectedJobForApplication = selectedListItem ? jobs.find((job) => job.id === selectedListItem.jobId) : undefined;
   const isContractApplication = selectedJobForApplication?.engagementType === 'CONTRACT';
+  const isMonthlyApplication = selectedJobForApplication?.engagementType === 'MONTHLY';
   const selectedContractApplication = selectedListItem
     ? applications.find((application) => application.jobId === selectedListItem.jobId && Boolean(application.contractId)) ?? null
     : null;
@@ -359,6 +360,9 @@ function EmployerApplicantsPage() {
   };
 
   const applicant = selectedApplication?.applicant;
+  const whatsappHref = applicant?.phone
+    ? `https://wa.me/${applicant.phone.replace(/\D/g, '')}?text=${encodeURIComponent(`Hello ${applicant.fullName}, your application for ${selectedApplication?.job.title ?? 'this role'} has been accepted on LeamJobs.`)}`
+    : null;
 
   const renderBadgeList = (skills: string[] | null | undefined) => {
     return (
@@ -602,6 +606,25 @@ function EmployerApplicantsPage() {
                 </section>
                 {actionError ? <p className="employer-action-error" role="alert">{actionError}</p> : null}
                 {actionMessage ? <p className="employer-action-success" role="status">{actionMessage}</p> : null}
+                {isMonthlyApplication && selectedApplication.status === 'ACCEPTED' ? (
+                  <section className="employer-acceptance-contact" aria-label="Contact accepted candidate">
+                    <div>
+                      <strong>Candidate accepted</strong>
+                      <p>Start the conversation and share the next steps with {applicant.fullName}.</p>
+                    </div>
+                    <div className="employer-acceptance-contact__actions">
+                      <button className="employer-button employer-button--primary" type="button" onClick={() => void startConversation()} disabled={isMutating}>
+                        <FaEnvelope /> Message seeker
+                      </button>
+                      {applicant.email ? <a className="employer-button employer-button--ghost" href={`mailto:${applicant.email}?subject=${encodeURIComponent(`Application accepted: ${selectedApplication.job.title}`)}`}>
+                        <FaEnvelope /> Email
+                      </a> : null}
+                      {whatsappHref ? <a className="employer-button employer-button--ghost" href={whatsappHref} target="_blank" rel="noreferrer">
+                        <FaWhatsapp /> WhatsApp
+                      </a> : null}
+                    </div>
+                  </section>
+                ) : null}
                 <section className="employer-cv-card" aria-label={`${applicant.fullName} CV`}>
                   <span className="employer-cv-card__icon"><FaFileAlt /></span>
                   <div>

@@ -917,10 +917,14 @@
 
 @media (max-width: 767px) {
   .hero {
-    padding: 0.85rem 0 0.75rem;
+    padding: 0;
   }
 
-  .hero .container,
+  .hero .container {
+    width: 100%;
+    max-width: none;
+  }
+
   .jobs-section .container {
     width: min(100% - 1rem, 520px);
   }
