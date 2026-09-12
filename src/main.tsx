@@ -27,6 +27,7 @@ import './styles/payments.css';
 import './styles/subscriptions.css';
 import './styles/contracts.css';
 import './styles/admin-release.css';
+import './styles/dashboard-theme.css';
 
 ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
   <React.StrictMode>

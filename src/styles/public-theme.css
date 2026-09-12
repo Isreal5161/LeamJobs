@@ -57,6 +57,70 @@
   background-color: #123f68;
 }
 
+.public-layout--welcome .hero-actions__employer {
+  border-color: var(--secondary);
+  background: var(--secondary);
+  color: #ffffff;
+}
+
+.public-layout--welcome .hero-actions__employer:hover,
+.public-layout--welcome .hero-actions__employer:focus-visible {
+  border-color: var(--secondary-hover);
+  background: var(--secondary-hover);
+  color: #ffffff;
+}
+
+.public-layout--welcome .job-card {
+  border-color: #dbe3ee;
+  border-radius: 16px;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.045);
+}
+
+.public-layout--welcome .job-card:hover {
+  border-color: rgba(14, 74, 225, 0.35);
+  box-shadow: 0 14px 30px rgba(14, 74, 225, 0.1);
+  transform: translateY(-2px);
+}
+
+.public-layout--welcome .job-card__role,
+.public-layout--welcome .job-card__company-name {
+  color: var(--text-primary);
+}
+
+.public-layout--welcome .job-card__meta {
+  color: var(--muted-text);
+}
+
+.public-layout--welcome .job-tag--blue {
+  background: var(--primary-light);
+  color: var(--primary-hover);
+}
+
+.public-layout--welcome .job-tag--yellow {
+  background: var(--secondary-light);
+  color: var(--secondary-hover);
+}
+
+.public-layout--welcome .button--detail {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+.public-layout--welcome .button--detail:hover,
+.public-layout--welcome .button--detail:focus-visible {
+  background: var(--primary-light);
+  color: var(--primary-hover);
+}
+
+.public-layout--welcome .button--apply {
+  background: var(--primary);
+}
+
+.public-layout--welcome .button--apply:hover,
+.public-layout--welcome .button--apply:focus-visible {
+  background: var(--primary-hover);
+}
+
 .public-layout--welcome .hero-actions__employer:hover,
 .public-layout--welcome .hero-actions__secondary:hover {
   color: var(--primary);
@@ -72,6 +136,15 @@
 .public-layout--auth .auth-brand-card__eyebrow,
 .public-layout--auth .auth-form-heading span {
   color: var(--secondary);
+}
+
+.public-layout--about .about-icon,
+.public-layout--about .about-stat-card > span {
+  color: var(--primary);
+}
+
+.public-layout--about .about-bottom-card {
+  border-top: 3px solid var(--secondary);
 }
 
 .public-layout--about .about-hero__actions .button--outline,
@@ -94,6 +167,41 @@
   color: var(--secondary);
 }
 
+.public-layout--features .features-progress a,
+.public-layout--features .features-preview small,
+.public-layout--how .how-illustration__laptop,
+.public-layout--how .how-illustration__mail {
+  color: var(--primary);
+}
+
+.public-layout--features .features-preview--reviews strong {
+  color: var(--secondary);
+}
+
+.public-layout--how .how-hero-step__number,
+.public-layout--how .how-step-card__number,
+.public-layout--how .how-stat span {
+  color: var(--primary);
+}
+
+.public-layout--how .how-illustration__accent {
+  color: var(--secondary);
+}
+
+.public-layout--companies .companies-filter--active {
+  border-color: var(--primary);
+  background: var(--primary);
+  color: #ffffff;
+}
+
+.public-layout--companies .company-card__content a {
+  color: var(--primary);
+}
+
+.public-layout--companies .company-card__content a:hover {
+  color: var(--primary-hover);
+}
+
 .public-layout--features .features-cta,
 .public-layout--companies .companies-cta,
 .public-layout--how .how-cta {
@@ -106,6 +214,32 @@
 
 .public-layout--job-detail .job-detail-hero {
   background: var(--primary);
+}
+
+.public-layout--job-detail .job-detail-company,
+.public-layout--job-detail .job-detail-section h2,
+.public-layout--job-detail .job-detail-company-card h2,
+.public-layout--job-detail .job-detail-apply-card h2 {
+  color: var(--text-primary);
+}
+
+.public-layout--job-detail .job-detail-company-card a,
+.public-layout--job-detail .job-detail-signin-link {
+  color: var(--primary);
+}
+
+.public-layout--job-detail .job-detail-quick-facts svg {
+  color: var(--primary);
+}
+
+.public-layout--job-detail .job-detail-company-card a:hover,
+.public-layout--job-detail .job-detail-signin-link:hover {
+  color: var(--primary-hover);
+}
+
+.public-layout--job-detail .job-detail-featured {
+  background: var(--secondary-light);
+  color: var(--secondary-hover);
 }
 
 .public-layout--job-detail .job-tag--yellow {
