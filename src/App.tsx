@@ -36,6 +36,10 @@ import { SiteContentProvider } from './context/SiteContentContext';
 import SeekerPaymentsPage from './pages/seeker/PaymentsPage';
 import AdminPaymentsPage from './pages/admin/AdminPaymentsPage';
 import AdminSubscriptionsPage from './pages/admin/AdminSubscriptionsPage';
+import AdminUsersPage from './pages/admin/AdminUsersPage';
+import AdminCompaniesPage from './pages/admin/AdminCompaniesPage';
+import AdminFiltersPage from './pages/admin/AdminFiltersPage';
+import AdminRecommendationsPage from './pages/admin/AdminRecommendationsPage';
 import ContractPage from './pages/contracts/ContractPage';
 import { SubscriptionProvider } from './context/SubscriptionContext';
 
@@ -90,10 +94,10 @@ function App() {
             <Route path="moderation" element={<AdminModerationPage />} />
             <Route path="jobs" element={<AdminJobsPage />} />
             <Route path="content" element={<AdminContentPage />} />
-            <Route path="filters" element={<AdminDashboardPage />} />
-            <Route path="recommendations" element={<AdminDashboardPage />} />
-            <Route path="users" element={<AdminDashboardPage />} />
-            <Route path="companies" element={<AdminDashboardPage />} />
+            <Route path="filters" element={<AdminFiltersPage />} />
+            <Route path="recommendations" element={<AdminRecommendationsPage />} />
+            <Route path="users" element={<AdminUsersPage />} />
+            <Route path="companies" element={<AdminCompaniesPage />} />
             <Route path="seekers" element={<AdminSeekersPage />} />
             <Route path="analytics" element={<AdminAnalyticsPage />} />
             <Route path="payments" element={<AdminPaymentsPage />} />

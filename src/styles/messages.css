@@ -121,16 +121,16 @@
   transition: border-color 160ms ease, background-color 160ms ease, box-shadow 160ms ease;
 }
 
-.messages-thread:hover,
-.messages-thread:focus-visible {
+.messages-thread:hover:not(.messages-thread--active),
+.messages-thread:focus-visible:not(.messages-thread--active) {
   border-color: #9db8df;
   background: #fbfdff;
 }
 
 .messages-thread--active {
-  border-color: rgba(14, 74, 225, 0.36);
-  background: #f3f7ff;
-  box-shadow: inset 4px 0 0 var(--messages-accent);
+  border-color: rgba(10, 78, 120, 0.9);
+  background: linear-gradient(135deg, #0d4d7a 0%, #0a3f66 100%);
+  box-shadow: 0 12px 24px rgba(8, 54, 88, 0.18), inset 0 0 0 1px rgba(255, 255, 255, 0.06);
 }
 
 .messages-thread span { display: grid; min-width: 0; }
@@ -142,6 +142,19 @@
 .messages-thread em { display: -webkit-box; overflow: hidden; margin-top: 0.3rem; white-space: normal; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
 .messages-thread i { display: grid; justify-items: end; gap: 0.35rem; min-width: 0; color: var(--messages-muted); font-size: 0.72rem; font-style: normal; font-weight: 600; overflow-wrap: anywhere; }
 .messages-thread b { display: inline-flex; align-items: center; justify-content: center; min-width: 22px; height: 22px; border-radius: 999px; background: var(--messages-accent); color: #ffffff; font-size: 0.72rem; }
+
+.messages-thread--active strong,
+.messages-thread--active small,
+.messages-thread--active em,
+.messages-thread--active i,
+.messages-thread--active b {
+  color: #edf6ff;
+}
+
+.messages-thread--active b {
+  background: rgba(255, 255, 255, 0.2);
+  color: #ffffff;
+}
 
 .messages-thread-skeleton {
   display: grid;

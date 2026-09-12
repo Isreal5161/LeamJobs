@@ -14,6 +14,8 @@ import {
   type SitePageKey,
   type SiteStat,
 } from '../../context/SiteContentContext';
+import { useAuth } from '../../context/AuthContext';
+import { updateAdminSiteContent } from '../../services/api';
 
 type StatPageKey = 'welcome' | 'about' | 'how-it-works' | 'companies';
 
@@ -26,12 +28,18 @@ const pageLabels: Record<SitePageKey, { name: string; section: string }> = {
 };
 
 function AdminContentPage() {
+  const { token } = useAuth();
   const { content, updatePage } = useSiteContent();
   const [selectedPage, setSelectedPage] = useState<SitePageKey>('welcome');
   const [saveNotice, setSaveNotice] = useState('No content changes saved yet');
+  const [isSaving, setIsSaving] = useState(false);
 
-  const saveChanges = () => {
-    setSaveNotice(`Content saved at ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`);
+  const saveChanges = async () => {
+    if (!token || isSaving) return;
+    setIsSaving(true);
+    const result = await updateAdminSiteContent(token, selectedPage, content[selectedPage]);
+    setSaveNotice(result.ok ? `Saved ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` : result.error.message);
+    setIsSaving(false);
   };
 
   const updateStat = (page: StatPageKey, index: number, patch: Partial<SiteStat>) => {
@@ -116,8 +124,8 @@ function AdminContentPage() {
               <span><FaEdit /> Editor</span>
               <h2>{pageLabels[selectedPage].name}</h2>
             </div>
-            <button className="admin-button admin-button--primary" type="button" onClick={saveChanges}>
-              <FaSave /> Save changes
+            <button className="admin-button admin-button--primary" type="button" onClick={() => void saveChanges()} disabled={isSaving}>
+              <FaSave /> {isSaving ? 'Saving...' : 'Save changes'}
             </button>
           </div>
 
@@ -344,8 +352,8 @@ function AdminContentPage() {
 
             <div className="admin-content-save-row">
               <span>{saveNotice}</span>
-              <button className="admin-button admin-button--primary" type="button" onClick={saveChanges}>
-                <FaSave /> Save changes
+              <button className="admin-button admin-button--primary" type="button" onClick={() => void saveChanges()} disabled={isSaving}>
+                <FaSave /> {isSaving ? 'Saving...' : 'Save changes'}
               </button>
             </div>
           </form>

@@ -1,170 +1,42 @@
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import {
-  FaBriefcase,
-  FaChartLine,
-  FaDollarSign,
-  FaShieldHalved,
-  FaUsers,
-  FaArrowRight,
-  FaBuilding,
-  FaClock,
-} from 'react-icons/fa6';
-import { adminEmployers, adminJobs, adminSeekers } from './adminData';
+import { FaArrowRight, FaBriefcase, FaChartLine, FaClock, FaShieldHalved, FaUsers } from 'react-icons/fa6';
+import { useAuth } from '../../context/AuthContext';
+import { getAdminAnalytics, type AdminAnalytics } from '../../services/api';
 import '../../styles/admin-overview.css';
 
 function AdminOverviewPage() {
-  const totalJobs = adminJobs.length;
-  const pendingJobs = adminJobs.filter((job) => job.status === 'Pending').length;
-  const approvedJobs = adminJobs.filter((job) => job.status === 'Approved').length;
-  const seekerCount = adminSeekers.length;
-  const employerCount = adminEmployers.length;
-  const monthlyIncome = adminEmployers.reduce((total, employer) => total + employer.monthlyIncome, 0);
-  const avgJobsPerEmployer = (totalJobs / employerCount).toFixed(1);
+  const { token } = useAuth();
+  const [analytics, setAnalytics] = useState<AdminAnalytics | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState('');
 
+  useEffect(() => {
+    if (!token) return;
+    let active = true;
+    void getAdminAnalytics(token).then((result) => {
+      if (!active) return;
+      if (!result.ok) setError(result.error.message);
+      else setAnalytics(result.data.data);
+      setIsLoading(false);
+    });
+    return () => { active = false; };
+  }, [token]);
+
+  if (isLoading) return <div className="admin-overview-page"><section className="admin-panel admin-analytics-message">Loading platform overview...</section></div>;
+  if (error) return <div className="admin-overview-page"><section className="admin-panel admin-analytics-message admin-analytics-message--error">{error}</section></div>;
+  if (!analytics) return <div className="admin-overview-page"><section className="admin-panel admin-analytics-message">No overview data available.</section></div>;
+
+  const { summary } = analytics;
   const stats = [
-    {
-      id: 'jobs',
-      icon: <FaBriefcase />,
-      value: totalJobs,
-      label: 'Total jobs posted',
-      trend: '+12%',
-      color: 'blue',
-      link: '/admin/jobs',
-    },
-    {
-      id: 'pending',
-      icon: <FaClock />,
-      value: pendingJobs,
-      label: 'Pending company jobs',
-      trend: `${pendingJobs} needs review`,
-      color: 'orange',
-      link: '/admin/jobs',
-    },
-    {
-      id: 'seekers',
-      icon: <FaUsers />,
-      value: seekerCount,
-      label: 'Active seekers',
-      subtext: 'Job seeker accounts',
-      color: 'green',
-      link: '/admin/seekers',
-    },
-    {
-      id: 'employees',
-      icon: <FaBuilding />,
-      value: employerCount,
-      label: 'Active employees',
-      subtext: 'Company accounts',
-      color: 'teal',
-      link: '/admin/companies',
-    },
-    {
-      id: 'income',
-      icon: <FaDollarSign />,
-      value: `$${monthlyIncome.toLocaleString()}`,
-      label: 'Monthly revenue',
-      trend: '+8% from last month',
-      color: 'purple',
-      link: '/admin/analytics',
-    },
-  ];
+    ['jobs', summary.totalJobs, 'Total jobs', FaBriefcase, '/admin/jobs'],
+    ['pending', summary.pendingJobs, 'Pending jobs', FaClock, '/admin/jobs'],
+    ['seekers', summary.totalSeekers, 'Seekers', FaUsers, '/admin/seekers'],
+    ['employers', summary.totalEmployers, 'Employers', FaUsers, '/admin/companies'],
+    ['applications', summary.totalApplications, 'Applications', FaChartLine, '/admin/analytics'],
+  ] as const;
 
-  const priorities = [
-    { id: 1, icon: <FaBriefcase />, title: 'Approve pending jobs', description: `${pendingJobs} jobs waiting for review`, link: '/admin/jobs' },
-    { id: 2, icon: <FaUsers />, title: 'Review user applications', description: 'Check seeker account requests', link: '/admin/seekers' },
-    { id: 3, icon: <FaChartLine />, title: 'Check marketplace analytics', description: 'Monitor traffic and conversion', link: '/admin/analytics' },
-      { id: 4, icon: <FaShieldHalved />, title: 'Moderate content', description: 'Review flagged posts and messages', link: '/admin/moderation' },
-  ];
-
-  return (
-    <div className="admin-overview-page">
-      {/* Hero Section */}
-      <section className="admin-overview-hero">
-        <div className="admin-overview-hero__content">
-          <span className="admin-overview-kicker">Control room</span>
-          <h1 className="admin-overview-title">Website administration</h1>
-          <p className="admin-overview-description">Monitor the marketplace, manage content, and track platform analytics in real-time.</p>
-        </div>
-          <Link to="/admin/moderation" className="admin-overview-button admin-overview-button--primary">
-            <FaShieldHalved /> Review queue
-        </Link>
-      </section>
-
-      {/* Stats Grid */}
-      <section className="admin-overview-stats" aria-label="Key metrics">
-        <div className="admin-overview-stats__container">
-          {stats.map((stat) => (
-            <Link
-              key={stat.id}
-              to={stat.link}
-              className={`admin-overview-stat-card admin-overview-stat-card--${stat.color}`}
-            >
-              <div className="admin-overview-stat-icon">{stat.icon}</div>
-              <div className="admin-overview-stat-content">
-                <div className="admin-overview-stat-header">
-                  <span className="admin-overview-stat-value">{stat.value}</span>
-                  {stat.trend && <span className="admin-overview-stat-trend">{stat.trend}</span>}
-                </div>
-                <p className="admin-overview-stat-label">{stat.label}</p>
-                {stat.subtext && <p className="admin-overview-stat-subtext">{stat.subtext}</p>}
-              </div>
-              <FaArrowRight className="admin-overview-stat-arrow" />
-            </Link>
-          ))}
-        </div>
-      </section>
-
-      {/* Main Grid */}
-      <div className="admin-overview-main-grid">
-        {/* Quick Actions / Priorities Section */}
-        <section className="admin-overview-priorities">
-          <div className="admin-overview-section-header">
-            <h2>Today's priorities</h2>
-            <span className="admin-overview-section-badge">4 tasks</span>
-          </div>
-          <div className="admin-overview-priorities-grid">
-            {priorities.map((priority) => (
-              <Link
-                key={priority.id}
-                to={priority.link}
-                className="admin-overview-priority-item"
-              >
-                <div className="admin-overview-priority-icon">{priority.icon}</div>
-                <div className="admin-overview-priority-content">
-                  <h3>{priority.title}</h3>
-                  <p>{priority.description}</p>
-                </div>
-                <FaArrowRight className="admin-overview-priority-arrow" />
-              </Link>
-            ))}
-          </div>
-        </section>
-
-      </div>
-
-      {/* Summary Stats */}
-      <section className="admin-overview-summary">
-        <div className="admin-overview-summary-grid">
-          <div className="admin-overview-summary-card">
-            <span className="admin-overview-summary-label">Avg jobs per employer</span>
-            <strong className="admin-overview-summary-value">{avgJobsPerEmployer}</strong>
-          </div>
-          <div className="admin-overview-summary-card">
-            <span className="admin-overview-summary-label">Jobs approved today</span>
-            <strong className="admin-overview-summary-value">{approvedJobs}</strong>
-          </div>
-          <div className="admin-overview-summary-card">
-            <span className="admin-overview-summary-label">Total employer subscriptions</span>
-            <strong className="admin-overview-summary-value">{employerCount}</strong>
-          </div>
-          <div className="admin-overview-summary-card">
-            <span className="admin-overview-summary-label">Active seekers</span>
-            <strong className="admin-overview-summary-value">{seekerCount}</strong>
-          </div>
-        </div>
-      </section>
-    </div>
-  );
+  return <div className="admin-overview-page"><section className="admin-overview-hero"><div className="admin-overview-hero__content"><span className="admin-overview-kicker">Control room</span><h1 className="admin-overview-title">Website administration</h1><p className="admin-overview-description">All-time platform totals from the live database.</p></div><Link to="/admin/moderation" className="admin-overview-button admin-overview-button--primary"><FaShieldHalved /> Review queue</Link></section><section className="admin-overview-stats" aria-label="All-time platform metrics"><div className="admin-overview-stats__container">{stats.map(([id, value, label, Icon, link]) => <Link key={id} to={link} className={`admin-overview-stat-card admin-overview-stat-card--${id}`}><div className="admin-overview-stat-icon"><Icon /></div><div className="admin-overview-stat-content"><span className="admin-overview-stat-value">{value}</span><p className="admin-overview-stat-label">{label}</p><p className="admin-overview-stat-subtext">All-time</p></div><FaArrowRight className="admin-overview-stat-arrow" /></Link>)}</div></section><section className="admin-overview-priorities"><div className="admin-overview-section-header"><h2>Platform status</h2><span className="admin-overview-section-badge">Live data</span></div><div className="admin-overview-priorities-grid"><Link to="/admin/jobs" className="admin-overview-priority-item"><div className="admin-overview-priority-icon"><FaBriefcase /></div><div className="admin-overview-priority-content"><h3>Job review queue</h3><p>{summary.pendingJobs} pending jobs</p></div><FaArrowRight className="admin-overview-priority-arrow" /></Link><Link to="/admin/analytics" className="admin-overview-priority-item"><div className="admin-overview-priority-icon"><FaChartLine /></div><div className="admin-overview-priority-content"><h3>Approved jobs</h3><p>{summary.approvedJobs} all-time approved jobs</p></div><FaArrowRight className="admin-overview-priority-arrow" /></Link><Link to="/admin/users" className="admin-overview-priority-item"><div className="admin-overview-priority-icon"><FaUsers /></div><div className="admin-overview-priority-content"><h3>Verified users</h3><p>{summary.verifiedUsers} verified accounts</p></div><FaArrowRight className="admin-overview-priority-arrow" /></Link></div></section></div>;
 }
 
 export default AdminOverviewPage;

@@ -1,4 +1,5 @@
-import { createContext, useContext, useMemo, useState, type ReactNode } from 'react';
+import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { getSiteContent } from '../services/api';
 
 export type SitePageKey = 'welcome' | 'about' | 'features' | 'how-it-works' | 'companies';
 
@@ -268,6 +269,18 @@ const SiteContentContext = createContext<SiteContentContextValue | undefined>(un
 
 export function SiteContentProvider({ children }: { children: ReactNode }) {
   const [content, setContent] = useState<SiteContent>(initialSiteContent);
+
+  useEffect(() => {
+    let active = true;
+    void getSiteContent().then((result) => {
+      if (!active || !result.ok) return;
+      setContent((current) => ({
+        ...current,
+        ...Object.fromEntries(Object.entries(result.data.data.content).map(([key, value]) => [key, { ...current[key as SitePageKey], ...(value as Partial<SiteContent[SitePageKey]>) }])) as Partial<SiteContent>,
+      }));
+    });
+    return () => { active = false; };
+  }, []);
 
   const value = useMemo<SiteContentContextValue>(() => ({
     content,

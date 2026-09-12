@@ -324,6 +324,42 @@ export type AdminJobResponse = {
   data: { job: AdminJob };
 };
 
+export type AdminUser = {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string | null;
+  role: 'SEEKER' | 'EMPLOYER' | 'ADMIN';
+  isActive: boolean;
+  isVerified: boolean;
+  lastLogin: string | null;
+  createdAt: string;
+  profile: {
+    location: string | null;
+    professionalTitle: string | null;
+    companyName: string | null;
+  } | null;
+};
+
+export type AdminUsersQuery = {
+  page?: number;
+  limit?: number;
+  search?: string;
+  role?: AdminUser['role'];
+  status?: 'ACTIVE' | 'INACTIVE' | 'VERIFIED' | 'UNVERIFIED' | 'ALL';
+  sortBy?: 'createdAt' | 'lastLogin' | 'name';
+  sortOrder?: 'asc' | 'desc';
+};
+
+export type AdminUsersResponse = {
+  success: true;
+  data: {
+    users: AdminUser[];
+    pagination: { page: number; limit: number; total: number; pages: number };
+  };
+};
+
 export type EmployerApplicationStatus = 'APPLIED' | 'REVIEWING' | 'SHORTLISTED' | 'INTERVIEW' | 'REJECTED' | 'ACCEPTED' | 'PAYMENT_PENDING' | 'WITHDRAWN';
 
 export type EmployerApplicant = {
@@ -771,6 +807,10 @@ export function getEmployerProfileLogo(token: string) {
   return getProtectedBlob('/employer/profile/logo', token, 'Company logo could not be loaded.');
 }
 
+export function getAdminCompanyLogo(userId: string, token: string) {
+  return getProtectedBlob(`/admin/companies/${encodeURIComponent(userId)}/logo`, token, 'Company logo could not be loaded.');
+}
+
 export function uploadEmployerProfileLogo(file: File, token: string) {
   const body = new FormData();
   body.append('file', file);
@@ -792,6 +832,180 @@ export function getEmployerJobs(token: string) {
 export function getAdminJobs(token: string, status?: 'PENDING' | 'APPROVED' | 'REJECTED' | 'CLOSED') {
   const endpoint = status ? `/admin/jobs?status=${encodeURIComponent(status)}` : '/admin/jobs';
   return request<AdminJobsResponse>({ method: 'GET', endpoint, token });
+}
+
+export function getAdminUsers(token: string, query: AdminUsersQuery = {}) {
+  const params = new URLSearchParams();
+
+  if (query.page !== undefined) params.set('page', String(query.page));
+  if (query.limit !== undefined) params.set('limit', String(query.limit));
+  if (query.search?.trim()) params.set('search', query.search.trim());
+  if (query.role) params.set('role', query.role);
+  if (query.status) params.set('status', query.status);
+  if (query.sortBy) params.set('sortBy', query.sortBy);
+  if (query.sortOrder) params.set('sortOrder', query.sortOrder);
+
+  const queryString = params.toString();
+  return request<AdminUsersResponse>({
+    method: 'GET',
+    endpoint: `/admin/users${queryString ? `?${queryString}` : ''}`,
+    token,
+  });
+}
+
+export type AdminCompany = {
+  id: string;
+  userId: string;
+  companyName: string;
+  companyDescription: string | null;
+  website: string | null;
+  industry: string | null;
+  companySize: string | null;
+  location: string | null;
+  companyLogoUrl: string | null;
+  email: string;
+  firstName: string;
+  lastName: string;
+  isActive: boolean;
+  isVerified: boolean;
+  createdAt: string;
+  jobCount: number;
+};
+
+export type AdminCompaniesQuery = {
+  page?: number;
+  limit?: number;
+  search?: string;
+  industry?: string;
+  companySize?: string;
+  sortBy?: 'createdAt' | 'companyName' | 'jobCount';
+  sortOrder?: 'asc' | 'desc';
+};
+
+export type AdminCompaniesResponse = {
+  success: true;
+  data: {
+    companies: AdminCompany[];
+    pagination: { page: number; limit: number; total: number; pages: number };
+  };
+};
+
+export function getAdminCompanies(token: string, query: AdminCompaniesQuery = {}) {
+  const params = new URLSearchParams();
+
+  if (query.page !== undefined) params.set('page', String(query.page));
+  if (query.limit !== undefined) params.set('limit', String(query.limit));
+  if (query.search?.trim()) params.set('search', query.search.trim());
+  if (query.industry) params.set('industry', query.industry);
+  if (query.companySize) params.set('companySize', query.companySize);
+  if (query.sortBy) params.set('sortBy', query.sortBy);
+  if (query.sortOrder) params.set('sortOrder', query.sortOrder);
+
+  const queryString = params.toString();
+  return request<AdminCompaniesResponse>({
+    method: 'GET',
+    endpoint: `/admin/companies${queryString ? `?${queryString}` : ''}`,
+    token,
+  });
+}
+
+export type AdminSeeker = {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string | null;
+  isActive: boolean;
+  isVerified: boolean;
+  lastLogin: string | null;
+  createdAt: string;
+  profile: {
+    professionalTitle: string | null;
+    location: string | null;
+    skills: string[];
+    hasResume: boolean;
+    profilePictureUrl: string | null;
+  } | null;
+  applicationCount: number;
+};
+
+export type AdminSeekersQuery = {
+  page?: number;
+  limit?: number;
+  search?: string;
+  status?: 'ACTIVE' | 'INACTIVE';
+  verification?: 'VERIFIED' | 'UNVERIFIED';
+  location?: string;
+  sortBy?: 'createdAt' | 'lastLogin' | 'applicationCount' | 'name';
+  sortOrder?: 'asc' | 'desc';
+};
+
+export type AdminSeekersResponse = {
+  success: true;
+  data: {
+    seekers: AdminSeeker[];
+    pagination: { page: number; limit: number; total: number; pages: number };
+  };
+};
+
+export function getAdminSeekers(token: string, query: AdminSeekersQuery = {}) {
+  const params = new URLSearchParams();
+
+  if (query.page !== undefined) params.set('page', String(query.page));
+  if (query.limit !== undefined) params.set('limit', String(query.limit));
+  if (query.search?.trim()) params.set('search', query.search.trim());
+  if (query.status) params.set('status', query.status);
+  if (query.verification) params.set('verification', query.verification);
+  if (query.location?.trim()) params.set('location', query.location.trim());
+  if (query.sortBy) params.set('sortBy', query.sortBy);
+  if (query.sortOrder) params.set('sortOrder', query.sortOrder);
+
+  const queryString = params.toString();
+  return request<AdminSeekersResponse>({
+    method: 'GET',
+    endpoint: `/admin/seekers${queryString ? `?${queryString}` : ''}`,
+    token,
+  });
+}
+
+export type AdminAnalytics = {
+  dateRange: { from: string; to: string; granularity: 'day' | 'week' | 'month' };
+  summary: {
+    totalUsers: number; totalSeekers: number; totalEmployers: number; activeUsers: number; verifiedUsers: number;
+    totalJobs: number; pendingJobs: number; approvedJobs: number; rejectedJobs: number; closedJobs: number;
+    totalApplications: number; totalContracts: number;
+  };
+  trends: Record<'users' | 'jobs' | 'applications' | 'contracts', { date: string; count: number }[]>;
+  breakdowns: {
+    jobsByStatus: { status: string; count: number }[];
+    applicationsByStatus: { status: string; count: number }[];
+    contractsByStatus: { status: string; count: number }[];
+    contractsByType: { type: string; count: number }[];
+    paymentsByStatus: { status: string; count: number }[];
+    paymentsByType: { paymentType: string; count: number }[];
+    subscriptionsByStatus: { status: string; count: number }[];
+  };
+  financial: Record<'successfulPayments' | 'fundedEscrow' | 'releasedEscrow' | 'platformFees', { currency: string; amount: string }[]>;
+};
+
+export type AdminAnalyticsResponse = { success: true; data: AdminAnalytics };
+
+export function getAdminAnalytics(token: string, query: { from?: string; to?: string; granularity?: 'day' | 'week' | 'month' } = {}) {
+  const params = new URLSearchParams();
+  if (query.from) params.set('from', query.from);
+  if (query.to) params.set('to', query.to);
+  if (query.granularity) params.set('granularity', query.granularity);
+  return request<AdminAnalyticsResponse>({ method: 'GET', endpoint: `/admin/analytics?${params.toString()}`, token });
+}
+
+export type SiteContentResponse = { success: true; data: { content: Record<string, unknown> } };
+
+export function getSiteContent() {
+  return request<SiteContentResponse>({ method: 'GET', endpoint: '/content' });
+}
+
+export function updateAdminSiteContent(token: string, pageKey: string, content: unknown) {
+  return request<{ success: true; data: { page: { pageKey: string; content: unknown; updatedAt: string } } }>({ method: 'PUT', endpoint: '/admin/content', body: { pageKey, content }, token });
 }
 
 export function getAdminJob(jobId: string, token: string) {
