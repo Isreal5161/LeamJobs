@@ -261,6 +261,7 @@ export const initialSiteContent: SiteContent = {
 
 type SiteContentContextValue = {
   content: SiteContent;
+  isLoading: boolean;
   updatePage: <K extends SitePageKey>(pageKey: K, updater: (current: SiteContent[K]) => SiteContent[K]) => void;
   setPageField: <K extends SitePageKey>(pageKey: K, field: keyof SiteContent[K], value: SiteContent[K][keyof SiteContent[K]]) => void;
 };
@@ -269,21 +270,33 @@ const SiteContentContext = createContext<SiteContentContextValue | undefined>(un
 
 export function SiteContentProvider({ children }: { children: ReactNode }) {
   const [content, setContent] = useState<SiteContent>(initialSiteContent);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     let active = true;
+    setIsLoading(true);
+
     void getSiteContent().then((result) => {
-      if (!active || !result.ok) return;
-      setContent((current) => ({
-        ...current,
-        ...Object.fromEntries(Object.entries(result.data.data.content).map(([key, value]) => [key, { ...current[key as SitePageKey], ...(value as Partial<SiteContent[SitePageKey]>) }])) as Partial<SiteContent>,
-      }));
+      if (!active) return;
+
+      if (result.ok) {
+        setContent((current) => ({
+          ...current,
+          ...Object.fromEntries(Object.entries(result.data.data.content).map(([key, value]) => [key, { ...current[key as SitePageKey], ...(value as Partial<SiteContent[SitePageKey]>) }])) as Partial<SiteContent>,
+        }));
+      }
+
+      setIsLoading(false);
+    }).catch(() => {
+      if (active) setIsLoading(false);
     });
+
     return () => { active = false; };
   }, []);
 
   const value = useMemo<SiteContentContextValue>(() => ({
     content,
+    isLoading,
     updatePage: (pageKey, updater) => {
       setContent((current) => ({
         ...current,
@@ -299,7 +312,7 @@ export function SiteContentProvider({ children }: { children: ReactNode }) {
         },
       }));
     },
-  }), [content]);
+  }), [content, isLoading]);
 
   return <SiteContentContext.Provider value={value}>{children}</SiteContentContext.Provider>;
 }

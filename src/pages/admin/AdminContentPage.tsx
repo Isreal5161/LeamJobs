@@ -16,6 +16,7 @@ import {
 } from '../../context/SiteContentContext';
 import { useAuth } from '../../context/AuthContext';
 import { updateAdminSiteContent } from '../../services/api';
+import AdminPageSkeleton from './AdminPageSkeleton';
 
 type StatPageKey = 'welcome' | 'about' | 'how-it-works' | 'companies';
 
@@ -29,7 +30,7 @@ const pageLabels: Record<SitePageKey, { name: string; section: string }> = {
 
 function AdminContentPage() {
   const { token } = useAuth();
-  const { content, updatePage } = useSiteContent();
+  const { content, updatePage, isLoading } = useSiteContent();
   const [selectedPage, setSelectedPage] = useState<SitePageKey>('welcome');
   const [saveNotice, setSaveNotice] = useState('No content changes saved yet');
   const [isSaving, setIsSaving] = useState(false);
@@ -62,6 +63,10 @@ function AdminContentPage() {
       stats: current.stats.filter((_, statIndex) => statIndex !== index),
     }));
   };
+
+  if (isLoading) {
+    return <AdminPageSkeleton showToolbar={false} statCards={4} rows={4} />;
+  }
 
   return (
     <div className="admin-page">

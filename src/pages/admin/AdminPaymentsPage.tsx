@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { FaCheckCircle, FaCoins, FaLock, FaSpinner } from 'react-icons/fa';
 import { useAuth } from '../../context/AuthContext';
 import { getAdminReleaseCandidates, releaseAdminContract, type AdminReleaseCandidate } from '../../services/api';
+import AdminPageSkeleton from './AdminPageSkeleton';
 
 const formatDate = (value: string | null) => value ? new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(value)) : 'Not recorded';
 const fullName = (person: { firstName: string; lastName: string }) => `${person.firstName} ${person.lastName}`.trim();
@@ -54,7 +55,7 @@ function AdminPaymentsPage() {
       {released ? <section className="payment-panel admin-release-success" role="status"><div className="payment-heading"><div><span><FaCheckCircle /> Release complete</span><h2>{released.candidate.job.title}</h2></div><span className="payment-status payment-status--completed">{released.result.status}</span></div><p><strong>{money(released.result.releasedAmount, released.result.currency)}</strong> was credited to {fullName(released.candidate.seeker)}&apos;s wallet.</p><div className="admin-release-card__status"><span>Seeker: {fullName(released.candidate.seeker)}</span><span>Employer: {fullName(released.candidate.employer)}</span><span>Released: {formatDate(released.result.releasedAt)}</span></div></section> : null}
       <section className="payment-panel" aria-busy={isLoading}>
         <div className="payment-heading"><div><span><FaLock /> Authoritative escrow queue</span><h2>Release eligible contracts</h2></div><button type="button" onClick={() => void loadCandidates()} disabled={isLoading}>Refresh</button></div>
-        {isLoading ? <p className="payment-copy" role="status"><FaSpinner className="leamjobs-spin" /> Loading release candidates...</p> : null}
+        {isLoading ? <AdminPageSkeleton showToolbar={false} statCards={0} rows={4} /> : null}
         {!isLoading && !contracts.length ? <p className="payment-copy">No freelance contracts are currently release eligible.</p> : null}
         <div className="payment-list">
           {contracts.map((candidate) => {

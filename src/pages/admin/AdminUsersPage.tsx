@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { FaSearch, FaUsers } from 'react-icons/fa';
 import { useAuth } from '../../context/AuthContext';
 import { getAdminUsers, type AdminUser } from '../../services/api';
+import AdminPageSkeleton from './AdminPageSkeleton';
 
 const PAGE_SIZE = 20;
 
@@ -109,7 +110,7 @@ function AdminUsersPage() {
           </div>
         </div>
 
-        {isLoading ? <p className="admin-users-message">Loading users...</p> : null}
+        {isLoading ? <AdminPageSkeleton showToolbar={false} statCards={0} rows={4} /> : null}
         {!isLoading && error ? <p className="admin-users-message admin-users-message--error">{error}</p> : null}
         {!isLoading && !error && users.length === 0 ? <p className="admin-users-message">No users match the selected filters.</p> : null}
 

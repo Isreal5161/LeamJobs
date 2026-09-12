@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { FaBuilding, FaSearch } from 'react-icons/fa';
 import { useAuth } from '../../context/AuthContext';
 import { getAdminCompanies, getAdminCompanyLogo, type AdminCompany } from '../../services/api';
+import AdminPageSkeleton from './AdminPageSkeleton';
 
 const PAGE_SIZE = 20;
 
@@ -161,7 +162,7 @@ function AdminCompaniesPage() {
           </div>
         </div>
 
-        {isLoading ? <p className="admin-companies-message">Loading companies...</p> : null}
+        {isLoading ? <AdminPageSkeleton showToolbar={false} statCards={0} rows={4} /> : null}
         {!isLoading && error ? <p className="admin-companies-message admin-companies-message--error">{error}</p> : null}
         {!isLoading && !error && companies.length === 0 ? <p className="admin-companies-message">No companies match the selected filters.</p> : null}
 

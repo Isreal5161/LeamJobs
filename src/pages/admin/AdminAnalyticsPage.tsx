@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { FaBriefcase, FaChartLine, FaCheckCircle, FaClipboardList, FaDollarSign, FaUsers } from 'react-icons/fa';
 import { useAuth } from '../../context/AuthContext';
 import { getAdminAnalytics, type AdminAnalytics } from '../../services/api';
+import AdminPageSkeleton from './AdminPageSkeleton';
 
 type Preset = '7d' | '30d' | '90d' | '12m';
 
@@ -65,7 +66,7 @@ function AdminAnalyticsPage() {
   return <div className="admin-page admin-analytics-real-page">
     <section className="admin-hero"><div><span className="admin-eyebrow"><FaChartLine /> Analytics</span><h1>Marketplace analytics</h1><p>Real database metrics for users, jobs, applications, contracts, and financial activity.</p></div></section>
     <section className="admin-panel admin-analytics-controls" aria-label="Analytics date range"><span>Date range</span>{(['7d', '30d', '90d', '12m'] as Preset[]).map((item) => <button key={item} type="button" className={preset === item ? 'admin-analytics-control--active' : ''} onClick={() => selectPreset(item)}>{item === '12m' ? 'Last 12 months' : `Last ${item.replace('d', ' days')}`}</button>)}</section>
-    {isLoading ? <section className="admin-panel admin-analytics-message">Loading analytics...</section> : null}
+    {isLoading ? <AdminPageSkeleton showToolbar={true} statCards={8} rows={4} /> : null}
     {!isLoading && error ? <section className="admin-panel admin-analytics-message admin-analytics-message--error">{error}</section> : null}
     {!isLoading && !error && analytics ? <>
       <section className="admin-stat-grid admin-analytics-summary">{cards.map(({ title, value, icon: Icon }) => <article className="admin-stat-card" key={title}><span className="admin-stat-card__icon"><Icon /></span><div><strong>{value}</strong><p>{title} / all-time</p></div></article>)}</section>

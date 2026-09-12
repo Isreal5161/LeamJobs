@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { FaArrowRight, FaBriefcase, FaChartLine, FaClock, FaShieldHalved, FaUsers } from 'react-icons/fa6';
 import { useAuth } from '../../context/AuthContext';
 import { getAdminAnalytics, type AdminAnalytics } from '../../services/api';
+import AdminPageSkeleton from './AdminPageSkeleton';
 import '../../styles/admin-overview.css';
 
 function AdminOverviewPage() {
@@ -23,7 +24,7 @@ function AdminOverviewPage() {
     return () => { active = false; };
   }, [token]);
 
-  if (isLoading) return <div className="admin-overview-page"><section className="admin-panel admin-analytics-message">Loading platform overview...</section></div>;
+  if (isLoading) return <AdminPageSkeleton showToolbar={false} statCards={5} rows={4} />;
   if (error) return <div className="admin-overview-page"><section className="admin-panel admin-analytics-message admin-analytics-message--error">{error}</section></div>;
   if (!analytics) return <div className="admin-overview-page"><section className="admin-panel admin-analytics-message">No overview data available.</section></div>;
 

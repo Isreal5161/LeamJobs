@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { FaFileAlt, FaMapMarkerAlt, FaSearch, FaUsers } from 'react-icons/fa';
 import { useAuth } from '../../context/AuthContext';
 import { getAdminSeekers, type AdminSeeker } from '../../services/api';
+import AdminPageSkeleton from './AdminPageSkeleton';
 
 const PAGE_SIZE = 20;
 
@@ -99,7 +100,7 @@ function AdminSeekersPage() {
       <section className="admin-real-seekers-workspace">
         <div className="admin-panel admin-real-seekers-list-panel" aria-live="polite">
           <div className="admin-section-heading"><div><span><FaUsers /> Seeker directory</span><h2>{pagination.total} seekers</h2></div></div>
-          {isLoading ? <p className="admin-real-seekers-message">Loading seekers...</p> : null}
+          {isLoading ? <AdminPageSkeleton showToolbar={false} statCards={0} rows={4} /> : null}
           {!isLoading && error ? <p className="admin-real-seekers-message admin-real-seekers-message--error">{error}</p> : null}
           {!isLoading && !error && seekers.length === 0 ? <p className="admin-real-seekers-message">No seekers match the selected filters.</p> : null}
           {!isLoading && !error && seekers.length > 0 ? <div className="admin-real-seekers-table-wrap"><table className="admin-real-seekers-table"><thead><tr><th>Seeker</th><th>Profile</th><th>Account</th><th>Applications</th></tr></thead><tbody>{seekers.map((seeker) => <tr className={selectedSeekerId === seeker.id ? 'admin-real-seeker-row--selected' : ''} key={seeker.id} onClick={() => setSelectedSeekerId(seeker.id)}><td><div className="admin-real-seeker-identity"><div className="admin-real-seeker-avatar">{initials(seeker)}</div><div><strong>{fullName(seeker)}</strong><span>{seeker.email}</span></div></div></td><td><strong>{seeker.profile?.professionalTitle || 'Title not provided'}</strong><span><FaMapMarkerAlt /> {seeker.profile?.location || 'Location not provided'}</span></td><td><div className="admin-real-seeker-status"><span className={`admin-status ${seeker.isActive ? 'admin-status--approved' : 'admin-status--declined'}`}>{seeker.isActive ? 'Active' : 'Inactive'}</span><small className={seeker.isVerified ? 'admin-real-seeker-verified' : 'admin-real-seeker-unverified'}>{seeker.isVerified ? 'Verified' : 'Unverified'}</small></div></td><td><strong>{seeker.applicationCount}</strong><span>applications</span></td></tr>)}</tbody></table></div> : null}
