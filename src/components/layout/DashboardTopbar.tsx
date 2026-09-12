@@ -63,7 +63,7 @@ function DashboardTopbar({
   userName,
   onLogout,
 }: DashboardTopbarProps) {
-  const { token } = useAuth();
+  const { token, user } = useAuth();
   const [accountName, setAccountName] = useState(userName || '');
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [isImageLoading, setIsImageLoading] = useState(false);
@@ -79,6 +79,17 @@ function DashboardTopbar({
 
     const loadAccountProfile = async () => {
       setIsImageLoading(true);
+
+      if (role === 'admin') {
+        const nextName = [user?.firstName, user?.lastName].filter(Boolean).join(' ').trim() || userName || 'Admin';
+        if (active) {
+          setAccountName(nextName);
+          setImageUrl(null);
+          setIsImageLoading(false);
+        }
+        return;
+      }
+
       let imageReference: string | null = null;
       if (role === 'employer') {
         const profileResult = await getEmployerProfile(token);
@@ -122,7 +133,7 @@ function DashboardTopbar({
       window.removeEventListener(PROFILE_IMAGE_UPDATED_EVENT, handleImageUpdate);
       if (objectUrl) URL.revokeObjectURL(objectUrl);
     };
-  }, [role, token, userName]);
+  }, [role, token, user, userName]);
 
   const brand = (
     <Link className="dashboard-topbar__brand" to="/" aria-label="Go to LeamJobs welcome page">

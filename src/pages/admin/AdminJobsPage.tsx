@@ -9,6 +9,7 @@ import {
   FaEye,
   FaMapMarkerAlt,
   FaPlus,
+  FaTimes,
 } from 'react-icons/fa';
 import { JobForm } from '../../components/jobs/JobForm';
 import {
@@ -106,6 +107,15 @@ function AdminJobsPage() {
   });
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
   const [submitFeedback, setSubmitFeedback] = useState<{ tone: 'success' | 'error'; message: string } | null>(null);
+
+  useEffect(() => {
+    if (!submitFeedback) {
+      return undefined;
+    }
+
+    const timeoutId = window.setTimeout(() => setSubmitFeedback(null), 5000);
+    return () => window.clearTimeout(timeoutId);
+  }, [submitFeedback]);
 
   useEffect(() => {
     if (!token) {
@@ -384,8 +394,21 @@ function AdminJobsPage() {
       </section>
 
       {submitFeedback ? (
-        <div className={`admin-page-notice admin-page-notice--${submitFeedback.tone}`} role={submitFeedback.tone === 'error' ? 'alert' : 'status'}>
-          {submitFeedback.message}
+        <div
+          className={`admin-notice-toast admin-notice-toast--${submitFeedback.tone}`}
+          role={submitFeedback.tone === 'error' ? 'alert' : 'status'}
+          aria-live="polite"
+        >
+          <span className="admin-notice-toast__icon">
+            {submitFeedback.tone === 'error' ? <FaTimes /> : <FaCheckCircle />}
+          </span>
+          <div>
+            <strong>{submitFeedback.tone === 'error' ? 'Job posting failed' : 'Job posted successfully'}</strong>
+            <p>{submitFeedback.message}</p>
+          </div>
+          <button type="button" onClick={() => setSubmitFeedback(null)} aria-label="Dismiss notification">
+            <FaTimes />
+          </button>
         </div>
       ) : null}
 

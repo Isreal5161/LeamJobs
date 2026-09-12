@@ -1074,8 +1074,8 @@ export function rejectAdminJob(jobId: string, rejectionReason: string, token: st
 export function createAdminJob(employerId: string, payload: EmployerJobPayload, token: string) {
   return request<AdminJobResponse>({
     method: 'POST',
-    endpoint: `/admin/jobs?employerId=${encodeURIComponent(employerId)}`,
-    body: payload,
+    endpoint: '/admin/jobs',
+    body: { employerId, ...payload },
     token,
   });
 }

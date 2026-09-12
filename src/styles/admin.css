@@ -256,6 +256,70 @@
   font-weight: 700;
 }
 
+.admin-notice-toast {
+  position: fixed;
+  right: 1.5rem;
+  bottom: 5.25rem;
+  z-index: 90;
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr) 34px;
+  align-items: start;
+  gap: 0.8rem;
+  width: min(420px, calc(100vw - 2rem));
+  padding: 1rem;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 14px;
+  background: #ffffff;
+  box-shadow: 0 22px 55px rgba(15, 23, 42, 0.18);
+}
+
+.admin-notice-toast__icon,
+.admin-notice-toast > button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.admin-notice-toast__icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 10px;
+  background: #ecfdf5;
+  color: #047857;
+}
+
+.admin-notice-toast--error .admin-notice-toast__icon {
+  background: #fff1f2;
+  color: #be123c;
+}
+
+.admin-notice-toast strong,
+.admin-notice-toast p {
+  margin: 0;
+}
+
+.admin-notice-toast strong {
+  color: #0f172a;
+  font-size: 0.95rem;
+}
+
+.admin-notice-toast p {
+  margin-top: 0.2rem;
+  color: #64748b;
+  font-size: 0.86rem;
+  line-height: 1.45;
+}
+
+.admin-notice-toast > button {
+  width: 34px;
+  height: 34px;
+  border: 0;
+  border-radius: 8px;
+  background: #f8fafc;
+  color: #64748b;
+  cursor: pointer;
+}
+
 .admin-authoring-status {
   margin: 0;
   padding: 0.8rem 0.9rem;
