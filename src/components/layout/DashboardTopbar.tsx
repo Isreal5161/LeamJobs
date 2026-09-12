@@ -149,17 +149,6 @@ function DashboardTopbar({
             </NavLink>
           ))}
         </nav>
-        {role === 'admin' && onMobileMenuToggle ? (
-          <button
-            type="button"
-            className="dashboard-topbar__toggle dashboard-topbar__toggle--mobile-menu"
-            onClick={onMobileMenuToggle}
-            aria-label={mobileMenuOpen ? 'Close admin navigation menu' : 'Open admin navigation menu'}
-            aria-expanded={mobileMenuOpen}
-          >
-            {mobileMenuOpen ? <FaTimes /> : <FaBars />}
-          </button>
-        ) : null}
         <AccountMenu
           items={accountNav[role]}
           userName={accountName}
