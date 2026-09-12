@@ -20,9 +20,8 @@ import {
 const adminPrimaryLinks = [
   { label: 'Overview', to: '/admin/dashboard', icon: FaHome, match: (path: string) => path === '/admin/dashboard' || path === '/admin' },
   { label: 'Jobs', to: '/admin/jobs', icon: FaBriefcase, match: (path: string) => path.startsWith('/admin/jobs') },
-  { label: 'Review', to: '/admin/moderation', icon: FaFlag, match: (path: string) => path.startsWith('/admin/moderation') },
+  { label: 'Moderation', to: '/admin/moderation', icon: FaFlag, match: (path: string) => path.startsWith('/admin/moderation') },
   { label: 'Users', to: '/admin/users', icon: FaUser, match: (path: string) => path.startsWith('/admin/users') },
-  { label: 'Content', to: '/admin/content', icon: FaEdit, match: (path: string) => path.startsWith('/admin/content') },
 ];
 
 function MobileBottomNav() {

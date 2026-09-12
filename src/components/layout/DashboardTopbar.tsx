@@ -8,13 +8,14 @@ import { useAuth } from '../../context/AuthContext';
 type DashboardTopbarProps = {
   isOpen?: boolean;
   onToggle?: () => void;
-  /** Present only for seeker/employer - renders the horizontal nav + account menu. Admin keeps the legacy toggle header. */
-  role?: 'seeker' | 'employer';
+  onMobileMenuToggle?: () => void;
+  mobileMenuOpen?: boolean;
+  role?: 'seeker' | 'employer' | 'admin';
   userName?: string;
   onLogout?: () => void;
 };
 
-const primaryNav: Record<'seeker' | 'employer', { label: string; to: string }[]> = {
+const primaryNav: Record<'seeker' | 'employer' | 'admin', { label: string; to: string }[]> = {
   seeker: [
     { label: 'Dashboard', to: '/seeker/dashboard' },
     { label: 'Jobs', to: '/seeker/jobs' },
@@ -27,9 +28,16 @@ const primaryNav: Record<'seeker' | 'employer', { label: string; to: string }[]>
     { label: 'Applicants', to: '/employer/applicants' },
     { label: 'Messages', to: '/employer/messages' },
   ],
+  admin: [
+    { label: 'Overview', to: '/admin/dashboard' },
+    { label: 'Moderation', to: '/admin/moderation' },
+    { label: 'Job Posts', to: '/admin/jobs' },
+    { label: 'Users', to: '/admin/users' },
+    { label: 'Companies', to: '/admin/companies' },
+  ],
 };
 
-const accountNav: Record<'seeker' | 'employer', { label: string; to: string }[]> = {
+const accountNav: Record<'seeker' | 'employer' | 'admin', { label: string; to: string }[]> = {
   seeker: [
     { label: 'Payments', to: '/seeker/payments' },
     { label: 'Profile', to: '/seeker/profile' },
@@ -37,9 +45,24 @@ const accountNav: Record<'seeker' | 'employer', { label: string; to: string }[]>
   employer: [
     { label: 'Company Profile', to: '/employer/profile' },
   ],
+  admin: [
+    { label: 'Page Content', to: '/admin/content' },
+    { label: 'Filters', to: '/admin/filters' },
+    { label: 'Recommendations', to: '/admin/recommendations' },
+    { label: 'Payments', to: '/admin/payments' },
+    { label: 'Subscriptions', to: '/admin/subscriptions' },
+  ],
 };
 
-function DashboardTopbar({ isOpen = false, onToggle, role, userName, onLogout }: DashboardTopbarProps) {
+function DashboardTopbar({
+  isOpen = false,
+  onToggle,
+  onMobileMenuToggle,
+  mobileMenuOpen = false,
+  role,
+  userName,
+  onLogout,
+}: DashboardTopbarProps) {
   const { token } = useAuth();
   const [accountName, setAccountName] = useState(userName || '');
   const [imageUrl, setImageUrl] = useState<string | null>(null);
@@ -126,7 +149,25 @@ function DashboardTopbar({ isOpen = false, onToggle, role, userName, onLogout }:
             </NavLink>
           ))}
         </nav>
-        <AccountMenu items={accountNav[role]} userName={accountName} roleLabel={role === 'employer' ? 'Employer' : 'Job Seeker'} imageUrl={imageUrl} isImageLoading={isImageLoading} onLogout={onLogout} />
+        {role === 'admin' && onMobileMenuToggle ? (
+          <button
+            type="button"
+            className="dashboard-topbar__toggle dashboard-topbar__toggle--mobile-menu"
+            onClick={onMobileMenuToggle}
+            aria-label={mobileMenuOpen ? 'Close admin navigation menu' : 'Open admin navigation menu'}
+            aria-expanded={mobileMenuOpen}
+          >
+            {mobileMenuOpen ? <FaTimes /> : <FaBars />}
+          </button>
+        ) : null}
+        <AccountMenu
+          items={accountNav[role]}
+          userName={accountName}
+          roleLabel={role === 'employer' ? 'Employer' : role === 'admin' ? 'Admin' : 'Job Seeker'}
+          imageUrl={imageUrl}
+          isImageLoading={isImageLoading}
+          onLogout={onLogout}
+        />
       </header>
     );
   }
