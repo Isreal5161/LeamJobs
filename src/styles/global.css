@@ -11,6 +11,16 @@
   --text-primary: #0f172a;
   --text-secondary: #475569;
   --border: #e2e8f0;
+  --primary: #0e4ae1;
+  --primary-hover: #0b3bcb;
+  --primary-light: #eff5ff;
+  --secondary: #c2410c;
+  --secondary-hover: #9a3412;
+  --secondary-light: #fff7ed;
+  --success: #16803c;
+  --warning: #d97706;
+  --danger: #b91c1c;
+  --info: #2563eb;
   --accent: #2563eb;
   --accent-hover: #1d4ed8;
   --radius: 18px;

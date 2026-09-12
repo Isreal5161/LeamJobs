@@ -1,0 +1,146 @@
+.public-layout {
+  --accent: var(--primary);
+  --accent-hover: var(--primary-hover);
+}
+
+.public-layout .button--primary {
+  background: var(--primary);
+  color: #ffffff;
+}
+
+.public-layout .button--primary:hover,
+.public-layout .button--primary:focus-visible {
+  background: var(--primary-hover);
+}
+
+.public-layout .button--outline,
+.public-layout .button--secondary {
+  border-color: var(--secondary);
+  color: var(--secondary);
+}
+
+.public-layout .button--outline:hover,
+.public-layout .button--outline:focus-visible,
+.public-layout .button--secondary:hover,
+.public-layout .button--secondary:focus-visible {
+  border-color: var(--secondary-hover);
+  background: var(--secondary-light);
+  color: var(--secondary-hover);
+}
+
+.public-layout .site-logo__mark {
+  background: var(--primary);
+  box-shadow: inset 0 -4px 0 var(--secondary);
+}
+
+.public-layout .navbar__center a:hover,
+.public-layout .navbar__actions a:hover,
+.public-layout .site-footer__links a:hover,
+.public-layout .site-footer__bottom a:hover {
+  color: var(--primary);
+}
+
+.public-layout .navbar__center a.navbar__link--active::after {
+  background: var(--primary);
+}
+
+.public-layout .site-footer__subscribe button {
+  background: var(--primary);
+}
+
+.public-layout .site-footer__subscribe button:hover,
+.public-layout .site-footer__subscribe button:focus-visible {
+  background: var(--primary-hover);
+}
+
+.public-layout--welcome .hero__panel {
+  background-color: #123f68;
+}
+
+.public-layout--welcome .hero-actions__employer:hover,
+.public-layout--welcome .hero-actions__secondary:hover {
+  color: var(--primary);
+}
+
+.public-layout--about .about-hero,
+.public-layout--auth .auth-panel--brand {
+  background: var(--primary-light);
+}
+
+.public-layout--about .about-page__eyebrow,
+.public-layout--about .about-icon--large,
+.public-layout--auth .auth-brand-card__eyebrow,
+.public-layout--auth .auth-form-heading span {
+  color: var(--secondary);
+}
+
+.public-layout--about .about-hero__actions .button--outline,
+.public-layout--auth .auth-panel--form .button--outline {
+  border-color: var(--secondary);
+  color: var(--secondary);
+}
+
+.public-layout--features .features-hero,
+.public-layout--how .how-hero,
+.public-layout--companies .companies-hero {
+  background: var(--primary-light);
+}
+
+.public-layout--features .features-card__icon,
+.public-layout--features .features-cta__icon,
+.public-layout--companies .companies-cta__icon,
+.public-layout--how .how-illustration__accent {
+  background: var(--secondary-light);
+  color: var(--secondary);
+}
+
+.public-layout--features .features-cta,
+.public-layout--companies .companies-cta,
+.public-layout--how .how-cta {
+  border-top: 3px solid var(--secondary);
+}
+
+.public-layout--job-detail {
+  background: var(--background, #f8fafc);
+}
+
+.public-layout--job-detail .job-detail-hero {
+  background: var(--primary);
+}
+
+.public-layout--job-detail .job-tag--yellow {
+  background: var(--secondary-light);
+  color: var(--secondary-hover);
+}
+
+.public-layout--job-detail .job-detail-apply-link,
+.public-layout--job-detail .job-detail-mobile-apply-card .button--primary {
+  background: var(--primary);
+}
+
+.public-layout--job-detail .job-detail-apply-link:hover,
+.public-layout--job-detail .job-detail-mobile-apply-card .button--primary:hover {
+  background: var(--primary-hover);
+}
+
+.public-layout--auth .auth-benefits svg,
+.public-layout--auth .auth-profile-preview__icon {
+  color: var(--secondary);
+}
+
+.public-layout--auth .auth-profile-preview__icon {
+  background: var(--secondary-light);
+}
+
+.public-layout--auth .auth-form input:focus,
+.public-layout--auth .auth-form select:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(14, 74, 225, 0.12);
+}
+
+@media (max-width: 767px) {
+  .public-layout .navbar__mobile-menu a.navbar__link--active {
+    color: var(--primary);
+    border-left-color: var(--primary);
+  }
+}

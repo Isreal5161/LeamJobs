@@ -2,6 +2,7 @@ import { Outlet, useLocation } from 'react-router-dom';
 import Navbar from '../components/layout/Navbar';
 import Footer from '../components/layout/Footer';
 import MobileBottomNav from '../components/layout/MobileBottomNav';
+import '../styles/public-theme.css';
 
 function PublicLayout() {
   const { pathname } = useLocation();
