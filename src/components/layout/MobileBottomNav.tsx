@@ -22,88 +22,29 @@ const adminPrimaryLinks = [
   { label: 'Jobs', to: '/admin/jobs', icon: FaBriefcase, match: (path: string) => path.startsWith('/admin/jobs') },
   { label: 'Review', to: '/admin/moderation', icon: FaFlag, match: (path: string) => path.startsWith('/admin/moderation') },
   { label: 'Users', to: '/admin/users', icon: FaUser, match: (path: string) => path.startsWith('/admin/users') },
-];
-
-const adminMoreLinks = [
-  { label: 'Page content', to: '/admin/content', icon: FaEdit, match: (path: string) => path.startsWith('/admin/content') },
-  { label: 'Filters', to: '/admin/filters', icon: FaFilter, match: (path: string) => path.startsWith('/admin/filters') },
-  { label: 'Recommendations', to: '/admin/recommendations', icon: FaStar, match: (path: string) => path.startsWith('/admin/recommendations') },
-  { label: 'Companies', to: '/admin/companies', icon: FaBuilding, match: (path: string) => path.startsWith('/admin/companies') },
-  { label: 'Payments', to: '/admin/payments', icon: FaMoneyBillWave, match: (path: string) => path.startsWith('/admin/payments') },
-  { label: 'Subscriptions', to: '/admin/subscriptions', icon: FaCrown, match: (path: string) => path.startsWith('/admin/subscriptions') },
+  { label: 'Content', to: '/admin/content', icon: FaEdit, match: (path: string) => path.startsWith('/admin/content') },
 ];
 
 function MobileBottomNav() {
   const { pathname } = useLocation();
-  const [adminMoreOpen, setAdminMoreOpen] = useState(false);
   const seekerMode = pathname.startsWith('/seeker');
   const employerMode = pathname.startsWith('/employer');
   const adminMode = pathname.startsWith('/admin');
 
-  useEffect(() => {
-    setAdminMoreOpen(false);
-  }, [pathname]);
-
   if (adminMode) {
-    const moreActive = adminMoreLinks.some((item) => item.match(pathname));
-
     return (
-      <>
-        {adminMoreOpen ? (
-          <button
-            className="admin-mobile-nav-backdrop"
-            type="button"
-            aria-label="Close admin tools"
-            onClick={() => setAdminMoreOpen(false)}
-          />
-        ) : null}
-        <nav className="mobile-bottom-nav mobile-bottom-nav--admin" aria-label="Admin mobile navigation">
-          <div id="admin-mobile-tools" className={`admin-mobile-tools ${adminMoreOpen ? 'admin-mobile-tools--open' : ''}`}>
-            <div className="admin-mobile-tools__header">
-              <div>
-                <span>Admin tools</span>
-                <strong>Manage workspace</strong>
-              </div>
-              <button type="button" aria-label="Close admin tools" onClick={() => setAdminMoreOpen(false)}>
-                <FaTimes />
-              </button>
-            </div>
-            <div className="admin-mobile-tools__grid">
-              {adminMoreLinks.map(({ icon: Icon, ...item }) => (
-                <Link
-                  to={item.to}
-                  key={item.to}
-                  className={`admin-mobile-tools__link ${item.match(pathname) ? 'admin-mobile-tools__link--active' : ''}`}
-                >
-                  <Icon />
-                  <span>{item.label}</span>
-                </Link>
-              ))}
-            </div>
-          </div>
-
-          {adminPrimaryLinks.map(({ icon: Icon, ...item }) => (
-            <Link
-              to={item.to}
-              key={item.to}
-              className={`mobile-bottom-nav__item ${item.match(pathname) ? 'mobile-bottom-nav__item--active' : ''}`}
-            >
-              <Icon />
-              <span>{item.label}</span>
-            </Link>
-          ))}
-          <button
-            type="button"
-            className={`mobile-bottom-nav__item mobile-bottom-nav__more ${adminMoreOpen || moreActive ? 'mobile-bottom-nav__item--active' : ''}`}
-            aria-expanded={adminMoreOpen}
-            aria-controls="admin-mobile-tools"
-            onClick={() => setAdminMoreOpen((open) => !open)}
+      <nav className="mobile-bottom-nav mobile-bottom-nav--admin" aria-label="Admin mobile navigation">
+        {adminPrimaryLinks.map(({ icon: Icon, ...item }) => (
+          <Link
+            to={item.to}
+            key={item.to}
+            className={`mobile-bottom-nav__item ${item.match(pathname) ? 'mobile-bottom-nav__item--active' : ''}`}
           >
-            <FaEllipsisH />
-            <span>More</span>
-          </button>
-        </nav>
-      </>
+            <Icon />
+            <span>{item.label}</span>
+          </Link>
+        ))}
+      </nav>
     );
   }
 

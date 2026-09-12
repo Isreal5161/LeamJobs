@@ -161,7 +161,7 @@ function AdminJobsPage() {
       setEmployerError('');
 
       const result = await getAdminCompanies(token, {
-        limit: 500,
+        limit: 100,
         sortBy: 'companyName',
         sortOrder: 'asc',
       });
@@ -311,7 +311,12 @@ function AdminJobsPage() {
   const handleUpdateJob = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
-    if (!token || !editingJobId) return;
+    const validEditingJobId = typeof editingJobId === 'string' ? editingJobId.trim() : '';
+
+    if (!token || !validEditingJobId) {
+      setSubmitFeedback({ tone: 'error', message: 'Please select a valid job to edit.' });
+      return;
+    }
 
     const nextErrors = validateForm(form);
 
@@ -327,7 +332,7 @@ function AdminJobsPage() {
     setSubmitFeedback(null);
     setValidationErrors({});
 
-    const result = await updateAdminJob(editingJobId, buildPayload(form), token);
+    const result = await updateAdminJob(validEditingJobId, buildPayload(form), token);
 
     if (!result.ok) {
       setSubmitFeedback({ tone: 'error', message: result.error.message || 'We could not update this job.' });
