@@ -909,6 +909,14 @@ export function getAdminCompanies(token: string, query: AdminCompaniesQuery = {}
   });
 }
 
+export function getLeamJobsEmployer(token: string) {
+  return request<{ success: true; data: { employer: { userId: string; email: string; companyName: string } } }>({
+    method: 'GET',
+    endpoint: '/admin/companies/leamjobs',
+    token,
+  });
+}
+
 export type AdminSeeker = {
   id: string;
   firstName: string;

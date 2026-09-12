@@ -92,6 +92,7 @@ function AdminJobsPage() {
 
   const [employers, setEmployers] = useState<AdminCompany[]>([]);
   const [selectedEmployerId, setSelectedEmployerId] = useState('');
+  const [postAsMode, setPostAsMode] = useState<'LEAMJOBS' | 'EXISTING_EMPLOYER'>('LEAMJOBS');
   const [isLoadingEmployers, setIsLoadingEmployers] = useState(true);
   const [employerError, setEmployerError] = useState('');
   const [isCreating, setIsCreating] = useState(false);
@@ -205,6 +206,7 @@ function AdminJobsPage() {
   const selectedJob = jobs.find((job) => job.id === selectedJobId) ?? jobs[0] ?? null;
   const selectedEmployer = employers.find((company) => company.userId === selectedEmployerId) ?? null;
   const editingJob = jobs.find((job) => job.id === editingJobId) ?? null;
+  const effectiveEmployerName = postAsMode === 'LEAMJOBS' ? 'LeamJobs' : selectedEmployer?.companyName || 'the selected employer';
 
   const setField = <Field extends keyof JobFormState>(field: Field, value: JobFormState[Field]) => {
     setForm((current) => ({ ...current, [field]: value }));
@@ -237,7 +239,7 @@ function AdminJobsPage() {
   };
 
   const startCreating = () => {
-    if (!employers.length) {
+    if (!employers.length && postAsMode === 'EXISTING_EMPLOYER') {
       setSubmitFeedback({ tone: 'error', message: 'No employer accounts are available to assign a job to.' });
       return;
     }
@@ -245,7 +247,8 @@ function AdminJobsPage() {
     setIsCreating(true);
     setSubmitFeedback(null);
     setValidationErrors({});
-    setSelectedEmployerId((current) => current || employers[0].userId);
+    setPostAsMode('LEAMJOBS');
+    setSelectedEmployerId((current) => current || employers[0]?.userId || '');
     setForm({ ...emptyJobForm, requirements: [''], responsibilities: [''], skills: [''], benefits: [] });
   };
 
@@ -278,7 +281,7 @@ function AdminJobsPage() {
 
     if (!token) return;
 
-    if (!selectedEmployerId || !employers.some((company) => company.userId === selectedEmployerId)) {
+    if (postAsMode === 'EXISTING_EMPLOYER' && (!selectedEmployerId || !employers.some((company) => company.userId === selectedEmployerId))) {
       setSubmitFeedback({ tone: 'error', message: 'Please select a valid employer before creating the job.' });
       return;
     }
@@ -297,8 +300,8 @@ function AdminJobsPage() {
     setSubmitFeedback(null);
     setValidationErrors({});
 
-    const employerName = selectedEmployer?.companyName || 'the selected employer';
-    const result = await createAdminJob(selectedEmployerId, buildPayload(form), token);
+    const employerIdToSubmit = postAsMode === 'LEAMJOBS' ? 'leamjobs' : selectedEmployerId;
+    const result = await createAdminJob(employerIdToSubmit, buildPayload(form), token);
 
     if (!result.ok) {
       setSubmitFeedback({ tone: 'error', message: result.error.message || 'We could not create this job.' });
@@ -313,7 +316,7 @@ function AdminJobsPage() {
     setValidationErrors({});
     setSubmitFeedback({
       tone: 'success',
-      message: `Job created successfully for ${employerName} and it is already approved.`,
+      message: `Job created successfully for ${effectiveEmployerName} and it is already approved.`,
     });
     setReloadKey((value) => value + 1);
   };
@@ -386,7 +389,7 @@ function AdminJobsPage() {
           className="admin-button admin-button--primary admin-button--cta"
           type="button"
           onClick={startCreating}
-          disabled={isLoadingEmployers || Boolean(employerError) || employers.length === 0}
+          disabled={isLoadingEmployers || Boolean(employerError)}
         >
           <FaPlus />
           <span>Post Job</span>
@@ -426,11 +429,44 @@ function AdminJobsPage() {
             <p className="admin-empty-state" role="alert">{employerError}</p>
           ) : null}
 
-          {!employerError && employers.length === 0 && !isLoadingEmployers ? (
+          {!employerError && employers.length === 0 && postAsMode === 'EXISTING_EMPLOYER' && !isLoadingEmployers ? (
             <p className="admin-empty-state">No employer accounts are available to assign a job to.</p>
           ) : null}
 
-          {!employerError && employers.length > 0 ? (
+          {!employerError ? (
+            <div className="admin-authoring-field" style={{ marginBottom: '1.5rem' }}>
+              <span style={{ display: 'block', fontWeight: 700, color: '#334155', marginBottom: '0.9rem' }}>Post job as</span>
+              <div style={{ display: 'grid', gap: '0.8rem' }}>
+                <label style={{ display: 'flex', gap: '0.75rem', alignItems: 'flex-start', cursor: 'pointer', padding: '0.8rem 0.9rem', border: '1px solid #dfe7f1', borderRadius: '12px', background: postAsMode === 'LEAMJOBS' ? '#eef6ff' : '#fff' }}>
+                  <input
+                    type="radio"
+                    name="post-as"
+                    checked={postAsMode === 'LEAMJOBS'}
+                    onChange={() => setPostAsMode('LEAMJOBS')}
+                  />
+                  <span>
+                    <strong style={{ display: 'block', color: '#0f172a' }}>LeamJobs</strong>
+                    <small style={{ color: '#475569' }}>Post this opportunity directly under the LeamJobs company.</small>
+                  </span>
+                </label>
+
+                <label style={{ display: 'flex', gap: '0.75rem', alignItems: 'flex-start', cursor: 'pointer', padding: '0.8rem 0.9rem', border: '1px solid #dfe7f1', borderRadius: '12px', background: postAsMode === 'EXISTING_EMPLOYER' ? '#eef6ff' : '#fff' }}>
+                  <input
+                    type="radio"
+                    name="post-as"
+                    checked={postAsMode === 'EXISTING_EMPLOYER'}
+                    onChange={() => setPostAsMode('EXISTING_EMPLOYER')}
+                  />
+                  <span>
+                    <strong style={{ display: 'block', color: '#0f172a' }}>Existing Employer</strong>
+                    <small style={{ color: '#475569' }}>Post this opportunity on behalf of a registered employer.</small>
+                  </span>
+                </label>
+              </div>
+            </div>
+          ) : null}
+
+          {!employerError && postAsMode === 'EXISTING_EMPLOYER' && employers.length > 0 ? (
             <div className="admin-authoring-field" style={{ marginBottom: '1.5rem' }}>
               <label style={{ display: 'grid', gap: '0.5rem' }}>
                 <span style={{ fontWeight: 700, color: '#334155' }}>Employer / Company</span>
@@ -451,7 +487,7 @@ function AdminJobsPage() {
             </div>
           ) : null}
 
-          {employers.length > 0 ? (
+          {employers.length > 0 || postAsMode === 'LEAMJOBS' ? (
             <JobForm
               form={form}
               validationErrors={validationErrors}
