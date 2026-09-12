@@ -51,7 +51,45 @@ const sidebarLinks = {
   ],
 };
 
+const adminSidebarSections = [
+  {
+    heading: 'Main',
+    items: [{ label: 'Overview', to: '/admin/dashboard', icon: FaHome }],
+  },
+  {
+    heading: 'Job management',
+    items: [
+      { label: 'Job Posts', to: '/admin/jobs', icon: FaBriefcase },
+      { label: 'Moderation', to: '/admin/moderation', icon: FaFlag },
+    ],
+  },
+  {
+    heading: 'Users & companies',
+    items: [
+      { label: 'Users', to: '/admin/users', icon: FaUser },
+      { label: 'Companies', to: '/admin/companies', icon: FaBuilding },
+    ],
+  },
+  {
+    heading: 'Payments',
+    items: [
+      { label: 'Payments', to: '/admin/payments', icon: FaMoneyBillWave },
+      { label: 'Subscriptions', to: '/admin/subscriptions', icon: FaCrown },
+    ],
+  },
+  {
+    heading: 'Content & tools',
+    items: [
+      { label: 'Page Content', to: '/admin/content', icon: FaEdit },
+      { label: 'Filters', to: '/admin/filters', icon: FaFilter },
+      { label: 'Recommendations', to: '/admin/recommendations', icon: FaStar },
+    ],
+  },
+];
+
 function DashboardSidebar({ role, isOpen = true, onNavigate }: SidebarProps) {
+  const navItems = role === 'admin' ? adminSidebarSections : null;
+
   return (
     <aside className={`dashboard-menu ${isOpen ? 'dashboard-menu--open' : 'dashboard-menu--closed'}`}>
       <div className="dashboard-menu__header">
@@ -63,24 +101,49 @@ function DashboardSidebar({ role, isOpen = true, onNavigate }: SidebarProps) {
           </div>
         </Link>
       </div>
-      <nav className="dashboard-menu__nav" aria-label={`${role} navigation`}>
-        {sidebarLinks[role].map(({ icon: Icon, ...item }) => (
-          <NavLink
-            key={item.to}
-            to={item.to}
-            className={({ isActive }) =>
-              `dashboard-menu__link ${isActive ? 'dashboard-menu__link--active' : ''}`
-            }
-            onClick={onNavigate}
-            title={!isOpen ? item.label : undefined}
-          >
-            <span className="dashboard-menu__icon">
-              <Icon />
-            </span>
-            <span className="dashboard-menu__label">{item.label}</span>
-          </NavLink>
-        ))}
-      </nav>
+
+      {navItems ? (
+        <nav className="dashboard-menu__nav dashboard-menu__nav--grouped" aria-label={`${role} navigation`}>
+          {navItems.map((section) => (
+            <div key={section.heading} className="dashboard-menu__group">
+              <span className="dashboard-menu__group-label">{section.heading}</span>
+              {section.items.map(({ icon: Icon, ...item }) => (
+                <NavLink
+                  key={item.to}
+                  to={item.to}
+                  className={({ isActive }) => `dashboard-menu__link ${isActive ? 'dashboard-menu__link--active' : ''}`}
+                  onClick={onNavigate}
+                  title={!isOpen ? item.label : undefined}
+                >
+                  <span className="dashboard-menu__icon">
+                    <Icon />
+                  </span>
+                  <span className="dashboard-menu__label">{item.label}</span>
+                </NavLink>
+              ))}
+            </div>
+          ))}
+        </nav>
+      ) : (
+        <nav className="dashboard-menu__nav" aria-label={`${role} navigation`}>
+          {sidebarLinks[role].map(({ icon: Icon, ...item }) => (
+            <NavLink
+              key={item.to}
+              to={item.to}
+              className={({ isActive }) =>
+                `dashboard-menu__link ${isActive ? 'dashboard-menu__link--active' : ''}`
+              }
+              onClick={onNavigate}
+              title={!isOpen ? item.label : undefined}
+            >
+              <span className="dashboard-menu__icon">
+                <Icon />
+              </span>
+              <span className="dashboard-menu__label">{item.label}</span>
+            </NavLink>
+          ))}
+        </nav>
+      )}
     </aside>
   );
 }

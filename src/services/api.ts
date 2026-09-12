@@ -1071,6 +1071,24 @@ export function rejectAdminJob(jobId: string, rejectionReason: string, token: st
   });
 }
 
+export function createAdminJob(employerId: string, payload: EmployerJobPayload, token: string) {
+  return request<AdminJobResponse>({
+    method: 'POST',
+    endpoint: `/admin/jobs?employerId=${encodeURIComponent(employerId)}`,
+    body: payload,
+    token,
+  });
+}
+
+export function updateAdminJob(jobId: string, payload: EmployerJobPayload, token: string) {
+  return request<AdminJobResponse>({
+    method: 'PATCH',
+    endpoint: `/admin/jobs/${encodeURIComponent(jobId)}`,
+    body: payload,
+    token,
+  });
+}
+
 export function createEmployerJob(payload: EmployerJobPayload, token: string) {
   return request<EmployerJobResponse>({ method: 'POST', endpoint: '/employer/jobs', body: payload, token });
 }

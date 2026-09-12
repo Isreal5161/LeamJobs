@@ -21,13 +21,13 @@ const adminPrimaryLinks = [
   { label: 'Overview', to: '/admin/dashboard', icon: FaHome, match: (path: string) => path === '/admin/dashboard' || path === '/admin' },
   { label: 'Jobs', to: '/admin/jobs', icon: FaBriefcase, match: (path: string) => path.startsWith('/admin/jobs') },
   { label: 'Review', to: '/admin/moderation', icon: FaFlag, match: (path: string) => path.startsWith('/admin/moderation') },
+  { label: 'Users', to: '/admin/users', icon: FaUser, match: (path: string) => path.startsWith('/admin/users') },
 ];
 
 const adminMoreLinks = [
   { label: 'Page content', to: '/admin/content', icon: FaEdit, match: (path: string) => path.startsWith('/admin/content') },
   { label: 'Filters', to: '/admin/filters', icon: FaFilter, match: (path: string) => path.startsWith('/admin/filters') },
   { label: 'Recommendations', to: '/admin/recommendations', icon: FaStar, match: (path: string) => path.startsWith('/admin/recommendations') },
-  { label: 'Users', to: '/admin/users', icon: FaUser, match: (path: string) => path.startsWith('/admin/users') },
   { label: 'Companies', to: '/admin/companies', icon: FaBuilding, match: (path: string) => path.startsWith('/admin/companies') },
   { label: 'Payments', to: '/admin/payments', icon: FaMoneyBillWave, match: (path: string) => path.startsWith('/admin/payments') },
   { label: 'Subscriptions', to: '/admin/subscriptions', icon: FaCrown, match: (path: string) => path.startsWith('/admin/subscriptions') },

@@ -60,6 +60,10 @@
   color: var(--dashboard-primary);
 }
 
+.admin-layout .dashboard-menu__group-label {
+  color: #64748b;
+}
+
 .seeker-layout .button--primary,
 .employer-layout .button--primary,
 .admin-layout .button--primary,

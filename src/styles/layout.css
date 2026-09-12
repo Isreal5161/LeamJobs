@@ -470,15 +470,23 @@
     align-items: center;
     justify-content: center;
     gap: 4px;
+    min-height: 52px;
     border: 0;
     background: transparent;
     color: #6b7280;
-    font-size: 0.75rem;
+    font-size: 0.72rem;
+    font-weight: 800;
+    letter-spacing: 0.01em;
+  }
+
+  .mobile-bottom-nav__item svg {
+    width: 1.05rem;
+    height: 1.05rem;
   }
 
   .mobile-bottom-nav__item--active {
     color: #0e4ae1;
-    font-weight: 700;
+    font-weight: 800;
   }
 
   .admin-mobile-nav-backdrop,
