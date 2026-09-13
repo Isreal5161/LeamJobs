@@ -770,6 +770,9 @@
 
 .admin-applicants-hero {
   align-items: center;
+  border: 1px solid #e2e8f0;
+  background: linear-gradient(135deg, #f8fafc 0%, #ffffff 100%);
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.04);
 }
 
 .admin-applicants-toolbar {
@@ -869,6 +872,10 @@
   align-items: center;
 }
 
+.admin-applicant-card__header {
+  flex-wrap: wrap;
+}
+
 .admin-applicant-card__details strong,
 .admin-applicant-detail__title-row h2,
 .admin-applicant-detail__section h3 {
@@ -939,6 +946,18 @@
   grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
   gap: 1rem;
+}
+
+.admin-applicant-detail__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.65rem;
+}
+
+.admin-applicant-card__action {
+  justify-self: end;
+  white-space: nowrap;
 }
 
 .admin-applicant-detail__content {
@@ -1535,6 +1554,16 @@
   justify-content: flex-end;
 }
 
+.admin-review-job-card__actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.admin-review-job-card__actions .admin-button {
+  white-space: nowrap;
+}
+
 .admin-review-job-card__meta span {
   display: inline-flex;
   min-height: 30px;
@@ -2063,9 +2092,37 @@
 }
 
 .admin-empty-state {
+  display: grid;
+  gap: 0.4rem;
   margin: 0;
-  padding: 1rem 0 0.25rem;
-  color: #64748b;
+  padding: 1rem 1.1rem;
+  border: 1px solid rgba(148, 163, 184, 0.28);
+  border-left: 4px solid #0e4ae1;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #f8fafc 0%, #f5f7ff 100%);
+  color: #475569;
+}
+
+.admin-empty-state strong {
+  color: #0f172a;
+  font-size: 0.96rem;
+}
+
+.admin-empty-state p {
+  margin: 0;
+  color: #475569;
+  line-height: 1.55;
+}
+
+.admin-empty-state[role='alert'] {
+  border-color: rgba(220, 38, 38, 0.18);
+  border-left-color: #dc2626;
+  background: linear-gradient(135deg, #fff7f7 0%, #fff1f2 100%);
+}
+
+.admin-empty-state[role='alert'] strong,
+.admin-empty-state[role='alert'] p {
+  color: #7f1d1d;
 }
 
 .admin-job-card {
@@ -3478,6 +3535,40 @@
     flex-direction: column;
   }
 
+  .admin-applicant-card {
+    grid-template-columns: 44px minmax(0, 1fr);
+    align-items: start;
+  }
+
+  .admin-applicant-card__details,
+  .admin-applicant-card__action,
+  .admin-applicant-card__header .admin-applicant-status {
+    grid-column: 2;
+  }
+
+  .admin-applicant-card__header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .admin-applicant-card__action {
+    justify-self: start;
+    margin-top: 0.2rem;
+  }
+
+  .admin-applicant-detail__header {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-applicant-detail__title-row {
+    flex-wrap: wrap;
+    align-items: flex-start;
+  }
+
+  .admin-applicant-detail__actions {
+    justify-content: flex-start;
+  }
+
   .admin-review-actions {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -3495,14 +3586,24 @@
     border-radius: 10px;
   }
 
+  .admin-review-job-card__content,
+  .admin-review-job-card__meta,
+  .admin-review-job-card__actions,
   .admin-review-job-card .admin-status {
     grid-column: 2;
+  }
+
+  .admin-review-job-card .admin-status {
     justify-self: start;
   }
 
   .admin-review-job-card__meta {
-    grid-column: 2;
     width: 100%;
+    justify-content: flex-start;
+  }
+
+  .admin-review-job-card__actions {
+    justify-self: start;
     justify-content: flex-start;
   }
 

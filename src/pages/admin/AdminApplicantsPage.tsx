@@ -191,7 +191,7 @@ function AdminApplicantsPage() {
                         <span><FaCalendarAlt /> {formatDate(application.createdAt)}</span>
                       </div>
                     </div>
-                    <Link className="admin-button admin-button--secondary admin-button--icon" to={`/admin/jobs/${jobId}/applicants/${application.id}`}>
+                    <Link className="admin-button admin-button--secondary admin-button--icon admin-applicant-card__action" to={`/admin/jobs/${jobId}/applicants/${application.id}`}>
                       <span>Review</span>
                     </Link>
                   </article>
