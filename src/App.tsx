@@ -27,6 +27,8 @@ import AdminDashboardPage from './pages/admin/AdminDashboardPage';
 import AdminOverviewPage from './pages/admin/AdminOverviewPage';
 import AdminModerationPage from './pages/admin/AdminModerationPage';
 import AdminJobsPage from './pages/admin/AdminJobsPage';
+import AdminApplicantsPage from './pages/admin/AdminApplicantsPage';
+import AdminApplicantDetailPage from './pages/admin/AdminApplicantDetailPage';
 import AdminLoginPage from './pages/admin/AdminLoginPage';
 import AdminContentPage from './pages/admin/AdminContentPage';
 import AdminSeekersPage from './pages/admin/AdminSeekersPage';
@@ -93,6 +95,8 @@ function App() {
             <Route path="dashboard" element={<AdminOverviewPage />} />
             <Route path="moderation" element={<AdminModerationPage />} />
             <Route path="jobs" element={<AdminJobsPage />} />
+            <Route path="jobs/:jobId/applicants" element={<AdminApplicantsPage />} />
+            <Route path="jobs/:jobId/applicants/:applicationId" element={<AdminApplicantDetailPage />} />
             <Route path="content" element={<AdminContentPage />} />
             <Route path="filters" element={<AdminFiltersPage />} />
             <Route path="recommendations" element={<AdminRecommendationsPage />} />

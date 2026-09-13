@@ -1,4 +1,5 @@
 import { type FormEvent, useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import {
   FaBriefcase,
   FaBuilding,
@@ -586,6 +587,12 @@ function AdminJobsPage() {
                   <div className="admin-review-job-card__meta">
                     <span>{formatCompensation(job)}</span>
                     <span>{job.applicantCount} applicants</span>
+                  </div>
+                  <div className="admin-review-job-card__actions" onClick={(event) => event.stopPropagation()}>
+                    <Link className="admin-button admin-button--secondary admin-button--icon" to={`/admin/jobs/${job.id}/applicants`}>
+                      <FaEye />
+                      <span>Applicants</span>
+                    </Link>
                   </div>
                   <span className={`admin-status admin-status--${job.status.toLowerCase()}`}>{job.status}</span>
                 </button>

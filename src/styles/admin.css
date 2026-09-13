@@ -763,6 +763,241 @@
   color: #0f172a;
 }
 
+.admin-applicants-page {
+  display: grid;
+  gap: 1rem;
+}
+
+.admin-applicants-hero {
+  align-items: center;
+}
+
+.admin-applicants-toolbar {
+  display: grid;
+  gap: 1rem;
+  padding: 1rem 1.1rem;
+}
+
+.admin-applicants-toolbar__search {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  min-height: 48px;
+  padding: 0 0.85rem;
+  border: 1px solid #dfe7f1;
+  border-radius: 12px;
+  background: #f8fafc;
+  color: #64748b;
+}
+
+.admin-applicants-toolbar__search input {
+  width: 100%;
+  border: 0;
+  background: transparent;
+  color: #0f172a;
+  font: inherit;
+}
+
+.admin-applicants-toolbar__search input:focus {
+  outline: none;
+}
+
+.admin-applicants-toolbar__tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.admin-applicants-tab {
+  border: 1px solid #dfe7f1;
+  border-radius: 999px;
+  background: #f8fafc;
+  color: #334155;
+  font-weight: 800;
+  padding: 0.5rem 0.85rem;
+}
+
+.admin-applicants-tab--active {
+  border-color: #bfdbfe;
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+
+.admin-applicants-list {
+  display: grid;
+  gap: 0.8rem;
+}
+
+.admin-applicant-card {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 1rem;
+  align-items: center;
+  padding: 1rem;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 12px;
+  background: #ffffff;
+}
+
+.admin-applicant-card__avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #e0e7ff, #dbeafe);
+  color: #0f172a;
+  font-weight: 900;
+}
+
+.admin-applicant-card__avatar--large {
+  width: 64px;
+  height: 64px;
+  font-size: 1.15rem;
+}
+
+.admin-applicant-card__details {
+  min-width: 0;
+}
+
+.admin-applicant-card__header,
+.admin-applicant-detail__title-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.admin-applicant-card__details strong,
+.admin-applicant-detail__title-row h2,
+.admin-applicant-detail__section h3 {
+  color: #0f172a;
+}
+
+.admin-applicant-card__details p,
+.admin-applicant-detail__section p,
+.admin-applicant-detail__section li,
+.admin-applicant-detail__header p {
+  color: #475569;
+}
+
+.admin-applicant-card__meta,
+.admin-applicant-detail__facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.7rem;
+  margin-top: 0.55rem;
+  color: #64748b;
+  font-size: 0.8rem;
+}
+
+.admin-applicant-card__meta span,
+.admin-applicant-detail__facts span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.admin-applicant-status {
+  display: inline-flex;
+  justify-content: center;
+  padding: 0.35rem 0.65rem;
+  border-radius: 999px;
+  background: #f1f5f9;
+  color: #475569;
+  font-size: 0.74rem;
+  font-weight: 900;
+}
+
+.admin-applicant-status--applied,
+.admin-applicant-status--reviewing,
+.admin-applicant-status--shortlisted,
+.admin-applicant-status--interview,
+.admin-applicant-status--accepted,
+.admin-applicant-status--payment_pending,
+.admin-applicant-status--withdrawn {
+  color: #0f172a;
+}
+
+.admin-applicant-status--applied { background: #e0f2fe; color: #075985; }
+.admin-applicant-status--reviewing { background: #ede9fe; color: #6d28d9; }
+.admin-applicant-status--shortlisted { background: #dbeafe; color: #1d4ed8; }
+.admin-applicant-status--interview { background: #fef3c7; color: #92400e; }
+.admin-applicant-status--rejected { background: #fee2e2; color: #b91c1c; }
+.admin-applicant-status--accepted { background: #dcfce7; color: #166534; }
+.admin-applicant-status--payment_pending { background: #fef3c7; color: #92400e; }
+.admin-applicant-status--withdrawn { background: #f1f5f9; color: #475569; }
+
+.admin-applicant-detail-panel {
+  display: grid;
+  gap: 1.2rem;
+}
+
+.admin-applicant-detail__header {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 1rem;
+}
+
+.admin-applicant-detail__content {
+  display: grid;
+  gap: 1rem;
+}
+
+.admin-applicant-detail__section {
+  display: grid;
+  gap: 0.55rem;
+  padding-top: 0.4rem;
+  border-top: 1px solid #edf2f7;
+}
+
+.admin-applicant-detail__section:first-child {
+  border-top: 0;
+}
+
+.admin-applicant-detail__list {
+  display: grid;
+  gap: 0.5rem;
+  margin: 0;
+  padding-left: 1.2rem;
+}
+
+.admin-tag-list,
+.admin-entry-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+}
+
+.admin-tag {
+  display: inline-flex;
+  align-items: center;
+  min-height: 30px;
+  padding: 0 0.75rem;
+  border-radius: 999px;
+  background: #f1f5f9;
+  color: #334155;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.admin-entry-item {
+  display: grid;
+  gap: 0.2rem;
+  min-width: 220px;
+  padding: 0.8rem 0.9rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #f8fafc;
+}
+
+.admin-empty-inline {
+  color: #64748b;
+  font-size: 0.86rem;
+}
+
 .admin-status {
   display: inline-flex;
   justify-content: center;

@@ -410,6 +410,30 @@ export type EmployerApplicationDetail = {
   applicant: EmployerApplicant;
 };
 
+export type AdminApplicationListItem = {
+  id: string;
+  jobId: string;
+  jobTitle: string;
+  applicant: EmployerApplicant;
+  status: EmployerApplicationStatus;
+  createdAt: string;
+  updatedAt: string;
+  contractId: string | null;
+};
+
+export type AdminApplicationDetail = {
+  id: string;
+  jobId: string;
+  status: EmployerApplicationStatus;
+  coverLetter: string | null;
+  createdAt: string;
+  updatedAt: string;
+  contractId: string | null;
+  resume: { available: boolean; source: 'application' | 'profile' | 'template' | null; submittedAt: string | null; version: string | null };
+  job: { id: string; title: string };
+  applicant: EmployerApplicant;
+};
+
 export type EmployerApplicationsResponse = {
   success: true;
   data: { applications: EmployerApplicationListItem[] };
@@ -418,6 +442,16 @@ export type EmployerApplicationsResponse = {
 export type EmployerApplicationResponse = {
   success: true;
   data: { application: EmployerApplicationDetail };
+};
+
+export type AdminApplicationsResponse = {
+  success: true;
+  data: { applications: AdminApplicationListItem[] };
+};
+
+export type AdminApplicationResponse = {
+  success: true;
+  data: { application: AdminApplicationDetail };
 };
 
 export type EmployerConversation = {
@@ -1113,6 +1147,14 @@ export function getEmployerApplications(jobId: string, token: string) {
   return request<EmployerApplicationsResponse>({ method: 'GET', endpoint: `/employer/jobs/${encodeURIComponent(jobId)}/applications`, token });
 }
 
+export function getAdminJobApplications(jobId: string, token: string) {
+  return request<AdminApplicationsResponse>({ method: 'GET', endpoint: `/admin/jobs/${encodeURIComponent(jobId)}/applications`, token });
+}
+
+export function getAdminJobApplication(jobId: string, applicationId: string, token: string) {
+  return request<AdminApplicationResponse>({ method: 'GET', endpoint: `/admin/jobs/${encodeURIComponent(jobId)}/applications/${encodeURIComponent(applicationId)}`, token });
+}
+
 export function getEmployerApplication(jobId: string, applicationId: string, token: string) {
   return request<EmployerApplicationResponse>({ method: 'GET', endpoint: `/employer/jobs/${encodeURIComponent(jobId)}/applications/${encodeURIComponent(applicationId)}`, token });
 }
@@ -1130,6 +1172,14 @@ export function selectContractApplication(jobId: string, applicationId: string, 
   return request<{ success: true; data: { selection: { contractId: string; applicationId: string; status: 'PAYMENT_PENDING' } } }>({
     method: 'POST',
     endpoint: `/employer/jobs/${encodeURIComponent(jobId)}/applications/${encodeURIComponent(applicationId)}/select-contract`,
+    token,
+  });
+}
+
+export function selectAdminContractApplication(jobId: string, applicationId: string, token: string) {
+  return request<{ success: true; data: { selection: { contractId: string; applicationId: string; status: 'PAYMENT_PENDING' } } }>({
+    method: 'POST',
+    endpoint: `/admin/jobs/${encodeURIComponent(jobId)}/applications/${encodeURIComponent(applicationId)}/select-contract`,
     token,
   });
 }
@@ -1236,6 +1286,22 @@ export function createEmployerApplicationConversation(jobId: string, application
 export async function getEmployerApplicationResume(jobId: string, applicationId: string, token: string): Promise<ApiResponse<Blob>> {
   try {
     const response = await fetch(`${API_BASE_URL}/employer/jobs/${encodeURIComponent(jobId)}/applications/${encodeURIComponent(applicationId)}/resume`, {
+      method: 'GET',
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!response.ok) {
+      const data = await response.json().catch(() => undefined) as { message?: string } | undefined;
+      return { ok: false, status: response.status, error: { message: data?.message ?? 'CV could not be loaded.' } };
+    }
+    return { ok: true, status: response.status, data: await response.blob() };
+  } catch (error) {
+    return { ok: false, status: 0, error: { message: error instanceof Error ? error.message : 'CV could not be loaded.' } };
+  }
+}
+
+export async function getAdminJobApplicationResume(jobId: string, applicationId: string, token: string): Promise<ApiResponse<Blob>> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/admin/jobs/${encodeURIComponent(jobId)}/applications/${encodeURIComponent(applicationId)}/resume`, {
       method: 'GET',
       headers: { Authorization: `Bearer ${token}` },
     });

@@ -156,7 +156,6 @@ function JobDetailsPage() {
             </p>
             <div className="job-detail-tags">
               <span className="job-tag job-tag--yellow">{job.engagementType === 'CONTRACT' ? 'Contract Job' : formatJobType(job.engagementType ?? job.jobType)}</span>
-              {job.company?.industry ? <span className="job-tag job-tag--blue">{job.company.industry}</span> : null}
               {job.workArrangement ? <span className="job-tag job-tag--green">{formatJobType(job.workArrangement)}</span> : null}
             </div>
             {job.compensation?.type === 'CONTRACT' ? <div className="job-detail-contract-dates"><span>{job.compensation.startMode === 'SCHEDULED' && job.compensation.scheduledStartDate ? `Starts ${new Date(job.compensation.scheduledStartDate).toLocaleDateString()}` : 'Starts immediately'}</span>{job.compensation.expectedCompletionDate ? <span>Expected completion {new Date(job.compensation.expectedCompletionDate).toLocaleDateString()}</span> : null}</div> : null}
@@ -186,6 +185,7 @@ function JobDetailsPage() {
             <ul className="job-detail-check-list">
               <li><FaCheck /><span>{job.company?.location || 'Company location not provided'}</span></li>
               <li><FaCheck /><span>{job.company?.website || 'Company website not provided'}</span></li>
+              {job.company?.industry ? <li><FaCheck /><span>Industry: {job.company.industry}</span></li> : null}
             </ul>
           </section>
 
