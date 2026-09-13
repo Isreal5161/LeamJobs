@@ -3305,9 +3305,7 @@
 @media (max-width: 767px) {
   .admin-layout {
     min-height: 100vh;
-    background:
-      linear-gradient(180deg, #17251c 0, #17251c 178px, #f8fafc 178px),
-      #f8fafc;
+    background: #f8fafc;
   }
 
   .admin-layout__shell {
@@ -3338,23 +3336,15 @@
     position: relative;
     align-items: flex-start;
     flex-direction: column;
-    padding: 1.15rem 1rem 4.8rem;
-    border: 0;
-    border-radius: 0 0 28px 28px;
-    box-shadow: none;
+    padding: 1.15rem 1rem 1.25rem;
+    border: 1px solid #e2e8f0;
+    border-radius: 16px;
+    box-shadow: 0 12px 26px rgba(15, 23, 42, 0.05);
     overflow: hidden;
   }
 
   .admin-hero::after {
-    content: '';
-    position: absolute;
-    right: -54px;
-    bottom: -72px;
-    width: 178px;
-    height: 178px;
-    border: 28px solid rgba(185, 247, 212, 0.18);
-    border-radius: 50%;
-    pointer-events: none;
+    display: none;
   }
 
   .admin-hero h1 {

@@ -446,12 +446,12 @@ export type EmployerApplicationResponse = {
 
 export type AdminApplicationsResponse = {
   success: true;
-  data: { applications: AdminApplicationListItem[] };
+  data: { applications: AdminApplicationListItem[]; adminCanManageApplicants: boolean };
 };
 
 export type AdminApplicationResponse = {
   success: true;
-  data: { application: AdminApplicationDetail };
+  data: { application: AdminApplicationDetail; adminCanManageApplicants: boolean };
 };
 
 export type EmployerConversation = {

@@ -29,6 +29,7 @@ function AdminApplicantsPage() {
   const [query, setQuery] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
+  const [adminCanManageApplicants, setAdminCanManageApplicants] = useState(false);
 
   useEffect(() => {
     if (!token || !jobId) {
@@ -70,6 +71,7 @@ function AdminApplicantsPage() {
 
       setJob(jobResult.data.data.job);
       setApplications(applicationsResult.data.data.applications);
+      setAdminCanManageApplicants(Boolean(applicationsResult.data.data.adminCanManageApplicants));
       setIsLoading(false);
     };
 
@@ -117,7 +119,7 @@ function AdminApplicantsPage() {
         <div>
           <span className="admin-eyebrow">Applicant management</span>
           <h1>{job.title}</h1>
-          <p>Review applicants for this LeamJobs-owned role without changing the underlying hiring workflow.</p>
+          <p>{adminCanManageApplicants ? 'Admin management enabled for this LeamJobs-owned role.' : 'View only. This job belongs to an employer and applicant management is restricted to the employer who posted it.'}</p>
         </div>
         <Link className="admin-button admin-button--secondary admin-button--icon" to="/admin/jobs">
           <FaArrowRight style={{ transform: 'rotate(180deg)' }} />
@@ -151,6 +153,13 @@ function AdminApplicantsPage() {
           ))}
         </div>
       </section>
+
+      {!error && !adminCanManageApplicants ? (
+        <section className="admin-panel admin-empty-state" aria-live="polite">
+          <strong>View only</strong>
+          <p>This job belongs to an employer. Applicant management actions are restricted to the employer who posted the job.</p>
+        </section>
+      ) : null}
 
       {error ? (
         <section className="admin-panel admin-empty-state" role="alert">

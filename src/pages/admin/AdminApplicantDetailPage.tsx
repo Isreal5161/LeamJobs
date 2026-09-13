@@ -27,6 +27,7 @@ function AdminApplicantDetailPage() {
   const [application, setApplication] = useState<AdminApplicationDetail | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
+  const [adminCanManageApplicants, setAdminCanManageApplicants] = useState(false);
   const [isOpeningResume, setIsOpeningResume] = useState(false);
   const [resumeError, setResumeError] = useState('');
   const [isSelecting, setIsSelecting] = useState(false);
@@ -74,6 +75,7 @@ function AdminApplicantDetailPage() {
 
       setJob(jobResult.data.data.job);
       setApplication(applicationResult.data.data.application);
+      setAdminCanManageApplicants(Boolean(applicationResult.data.data.adminCanManageApplicants));
       setIsLoading(false);
     };
 
@@ -101,7 +103,7 @@ function AdminApplicantDetailPage() {
     setIsOpeningResume(false);
   };
 
-  const canSelectCandidate = job !== null && application !== null
+  const canSelectCandidate = adminCanManageApplicants && job !== null && application !== null
     && job.engagementType === 'CONTRACT'
     && !application.contractId
     && !['ACCEPTED', 'PAYMENT_PENDING'].includes(application.status)
@@ -148,6 +150,11 @@ function AdminApplicantDetailPage() {
           <span className="admin-eyebrow">Applicant review</span>
           <h1>{applicant.fullName}</h1>
           <p>{job.title} · {applicant.professionalTitle || 'Professional title not provided'}</p>
+          {adminCanManageApplicants ? (
+            <p className="admin-applicant-mode admin-applicant-mode--enabled">Admin management enabled</p>
+          ) : (
+            <p className="admin-applicant-mode admin-applicant-mode--readonly">View only</p>
+          )}
         </div>
         <Link className="admin-button admin-button--secondary admin-button--icon" to={`/admin/jobs/${jobId}/applicants`}>
           <FaArrowLeft />
@@ -169,7 +176,7 @@ function AdminApplicantDetailPage() {
         </section>
       ) : null}
 
-      {showConfirmSelection ? (
+      {adminCanManageApplicants && showConfirmSelection ? (
         <section className="admin-panel" role="dialog" aria-modal="true" aria-labelledby="admin-contract-selection-title">
           <div className="admin-release-confirmation">
             <div>
@@ -203,6 +210,9 @@ function AdminApplicantDetailPage() {
                 <FaCheck />
                 <span>Select candidate</span>
               </button>
+            ) : null}
+            {!adminCanManageApplicants ? (
+              <span className="admin-applicant-mode-badge admin-applicant-mode-badge--readonly">View only</span>
             ) : null}
             <button type="button" className="admin-button admin-button--secondary admin-button--icon" onClick={() => void openResume()} disabled={isOpeningResume}>
               {isOpeningResume ? <FaSpinner className="leamjobs-spin" /> : <FaFileAlt />}

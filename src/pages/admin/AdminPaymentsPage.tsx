@@ -49,7 +49,7 @@ function AdminPaymentsPage() {
 
   return (
     <div className="payment-page admin-release-page">
-      <section className="payment-hero"><div><span>Admin finance control</span><h1>Release eligible funds</h1><p>Review completed freelance contracts before crediting seeker wallets.</p></div><FaCoins aria-hidden="true" /></section>
+      <section className="admin-hero payment-hero"><div><span className="admin-eyebrow"><FaCoins /> Admin finance control</span><h1>Release eligible funds</h1><p>Review completed freelance contracts before crediting seeker wallets.</p></div><div className="admin-hero__actions"><span className="admin-icon-button" aria-hidden="true"><FaCoins /></span></div></section>
       {message ? <p className="payment-copy payment-copy--success" role="status">{message}</p> : null}
       {error ? <p className="payment-copy payment-copy--error" role="alert">{error}</p> : null}
       {released ? <section className="payment-panel admin-release-success" role="status"><div className="payment-heading"><div><span><FaCheckCircle /> Release complete</span><h2>{released.candidate.job.title}</h2></div><span className="payment-status payment-status--completed">{released.result.status}</span></div><p><strong>{money(released.result.releasedAmount, released.result.currency)}</strong> was credited to {fullName(released.candidate.seeker)}&apos;s wallet.</p><div className="admin-release-card__status"><span>Seeker: {fullName(released.candidate.seeker)}</span><span>Employer: {fullName(released.candidate.employer)}</span><span>Released: {formatDate(released.result.releasedAt)}</span></div></section> : null}
