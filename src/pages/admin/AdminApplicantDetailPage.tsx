@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { FaArrowLeft, FaCalendarAlt, FaCheck, FaDownload, FaFileAlt, FaMapMarkerAlt, FaSpinner } from 'react-icons/fa';
+import { FaArrowLeft, FaCalendarAlt, FaCheck, FaDownload, FaFileAlt, FaMapMarkerAlt, FaSpinner, FaTimes } from 'react-icons/fa';
 import { useAuth } from '../../context/AuthContext';
 import {
   getAdminJob,
@@ -35,6 +35,7 @@ function AdminApplicantDetailPage() {
   const [isSelecting, setIsSelecting] = useState(false);
   const [selectionError, setSelectionError] = useState('');
   const [showConfirmSelection, setShowConfirmSelection] = useState(false);
+  const [pendingRejection, setPendingRejection] = useState(false);
   const [isMutating, setIsMutating] = useState(false);
   const [actionError, setActionError] = useState('');
   const [actionMessage, setActionMessage] = useState('');
@@ -121,15 +122,19 @@ function AdminApplicantDetailPage() {
 
   const updateStatus = async (status: EmployerApplicationStatus) => {
     if (!token || !jobId || !applicationId || !application || isMutating || application.status === status) return;
-    setIsMutating(true);
-    setActionError('');
-    setActionMessage('');
-
+    if (status === 'REJECTED' && !pendingRejection) {
+      setPendingRejection(true);
+      return;
+    }
     if (status === 'ACCEPTED' && job?.engagementType === 'CONTRACT') {
       setShowConfirmSelection(true);
       setIsMutating(false);
       return;
     }
+
+    setIsMutating(true);
+    setActionError('');
+    setActionMessage('');
 
     const result = await updateAdminApplicationStatus(jobId, applicationId, status, token);
     if (!result.ok) {
@@ -138,6 +143,7 @@ function AdminApplicantDetailPage() {
       setApplication((current) => current ? { ...current, status, updatedAt: result.data.data.application.updatedAt } : current);
       setActionMessage(`Application moved to ${statusLabels[status]}.`);
     }
+    setPendingRejection(false);
     setIsMutating(false);
   };
 
@@ -300,14 +306,49 @@ function AdminApplicantDetailPage() {
           {adminCanManageApplicants ? (
             <article className="admin-applicant-detail__section">
               <h3>Application status</h3>
-              <label className="admin-applicant-detail__status-field">
-                <span>Update status</span>
-                <select value={application.status} onChange={(event) => void updateStatus(event.target.value as EmployerApplicationStatus)} disabled={isMutating}>
-                  {applicationStatusOptions.map((status) => (
-                    <option key={status} value={status}>{statusLabels[status]}</option>
-                  ))}
-                </select>
-              </label>
+              <div className="admin-applicant-detail__status-field">
+                <label>
+                  <span>Current status</span>
+                  <div className={statusClass(application.status)}>{statusLabels[application.status]}</div>
+                </label>
+                <label>
+                  <span>Update status</span>
+                  <select value={application.status} onChange={(event) => void updateStatus(event.target.value as EmployerApplicationStatus)} disabled={isMutating}>
+                    {applicationStatusOptions.map((status) => (
+                      <option key={status} value={status}>{statusLabels[status]}</option>
+                    ))}
+                  </select>
+                </label>
+              </div>
+              {pendingRejection ? (
+                <div className="admin-release-confirmation" role="alert">
+                  <div>
+                    <strong>Reject this application?</strong>
+                    <p>This moves the candidate out of the active review queue.</p>
+                  </div>
+                  <div className="admin-release-confirmation__actions">
+                    <button type="button" className="admin-button admin-button--secondary" onClick={() => setPendingRejection(false)} disabled={isMutating}>Cancel</button>
+                    <button type="button" className="admin-button admin-button--primary" onClick={() => void updateStatus('REJECTED')} disabled={isMutating}>
+                      <FaTimes />
+                      <span>Confirm reject</span>
+                    </button>
+                  </div>
+                </div>
+              ) : null}
+              <div className="admin-applicant-detail__status-actions">
+                {!['REJECTED', 'WITHDRAWN', 'ACCEPTED'].includes(application.status) ? (
+                  <button type="button" className="admin-button admin-button--secondary" onClick={() => void updateStatus('REJECTED')} disabled={isMutating}>
+                    <FaTimes />
+                    <span>Reject</span>
+                  </button>
+                ) : null}
+                {!['SHORTLISTED', 'INTERVIEW', 'ACCEPTED', 'REJECTED', 'WITHDRAWN'].includes(application.status) ? (
+                  <button type="button" className="admin-button admin-button--primary" onClick={() => void updateStatus('SHORTLISTED')} disabled={isMutating}>
+                    <FaCheck />
+                    <span>Shortlist</span>
+                  </button>
+                ) : null}
+              </div>
               {application.contractId ? (
                 <button type="button" className="admin-button admin-button--secondary admin-button--icon" onClick={() => navigate(`/admin/contracts/${encodeURIComponent(application.contractId!)}`)}>
                   <FaCheck />
