@@ -588,13 +588,15 @@ function AdminJobsPage() {
                     <span>{formatCompensation(job)}</span>
                     <span>{job.applicantCount} applicants</span>
                   </div>
-                  <div className="admin-review-job-card__actions" onClick={(event) => event.stopPropagation()}>
-                    <Link className="admin-button admin-button--secondary admin-button--icon" to={`/admin/jobs/${job.id}/applicants`}>
-                      <FaEye />
-                      <span>Applicants</span>
-                    </Link>
+                  <div className="admin-review-job-card__side" onClick={(event) => event.stopPropagation()}>
+                    <span className={`admin-status admin-status--${job.status.toLowerCase()}`}>{job.status}</span>
+                    <div className="admin-review-job-card__actions">
+                      <Link className="admin-button admin-button--secondary admin-button--icon" to={`/admin/jobs/${job.id}/applicants`}>
+                        <FaEye />
+                        <span>Applicants</span>
+                      </Link>
+                    </div>
                   </div>
-                  <span className={`admin-status admin-status--${job.status.toLowerCase()}`}>{job.status}</span>
                 </button>
               ))
             )}

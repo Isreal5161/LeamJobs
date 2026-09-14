@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { FaBuilding, FaCrown, FaEdit, FaFilter, FaFlag, FaHome, FaMoneyBillWave, FaStar, FaUser } from 'react-icons/fa';
 import DashboardTopbar from '../components/layout/DashboardTopbar';
 import MobileBottomNav from '../components/layout/MobileBottomNav';
+import { useAuth } from '../context/AuthContext';
 
 const adminMenuLinks = [
   { label: 'Overview', to: '/admin/dashboard', icon: FaHome },
@@ -19,6 +20,7 @@ const adminMenuLinks = [
 
 function AdminLayout() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { logout } = useAuth();
 
   return (
     <div className="admin-layout">
@@ -27,6 +29,7 @@ function AdminLayout() {
           role="admin"
           mobileMenuOpen={mobileMenuOpen}
           onMobileMenuToggle={() => setMobileMenuOpen((open) => !open)}
+          onLogout={logout}
         />
         {mobileMenuOpen ? (
           <>

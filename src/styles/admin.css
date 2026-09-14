@@ -807,17 +807,24 @@
 
 .admin-applicants-toolbar__tabs {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: 0.5rem;
+  overflow-x: auto;
+  padding-bottom: 0.15rem;
+  scrollbar-width: thin;
 }
 
 .admin-applicants-tab {
+  flex: 0 0 auto;
   border: 1px solid #dfe7f1;
   border-radius: 999px;
   background: #f8fafc;
   color: #334155;
+  font-size: 0.76rem;
   font-weight: 800;
-  padding: 0.5rem 0.85rem;
+  line-height: 1.2;
+  padding: 0.45rem 0.72rem;
+  min-height: 34px;
 }
 
 .admin-applicants-tab--active {
@@ -873,6 +880,10 @@
 }
 
 .admin-applicant-card__header {
+  flex-wrap: wrap;
+}
+
+.admin-applicant-detail__title-row {
   flex-wrap: wrap;
 }
 
@@ -952,7 +963,13 @@
   display: flex;
   flex-wrap: wrap;
   justify-content: flex-end;
+  align-items: center;
   gap: 0.65rem;
+}
+
+.admin-applicant-detail__actions .admin-button,
+.admin-applicant-detail__actions .admin-applicant-mode-badge {
+  flex-shrink: 0;
 }
 
 .admin-applicant-card__action {
@@ -1057,6 +1074,12 @@
   display: flex;
   flex-wrap: wrap;
   gap: 0.75rem;
+  align-items: center;
+}
+
+.admin-applicant-detail__status-actions .admin-button {
+  flex: 1 1 160px;
+  min-width: 0;
 }
 
 .admin-applicant-detail__feedback {
@@ -1083,6 +1106,43 @@
   gap: 0.5rem;
   margin: 0;
   padding-left: 1.2rem;
+}
+
+@media (max-width: 820px) {
+  .admin-applicant-detail__header {
+    grid-template-columns: 1fr;
+    align-items: flex-start;
+  }
+
+  .admin-applicant-detail__actions {
+    justify-content: flex-start;
+  }
+}
+
+@media (max-width: 640px) {
+  .admin-applicant-detail__status-card {
+    padding: 1rem;
+  }
+
+  .admin-applicant-detail__status-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .admin-applicant-detail__status-row {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-applicant-detail__status-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0.65rem;
+  }
+
+  .admin-applicant-detail__status-actions .admin-button {
+    width: 100%;
+    flex-basis: auto;
+  }
 }
 
 .admin-tag-list,
@@ -1121,16 +1181,23 @@
 
 .admin-status {
   display: inline-flex;
+  align-items: center;
   justify-content: center;
-  padding: 0.35rem 0.65rem;
+  min-height: 2rem;
+  padding: 0.35rem 0.7rem;
+  border: 1px solid transparent;
   border-radius: 999px;
   background: #f1f5f9;
   color: #475569;
   font-size: 0.76rem;
   font-weight: 900;
+  line-height: 1;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
 }
 
 .admin-status--approved {
+  border-color: #a7f3d0;
   background: #e8f7ee;
   color: #16803c;
 }
@@ -1625,12 +1692,21 @@
 
 .admin-review-job-card {
   grid-template-columns: 44px minmax(0, 1fr) minmax(180px, auto) auto;
+  align-items: center;
   border-color: #e1e8f1;
   border-radius: 9px;
 }
 
 .admin-review-job-card__content {
   min-width: 0;
+}
+
+.admin-review-job-card__side {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 0.55rem;
 }
 
 .admin-review-job-card__content strong,
@@ -1664,6 +1740,10 @@
 
 .admin-review-job-card__actions .admin-button {
   white-space: nowrap;
+}
+
+.admin-review-job-card__side .admin-status {
+  align-self: flex-end;
 }
 
 .admin-review-job-card__meta span {

@@ -203,7 +203,8 @@
 .seeker-application-card__top {
   display: flex;
   justify-content: space-between;
-  gap: 1rem;
+  align-items: center;
+  gap: 0.75rem;
   min-width: 0;
 }
 
@@ -279,11 +280,16 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 40px;
+  min-width: 40px;
   height: 40px;
-  border-radius: var(--seeker-inner-radius);
+  padding: 0 0.8rem;
+  border-radius: 999px;
   background: #eff5ff;
   color: #0e4ae1;
+  font-size: 0.75rem;
+  font-weight: 700;
+  line-height: 1;
+  white-space: nowrap;
 }
 
 .seeker-application-card__link:hover {
