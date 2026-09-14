@@ -661,6 +661,82 @@
   font-size: 0.84rem;
 }
 
+.seeker-application-cv-options {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.7rem;
+}
+
+.seeker-application-cv-option {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+  gap: 0.7rem;
+  min-height: 92px;
+  padding: 0.85rem;
+  border: 1px solid #d7dee8;
+  border-radius: 8px;
+  background: #f8fafc;
+  color: #172033;
+  cursor: pointer;
+  transition: border-color 160ms ease, background-color 160ms ease, box-shadow 160ms ease;
+}
+
+.seeker-application-cv-option:hover {
+  border-color: #f08a4b;
+  background: #fffaf6;
+}
+
+.seeker-application-cv-option:has(input:checked) {
+  border-color: #e5682f;
+  background: #fff7f1;
+  box-shadow: 0 0 0 2px rgba(229, 104, 47, 0.14);
+}
+
+.seeker-application-cv-option:has(input:disabled) {
+  border-color: #e2e8f0;
+  background: #f1f5f9;
+  color: #94a3b8;
+  cursor: not-allowed;
+  opacity: 0.78;
+}
+
+.seeker-application-cv-option input {
+  width: 1rem;
+  height: 1rem;
+  margin: 0.15rem 0 0;
+  accent-color: #e5682f;
+}
+
+.seeker-application-cv-option input:focus-visible {
+  outline: 3px solid rgba(229, 104, 47, 0.24);
+  outline-offset: 3px;
+}
+
+.seeker-application-cv-option > span {
+  display: grid;
+  gap: 0.3rem;
+  min-width: 0;
+}
+
+.seeker-application-cv-option strong {
+  color: #172033;
+  font-size: 0.85rem;
+  line-height: 1.3;
+}
+
+.seeker-application-cv-option small {
+  color: #64748b;
+  font-size: 0.74rem;
+  line-height: 1.45;
+}
+
+.seeker-application-cv-option:has(input:disabled) strong,
+.seeker-application-cv-option:has(input:disabled) small {
+  color: #94a3b8;
+}
+
 .seeker-application-cv-selected {
   display: inline-flex;
   align-items: center;
@@ -1049,6 +1125,10 @@
   }
 
   .seeker-application-cv-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .seeker-application-cv-options {
     grid-template-columns: 1fr;
   }
 
