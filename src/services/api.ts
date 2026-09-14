@@ -1050,7 +1050,7 @@ export type AdminAnalytics = {
     paymentsByType: { paymentType: string; count: number }[];
     subscriptionsByStatus: { status: string; count: number }[];
   };
-  financial: Record<'successfulPayments' | 'fundedEscrow' | 'releasedEscrow' | 'platformFees', { currency: string; amount: string }[]>;
+  financial: Record<'successfulPayments' | 'contractFunding' | 'subscriptionPayments' | 'pendingPayments' | 'failedPayments' | 'fundedEscrow' | 'releasedEscrow' | 'platformFees', { currency: string; amount: string }[]>;
 };
 
 export type AdminAnalyticsResponse = { success: true; data: AdminAnalytics };
@@ -1061,6 +1061,62 @@ export function getAdminAnalytics(token: string, query: { from?: string; to?: st
   if (query.to) params.set('to', query.to);
   if (query.granularity) params.set('granularity', query.granularity);
   return request<AdminAnalyticsResponse>({ method: 'GET', endpoint: `/admin/analytics?${params.toString()}`, token });
+}
+
+export type AdminPaymentStatus = 'PENDING' | 'PROCESSING' | 'SUCCESSFUL' | 'FAILED' | 'CANCELLED' | 'REFUNDED';
+export type AdminPaymentType = 'SUBSCRIPTION' | 'CONTRACT_FUNDING' | 'OTHER';
+export type AdminPaymentProvider = 'FLUTTERWAVE' | 'OTHER';
+
+export type AdminPayment = {
+  id: string;
+  providerReference: string;
+  transactionId: string | null;
+  payer: { id: string; name: string; email: string };
+  paymentType: AdminPaymentType;
+  provider: AdminPaymentProvider;
+  amount: string;
+  currency: string;
+  status: AdminPaymentStatus;
+  verifiedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+  context: {
+    subscriptionId: string | null;
+    subscriptionPlan: string | null;
+    escrowId: string | null;
+    contractId: string | null;
+    jobId: string | null;
+    jobTitle: string | null;
+  };
+};
+
+export type AdminPaymentsQuery = {
+  limit?: number;
+  cursor?: string;
+  status?: AdminPaymentStatus;
+  paymentType?: AdminPaymentType;
+  provider?: AdminPaymentProvider;
+  currency?: string;
+  from?: string;
+  to?: string;
+  search?: string;
+};
+
+export type AdminPaymentsResponse = { success: true; data: { items: AdminPayment[]; nextCursor: string | null } };
+
+export function getAdminPayments(token: string, query: AdminPaymentsQuery = {}) {
+  const params = new URLSearchParams();
+  if (query.limit !== undefined) params.set('limit', String(query.limit));
+  if (query.cursor) params.set('cursor', query.cursor);
+  if (query.status) params.set('status', query.status);
+  if (query.paymentType) params.set('paymentType', query.paymentType);
+  if (query.provider) params.set('provider', query.provider);
+  if (query.currency?.trim()) params.set('currency', query.currency.trim().toUpperCase());
+  if (query.from) params.set('from', query.from);
+  if (query.to) params.set('to', query.to);
+  if (query.search?.trim()) params.set('search', query.search.trim());
+  const queryString = params.toString();
+  return request<AdminPaymentsResponse>({ method: 'GET', endpoint: `/admin/payments${queryString ? `?${queryString}` : ''}`, token });
 }
 
 export type SiteContentResponse = { success: true; data: { content: Record<string, unknown> } };
