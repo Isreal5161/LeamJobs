@@ -976,6 +976,108 @@
   border-top: 0;
 }
 
+.admin-applicant-detail__status-card {
+  display: grid;
+  gap: 1rem;
+  margin-top: 0.5rem;
+  padding: 1.25rem;
+  border: 1px solid #dbeafe;
+  border-radius: 18px;
+  background: linear-gradient(180deg, #f8fbff 0%, #eef6ff 100%);
+  box-shadow: 0 8px 20px rgba(37, 99, 235, 0.08);
+}
+
+.admin-applicant-detail__status-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.admin-applicant-detail__status-header h3 {
+  margin: 0;
+}
+
+.admin-applicant-detail__status-header p {
+  margin: 0.35rem 0 0;
+  color: #64748b;
+  font-size: 0.88rem;
+}
+
+.admin-applicant-detail__status-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+  align-items: end;
+}
+
+.admin-applicant-detail__status-field {
+  display: grid;
+  gap: 0.55rem;
+  color: #334155;
+  font-weight: 700;
+}
+
+.admin-applicant-detail__status-label {
+  font-size: 0.76rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #475569;
+}
+
+.admin-applicant-detail__status-select {
+  width: 100%;
+  min-height: 46px;
+  padding: 0.75rem 0.9rem;
+  border: 1px solid #c7d2fe;
+  border-radius: 12px;
+  background: #ffffff;
+  color: #0f172a;
+  font-size: 0.96rem;
+  font-weight: 700;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.admin-applicant-detail__status-select:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.12);
+  outline: none;
+}
+
+.admin-applicant-detail__status-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 46px;
+  border-radius: 12px;
+  font-size: 0.9rem;
+}
+
+.admin-applicant-detail__status-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.admin-applicant-detail__feedback {
+  margin: 0;
+  border-radius: 10px;
+  padding: 0.7rem 0.9rem;
+  font-weight: 700;
+}
+
+.admin-applicant-detail__feedback--success {
+  background: #ecfdf5;
+  border: 1px solid #a7f3d0;
+  color: #166534;
+}
+
+.admin-applicant-detail__feedback--error {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #991b1b;
+}
+
 .admin-applicant-detail__list {
   display: grid;
   gap: 0.5rem;

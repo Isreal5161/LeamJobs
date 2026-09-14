@@ -303,61 +303,6 @@ function AdminApplicantDetailPage() {
             </div>
           </article>
 
-          {adminCanManageApplicants ? (
-            <article className="admin-applicant-detail__section">
-              <h3>Application status</h3>
-              <div className="admin-applicant-detail__status-field">
-                <label>
-                  <span>Current status</span>
-                  <div className={statusClass(application.status)}>{statusLabels[application.status]}</div>
-                </label>
-                <label>
-                  <span>Update status</span>
-                  <select value={application.status} onChange={(event) => void updateStatus(event.target.value as EmployerApplicationStatus)} disabled={isMutating}>
-                    {applicationStatusOptions.map((status) => (
-                      <option key={status} value={status}>{statusLabels[status]}</option>
-                    ))}
-                  </select>
-                </label>
-              </div>
-              {pendingRejection ? (
-                <div className="admin-release-confirmation" role="alert">
-                  <div>
-                    <strong>Reject this application?</strong>
-                    <p>This moves the candidate out of the active review queue.</p>
-                  </div>
-                  <div className="admin-release-confirmation__actions">
-                    <button type="button" className="admin-button admin-button--secondary" onClick={() => setPendingRejection(false)} disabled={isMutating}>Cancel</button>
-                    <button type="button" className="admin-button admin-button--primary" onClick={() => void updateStatus('REJECTED')} disabled={isMutating}>
-                      <FaTimes />
-                      <span>Confirm reject</span>
-                    </button>
-                  </div>
-                </div>
-              ) : null}
-              <div className="admin-applicant-detail__status-actions">
-                {!['REJECTED', 'WITHDRAWN', 'ACCEPTED'].includes(application.status) ? (
-                  <button type="button" className="admin-button admin-button--secondary" onClick={() => void updateStatus('REJECTED')} disabled={isMutating}>
-                    <FaTimes />
-                    <span>Reject</span>
-                  </button>
-                ) : null}
-                {!['SHORTLISTED', 'INTERVIEW', 'ACCEPTED', 'REJECTED', 'WITHDRAWN'].includes(application.status) ? (
-                  <button type="button" className="admin-button admin-button--primary" onClick={() => void updateStatus('SHORTLISTED')} disabled={isMutating}>
-                    <FaCheck />
-                    <span>Shortlist</span>
-                  </button>
-                ) : null}
-              </div>
-              {application.contractId ? (
-                <button type="button" className="admin-button admin-button--secondary admin-button--icon" onClick={() => navigate(`/admin/contracts/${encodeURIComponent(application.contractId!)}`)}>
-                  <FaCheck />
-                  <span>Open contract workspace</span>
-                </button>
-              ) : null}
-            </article>
-          ) : null}
-
           {application.coverLetter ? (
             <article className="admin-applicant-detail__section">
               <h3>Cover letter</h3>
@@ -433,6 +378,77 @@ function AdminApplicantDetailPage() {
                   </div>
                 ))}
               </div>
+            </article>
+          ) : null}
+
+          {adminCanManageApplicants ? (
+            <article className="admin-applicant-detail__section admin-applicant-detail__status-card">
+              <div className="admin-applicant-detail__status-header">
+                <div>
+                  <h3>Application status</h3>
+                  <p>Keep the candidate moving through the correct review workflow.</p>
+                </div>
+                <span className={statusClass(application.status)}>{statusLabels[application.status]}</span>
+              </div>
+
+              <div className="admin-applicant-detail__status-row">
+                <div className="admin-applicant-detail__status-field">
+                  <span className="admin-applicant-detail__status-label">Current status</span>
+                  <div className={`admin-applicant-status admin-applicant-status--${application.status.toLowerCase()}`}>
+                    {statusLabels[application.status]}
+                  </div>
+                </div>
+
+                <label className="admin-applicant-detail__status-field">
+                  <span className="admin-applicant-detail__status-label">Update status</span>
+                  <select className="admin-applicant-detail__status-select" value={application.status} onChange={(event) => void updateStatus(event.target.value as EmployerApplicationStatus)} disabled={isMutating}>
+                    {applicationStatusOptions.map((status) => (
+                      <option key={status} value={status}>{statusLabels[status]}</option>
+                    ))}
+                  </select>
+                </label>
+              </div>
+
+              {pendingRejection ? (
+                <div className="admin-release-confirmation" role="alert">
+                  <div>
+                    <strong>Reject this application?</strong>
+                    <p>This moves the candidate out of the active review queue.</p>
+                  </div>
+                  <div className="admin-release-confirmation__actions">
+                    <button type="button" className="admin-button admin-button--secondary" onClick={() => setPendingRejection(false)} disabled={isMutating}>Cancel</button>
+                    <button type="button" className="admin-button admin-button--primary" onClick={() => void updateStatus('REJECTED')} disabled={isMutating}>
+                      <FaTimes />
+                      <span>Confirm reject</span>
+                    </button>
+                  </div>
+                </div>
+              ) : null}
+
+              <div className="admin-applicant-detail__status-actions">
+                {!['REJECTED', 'WITHDRAWN', 'ACCEPTED'].includes(application.status) ? (
+                  <button type="button" className="admin-button admin-button--secondary" onClick={() => void updateStatus('REJECTED')} disabled={isMutating}>
+                    <FaTimes />
+                    <span>Reject</span>
+                  </button>
+                ) : null}
+                {!['SHORTLISTED', 'INTERVIEW', 'ACCEPTED', 'REJECTED', 'WITHDRAWN'].includes(application.status) ? (
+                  <button type="button" className="admin-button admin-button--primary" onClick={() => void updateStatus('SHORTLISTED')} disabled={isMutating}>
+                    <FaCheck />
+                    <span>Shortlist</span>
+                  </button>
+                ) : null}
+              </div>
+
+              {application.contractId ? (
+                <button type="button" className="admin-button admin-button--secondary admin-button--icon" onClick={() => navigate(`/admin/contracts/${encodeURIComponent(application.contractId!)}`)}>
+                  <FaCheck />
+                  <span>Open contract workspace</span>
+                </button>
+              ) : null}
+
+              {actionError ? <p className="admin-applicant-detail__feedback admin-applicant-detail__feedback--error" role="alert">{actionError}</p> : null}
+              {actionMessage ? <p className="admin-applicant-detail__feedback admin-applicant-detail__feedback--success" role="status">{actionMessage}</p> : null}
             </article>
           ) : null}
         </div>
