@@ -281,8 +281,8 @@
   align-items: center;
   justify-content: center;
   min-width: 40px;
-  height: 40px;
-  padding: 0 0.8rem;
+  min-height: 40px;
+  padding: 0.55rem 0.9rem;
   border-radius: 999px;
   background: #eff5ff;
   color: #0e4ae1;
@@ -290,6 +290,7 @@
   font-weight: 700;
   line-height: 1;
   white-space: nowrap;
+  box-sizing: border-box;
 }
 
 .seeker-application-card__link:hover {

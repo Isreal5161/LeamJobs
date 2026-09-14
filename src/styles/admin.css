@@ -1707,6 +1707,8 @@
   align-items: flex-end;
   justify-content: center;
   gap: 0.55rem;
+  width: fit-content;
+  max-width: 100%;
 }
 
 .admin-review-job-card__content strong,
@@ -3761,8 +3763,16 @@
   .admin-review-job-card__content,
   .admin-review-job-card__meta,
   .admin-review-job-card__actions,
+  .admin-review-job-card__side,
   .admin-review-job-card .admin-status {
     grid-column: 2;
+  }
+
+  .admin-review-job-card__side {
+    width: fit-content;
+    max-width: 100%;
+    align-items: flex-start;
+    justify-self: start;
   }
 
   .admin-review-job-card .admin-status {
