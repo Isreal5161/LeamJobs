@@ -97,6 +97,7 @@ function App() {
             <Route path="jobs" element={<AdminJobsPage />} />
             <Route path="jobs/:jobId/applicants" element={<AdminApplicantsPage />} />
             <Route path="jobs/:jobId/applicants/:applicationId" element={<AdminApplicantDetailPage />} />
+            <Route path="contracts/:contractId" element={<ContractPage role="ADMIN" />} />
             <Route path="content" element={<AdminContentPage />} />
             <Route path="filters" element={<AdminFiltersPage />} />
             <Route path="recommendations" element={<AdminRecommendationsPage />} />

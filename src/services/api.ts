@@ -1168,6 +1168,15 @@ export function updateEmployerApplicationStatus(jobId: string, applicationId: st
   });
 }
 
+export function updateAdminApplicationStatus(jobId: string, applicationId: string, status: EmployerApplicationStatus, token: string) {
+  return request<AdminApplicationResponse>({
+    method: 'PATCH',
+    endpoint: `/admin/jobs/${encodeURIComponent(jobId)}/applications/${encodeURIComponent(applicationId)}/status`,
+    body: { status },
+    token,
+  });
+}
+
 export function selectContractApplication(jobId: string, applicationId: string, token: string) {
   return request<{ success: true; data: { selection: { contractId: string; applicationId: string; status: 'PAYMENT_PENDING' } } }>({
     method: 'POST',
@@ -1255,16 +1264,32 @@ export function getEmployerContract(contractId: string, token: string) {
   return request<ContractResponse>({ method: 'GET', endpoint: `/employer/contracts/${encodeURIComponent(contractId)}`, token });
 }
 
+export function getAdminContract(contractId: string, token: string) {
+  return request<ContractResponse>({ method: 'GET', endpoint: `/admin/contracts/${encodeURIComponent(contractId)}`, token });
+}
+
 export function initializeEmployerContractPayment(contractId: string, token: string, idempotencyKey: string) {
   return request<ContractPaymentResponse>({ method: 'POST', endpoint: `/employer/contracts/${encodeURIComponent(contractId)}/payment`, body: { idempotencyKey }, token });
+}
+
+export function initializeAdminContractPayment(contractId: string, token: string, idempotencyKey: string) {
+  return request<ContractPaymentResponse>({ method: 'POST', endpoint: `/admin/contracts/${encodeURIComponent(contractId)}/payment`, body: { idempotencyKey }, token });
 }
 
 export function verifyEmployerContractPayment(contractId: string, payload: { providerReference?: string; transactionId: string }, token: string) {
   return request<{ success: true; data: { payment: ContractPayment; contract: ContractData } }>({ method: 'POST', endpoint: `/employer/contracts/${encodeURIComponent(contractId)}/payment/verify`, body: payload, token });
 }
 
+export function verifyAdminContractPayment(contractId: string, payload: { providerReference?: string; transactionId: string }, token: string) {
+  return request<{ success: true; data: { payment: ContractPayment; contract: ContractData } }>({ method: 'POST', endpoint: `/admin/contracts/${encodeURIComponent(contractId)}/payment/verify`, body: payload, token });
+}
+
 export function confirmEmployerCompletion(contractId: string, token: string) {
   return request<ContractResponse>({ method: 'POST', endpoint: `/employer/contracts/${encodeURIComponent(contractId)}/confirm-completion`, token });
+}
+
+export function confirmAdminCompletion(contractId: string, token: string) {
+  return request<ContractResponse>({ method: 'POST', endpoint: `/admin/contracts/${encodeURIComponent(contractId)}/confirm-completion`, token });
 }
 
 export function getSeekerContract(contractId: string, token: string) {

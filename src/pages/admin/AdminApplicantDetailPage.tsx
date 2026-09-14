@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import { FaArrowLeft, FaCalendarAlt, FaCheck, FaDownload, FaFileAlt, FaMapMarkerAlt, FaSpinner } from 'react-icons/fa';
 import { useAuth } from '../../context/AuthContext';
 import {
@@ -7,6 +7,7 @@ import {
   getAdminJobApplication,
   getAdminJobApplicationResume,
   selectAdminContractApplication,
+  updateAdminApplicationStatus,
   type AdminApplicationDetail,
   type AdminJob,
   type EmployerApplicationStatus,
@@ -23,6 +24,7 @@ const initialsFromName = (value: string) => value.split(' ').filter(Boolean).sli
 function AdminApplicantDetailPage() {
   const { jobId, applicationId } = useParams();
   const { token } = useAuth();
+  const navigate = useNavigate();
   const [job, setJob] = useState<AdminJob | null>(null);
   const [application, setApplication] = useState<AdminApplicationDetail | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -33,6 +35,9 @@ function AdminApplicantDetailPage() {
   const [isSelecting, setIsSelecting] = useState(false);
   const [selectionError, setSelectionError] = useState('');
   const [showConfirmSelection, setShowConfirmSelection] = useState(false);
+  const [isMutating, setIsMutating] = useState(false);
+  const [actionError, setActionError] = useState('');
+  const [actionMessage, setActionMessage] = useState('');
 
   useEffect(() => {
     if (!token || !jobId || !applicationId) {
@@ -109,6 +114,33 @@ function AdminApplicantDetailPage() {
     && !['ACCEPTED', 'PAYMENT_PENDING'].includes(application.status)
     && ['APPLIED', 'REVIEWING', 'SHORTLISTED', 'INTERVIEW'].includes(application.status);
 
+  const normalApplicationStatuses: EmployerApplicationStatus[] = ['APPLIED', 'REVIEWING', 'SHORTLISTED', 'INTERVIEW', 'REJECTED', 'ACCEPTED', 'WITHDRAWN'];
+  const applicationStatusOptions: EmployerApplicationStatus[] = job?.engagementType === 'CONTRACT'
+    ? normalApplicationStatuses.filter((status) => status !== 'ACCEPTED' || Boolean(application?.contractId)).concat(application?.status === 'PAYMENT_PENDING' ? ['PAYMENT_PENDING'] : [])
+    : normalApplicationStatuses;
+
+  const updateStatus = async (status: EmployerApplicationStatus) => {
+    if (!token || !jobId || !applicationId || !application || isMutating || application.status === status) return;
+    setIsMutating(true);
+    setActionError('');
+    setActionMessage('');
+
+    if (status === 'ACCEPTED' && job?.engagementType === 'CONTRACT') {
+      setShowConfirmSelection(true);
+      setIsMutating(false);
+      return;
+    }
+
+    const result = await updateAdminApplicationStatus(jobId, applicationId, status, token);
+    if (!result.ok) {
+      setActionError(result.error.message || 'Unable to update the application status.');
+    } else {
+      setApplication((current) => current ? { ...current, status, updatedAt: result.data.data.application.updatedAt } : current);
+      setActionMessage(`Application moved to ${statusLabels[status]}.`);
+    }
+    setIsMutating(false);
+  };
+
   const selectCandidate = async () => {
     if (!token || !jobId || !applicationId || isSelecting) return;
 
@@ -126,6 +158,8 @@ function AdminApplicantDetailPage() {
     setApplication((current) => current ? { ...current, status: 'PAYMENT_PENDING', contractId: result.data.data.selection.contractId } : current);
     setShowConfirmSelection(false);
     setIsSelecting(false);
+    setActionMessage('Candidate selected and the contract funding flow is now available.');
+    navigate(`/admin/contracts/${encodeURIComponent(result.data.data.selection.contractId)}`);
   };
 
   if (isLoading) {
@@ -173,6 +207,20 @@ function AdminApplicantDetailPage() {
         <section className="admin-panel admin-empty-state" role="alert">
           <strong>Selection could not be completed</strong>
           <p>{selectionError}</p>
+        </section>
+      ) : null}
+
+      {actionError ? (
+        <section className="admin-panel admin-empty-state" role="alert">
+          <strong>Action could not be completed</strong>
+          <p>{actionError}</p>
+        </section>
+      ) : null}
+
+      {actionMessage ? (
+        <section className="admin-panel admin-empty-state" role="status">
+          <strong>Update successful</strong>
+          <p>{actionMessage}</p>
         </section>
       ) : null}
 
@@ -248,6 +296,26 @@ function AdminApplicantDetailPage() {
               {applicant.skills.length ? applicant.skills.map((skill) => <span key={skill} className="admin-tag">{skill}</span>) : <span className="admin-empty-inline">No skills listed.</span>}
             </div>
           </article>
+
+          {adminCanManageApplicants ? (
+            <article className="admin-applicant-detail__section">
+              <h3>Application status</h3>
+              <label className="admin-applicant-detail__status-field">
+                <span>Update status</span>
+                <select value={application.status} onChange={(event) => void updateStatus(event.target.value as EmployerApplicationStatus)} disabled={isMutating}>
+                  {applicationStatusOptions.map((status) => (
+                    <option key={status} value={status}>{statusLabels[status]}</option>
+                  ))}
+                </select>
+              </label>
+              {application.contractId ? (
+                <button type="button" className="admin-button admin-button--secondary admin-button--icon" onClick={() => navigate(`/admin/contracts/${encodeURIComponent(application.contractId!)}`)}>
+                  <FaCheck />
+                  <span>Open contract workspace</span>
+                </button>
+              ) : null}
+            </article>
+          ) : null}
 
           {application.coverLetter ? (
             <article className="admin-applicant-detail__section">

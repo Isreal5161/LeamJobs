@@ -3,16 +3,20 @@ import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { FaArrowLeft, FaCheckCircle, FaCreditCard, FaFileUpload, FaLock, FaSpinner } from 'react-icons/fa';
 import { useAuth } from '../../context/AuthContext';
 import {
+  confirmAdminCompletion,
   confirmEmployerCompletion,
+  getAdminContract,
   getEmployerContract,
   getSeekerContract,
+  initializeAdminContractPayment,
   initializeEmployerContractPayment,
   submitSeekerCompletion,
+  verifyAdminContractPayment,
   verifyEmployerContractPayment,
   type ContractData,
 } from '../../services/api';
 
-type ContractPageProps = { role: 'EMPLOYER' | 'SEEKER' };
+type ContractPageProps = { role: 'EMPLOYER' | 'SEEKER' | 'ADMIN' };
 
 const formatMoney = (amount: string, currency: string) => `${currency} ${amount}`;
 const displayName = (person: { firstName: string; lastName: string }) => `${person.firstName} ${person.lastName}`.trim();
@@ -47,7 +51,11 @@ function ContractPage({ role }: ContractPageProps) {
   const loadContract = async () => {
     if (!token || !contractId) return;
     setIsLoading(true);
-    const result = role === 'EMPLOYER' ? await getEmployerContract(contractId, token) : await getSeekerContract(contractId, token);
+    const result = role === 'ADMIN'
+      ? await getAdminContract(contractId, token)
+      : role === 'EMPLOYER'
+        ? await getEmployerContract(contractId, token)
+        : await getSeekerContract(contractId, token);
     if (result.ok) {
       setContract(result.data.data.contract);
       setNote(result.data.data.contract.freelance?.completionNote ?? '');
@@ -63,7 +71,7 @@ function ContractPage({ role }: ContractPageProps) {
     const transactionId = searchParams.get('transaction_id');
     const providerReference = searchParams.get('tx_ref');
     const returnStatus = searchParams.get('status');
-    if (role !== 'EMPLOYER' || !token || !contractId || isVerifyingReturn) return;
+    if ((role !== 'EMPLOYER' && role !== 'ADMIN') || !token || !contractId || isVerifyingReturn) return;
     if (!transactionId && (providerReference || returnStatus)) {
       setError('');
       setMessage('Payment was not completed or could not be verified. You can try again.');
@@ -76,7 +84,8 @@ function ContractPage({ role }: ContractPageProps) {
     if (!transactionId) return;
     setIsVerifyingReturn(true);
     setMessage('Verifying payment with the server...');
-    void verifyEmployerContractPayment(contractId, { providerReference: providerReference ?? undefined, transactionId }, token).then((result) => {
+    const verifyPayment = role === 'ADMIN' ? verifyAdminContractPayment : verifyEmployerContractPayment;
+    void verifyPayment(contractId, { providerReference: providerReference ?? undefined, transactionId }, token).then((result) => {
       if (!result.ok) setError('Payment could not be verified. No funds were added to escrow. You can try again.');
       else {
         setContract(result.data.data.contract);
@@ -98,7 +107,9 @@ function ContractPage({ role }: ContractPageProps) {
     setError('');
     setMessage('Preparing secure checkout...');
     const idempotencyKey = globalThis.crypto?.randomUUID?.() ?? `contract:${contractId}:${Date.now()}`;
-    const result = await initializeEmployerContractPayment(contractId, token, idempotencyKey);
+    const result = role === 'ADMIN'
+      ? await initializeAdminContractPayment(contractId, token, idempotencyKey)
+      : await initializeEmployerContractPayment(contractId, token, idempotencyKey);
     if (!result.ok) {
       if (result.error.message.toLowerCase().includes('already funded')) {
         setAlreadyFunded(true);
@@ -134,7 +145,9 @@ function ContractPage({ role }: ContractPageProps) {
     if (!token || !contractId || isMutating) return;
     setIsMutating(true);
     setError('');
-    const result = await confirmEmployerCompletion(contractId, token);
+    const result = role === 'ADMIN'
+      ? await confirmAdminCompletion(contractId, token)
+      : await confirmEmployerCompletion(contractId, token);
     if (!result.ok) setError(result.error.message || 'Completion could not be confirmed.');
     else {
       setContract(result.data.data.contract);
@@ -157,16 +170,16 @@ function ContractPage({ role }: ContractPageProps) {
 
   return (
     <main className="contract-page">
-      <button type="button" className="contract-back" onClick={() => navigate(role === 'EMPLOYER' ? '/employer/applicants' : '/seeker/applications')}><FaArrowLeft /> Back to applications</button>
-      <header className="contract-header"><div><span className="contract-eyebrow">{isContractJob ? 'Contract Job' : 'Freelance Project'}</span><h1>{contract.job.title}</h1><p>{role === 'EMPLOYER' ? `${isContractJob ? 'Securing this contract' : 'Funding this project'} for ${displayName(contract.seeker)}` : `${isContractJob ? 'Contract Job with' : 'Project with'} ${displayName(contract.employer)}`}</p></div><span className={`contract-status contract-status--${(escrow?.status ?? contract.status).toLowerCase()}`}>{statusLabel(contract)}</span></header>
+      <button type="button" className="contract-back" onClick={() => navigate(role === 'EMPLOYER' ? '/employer/applicants' : role === 'ADMIN' ? `/admin/jobs/${contract?.job.id ?? ''}/applicants` : '/seeker/applications')}><FaArrowLeft /> Back to applications</button>
+      <header className="contract-header"><div><span className="contract-eyebrow">{isContractJob ? 'Contract Job' : 'Freelance Project'}</span><h1>{contract.job.title}</h1><p>{role === 'EMPLOYER' ? `${isContractJob ? 'Securing this contract' : 'Funding this project'} for ${displayName(contract.seeker)}` : role === 'ADMIN' ? `${isContractJob ? 'Managing this contract' : 'Managing this project'} for ${displayName(contract.seeker)}` : `${isContractJob ? 'Contract Job with' : 'Project with'} ${displayName(contract.employer)}`}</p></div><span className={`contract-status contract-status--${(escrow?.status ?? contract.status).toLowerCase()}`}>{statusLabel(contract)}</span></header>
       {message ? <p className="contract-message" role="status" aria-busy={isVerifyingReturn}>{isVerifyingReturn ? <FaSpinner className="contract-spin" aria-hidden="true" /> : null}{message}</p> : null}
       {error ? <p className="contract-error" role="alert">{error}</p> : null}
       <section className="contract-grid">
         <article className="contract-panel contract-panel--identity"><div className="contract-panel-heading"><FaLock /><div><h2>Project participants</h2><p>{contract.job.title}</p></div></div><div className="contract-terms"><div><span>Employer</span><strong>{displayName(contract.employer)}</strong></div><div><span>Seeker</span><strong>{displayName(contract.seeker)}</strong></div></div></article>
         <article className="contract-panel contract-panel--terms"><div className="contract-panel-heading"><FaLock /><div><h2>Contract terms</h2><p>Locked from the job after activation</p></div></div><div className="contract-terms"><div><span>Project amount</span><strong>{formatMoney(freelance.agreedAmount, freelance.currency)}</strong></div><div><span>Platform fee</span><strong>{freelance.platformFeePercentage ?? '5.00'}% (informational)</strong></div><div><span>Total to fund</span><strong>{formatMoney(freelance.agreedAmount, freelance.currency)}</strong></div><div><span>Currency</span><strong>{freelance.currency}</strong></div>{isContractJob ? <><div><span>Duration</span><strong>{freelance.duration}</strong></div><div><span>Start</span><strong>{freelance.startMode === 'SCHEDULED' && contract.startDate ? `Scheduled ${new Date(contract.startDate).toLocaleDateString()}` : 'Immediately'}</strong></div><div><span>Expected completion</span><strong>{contract.expectedEndDate ? new Date(contract.expectedEndDate).toLocaleDateString() : 'Not specified'}</strong></div></> : null}</div></article>
-        <article className="contract-panel"><div className="contract-panel-heading"><FaCreditCard /><div><h2>Protected payment</h2><p>{isReleased ? 'Funds have been released for this project.' : isFunded ? 'Payment is secured and held by LeamJobs until completion and release.' : isReleaseEligible ? 'Funds are ready for admin release.' : 'Payment is held securely by LeamJobs. It is not released to the seeker until the approved completion and release process.'}</p></div></div><div className="contract-escrow-status"><strong>{escrow?.status ?? 'UNFUNDED'}</strong><span>{escrow?.fundedAt ? `Funded ${new Date(escrow.fundedAt).toLocaleDateString()}` : 'Waiting for employer payment'}</span>{isReleased ? <span>Funds released to the seeker wallet.</span> : null}{escrow?.payments?.length ? <span>Payment status: {escrow.payments[0].status}</span> : null}</div>{role === 'EMPLOYER' && ((isContractJob && contract.status === 'PENDING') || (!isContractJob && contract.status === 'ACTIVE')) && escrow?.status === 'UNFUNDED' && !alreadyFunded ? <button type="button" className="button button--primary contract-action" onClick={() => void fundContract()} disabled={isMutating || isVerifyingReturn}><FaCreditCard /> {isMutating ? 'Preparing secure payment...' : isVerifyingReturn ? 'Verifying payment...' : isContractJob ? 'Secure payment' : 'Fund Contract'}</button> : null}{role === 'EMPLOYER' && alreadyFunded && !isReleased ? <p className="contract-message">Payment already completed. This contract has already been funded.</p> : null}</article>
+        <article className="contract-panel"><div className="contract-panel-heading"><FaCreditCard /><div><h2>Protected payment</h2><p>{isReleased ? 'Funds have been released for this project.' : isFunded ? 'Payment is secured and held by LeamJobs until completion and release.' : isReleaseEligible ? 'Funds are ready for admin release.' : 'Payment is held securely by LeamJobs. It is not released to the seeker until the approved completion and release process.'}</p></div></div><div className="contract-escrow-status"><strong>{escrow?.status ?? 'UNFUNDED'}</strong><span>{escrow?.fundedAt ? `Funded ${new Date(escrow.fundedAt).toLocaleDateString()}` : 'Waiting for employer payment'}</span>{isReleased ? <span>Funds released to the seeker wallet.</span> : null}{escrow?.payments?.length ? <span>Payment status: {escrow.payments[0].status}</span> : null}</div>{(role === 'EMPLOYER' || role === 'ADMIN') && ((isContractJob && contract.status === 'PENDING') || (!isContractJob && contract.status === 'ACTIVE')) && escrow?.status === 'UNFUNDED' && !alreadyFunded ? <button type="button" className="button button--primary contract-action" onClick={() => void fundContract()} disabled={isMutating || isVerifyingReturn}><FaCreditCard /> {isMutating ? 'Preparing secure payment...' : isVerifyingReturn ? 'Verifying payment...' : isContractJob ? 'Secure payment' : 'Fund Contract'}</button> : null}{(role === 'EMPLOYER' || role === 'ADMIN') && alreadyFunded && !isReleased ? <p className="contract-message">Payment already completed. This contract has already been funded.</p> : null}</article>
       </section>
-      <section className="contract-panel contract-workflow"><div className="contract-panel-heading"><FaFileUpload /><div><h2>Work completion</h2><p>{isReleased ? 'Funds have been released for this project.' : isReleaseEligible ? 'Completed - awaiting admin release.' : hasSubmitted ? 'Completion submitted - waiting for employer review.' : isFunded ? 'Funded - work can begin.' : 'Waiting for employer payment.'}</p></div></div>{role === 'SEEKER' && isFunded && !hasSubmitted ? <form onSubmit={submitCompletion}><label htmlFor="completion-note">Completion note</label><textarea id="completion-note" value={note} onChange={(event) => setNote(event.target.value)} maxLength={5000} placeholder="Tell the employer what you completed..." required /><button type="submit" className="button button--primary" disabled={isMutating || !note.trim()}>{isMutating ? 'Submitting...' : 'Submit Work'}</button></form> : null}{role === 'EMPLOYER' && isFunded && hasSubmitted && !isReleaseEligible && !isReleased ? <div className="contract-review"><p><strong>Work completed</strong><br />{freelance.completionNote || 'No completion note provided.'}</p><p className="contract-muted">Submitted {freelance.completionSubmittedAt ? new Date(freelance.completionSubmittedAt).toLocaleString() : ''}</p><button type="button" className="button button--primary" onClick={() => void confirmCompletion()} disabled={isMutating || isReleaseEligible}><FaCheckCircle /> {isMutating ? 'Confirming...' : 'Confirm Completion'}</button></div> : null}</section>
+      <section className="contract-panel contract-workflow"><div className="contract-panel-heading"><FaFileUpload /><div><h2>Work completion</h2><p>{isReleased ? 'Funds have been released for this project.' : isReleaseEligible ? 'Completed - awaiting admin release.' : hasSubmitted ? 'Completion submitted - waiting for employer review.' : isFunded ? 'Funded - work can begin.' : 'Waiting for employer payment.'}</p></div></div>{role === 'SEEKER' && isFunded && !hasSubmitted ? <form onSubmit={submitCompletion}><label htmlFor="completion-note">Completion note</label><textarea id="completion-note" value={note} onChange={(event) => setNote(event.target.value)} maxLength={5000} placeholder="Tell the employer what you completed..." required /><button type="submit" className="button button--primary" disabled={isMutating || !note.trim()}>{isMutating ? 'Submitting...' : 'Submit Work'}</button></form> : null}{(role === 'EMPLOYER' || role === 'ADMIN') && isFunded && hasSubmitted && !isReleaseEligible && !isReleased ? <div className="contract-review"><p><strong>Work completed</strong><br />{freelance.completionNote || 'No completion note provided.'}</p><p className="contract-muted">Submitted {freelance.completionSubmittedAt ? new Date(freelance.completionSubmittedAt).toLocaleString() : ''}</p><button type="button" className="button button--primary" onClick={() => void confirmCompletion()} disabled={isMutating || isReleaseEligible}><FaCheckCircle /> {isMutating ? 'Confirming...' : 'Confirm Completion'}</button></div> : null}</section>
     </main>
   );
 }
