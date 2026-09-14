@@ -193,7 +193,7 @@ function AdminContentPage() {
                   <label><span>Mission text</span><textarea value={content.about.missionText} onChange={(event) => updatePage('about', (current) => ({ ...current, missionText: event.target.value }))} /></label>
                   <label><span>Values title</span><input value={content.about.valuesTitle} onChange={(event) => updatePage('about', (current) => ({ ...current, valuesTitle: event.target.value }))} /></label>
                   {content.about.values.map((value, index) => (
-                    <div className="admin-content-repeater" key={`${value.title}-${index}`}>
+                    <div className="admin-content-repeater" key={`value-${index}`}>
                       <label><span>Value title</span><input value={value.title} onChange={(event) => updatePage('about', (current) => ({ ...current, values: current.values.map((item, itemIndex) => itemIndex === index ? { ...item, title: event.target.value } : item) }))} /></label>
                       <label><span>Value text</span><textarea value={value.text} onChange={(event) => updatePage('about', (current) => ({ ...current, values: current.values.map((item, itemIndex) => itemIndex === index ? { ...item, text: event.target.value } : item) }))} /></label>
                       <button type="button" className="admin-content-remove-button" onClick={() => updatePage('about', (current) => ({ ...current, values: current.values.filter((_, itemIndex) => itemIndex !== index) }))}><FaTrash /> Remove value</button>
@@ -247,7 +247,7 @@ function AdminContentPage() {
                   <div className="admin-content-section-card__header"><span>Recommendation panel</span></div>
                   <label><span>Panel title</span><input value={content.features.recommendationsTitle} onChange={(event) => updatePage('features', (current) => ({ ...current, recommendationsTitle: event.target.value }))} /></label>
                   {content.features.recommendations.map((item, index) => (
-                    <div className="admin-content-repeater" key={`${item.title}-${index}`}>
+                    <div className="admin-content-repeater" key={`recommendation-${index}`}>
                       <label><span>Recommendation title</span><input value={item.title} onChange={(event) => updatePage('features', (current) => ({ ...current, recommendations: current.recommendations.map((job, jobIndex) => jobIndex === index ? { ...job, title: event.target.value } : job) }))} /></label>
                       <label><span>Recommendation meta</span><input value={item.meta} onChange={(event) => updatePage('features', (current) => ({ ...current, recommendations: current.recommendations.map((job, jobIndex) => jobIndex === index ? { ...job, meta: event.target.value } : job) }))} /></label>
                       <label><span>Match label</span><input value={item.match} onChange={(event) => updatePage('features', (current) => ({ ...current, recommendations: current.recommendations.map((job, jobIndex) => jobIndex === index ? { ...job, match: event.target.value } : job) }))} /></label>
@@ -289,7 +289,7 @@ function AdminContentPage() {
                 <section className="admin-content-section-card">
                   <div className="admin-content-section-card__header"><span>Process steps</span></div>
                   {content['how-it-works'].steps.map((step, index) => (
-                    <div className="admin-content-repeater" key={`${step.title}-${index}`}>
+                    <div className="admin-content-repeater" key={`step-${index}`}>
                       <label><span>Step title</span><input value={step.title} onChange={(event) => updatePage('how-it-works', (current) => ({ ...current, steps: current.steps.map((item, itemIndex) => itemIndex === index ? { ...item, title: event.target.value } : item) }))} /></label>
                       <label><span>Step text</span><textarea value={step.text} onChange={(event) => updatePage('how-it-works', (current) => ({ ...current, steps: current.steps.map((item, itemIndex) => itemIndex === index ? { ...item, text: event.target.value } : item) }))} /></label>
                       <button type="button" className="admin-content-remove-button" onClick={() => updatePage('how-it-works', (current) => ({ ...current, steps: current.steps.filter((_, itemIndex) => itemIndex !== index) }))}><FaTrash /> Remove step</button>
@@ -330,7 +330,7 @@ function AdminContentPage() {
                 <section className="admin-content-section-card">
                   <div className="admin-content-section-card__header"><span>Company cards</span></div>
                   {content.companies.companies.map((company, index) => (
-                    <div className="admin-content-repeater" key={`${company.name}-${index}`}>
+                    <div className="admin-content-repeater" key={`company-${index}`}>
                       <div className="admin-form__split">
                         <label><span>Company name</span><input value={company.name} onChange={(event) => updatePage('companies', (current) => ({ ...current, companies: current.companies.map((item, itemIndex) => itemIndex === index ? { ...item, name: event.target.value } : item) }))} /></label>
                         <label><span>Category</span><input value={company.category} onChange={(event) => updatePage('companies', (current) => ({ ...current, companies: current.companies.map((item, itemIndex) => itemIndex === index ? { ...item, category: event.target.value } : item) }))} /></label>
@@ -372,7 +372,7 @@ function AdminContentPage() {
       <section className="admin-content-section-card">
         <div className="admin-content-section-card__header"><span>Feature cards</span></div>
         {content.features.items.map((item, index) => (
-          <div className="admin-content-repeater" key={`${item.title}-${index}`}>
+          <div className="admin-content-repeater" key={`feature-${index}`}>
             <label><span>Feature title</span><input value={item.title} onChange={(event) => updatePage('features', (current) => ({ ...current, items: current.items.map((feature, featureIndex) => featureIndex === index ? { ...feature, title: event.target.value } : feature) }))} /></label>
             <label><span>Feature text</span><textarea value={item.text} onChange={(event) => updatePage('features', (current) => ({ ...current, items: current.items.map((feature, featureIndex) => featureIndex === index ? { ...feature, text: event.target.value } : feature) }))} /></label>
             <button type="button" className="admin-content-remove-button" onClick={() => updatePage('features', (current) => ({ ...current, items: current.items.filter((_, itemIndex) => itemIndex !== index) }))}><FaTrash /> Remove feature</button>
@@ -415,7 +415,7 @@ function StatsEditor({
         <button type="button" className="admin-review-action admin-review-action--secondary" onClick={onAdd}><FaPlus /> Add stat</button>
       </div>
       {stats.map((stat, index) => (
-        <div className="admin-content-repeater admin-content-repeater--inline" key={`${stat.label}-${index}`}>
+        <div className="admin-content-repeater admin-content-repeater--inline" key={`stat-${index}`}>
           <label><span>Value</span><input value={stat.value} onChange={(event) => onChange(index, { value: event.target.value })} /></label>
           <label><span>Label</span><input value={stat.label} onChange={(event) => onChange(index, { label: event.target.value })} /></label>
           <button type="button" className="admin-content-icon-remove" aria-label={`Remove stat ${index + 1}`} onClick={() => onRemove(index)}><FaTrash /></button>
@@ -448,7 +448,7 @@ function ListEditor({
       </div>
       <div className="admin-content-token-editor">
         {items.map((item, index) => (
-          <div className="admin-content-repeater admin-content-repeater--inline" key={`${item}-${index}`}>
+          <div className="admin-content-repeater admin-content-repeater--inline" key={`${itemLabel}-${index}`}>
             <label><span>{itemLabel}</span><input value={item} onChange={(event) => onChange(index, event.target.value)} /></label>
             <button type="button" className="admin-content-icon-remove" aria-label={`Remove ${itemLabel.toLowerCase()} ${index + 1}`} onClick={() => onRemove(index)}><FaTrash /></button>
           </div>
