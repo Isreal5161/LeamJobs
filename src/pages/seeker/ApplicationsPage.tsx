@@ -26,6 +26,8 @@ import {
 const formatDate = (value: string) => new Intl.DateTimeFormat(undefined, { dateStyle: 'medium' }).format(new Date(value));
 const formatJobType = (value: string) => value.replaceAll('_', ' ').toLowerCase().replace(/\b\w/g, (character) => character.toUpperCase());
 const getInitials = (value: string) => value.split(' ').filter(Boolean).map((part) => part[0]).join('').slice(0, 2).toUpperCase();
+const applicationFilters = ['All', 'Interview', 'Applied', 'Reviewing', 'Rejected'] as const;
+type ApplicationFilter = typeof applicationFilters[number];
 
 const mapApplicationStatus = (status: string) => status === 'INTERVIEW'
   ? 'Interview'
@@ -54,6 +56,7 @@ function ApplicationsPage() {
   const [profileOnboardingComplete, setProfileOnboardingComplete] = useState(true);
   const [cvChoice, setCvChoice] = useState<'profile' | 'upload'>('profile');
   const [showCvWarning, setShowCvWarning] = useState(false);
+  const [activeFilter, setActiveFilter] = useState<ApplicationFilter>('All');
 
   const loadApplications = async () => {
     if (!token) {
@@ -227,6 +230,12 @@ function ApplicationsPage() {
     { label: 'Interviews', value: summary.interviews, icon: <FaCheckCircle />, tone: 'success' },
   ];
 
+  const filteredApplications = applications.filter((application) => {
+    if (activeFilter === 'All') return true;
+    if (activeFilter === 'Reviewing') return ['REVIEWING', 'SHORTLISTED'].includes(application.status);
+    return application.status === activeFilter.toUpperCase();
+  });
+
   const applicationCard = (application: SeekerApplication) => (
     <article className="seeker-application-card" key={application.id}>
       <div className="seeker-application-card__logo seeker-application-card__logo--default">
@@ -333,8 +342,14 @@ function ApplicationsPage() {
               </div>
             </div>
             <div className="seeker-application-tabs" aria-label="Application status filters">
-              {['All', 'Interview', 'Applied', 'Reviewing', 'Rejected'].map((tab) => (
-                <button className={tab === 'All' ? 'seeker-application-tab--active' : ''} type="button" key={tab}>
+              {applicationFilters.map((tab) => (
+                <button
+                  className={tab === activeFilter ? 'seeker-application-tab--active' : ''}
+                  type="button"
+                  key={tab}
+                  aria-pressed={tab === activeFilter}
+                  onClick={() => setActiveFilter(tab)}
+                >
                   {tab}
                 </button>
               ))}
@@ -364,7 +379,10 @@ function ApplicationsPage() {
                 </>
               ) : null}
               {!isLoading && !error && applications.length === 0 ? <p>No applications yet.</p> : null}
-              {!isLoading && !error ? applications.map(applicationCard) : null}
+              {!isLoading && !error && applications.length > 0 && filteredApplications.length === 0 ? (
+                <p>No {activeFilter.toLowerCase()} applications yet.</p>
+              ) : null}
+              {!isLoading && !error ? filteredApplications.map(applicationCard) : null}
             </div>
           </div>
 
