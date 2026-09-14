@@ -1,3 +1,5 @@
+import type { CVData } from '../components/cv-templates/CVTemplateRenderer';
+
 export const API_BASE_URL = 'https://leamjobs.com/api';
 export const PROFILE_IMAGE_UPDATED_EVENT = 'leamjobs-profile-image-updated';
 
@@ -406,6 +408,15 @@ export type EmployerApplicationDetail = {
   updatedAt: string;
   contractId: string | null;
   resume: { available: boolean; source: 'application' | 'profile' | 'template' | null; submittedAt: string | null; version: string | null };
+  cvSnapshot: {
+    id: string;
+    source: 'LEAMJOBS_TEMPLATE';
+    templateId: string | null;
+    templateName: string | null;
+    templateVersion: string | null;
+    snapshotCapturedAt: string;
+    snapshot: CVData;
+  } | null;
   job: { id: string; title: string };
   applicant: EmployerApplicant;
 };
@@ -430,6 +441,15 @@ export type AdminApplicationDetail = {
   updatedAt: string;
   contractId: string | null;
   resume: { available: boolean; source: 'application' | 'profile' | 'template' | null; submittedAt: string | null; version: string | null };
+  cvSnapshot: {
+    id: string;
+    source: 'LEAMJOBS_TEMPLATE';
+    templateId: string | null;
+    templateName: string | null;
+    templateVersion: string | null;
+    snapshotCapturedAt: string;
+    snapshot: CVData;
+  } | null;
   job: { id: string; title: string };
   applicant: EmployerApplicant;
 };
@@ -593,6 +613,9 @@ export type SeekerApplicationsResponse = {
 export type CreateSeekerApplicationPayload = {
   jobId: string;
   coverLetter?: string;
+  cvSource?: 'template' | 'upload';
+  resumeUrl?: string | null;
+  resumeObjectKey?: string | null;
 };
 
 export type CreateSeekerApplicationResponse = {

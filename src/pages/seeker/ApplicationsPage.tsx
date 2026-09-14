@@ -1,10 +1,10 @@
-import { useEffect, useState } from 'react';
+﻿import { useEffect, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import {
   FaBell,
   FaBriefcase,
-  FaCheck,
   FaCalendarAlt,
+  FaCheck,
   FaCheckCircle,
   FaClock,
   FaExternalLinkAlt,
@@ -37,6 +37,7 @@ function ApplicationsPage() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { user, token } = useAuth();
+
   const [applications, setApplications] = useState<SeekerApplication[]>([]);
   const [summary, setSummary] = useState({ total: 0, interviews: 0 });
   const [selectedJob, setSelectedJob] = useState<SeekerDashboardJob | null>(null);
@@ -49,6 +50,10 @@ function ApplicationsPage() {
   const [jobError, setJobError] = useState('');
   const [submitError, setSubmitError] = useState('');
   const [resumeUrl, setResumeUrl] = useState<string | null>(null);
+  const [resumeObjectKey, setResumeObjectKey] = useState<string | null>(null);
+  const [profileOnboardingComplete, setProfileOnboardingComplete] = useState(true);
+  const [cvChoice, setCvChoice] = useState<'profile' | 'upload'>('profile');
+  const [showCvWarning, setShowCvWarning] = useState(false);
 
   const loadApplications = async () => {
     if (!token) {
@@ -78,6 +83,8 @@ function ApplicationsPage() {
   useEffect(() => {
     if (!token) {
       setResumeUrl(null);
+      setResumeObjectKey(null);
+      setProfileOnboardingComplete(true);
       return undefined;
     }
 
@@ -88,14 +95,18 @@ function ApplicationsPage() {
       if (!isMounted) return;
 
       if (result.ok) {
-        setResumeUrl(result.data.data.profile.resumeUrl ?? null);
+        const profile = result.data.data.profile;
+        setResumeUrl(profile.resumeUrl ?? null);
+        setResumeObjectKey(profile.resumeObjectKey ?? null);
+        setProfileOnboardingComplete(result.data.data.onboardingComplete ?? true);
       } else {
         setResumeUrl(null);
+        setResumeObjectKey(null);
+        setProfileOnboardingComplete(true);
       }
     };
 
     void loadResume();
-
     return () => {
       isMounted = false;
     };
@@ -124,13 +135,17 @@ function ApplicationsPage() {
         setSelectedJob(result.data.data.job);
         setApplicationSent(false);
         setProposal('');
+        setCvChoice('profile');
+        setShowCvWarning(false);
       }
 
       setIsJobLoading(false);
     };
 
     void loadJob();
-    return () => { isMounted = false; };
+    return () => {
+      isMounted = false;
+    };
   }, [searchParams, token]);
 
   useEffect(() => {
@@ -138,7 +153,9 @@ function ApplicationsPage() {
     if (!modalIsOpen) return undefined;
 
     const handleEscape = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') closeApplication();
+      if (event.key === 'Escape') {
+        closeApplication();
+      }
     };
 
     window.addEventListener('keydown', handleEscape);
@@ -152,18 +169,27 @@ function ApplicationsPage() {
     setApplicationSent(false);
     setProposal('');
     setSubmitError('');
+    setShowCvWarning(false);
     navigate('/seeker/applications', { replace: true });
   };
 
   const submitApplication = async () => {
-    if (!selectedJob || !token || isSubmitting || !resumeUrl) return;
+    if (!selectedJob || !token || isSubmitting) return;
+    if (cvChoice === 'upload' && !resumeUrl) return;
+
+    const cvSource: 'template' | 'upload' = cvChoice === 'upload' ? 'upload' : 'template';
+    const payload = {
+      jobId: selectedJob.id,
+      ...(proposal.trim() ? { coverLetter: proposal.trim() } : {}),
+      cvSource,
+      resumeUrl,
+      resumeObjectKey,
+    };
 
     setIsSubmitting(true);
     setSubmitError('');
-    const result = await createSeekerApplication({
-      jobId: selectedJob.id,
-      ...(proposal.trim() ? { coverLetter: proposal.trim() } : {}),
-    }, token);
+
+    const result = await createSeekerApplication(payload, token);
 
     if (!result.ok) {
       setSubmitError(result.error.message || 'We could not submit your application.');
@@ -175,6 +201,26 @@ function ApplicationsPage() {
     setIsSubmitting(false);
   };
 
+  const handleCvChoiceClick = (choice: 'profile' | 'upload') => {
+    if (choice === 'profile' && !profileOnboardingComplete) {
+      setShowCvWarning(true);
+      return;
+    }
+
+    setCvChoice(choice);
+    setShowCvWarning(false);
+  };
+
+  const continueWithIncompleteProfile = () => {
+    setCvChoice('profile');
+    setShowCvWarning(false);
+  };
+
+  const completeProfileAndExit = () => {
+    closeApplication();
+    navigate('/seeker/profile', { replace: false });
+  };
+
   const fullName = [user?.firstName, user?.lastName].filter(Boolean).join(' ') || 'Welcome back';
   const applicationStats = [
     { label: 'Total applications', value: summary.total, icon: <FaFileAlt />, tone: 'blue' },
@@ -183,26 +229,67 @@ function ApplicationsPage() {
 
   const applicationCard = (application: SeekerApplication) => (
     <article className="seeker-application-card" key={application.id}>
-      <div className="seeker-application-card__logo seeker-application-card__logo--default">{getInitials(application.companyName || 'Company')}</div>
+      <div className="seeker-application-card__logo seeker-application-card__logo--default">
+        {getInitials(application.companyName || 'Company')}
+      </div>
       <div className="seeker-application-card__content">
         <div className="seeker-application-card__top">
-          <div><h3>{application.jobTitle}</h3><p>{application.companyName || 'Company not provided'} · {formatJobType(application.jobType)}</p></div>
-          <span className={`seeker-application-status seeker-application-status--${application.status.toLowerCase()}`}>{mapApplicationStatus(application.status)}</span>
+          <div>
+            <h3>{application.jobTitle}</h3>
+            <p>
+              {application.companyName || 'Company not provided'} · {formatJobType(application.jobType)}
+            </p>
+          </div>
+          <span className={`seeker-application-status seeker-application-status--${application.status.toLowerCase()}`}>
+            {mapApplicationStatus(application.status)}
+          </span>
         </div>
         <div className="seeker-application-card__meta">
           <span><FaCalendarAlt /> Applied {formatDate(application.appliedAt)}</span>
           <span><FaBriefcase /> Updated {formatDate(application.updatedAt)}</span>
         </div>
       </div>
-      {application.contractId ? <Link to={`/seeker/contracts/${application.contractId}`} className="seeker-application-card__link" aria-label={`Open ${application.jobTitle} contract`}>Contract</Link> : <Link to={`/seeker/jobs/${application.jobId}`} className="seeker-application-card__link" aria-label={`View ${application.jobTitle} details`}><FaExternalLinkAlt /></Link>}
+      {application.contractId ? (
+        <Link
+          to={`/seeker/contracts/${application.contractId}`}
+          className="seeker-application-card__link"
+          aria-label={`Open ${application.jobTitle} contract`}
+        >
+          Contract
+        </Link>
+      ) : (
+        <Link
+          to={`/seeker/jobs/${application.jobId}`}
+          className="seeker-application-card__link"
+          aria-label={`View ${application.jobTitle} details`}
+        >
+          <FaExternalLinkAlt />
+        </Link>
+      )}
     </article>
   );
 
   return (
     <div className="seeker-applications-page">
       <section className="seeker-applications-hero">
-        <div className="seeker-hero__top"><div className="seeker-profile"><div className="seeker-profile__avatar" aria-hidden="true">{getInitials(fullName)}</div><div><h1>Applications</h1><p>Track progress, outcomes, and job income</p></div></div><button className="seeker-icon-button seeker-icon-button--alert" type="button" aria-label="Notifications"><FaBell /></button></div>
-        <label className="seeker-search" aria-label="Search applications"><FaSearch /><input type="search" placeholder="Search company, role, or status" /></label>
+        <div className="seeker-hero__top">
+          <div className="seeker-profile">
+            <div className="seeker-profile__avatar" aria-hidden="true">
+              {getInitials(fullName)}
+            </div>
+            <div>
+              <h1>Applications</h1>
+              <p>Track progress, outcomes, and job income</p>
+            </div>
+          </div>
+          <button className="seeker-icon-button seeker-icon-button--alert" type="button" aria-label="Notifications">
+            <FaBell />
+          </button>
+        </div>
+        <label className="seeker-search" aria-label="Search applications">
+          <FaSearch />
+          <input type="search" placeholder="Search company, role, or status" />
+        </label>
       </section>
 
       <main className="seeker-applications-content">
@@ -213,17 +300,45 @@ function ApplicationsPage() {
               {[1, 2].map((item) => (
                 <article className="seeker-application-stat" key={item} aria-hidden="true">
                   <span className="leamjobs-skeleton-block seeker-application-stat__icon-skeleton" />
-                  <div><span className="leamjobs-skeleton-line" style={{ width: '2.5rem' }} /><span className="leamjobs-skeleton-line" style={{ width: '6rem', marginTop: '0.4rem' }} /></div>
+                  <div>
+                    <span className="leamjobs-skeleton-line" style={{ width: '2.5rem' }} />
+                    <span className="leamjobs-skeleton-line" style={{ width: '6rem', marginTop: '0.4rem' }} />
+                  </div>
                 </article>
               ))}
             </>
-          ) : applicationStats.map((stat) => <article className="seeker-application-stat" key={stat.label}><span className={`seeker-application-stat__icon seeker-application-stat__icon--${stat.tone}`}>{stat.icon}</span><div><strong>{stat.value}</strong><p>{stat.label}</p></div></article>)}
+          ) : (
+            applicationStats.map((stat) => (
+              <article className="seeker-application-stat" key={stat.label}>
+                <span className={`seeker-application-stat__icon seeker-application-stat__icon--${stat.tone}`}>
+                  {stat.icon}
+                </span>
+                <div>
+                  <strong>{stat.value}</strong>
+                  <p>{stat.label}</p>
+                </div>
+              </article>
+            ))
+          )}
         </section>
 
         <section className="seeker-applications-grid">
           <div className="seeker-card seeker-application-list-card">
-            <div className="seeker-section-heading"><div><h2>Recent applications</h2><p className="seeker-application-list-card__subtitle">Review your latest applications and their progress.</p></div></div>
-            <div className="seeker-application-tabs" aria-label="Application status filters">{['All', 'Interview', 'Applied', 'Reviewing', 'Rejected'].map((tab) => <button className={tab === 'All' ? 'seeker-application-tab--active' : ''} type="button" key={tab}>{tab}</button>)}</div>
+            <div className="seeker-section-heading">
+              <div>
+                <h2>Recent applications</h2>
+                <p className="seeker-application-list-card__subtitle">
+                  Review your latest applications and their progress.
+                </p>
+              </div>
+            </div>
+            <div className="seeker-application-tabs" aria-label="Application status filters">
+              {['All', 'Interview', 'Applied', 'Reviewing', 'Rejected'].map((tab) => (
+                <button className={tab === 'All' ? 'seeker-application-tab--active' : ''} type="button" key={tab}>
+                  {tab}
+                </button>
+              ))}
+            </div>
             <div className="seeker-application-list" aria-busy={isLoading}>
               {error ? <p role="alert">{error}</p> : null}
               {isLoading ? (
@@ -233,8 +348,16 @@ function ApplicationsPage() {
                     <article className="seeker-application-card" key={item} aria-hidden="true">
                       <span className="leamjobs-skeleton-block seeker-application-card__logo-skeleton" />
                       <div className="seeker-application-card__content">
-                        <div className="seeker-application-card__top"><div><span className="leamjobs-skeleton-line" style={{ width: '55%' }} /><span className="leamjobs-skeleton-line" style={{ width: '75%', marginTop: '0.4rem' }} /></div></div>
-                        <div className="seeker-application-card__meta"><span className="leamjobs-skeleton-line" style={{ width: '40%' }} /><span className="leamjobs-skeleton-line" style={{ width: '35%' }} /></div>
+                        <div className="seeker-application-card__top">
+                          <div>
+                            <span className="leamjobs-skeleton-line" style={{ width: '55%' }} />
+                            <span className="leamjobs-skeleton-line" style={{ width: '75%', marginTop: '0.4rem' }} />
+                          </div>
+                        </div>
+                        <div className="seeker-application-card__meta">
+                          <span className="leamjobs-skeleton-line" style={{ width: '40%' }} />
+                          <span className="leamjobs-skeleton-line" style={{ width: '35%' }} />
+                        </div>
                       </div>
                     </article>
                   ))}
@@ -244,22 +367,258 @@ function ApplicationsPage() {
               {!isLoading && !error ? applications.map(applicationCard) : null}
             </div>
           </div>
-          <aside className="seeker-card seeker-income-card" aria-label="Application summary"><div className="seeker-income-card__heading"><span><FaBriefcase /></span><div><h2>Application summary</h2><p>Your current application activity</p></div></div><div className="seeker-income-metrics"><div><strong>{summary.total}</strong><span>Total applications</span></div><div><strong>{summary.interviews}</strong><span>Interviews</span></div></div></aside>
+
+          <aside className="seeker-card seeker-income-card" aria-label="Application summary">
+            <div className="seeker-income-card__heading">
+              <span><FaBriefcase /></span>
+              <div>
+                <h2>Application summary</h2>
+                <p>Your current application activity</p>
+              </div>
+            </div>
+            <div className="seeker-income-metrics">
+              <div>
+                <strong>{summary.total}</strong>
+                <span>Total applications</span>
+              </div>
+              <div>
+                <strong>{summary.interviews}</strong>
+                <span>Interviews</span>
+              </div>
+            </div>
+          </aside>
         </section>
       </main>
 
       {(selectedJob || isJobLoading || jobError) && (
-        <div className="seeker-application-modal-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) closeApplication(); }}>
-          <section className="seeker-application-modal" role="dialog" aria-modal="true" aria-labelledby="application-modal-title">
-            <div className="seeker-application-modal__header"><div><span className="seeker-application-modal__eyebrow">Application workspace</span><h2 id="application-modal-title">{isJobLoading ? (<><span className="sr-only">Loading job details</span><span className="leamjobs-skeleton-line seeker-application-modal__title-skeleton" aria-hidden="true" /></>) : selectedJob ? `Apply for ${selectedJob.title}` : 'Application unavailable'}</h2>{selectedJob ? <p>{selectedJob.company?.name || 'Company not provided'} · {selectedJob.location}</p> : null}</div><button type="button" className="seeker-application-modal__close" onClick={closeApplication} aria-label="Close application form"><FaTimes /></button></div>
+        <div
+          className="seeker-application-modal-backdrop"
+          role="presentation"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) {
+              closeApplication();
+            }
+          }}
+        >
+          <section
+            className="seeker-application-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="application-modal-title"
+          >
+            <div className="seeker-application-modal__header">
+              <div>
+                <span className="seeker-application-modal__eyebrow">Application workspace</span>
+                <h2 id="application-modal-title">
+                  {isJobLoading ? (
+                    <>
+                      <span className="sr-only">Loading job details</span>
+                      <span
+                        className="leamjobs-skeleton-line seeker-application-modal__title-skeleton"
+                        aria-hidden="true"
+                      />
+                    </>
+                  ) : selectedJob ? (
+                    `Apply for ${selectedJob.title}`
+                  ) : (
+                    'Application unavailable'
+                  )}
+                </h2>
+                {selectedJob ? (
+                  <p>
+                    {selectedJob.company?.name || 'Company not provided'} · {selectedJob.location}
+                  </p>
+                ) : null}
+              </div>
+              <button
+                type="button"
+                className="seeker-application-modal__close"
+                onClick={closeApplication}
+                aria-label="Close application form"
+              >
+                <FaTimes />
+              </button>
+            </div>
+
             {isJobLoading ? (
               <div className="seeker-application-modal__body" role="status" aria-live="polite">
                 <span className="sr-only">Loading job details</span>
-                <div className="seeker-application-job-facts" aria-hidden="true"><span className="leamjobs-skeleton-line" /><span className="leamjobs-skeleton-line" /><span className="leamjobs-skeleton-line" /></div>
+                <div className="seeker-application-job-facts" aria-hidden="true">
+                  <span className="leamjobs-skeleton-line" />
+                  <span className="leamjobs-skeleton-line" />
+                  <span className="leamjobs-skeleton-line" />
+                </div>
                 <div className="leamjobs-skeleton-block seeker-application-skeleton-block" aria-hidden="true" />
-                <div className="leamjobs-skeleton-block seeker-application-skeleton-block seeker-application-skeleton-block--tall" aria-hidden="true" />
+                <div
+                  className="leamjobs-skeleton-block seeker-application-skeleton-block seeker-application-skeleton-block--tall"
+                  aria-hidden="true"
+                />
               </div>
-            ) : jobError ? <div className="seeker-application-success"><span><FaTimesCircle /></span><h3>Unable to apply</h3><p>{jobError}</p><button type="button" className="button button--primary" onClick={closeApplication}>Back to applications</button></div> : applicationSent ? <div className="seeker-application-success"><span><FaCheck /></span><h3>Application submitted</h3><p>Your application was sent. You can track it from Applications.</p><button type="button" className="button button--primary" onClick={closeApplication}>Back to applications</button></div> : selectedJob ? <><div className="seeker-application-modal__body"><div className="seeker-application-job-facts"><span><strong>Compensation</strong>{selectedJob.compensation?.type === 'FREELANCE' ? `${selectedJob.compensation.currency} ${selectedJob.compensation.projectAmount}` : selectedJob.compensation ? `${selectedJob.compensation.currency} ${selectedJob.compensation.salaryMin ?? 'Not specified'} - ${selectedJob.compensation.salaryMax ?? 'Not specified'}` : 'Not specified'}</span><span><strong>Job type</strong>{formatJobType(selectedJob.jobType)}</span><span><strong>Location</strong>{selectedJob.location}</span></div><div className="seeker-application-cv-choice"><div className="seeker-application-cv-choice__heading"><div><h3>Resume</h3><p>{resumeUrl ? 'Your saved profile resume will be attached automatically to this application.' : 'No resume is currently saved in your profile.'}</p></div></div>{resumeUrl ? <span className="seeker-application-cv-note">This resume will be included when you submit your application.</span> : <span className="seeker-application-cv-note">Add or update your resume in your profile before applying.</span>} {!resumeUrl ? <Link to="/seeker/profile#seeker-profile-editor" className="button button--secondary" onClick={closeApplication}>Update profile</Link> : null}</div><div className="seeker-application-proposal"><label htmlFor="application-proposal">Cover letter or short introduction <small>(optional)</small></label><textarea id="application-proposal" value={proposal} onChange={(event) => setProposal(event.target.value)} placeholder="Share a concise introduction, relevant experience, and what you would bring to this role." rows={5} /><small>{proposal.trim().length ? `${proposal.trim().length} characters` : 'You can apply without a cover letter.'}</small></div>{submitError ? <p role="alert">{submitError}</p> : null}</div><div className="seeker-application-modal__footer"><button type="button" className="seeker-application-secondary-button" onClick={closeApplication}>Cancel</button><button type="button" className="button button--primary" disabled={isSubmitting} onClick={submitApplication}>{isSubmitting ? 'Submitting...' : 'Submit application'}</button></div></> : null}
+            ) : jobError ? (
+              <div className="seeker-application-success">
+                <span><FaTimesCircle /></span>
+                <h3>Unable to apply</h3>
+                <p>{jobError}</p>
+                <button type="button" className="button button--primary" onClick={closeApplication}>
+                  Back to applications
+                </button>
+              </div>
+            ) : applicationSent ? (
+              <div className="seeker-application-success">
+                <span><FaCheck /></span>
+                <h3>Application submitted</h3>
+                <p>Your application was sent. You can track it from Applications.</p>
+                <button type="button" className="button button--primary" onClick={closeApplication}>
+                  Back to applications
+                </button>
+              </div>
+            ) : selectedJob ? (
+              <>
+                <div className="seeker-application-modal__body">
+                  <div className="seeker-application-job-facts">
+                    <span>
+                      <strong>Compensation</strong>
+                      {selectedJob.compensation?.type === 'FREELANCE'
+                        ? `${selectedJob.compensation.currency} ${selectedJob.compensation.projectAmount}`
+                        : selectedJob.compensation
+                          ? `${selectedJob.compensation.currency} ${selectedJob.compensation.salaryMin ?? 'Not specified'} - ${selectedJob.compensation.salaryMax ?? 'Not specified'}`
+                          : 'Not specified'}
+                    </span>
+                    <span>
+                      <strong>Job type</strong>
+                      {formatJobType(selectedJob.jobType)}
+                    </span>
+                    <span>
+                      <strong>Location</strong>
+                      {selectedJob.location}
+                    </span>
+                  </div>
+
+                  {showCvWarning ? (
+                    <div className="seeker-application-warning">
+                      <h3>Your CV profile is incomplete</h3>
+                      <p>
+                        Some information is missing from your LeamJobs CV. Completing your profile can
+                        help employers better understand your experience and qualifications.
+                      </p>
+                      <div className="seeker-application-warning__actions">
+                        <button type="button" className="button button--secondary" onClick={completeProfileAndExit}>
+                          Complete profile
+                        </button>
+                        <button type="button" className="button button--primary" onClick={continueWithIncompleteProfile}>
+                          Continue application
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="seeker-application-cv-choice">
+                      <div className="seeker-application-cv-choice__heading">
+                        <div>
+                          <h3>Choose your CV</h3>
+                          <p>
+                            {profileOnboardingComplete
+                              ? 'Your LeamJobs profile is ready to use.'
+                              : 'Your LeamJobs CV profile is incomplete, but you can still continue.'}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="seeker-application-cv-options">
+                        <label className="seeker-application-cv-option">
+                          <input
+                            type="radio"
+                            checked={cvChoice === 'profile'}
+                            onChange={() => handleCvChoiceClick('profile')}
+                          />
+                          <span>
+                            <strong>Use my LeamJobs CV</strong>
+                            <small>Generated from your LeamJobs profile</small>
+                          </span>
+                        </label>
+
+                        <label className="seeker-application-cv-option">
+                          <input
+                            type="radio"
+                            checked={cvChoice === 'upload'}
+                            onChange={() => handleCvChoiceClick('upload')}
+                            disabled={!resumeUrl}
+                          />
+                          <span>
+                            <strong>Use my saved uploaded CV</strong>
+                            <small>{resumeUrl ? 'Using your current profile-uploaded CV' : 'No uploaded profile CV saved yet'}</small>
+                          </span>
+                        </label>
+                      </div>
+
+                      {cvChoice === 'profile' && !profileOnboardingComplete ? (
+                        <p className="seeker-application-cv-note">
+                          Your profile is incomplete. You can still continue with the information currently available.
+                        </p>
+                      ) : null}
+                      {cvChoice === 'profile' && resumeUrl ? (
+                        <span className="seeker-application-cv-note">
+                          This saved profile CV will be included when you submit your application.
+                        </span>
+                      ) : null}
+                      {cvChoice === 'upload' && resumeUrl ? (
+                        <span className="seeker-application-cv-note">
+                          Your uploaded CV will be included when you submit your application.
+                        </span>
+                      ) : null}
+                      {cvChoice === 'upload' && !resumeUrl ? (
+                        <span className="seeker-application-cv-note">
+                          No saved uploaded profile CV is available for this application.
+                        </span>
+                      ) : null}
+                      {cvChoice === 'profile' && !resumeUrl && !profileOnboardingComplete ? (
+                        <span className="seeker-application-cv-note">
+                          You can continue without a stored CV, but employers will only see the information you provided.
+                        </span>
+                      ) : null}
+                      {cvChoice === 'profile' && !resumeUrl && profileOnboardingComplete ? (
+                        <span className="seeker-application-cv-note">
+                          Your profile will be used as the application CV.
+                        </span>
+                      ) : null}
+                    </div>
+                  )}
+
+                  {!showCvWarning && (
+                    <div className="seeker-application-proposal">
+                      <label htmlFor="application-proposal">Cover letter or short introduction</label>
+                      <textarea
+                        id="application-proposal"
+                        value={proposal}
+                        onChange={(event) => setProposal(event.target.value)}
+                        rows={5}
+                        placeholder="Write a short introduction or note for the employer."
+                      />
+                      <small>
+                        {proposal.trim().length
+                          ? `${proposal.trim().length} characters`
+                          : 'You can apply without a cover letter.'}
+                      </small>
+                    </div>
+                  )}
+
+                  {submitError ? <p role="alert">{submitError}</p> : null}
+                </div>
+
+                <div className="seeker-application-modal__footer">
+                  <button type="button" className="button button--secondary" onClick={closeApplication}>
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    className="button button--primary"
+                    disabled={isSubmitting || (cvChoice === 'upload' && !resumeUrl)}
+                    onClick={submitApplication}
+                  >
+                    {isSubmitting ? 'Submitting...' : 'Submit application'}
+                  </button>
+                </div>
+              </>
+            ) : null}
           </section>
         </div>
       )}

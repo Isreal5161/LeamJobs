@@ -657,7 +657,15 @@ function EmployerApplicantsPage() {
               {cvModalState === 'error' ? <div className="employer-cv-modal__state" role="alert"><FaFileAlt /><strong>Unable to load CV</strong><p>The CV could not be retrieved.</p><button className="employer-button employer-button--primary" type="button" onClick={() => void openResume()}>Retry</button></div> : null}
               {cvModalState === 'unavailable' ? <div className="employer-cv-modal__state"><FaFileAlt /><strong>CV unavailable</strong><p>This applicant does not currently have a CV available to view.</p></div> : null}
               {cvModalState === 'pdf' && cvDocumentUrl ? <iframe className="employer-cv-modal__document" src={cvDocumentUrl} title={`${applicant.fullName} CV document`} /> : null}
-              {cvModalState === 'template' ? <div className="employer-cv-modal__template"><p className="employer-cv-modal__template-note">Saved LeamJobs CV template. This application does not include a historical CV snapshot.</p><CVTemplateRenderer data={templateDataForApplicant(applicant)} template={applicant.cvTemplate || 'professional'} /></div> : null}
+              {cvModalState === 'template' ? (() => {
+                const templateVariant = (selectedApplication.cvSnapshot?.templateId ?? applicant.cvTemplate ?? 'professional') as 'modern' | 'professional' | 'creative' | 'minimalist';
+                return (
+                  <div className="employer-cv-modal__template">
+                    <p className="employer-cv-modal__template-note">{selectedApplication.cvSnapshot ? 'Submitted LeamJobs CV snapshot.' : 'Saved LeamJobs CV template. This application does not include a historical CV snapshot.'}</p>
+                    <CVTemplateRenderer data={selectedApplication.cvSnapshot?.snapshot ?? templateDataForApplicant(applicant)} template={templateVariant} />
+                  </div>
+                );
+              })() : null}
             </div>
             <footer className="employer-cv-modal__footer"><button className="employer-button employer-button--ghost" type="button" onClick={closeCvModal}>Close</button></footer>
           </section>
