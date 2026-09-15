@@ -410,7 +410,7 @@ function AdminCommunicationsPage() {
             <button
               type="button"
               className="admin-button admin-button--secondary"
-              onClick={() => void checkRecipients}
+              onClick={() => void checkRecipients()}
             >
               <FaEye /> Check eligible recipients
             </button>

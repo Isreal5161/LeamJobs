@@ -1031,8 +1031,16 @@ export type AdminEmailCampaign = { id: string; eventKey: string; subject: string
 export type AdminCommunicationFields = { subject: string; heading: string; body: string; ctaLabel?: string | null; ctaUrl?: string | null; isActive?: boolean; segment?: string };
 
 export function getAdminEmailTemplates(token: string) { return request<{ success: true; data: { templates: AdminEmailTemplate[] } }>({ method: 'GET', endpoint: '/admin/communications/templates', token }); }
-export function updateAdminEmailTemplate(token: string, key: string, body: AdminCommunicationFields) { return request<{ success: true; data: { template: AdminEmailTemplate } }>({ method: 'PATCH', endpoint: `/admin/communications/templates/${key}`, body, token }); }
-export function previewAdminEmailTemplate(token: string, key: string, body: Partial<AdminCommunicationFields>) { return request<{ success: true; data: { subject: string; html: string; text: string } }>({ method: 'POST', endpoint: `/admin/communications/templates/${key}/preview`, body, token }); }
+const getAdminTemplateFields = (body: Partial<AdminCommunicationFields>): AdminCommunicationFields => ({
+  subject: body.subject ?? '',
+  heading: body.heading ?? '',
+  body: body.body ?? '',
+  ctaLabel: body.ctaLabel,
+  ctaUrl: body.ctaUrl,
+  isActive: body.isActive,
+});
+export function updateAdminEmailTemplate(token: string, key: string, body: AdminCommunicationFields) { return request<{ success: true; data: { template: AdminEmailTemplate } }>({ method: 'PATCH', endpoint: `/admin/communications/templates/${key}`, body: getAdminTemplateFields(body), token }); }
+export function previewAdminEmailTemplate(token: string, key: string, body: Partial<AdminCommunicationFields>) { return request<{ success: true; data: { subject: string; html: string; text: string } }>({ method: 'POST', endpoint: `/admin/communications/templates/${key}/preview`, body: getAdminTemplateFields(body), token }); }
 export function createAdminCampaign(token: string, body: AdminCommunicationFields) { return request<{ success: true; data: { campaign: AdminEmailCampaign } }>({ method: 'POST', endpoint: '/admin/communications/campaigns', body, token }); }
 export function updateAdminCampaign(token: string, id: string, body: Partial<AdminCommunicationFields>) { return request<{ success: true; data: { campaign: AdminEmailCampaign } }>({ method: 'PATCH', endpoint: `/admin/communications/campaigns/${id}`, body, token }); }
 export function getAdminCampaignPreview(token: string, id: string) { return request<{ success: true; data: { campaign: AdminEmailCampaign; recipientCount: number; subject: string; html: string; text: string } }>({ method: 'GET', endpoint: `/admin/communications/campaigns/${id}/preview`, token }); }
