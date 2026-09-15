@@ -116,6 +116,27 @@
   color: #17352b;
   background: #fff;
 }
+.admin-communications-editor-toolbar {
+  display: flex;
+  gap: 8px;
+  margin-top: 1px;
+}
+.admin-editor-tool {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid #cbdad2;
+  border-radius: 5px;
+  padding: 7px 10px;
+  color: #17352b;
+  background: #f5f8f6;
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+.admin-editor-tool:hover { background: #e8f1ec; }
+.admin-editor-tool:focus-visible { outline: 3px solid rgba(14, 74, 225, 0.24); outline-offset: 2px; }
 .admin-communications-campaign input:focus,
 .admin-communications-campaign textarea:focus,
 .admin-communications-campaign select:focus,

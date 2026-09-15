@@ -1,8 +1,10 @@
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useEffect, useRef, useState } from "react";
 import {
+  FaBold,
   FaBullhorn,
   FaCheck,
   FaEye,
+  FaHeading,
   FaSave,
   FaPaperPlane,
 } from "react-icons/fa";
@@ -58,6 +60,7 @@ function AdminCommunicationsPage() {
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
   const [templatesLoading, setTemplatesLoading] = useState(true);
+  const campaignBodyRef = useRef<HTMLTextAreaElement>(null);
 
   const loadTemplates = async () => {
     if (!token) return;
@@ -113,6 +116,34 @@ function AdminCommunicationsPage() {
   ) => {
     setCampaign((current) => ({ ...current, [field]: value }));
     setRecipientCount(null);
+  };
+  const formatCampaignBody = (format: "heading" | "bold") => {
+    const textarea = campaignBodyRef.current;
+    const value = campaign.body ?? "";
+    const start = textarea?.selectionStart ?? value.length;
+    const end = textarea?.selectionEnd ?? start;
+    const selected = value.slice(start, end);
+    let nextValue = value;
+    let nextStart = start;
+    let nextEnd = end;
+
+    if (format === "heading") {
+      const lineStart = value.lastIndexOf("\n", Math.max(0, start - 1)) + 1;
+      nextValue = `${value.slice(0, lineStart)}## ${value.slice(lineStart)}`;
+      nextStart = start + 3;
+      nextEnd = end + 3;
+    } else {
+      const content = selected || "text";
+      nextValue = `${value.slice(0, start)}**${content}**${value.slice(end)}`;
+      nextStart = start + 2;
+      nextEnd = nextStart + content.length;
+    }
+
+    updateCampaign("body", nextValue);
+    window.requestAnimationFrame(() => {
+      campaignBodyRef.current?.focus();
+      campaignBodyRef.current?.setSelectionRange(nextStart, nextEnd);
+    });
   };
   const checkRecipients = async () => {
     if (!token || !campaign.segment) return;
@@ -360,7 +391,28 @@ function AdminCommunicationsPage() {
           </label>
           <label>
             Message
+            <div className="admin-communications-editor-toolbar" role="toolbar" aria-label="Message formatting">
+              <button
+                type="button"
+                className="admin-editor-tool"
+                onClick={() => formatCampaignBody("heading")}
+                title="Add heading"
+                aria-label="Add heading"
+              >
+                <FaHeading aria-hidden="true" /> Heading
+              </button>
+              <button
+                type="button"
+                className="admin-editor-tool"
+                onClick={() => formatCampaignBody("bold")}
+                title="Bold selected text"
+                aria-label="Bold selected text"
+              >
+                <FaBold aria-hidden="true" /> Bold
+              </button>
+            </div>
             <textarea
+              ref={campaignBodyRef}
               value={campaign.body}
               onChange={(event) => updateCampaign("body", event.target.value)}
               rows={5}

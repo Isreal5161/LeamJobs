@@ -525,8 +525,13 @@
 
 @media (max-width: 767px) {
   .dashboard-topbar__notification-panel {
-    right: -0.35rem;
-    width: min(92vw, 360px);
+    position: fixed;
+    top: 5rem;
+    right: 0.75rem;
+    left: 0.75rem;
+    width: auto;
+    max-width: 380px;
+    margin: 0 auto;
   }
 
   .dashboard-topbar__notification-item {
@@ -564,8 +569,10 @@
   }
 
   .dashboard-topbar__notification-panel {
-    right: -0.45rem;
-    width: min(94vw, 330px);
+    top: 4.75rem;
+    right: 0.6rem;
+    left: 0.6rem;
+    width: auto;
   }
 
   .dashboard-topbar__notification-item strong {

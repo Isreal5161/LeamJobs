@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import {
   FaBriefcase,
+  FaBullhorn,
   FaBuilding,
   FaClipboardList,
   FaComments,
@@ -23,6 +24,7 @@ const adminPrimaryLinks = [
   { label: 'Jobs', to: '/admin/jobs', icon: FaBriefcase, match: (path: string) => path.startsWith('/admin/jobs') },
   { label: 'Moderation', to: '/admin/moderation', icon: FaFlag, match: (path: string) => path.startsWith('/admin/moderation') },
   { label: 'Users', to: '/admin/users', icon: FaUser, match: (path: string) => path.startsWith('/admin/users') },
+  { label: 'Communications', to: '/admin/communications', icon: FaBullhorn, match: (path: string) => path.startsWith('/admin/communications') },
 ];
 
 function MobileBottomNav() {
