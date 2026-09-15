@@ -24,7 +24,7 @@ const adminPrimaryLinks = [
   { label: 'Jobs', to: '/admin/jobs', icon: FaBriefcase, match: (path: string) => path.startsWith('/admin/jobs') },
   { label: 'Moderation', to: '/admin/moderation', icon: FaFlag, match: (path: string) => path.startsWith('/admin/moderation') },
   { label: 'Users', to: '/admin/users', icon: FaUser, match: (path: string) => path.startsWith('/admin/users') },
-  { label: 'Communications', to: '/admin/communications', icon: FaBullhorn, match: (path: string) => path.startsWith('/admin/communications') },
+  { label: 'Comms', ariaLabel: 'Communications', to: '/admin/communications', icon: FaBullhorn, match: (path: string) => path.startsWith('/admin/communications') },
 ];
 
 function MobileBottomNav() {
@@ -36,10 +36,12 @@ function MobileBottomNav() {
   if (adminMode) {
     return (
       <nav className="mobile-bottom-nav mobile-bottom-nav--admin" aria-label="Admin mobile navigation">
-        {adminPrimaryLinks.map(({ icon: Icon, ...item }) => (
+        {adminPrimaryLinks.map(({ icon: Icon, ariaLabel, ...item }) => (
           <Link
             to={item.to}
             key={item.to}
+            aria-label={ariaLabel ?? item.label}
+            title={ariaLabel ?? item.label}
             className={`mobile-bottom-nav__item ${item.match(pathname) ? 'mobile-bottom-nav__item--active' : ''}`}
           >
             <Icon />
