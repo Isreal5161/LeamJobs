@@ -15,6 +15,7 @@ import {
   FaStar,
   FaTimes,
   FaUser,
+  FaUsers,
 } from 'react-icons/fa';
 
 const adminPrimaryLinks = [
@@ -50,6 +51,7 @@ function MobileBottomNav() {
   // Seeker/Employer navigation
   const homePath = seekerMode ? '/seeker/dashboard' : employerMode ? '/employer/dashboard' : '/';
   const jobsPath = seekerMode ? '/seeker/jobs' : employerMode ? '/employer/jobs' : '/jobs';
+  const candidatesPath = employerMode ? '/employer/candidates' : '';
   const applicationsPath = seekerMode ? '/seeker/applications' : employerMode ? '/employer/applicants' : '/applications';
   const messagesPath = seekerMode ? '/seeker/messages' : employerMode ? '/employer/messages' : '/messages';
   const profilePath = seekerMode ? '/seeker/profile' : employerMode ? '/employer/profile' : '/profile';
@@ -66,6 +68,10 @@ function MobileBottomNav() {
         <FaBriefcase />
         <span>Jobs</span>
       </Link>
+      {employerMode ? <Link to={candidatesPath} className={`mobile-bottom-nav__item ${pathname.startsWith(candidatesPath) ? 'mobile-bottom-nav__item--active' : ''}`}>
+        <FaUsers />
+        <span>Candidates</span>
+      </Link> : null}
       <Link to={applicationsPath} className={`mobile-bottom-nav__item ${pathname.startsWith(applicationsPath) ? 'mobile-bottom-nav__item--active' : ''}`}>
         <FaClipboardList />
         <span>{applicationsLabel}</span>

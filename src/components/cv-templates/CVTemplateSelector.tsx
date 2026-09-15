@@ -5,8 +5,9 @@ export interface CVTemplate {
   id: string;
   name: string;
   description: string;
-  style: 'modern' | 'professional' | 'creative' | 'minimalist';
+  style: 'modern' | 'professional' | 'creative' | 'minimalist' | 'executive' | 'ats' | 'compact';
   preview: string;
+  advanced?: boolean;
 }
 
 const TEMPLATES: CVTemplate[] = [
@@ -37,6 +38,30 @@ const TEMPLATES: CVTemplate[] = [
     description: 'Simple, focused design without distractions',
     style: 'minimalist',
     preview: 'Minimalist template with clean whitespace',
+  },
+  {
+    id: 'executive',
+    name: 'Executive',
+    description: 'Structured leadership-focused presentation',
+    style: 'executive',
+    preview: 'Executive template with a confident two-column hierarchy',
+    advanced: true,
+  },
+  {
+    id: 'ats',
+    name: 'ATS Clear',
+    description: 'Single-column format built for easy scanning',
+    style: 'ats',
+    preview: 'ATS-friendly template with clear section structure',
+    advanced: true,
+  },
+  {
+    id: 'compact',
+    name: 'Compact',
+    description: 'Dense, readable layout for focused applications',
+    style: 'compact',
+    preview: 'Compact template with efficient information grouping',
+    advanced: true,
   },
 ];
 

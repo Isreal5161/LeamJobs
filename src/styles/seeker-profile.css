@@ -1103,6 +1103,24 @@
   color: #0e4ae1;
 }
 
+.seeker-ai-panel { display: grid; gap: 1rem; }
+.seeker-ai-panel__heading { display: flex; justify-content: space-between; gap: 1rem; align-items: flex-start; }
+.seeker-ai-panel__heading h2, .seeker-ai-panel__heading p { margin: .35rem 0 0; }
+.seeker-ai-panel__heading h2 { color: #0f172a; font-size: 1.2rem; }
+.seeker-ai-panel__heading p, .seeker-ai-panel__request span { color: #64748b; font-size: .85rem; }
+.seeker-ai-panel__request { display: grid; gap: .35rem; }
+.seeker-ai-panel__request textarea { width: 100%; resize: vertical; padding: .7rem; border: 1px solid #dbe3ee; border-radius: 8px; font: inherit; }
+.seeker-ai-panel__actions { display: flex; gap: .65rem; flex-wrap: wrap; }
+.seeker-ai-panel__actions button, .seeker-ai-panel__results button { min-height: 38px; padding: 0 .85rem; border: 1px solid rgba(14,74,225,.22); border-radius: 7px; background: #fff; color: #0e4ae1; font-weight: 800; }
+.seeker-ai-panel__actions button:first-child { background: #0e4ae1; color: #fff; }
+.seeker-ai-panel__actions button:disabled { cursor: not-allowed; opacity: .5; }
+.seeker-ai-panel__error { margin: 0; color: #b91c1c; }
+.seeker-ai-panel__results { display: grid; gap: .65rem; }
+.seeker-ai-panel__results h3 { margin: 0; color: #0f172a; font-size: 1rem; }
+.seeker-ai-panel__results article { display: grid; gap: .25rem; padding: .8rem; border: 1px solid #e1e8f1; border-radius: 8px; }
+.seeker-ai-panel__results article p, .seeker-ai-panel__results article small { margin: 0; line-height: 1.45; }
+.seeker-ai-panel__results article small { color: #64748b; }
+
 .seeker-profile-tags {
   display: flex;
   flex-wrap: wrap;

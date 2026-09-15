@@ -228,6 +228,15 @@
 .messages-composer button { display: inline-flex; align-items: center; justify-content: center; gap: 0.45rem; min-width: 92px; min-height: 44px; padding: 0 0.9rem; border: 0; border-radius: 9px; background: var(--messages-accent); color: #ffffff; font-weight: 750; cursor: pointer; }
 .messages-composer button:disabled { background: #cbd5e1; color: #64748b; cursor: not-allowed; }
 
+.messages-invitation-card { margin-bottom: 1rem; padding: 1rem; border: 1px solid #cbdcf8; border-radius: 8px; background: #f7faff; }
+.messages-invitation-card__eyebrow { color: #1d4ed8; font-size: .72rem; font-weight: 800; letter-spacing: .08em; }
+.messages-invitation-card h3 { margin: .35rem 0; color: #0f172a; }
+.messages-invitation-card p { margin: 0; color: #475569; line-height: 1.55; white-space: pre-wrap; }
+.messages-invitation-card__actions { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: .85rem; }
+.messages-invitation-card__actions button { min-height: 36px; padding: 0 .7rem; border: 1px solid #cbd5e1; border-radius: 7px; background: #fff; color: #1e293b; font: inherit; font-size: .78rem; font-weight: 700; cursor: pointer; }
+.messages-invitation-card__actions button:nth-child(2) { border-color: #2563eb; background: #2563eb; color: #fff; }
+.messages-invitation-card__actions button:focus-visible { outline: 3px solid rgba(37, 99, 235, .25); outline-offset: 2px; }
+
 .seeker-home.messages-page button:focus-visible,
 .seeker-home.messages-page input:focus-visible,
 .seeker-home.messages-page textarea:focus-visible,

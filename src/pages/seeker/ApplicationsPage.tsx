@@ -14,11 +14,13 @@ import {
   FaTimesCircle,
 } from 'react-icons/fa';
 import { useAuth } from '../../context/AuthContext';
+import { useSubscriptions } from '../../context/SubscriptionContext';
 import {
   createSeekerApplication,
   getSeekerApplications,
   getSeekerJob,
   getSeekerProfile,
+  requestApplicationAssistance,
   type SeekerApplication,
   type SeekerDashboardJob,
 } from '../../services/api';
@@ -39,6 +41,7 @@ function ApplicationsPage() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { user, token } = useAuth();
+  const { getSubscription } = useSubscriptions();
 
   const [applications, setApplications] = useState<SeekerApplication[]>([]);
   const [summary, setSummary] = useState({ total: 0, interviews: 0 });
@@ -57,6 +60,10 @@ function ApplicationsPage() {
   const [cvChoice, setCvChoice] = useState<'profile' | 'upload'>('profile');
   const [showCvWarning, setShowCvWarning] = useState(false);
   const [activeFilter, setActiveFilter] = useState<ApplicationFilter>('All');
+  const aiApplicationAvailable = user ? getSubscription(user.id).aiEntitlements.includes('AI_APPLICATION_ASSISTANCE') : false;
+  const [aiApplication, setAiApplication] = useState<{ coverLetter: string; alignmentPoints: string[]; strengths: string[]; gaps: string[] } | null>(null);
+  const [isAiLoading, setIsAiLoading] = useState(false);
+  const [aiError, setAiError] = useState('');
 
   const loadApplications = async () => {
     if (!token) {
@@ -173,7 +180,18 @@ function ApplicationsPage() {
     setProposal('');
     setSubmitError('');
     setShowCvWarning(false);
+    setAiApplication(null);
+    setAiError('');
     navigate('/seeker/applications', { replace: true });
+  };
+
+  const runApplicationAssistance = async () => {
+    if (!selectedJob || !token || isAiLoading) return;
+    setIsAiLoading(true); setAiError('');
+    const result = await requestApplicationAssistance({ jobId: selectedJob.id, request: 'Draft a concise, truthful cover letter and explain the strongest alignment points.', coverLetter: proposal }, token);
+    setIsAiLoading(false);
+    if (result.ok) setAiApplication(result.data.data);
+    else setAiError(result.error.message || 'AI assistance is unavailable.');
   };
 
   const submitApplication = async () => {
@@ -618,6 +636,13 @@ function ApplicationsPage() {
                       </small>
                     </div>
                   )}
+
+                  {!showCvWarning ? <section className="seeker-ai-application" aria-label="AI application assistance">
+                    <div><strong>Premium application assistance</strong><p>Draft a cover letter and review job alignment before you submit.</p></div>
+                    <button type="button" onClick={() => void runApplicationAssistance()} disabled={!aiApplicationAvailable || isAiLoading}>{!aiApplicationAvailable ? 'Requires Premium' : isAiLoading ? 'Thinking...' : 'Get AI draft'}</button>
+                    {aiError ? <p role="alert">{aiError}</p> : null}
+                    {aiApplication ? <div className="seeker-ai-application__result"><h4>Review draft</h4><textarea value={aiApplication.coverLetter} onChange={(event) => setProposal(event.target.value)} rows={6} /><strong>Alignment</strong><ul>{aiApplication.alignmentPoints.map((point) => <li key={point}>{point}</li>)}</ul><strong>Possible gaps</strong><ul>{aiApplication.gaps.map((gap) => <li key={gap}>{gap}</li>)}</ul></div> : null}
+                  </section> : null}
 
                   {submitError ? <p role="alert">{submitError}</p> : null}
                 </div>

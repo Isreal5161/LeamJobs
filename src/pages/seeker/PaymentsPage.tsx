@@ -76,7 +76,7 @@ function PaymentsPage() {
   const [notice, setNotice] = useState('');
   const [retryKey, setRetryKey] = useState(0);
 
-  const emptyPayoutForm = { accountHolderName: '', bankName: '', accountNumber: '', payoutIdentifier: '' };
+  const emptyPayoutForm = { accountHolderName: '', bankName: '', bankCode: '', accountNumber: '', payoutIdentifier: '' };
   const [showPayoutSettings, setShowPayoutSettings] = useState(false);
   const [editingPayoutAccountId, setEditingPayoutAccountId] = useState<string | null>(null);
   const [payoutForm, setPayoutForm] = useState(emptyPayoutForm);
@@ -157,6 +157,7 @@ function PaymentsPage() {
     setPayoutForm(account ? {
       accountHolderName: account.accountName,
       bankName: account.bankName ?? '',
+      bankCode: account.bankCode ?? '',
       accountNumber: '',
       payoutIdentifier: '',
     } : emptyPayoutForm);
@@ -177,6 +178,7 @@ function PaymentsPage() {
     if (!payoutForm.accountHolderName.trim()) return 'Enter the account holder name.';
     if (isNigeria) {
       if (!payoutForm.bankName.trim()) return 'Enter the bank name.';
+      if (!payoutForm.bankCode.trim()) return 'Enter the Paystack bank code.';
       if (!/^\d{6,20}$/.test(payoutForm.accountNumber.trim())) return 'Enter a valid account number.';
     } else if (!payoutForm.payoutIdentifier.trim()) {
       return 'Enter your payout details.';
@@ -195,6 +197,7 @@ function PaymentsPage() {
       country: 'Nigeria',
       accountHolderName: payoutForm.accountHolderName.trim(),
       bankName: payoutForm.bankName.trim(),
+      bankCode: payoutForm.bankCode.trim(),
       accountNumber: payoutForm.accountNumber.trim(),
     } : {
       country: payoutCountry ?? '',
@@ -351,6 +354,7 @@ function PaymentsPage() {
                 {isNigeria ? (
                   <>
                     <label htmlFor="payout-bank-name">Bank name<input id="payout-bank-name" value={payoutForm.bankName} onChange={(event) => { setPayoutForm((current) => ({ ...current, bankName: event.target.value })); setPayoutFormError(''); }} disabled={isSavingPayout} /></label>
+                    <label htmlFor="payout-bank-code">Bank code<small>Use the bank code provided by Paystack.</small><input id="payout-bank-code" value={payoutForm.bankCode} onChange={(event) => { setPayoutForm((current) => ({ ...current, bankCode: event.target.value })); setPayoutFormError(''); }} disabled={isSavingPayout} /></label>
                     <label htmlFor="payout-account-number">Account number{editingPayoutAccountId ? <small>Re-enter to replace the masked account ending {editingPayoutAccount?.accountNumberLast4}</small> : null}<input id="payout-account-number" inputMode="numeric" value={payoutForm.accountNumber} onChange={(event) => { setPayoutForm((current) => ({ ...current, accountNumber: event.target.value })); setPayoutFormError(''); }} disabled={isSavingPayout} /></label>
                   </>
                 ) : (

@@ -1,5 +1,5 @@
 import { type FormEvent, type KeyboardEvent, useEffect, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { FaBell, FaBriefcase, FaPaperPlane, FaSearch } from 'react-icons/fa';
 import ApplicantAvatar from '../../components/employer/ApplicantAvatar';
 import { useAuth } from '../../context/AuthContext';
@@ -12,6 +12,7 @@ import {
   markSeekerConversationAsRead,
   sendEmployerMessage,
   sendSeekerMessage,
+  respondToSeekerInvitation,
   type EmployerConversation,
   type EmployerMessage,
   type SeekerConversation,
@@ -39,6 +40,7 @@ type Conversation = {
   time: string;
   unread: number;
   messages: ChatMessage[];
+  invitation: SeekerConversation['invitation'];
 };
 
 type MessagesPageProps = {
@@ -47,6 +49,7 @@ type MessagesPageProps = {
 
 function MessagesPage({ role }: MessagesPageProps) {
   const { user, token } = useAuth();
+  const navigate = useNavigate();
   const [messageSearchParams] = useSearchParams();
   const [seekerConversations, setSeekerConversations] = useState<SeekerConversation[]>([]);
   const [employerConversations, setEmployerConversations] = useState<EmployerConversation[]>([]);
@@ -63,6 +66,7 @@ function MessagesPage({ role }: MessagesPageProps) {
   const [conversationRetry, setConversationRetry] = useState(0);
   const [messagesRetry, setMessagesRetry] = useState(0);
   const [nextCursor, setNextCursor] = useState<string | null>(null);
+  const [isRespondingToInvitation, setIsRespondingToInvitation] = useState(false);
   const conversations: Conversation[] = role === 'seeker'
     ? seekerConversations.map((conversation) => ({
         id: conversation.id,
@@ -76,6 +80,7 @@ function MessagesPage({ role }: MessagesPageProps) {
         messages: seekerMessages
           .filter((message) => message.conversationId === conversation.id)
           .map((message) => ({ id: message.id, sender: message.senderId === user?.id ? 'me' : 'them', text: message.body, createdAt: message.createdAt })),
+        invitation: conversation.invitation,
       }))
       : employerConversations.map((conversation) => ({
           id: conversation.id,
@@ -89,6 +94,7 @@ function MessagesPage({ role }: MessagesPageProps) {
           messages: employerMessages
             .filter((message) => message.conversationId === conversation.id)
             .map((message) => ({ id: message.id, sender: message.senderId === user?.id ? 'me' : 'them', text: message.body, createdAt: message.createdAt })),
+          invitation: conversation.invitation,
         }));
 
   useEffect(() => {
@@ -166,7 +172,7 @@ function MessagesPage({ role }: MessagesPageProps) {
     conversations.find((conversation) => conversation.id === selectedConversationId) ??
     filteredConversations[0] ??
     conversations[0] ?? {
-      id: '', name: '', role: '', subject: '', lastMessage: '', time: '', unread: 0, messages: [],
+      id: '', name: '', role: '', subject: '', lastMessage: '', time: '', unread: 0, messages: [], invitation: null,
     };
   const pageClass = role === 'employer' ? 'employer-page' : 'seeker-home';
   const contentClass = role === 'employer' ? 'employer-content' : 'seeker-home__content';
@@ -176,6 +182,20 @@ function MessagesPage({ role }: MessagesPageProps) {
 
   const handleSelectConversation = (conversationId: string) => {
     setSelectedConversationId(conversationId);
+  };
+
+  const respondToInvitation = async (response: 'ACCEPTED' | 'DECLINED') => {
+    if (role !== 'seeker' || !token || !selectedConversation.invitation || isRespondingToInvitation) return;
+    setIsRespondingToInvitation(true);
+    const result = await respondToSeekerInvitation(selectedConversation.invitation.id, response, token);
+    if (result.ok) {
+      setSeekerConversations((current) => current.map((conversation) => conversation.id === selectedConversation.id
+        ? { ...conversation, invitation: result.data.data.invitation, application: result.data.data.invitation.applicationId ? { id: result.data.data.invitation.applicationId, status: 'APPLIED', jobId: result.data.data.invitation.job.id } : conversation.application }
+        : conversation));
+    } else {
+      setMessagesError(result.error.message || 'The invitation could not be updated.');
+    }
+    setIsRespondingToInvitation(false);
   };
 
   const handleLoadOlderMessages = async () => {
@@ -315,6 +335,12 @@ function MessagesPage({ role }: MessagesPageProps) {
           </div>
 
           <div className="messages-chat-body" aria-label={`Conversation with ${selectedConversation.name}`} aria-busy={isLoadingMessages}>
+            {role === 'seeker' && selectedConversation.invitation ? <section className="messages-invitation-card" aria-label="Job invitation">
+              <span className="messages-invitation-card__eyebrow">JOB INVITATION</span>
+              <h3>{selectedConversation.invitation.job.title}</h3>
+              <p>{selectedConversation.invitation.message}</p>
+              {selectedConversation.invitation.status === 'PENDING' ? <div className="messages-invitation-card__actions"><button type="button" onClick={() => navigate(`/jobs/${selectedConversation.invitation?.job.id}`)}>View job</button><button type="button" onClick={() => void respondToInvitation('ACCEPTED')} disabled={isRespondingToInvitation}>Accept invitation</button><button type="button" onClick={() => void respondToInvitation('DECLINED')} disabled={isRespondingToInvitation}>Decline</button></div> : <strong>Invitation {selectedConversation.invitation.status.toLowerCase()}.</strong>}
+            </section> : null}
             {isLoadingMessages && !selectedConversation.messages.length ? (
               <>
                 <span className="sr-only" role="status" aria-live="polite">Loading messages</span>

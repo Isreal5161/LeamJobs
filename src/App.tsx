@@ -21,6 +21,7 @@ import OnboardingPage from './pages/seeker/OnboardingPage';
 import EmployerDashboardPage from './pages/employer/EmployerDashboardPage';
 import EmployerJobsPage from './pages/employer/EmployerJobsPage';
 import EmployerApplicantsPage from './pages/employer/EmployerApplicantsPage';
+import EmployerCandidatesPage from './pages/employer/EmployerCandidatesPage';
 import EmployerProfilePage from './pages/employer/EmployerProfilePage';
 import MessagesPage from './pages/messages/MessagesPage';
 import AdminDashboardPage from './pages/admin/AdminDashboardPage';
@@ -44,6 +45,13 @@ import AdminFiltersPage from './pages/admin/AdminFiltersPage';
 import AdminRecommendationsPage from './pages/admin/AdminRecommendationsPage';
 import ContractPage from './pages/contracts/ContractPage';
 import { SubscriptionProvider } from './context/SubscriptionContext';
+import NotificationsPage from './pages/notifications/NotificationsPage';
+import ForgotPasswordPage from './pages/public/ForgotPasswordPage';
+import ResetPasswordPage from './pages/public/ResetPasswordPage';
+import SettingsPage from './pages/settings/EmailPreferencesPage';
+import PublicJobUpdatesUnsubscribePage from './pages/public/PublicJobUpdatesUnsubscribePage';
+import MarketingUnsubscribePage from './pages/public/MarketingUnsubscribePage';
+import AdminCommunicationsPage from './pages/admin/AdminCommunicationsPage';
 
 function App() {
   return (
@@ -58,6 +66,10 @@ function App() {
             <Route path="how-it-works" element={<HowItWorksPage />} />
             <Route path="companies" element={<CompaniesPage />} />
             <Route path="login" element={<SignInPage />} />
+            <Route path="forgot-password" element={<ForgotPasswordPage />} />
+            <Route path="reset-password" element={<ResetPasswordPage />} />
+            <Route path="unsubscribe-job-updates" element={<PublicJobUpdatesUnsubscribePage />} />
+            <Route path="unsubscribe-marketing" element={<MarketingUnsubscribePage />} />
             <Route path="signin" element={<Navigate to="/login" replace />} />
             <Route path="register" element={<SignUpPage />} />
             <Route path="signup" element={<Navigate to="/register" replace />} />
@@ -80,15 +92,20 @@ function App() {
             <Route path="profile" element={<ProfilePage />} />
             <Route path="onboarding" element={<OnboardingPage />} />
             <Route path="payments" element={<SeekerPaymentsPage />} />
+            <Route path="notifications" element={<NotificationsPage role="seeker" />} />
+            <Route path="settings" element={<SettingsPage role="seeker" />} />
           </Route>
           <Route path="/employer" element={<ProtectedRoute allowedRoles={['EMPLOYER']}><EmployerLayout /></ProtectedRoute>}>
             <Route index element={<Navigate to="dashboard" replace />} />
             <Route path="dashboard" element={<EmployerDashboardPage />} />
             <Route path="jobs" element={<EmployerJobsPage />} />
+            <Route path="candidates" element={<EmployerCandidatesPage />} />
             <Route path="applicants" element={<EmployerApplicantsPage />} />
             <Route path="contracts/:contractId" element={<ContractPage role="EMPLOYER" />} />
             <Route path="messages" element={<MessagesPage role="employer" />} />
             <Route path="profile" element={<EmployerProfilePage />} />
+            <Route path="notifications" element={<NotificationsPage role="employer" />} />
+            <Route path="settings" element={<SettingsPage role="employer" />} />
           </Route>
           <Route path="/admin" element={<ProtectedRoute allowedRoles={['ADMIN']}><AdminLayout /></ProtectedRoute>}>
             <Route index element={<Navigate to="moderation" replace />} />
@@ -107,6 +124,9 @@ function App() {
             <Route path="analytics" element={<AdminAnalyticsPage />} />
             <Route path="payments" element={<AdminPaymentsPage />} />
             <Route path="subscriptions" element={<AdminSubscriptionsPage />} />
+            <Route path="notifications" element={<NotificationsPage role="admin" />} />
+            <Route path="communications" element={<AdminCommunicationsPage />} />
+            <Route path="settings" element={<SettingsPage role="admin" />} />
           </Route>
         </Routes>
           </SubscriptionProvider>

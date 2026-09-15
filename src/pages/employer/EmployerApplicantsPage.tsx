@@ -5,7 +5,7 @@ import {
   FaExternalLinkAlt, FaFileAlt, FaGlobe, FaMapMarkerAlt, FaSearch, FaSpinner, FaTimes, FaWhatsapp,
 } from 'react-icons/fa';
 import ApplicantAvatar from '../../components/employer/ApplicantAvatar';
-import CVTemplateRenderer, { type CVData } from '../../components/cv-templates/CVTemplateRenderer';
+import CVTemplateRenderer, { type CVData, type CVTemplateId } from '../../components/cv-templates/CVTemplateRenderer';
 import { useAuth } from '../../context/AuthContext';
 import {
   createEmployerApplicationConversation,
@@ -658,7 +658,7 @@ function EmployerApplicantsPage() {
               {cvModalState === 'unavailable' ? <div className="employer-cv-modal__state"><FaFileAlt /><strong>CV unavailable</strong><p>This applicant does not currently have a CV available to view.</p></div> : null}
               {cvModalState === 'pdf' && cvDocumentUrl ? <iframe className="employer-cv-modal__document" src={cvDocumentUrl} title={`${applicant.fullName} CV document`} /> : null}
               {cvModalState === 'template' ? (() => {
-                const templateVariant = (selectedApplication.cvSnapshot?.templateId ?? applicant.cvTemplate ?? 'professional') as 'modern' | 'professional' | 'creative' | 'minimalist';
+                const templateVariant = (selectedApplication.cvSnapshot?.templateId ?? applicant.cvTemplate ?? 'professional') as CVTemplateId;
                 return (
                   <div className="employer-cv-modal__template">
                     <p className="employer-cv-modal__template-note">{selectedApplication.cvSnapshot ? 'Submitted LeamJobs CV snapshot.' : 'Saved LeamJobs CV template. This application does not include a historical CV snapshot.'}</p>

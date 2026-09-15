@@ -1,4 +1,6 @@
+import { FormEvent, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { subscribeToJobUpdates } from '../../services/api';
 
 type FooterProps = {
   /** 'compact' is the short authenticated seeker/employer footer; default is the full public footer. */
@@ -6,6 +8,22 @@ type FooterProps = {
 };
 
 function Footer({ variant = 'full' }: FooterProps) {
+  const [email, setEmail] = useState('');
+  const [status, setStatus] = useState('');
+  const [error, setError] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleSubscribe = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setStatus('');
+    setError('');
+    setIsSubmitting(true);
+    const result = await subscribeToJobUpdates(email.trim());
+    if (result.ok) { setStatus(result.data.data.message); setEmail(''); }
+    else setError(result.error.message || 'Unable to subscribe right now.');
+    setIsSubmitting(false);
+  };
+
   if (variant === 'compact') {
     return (
       <footer className="site-footer site-footer--compact">
@@ -39,12 +57,15 @@ function Footer({ variant = 'full' }: FooterProps) {
           <Link to="/login">Sign in</Link>
         </nav>
 
-        <form className="site-footer__subscribe" aria-label="Subscribe to job updates">
+        <form className="site-footer__subscribe" aria-label="Subscribe to job updates" onSubmit={(event) => void handleSubscribe(event)}>
           <label htmlFor="footer-email">Get job updates</label>
           <div className="site-footer__subscribe-row">
-            <input id="footer-email" type="email" placeholder="Email address" />
-            <button type="submit">Subscribe</button>
+            <input id="footer-email" type="email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="Email address" required />
+            <button type="submit" disabled={isSubmitting}>{isSubmitting ? 'Subscribing...' : 'Subscribe'}</button>
           </div>
+          {status ? <small role="status">{status}</small> : null}
+          {error ? <small role="alert">{error}</small> : null}
+          <small>Optional job updates. You can unsubscribe at any time.</small>
         </form>
       </div>
 

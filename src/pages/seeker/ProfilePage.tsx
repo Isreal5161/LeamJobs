@@ -21,7 +21,7 @@ import {
   FaUser,
 } from 'react-icons/fa';
 import CVTemplateSelector, { TEMPLATES } from '../../components/cv-templates/CVTemplateSelector';
-import CVTemplateRenderer, { CVData } from '../../components/cv-templates/CVTemplateRenderer';
+import CVTemplateRenderer, { CVData, sampleCVData, type CVTemplateId } from '../../components/cv-templates/CVTemplateRenderer';
 import { useAuth } from '../../context/AuthContext';
 import { useSubscriptions, type SubscriptionPlanId } from '../../context/SubscriptionContext';
 import {
@@ -38,6 +38,8 @@ import {
   type CertificationItem as ApiCertificationItem,
   type EducationItem as ApiEducationItem,
   type ExperienceItem as ApiExperienceItem,
+  requestProfileAssistant,
+  requestCvOptimizer,
 } from '../../services/api';
 import { downloadCVAsPDF } from '../../utils/cvDownloadUtils';
 import { getLanguageSuggestions } from '../../data/languageSuggestions';
@@ -289,7 +291,8 @@ const createEmptyProfileState = (): ProfileState => ({
 
 function ProfilePage() {
   const { user, token } = useAuth();
-  const [selectedTemplate, setSelectedTemplate] = useState<'modern' | 'professional' | 'creative' | 'minimalist'>('modern');
+  const [selectedTemplate, setSelectedTemplate] = useState<CVTemplateId>('modern');
+  const [templateSelectionChanged, setTemplateSelectionChanged] = useState(false);
   const [isTemplateModalOpen, setIsTemplateModalOpen] = useState(false);
   const [activeStep, setActiveStep] = useState<StepKey>('personal');
   const [notification, setNotification] = useState<ProfileNotification | null>(null);
@@ -316,10 +319,44 @@ function ProfilePage() {
   const [onboardingLocation, setOnboardingLocation] = useState({ country: '', state: '', city: '' });
   const [addPanel, setAddPanel] = useState<AddPanel>(null);
   const [addValue, setAddValue] = useState('');
+  const [aiRequest, setAiRequest] = useState('Improve my profile summary and identify the strongest profile improvements.');
+  const [aiSuggestions, setAiSuggestions] = useState<{ section: string; suggestion: string; reason: string }[]>([]);
+  const [aiCvSuggestions, setAiCvSuggestions] = useState<{ section: string; original: string; suggested: string; reason: string }[]>([]);
+  const [isAiLoading, setIsAiLoading] = useState(false);
+  const [aiError, setAiError] = useState('');
   const { plans, getSubscription, updateSubscription } = useSubscriptions();
 
   const subscriptionUserId = user?.id || '';
-  const subscription = subscriptionUserId ? getSubscription(subscriptionUserId) : { status: 'Free', planId: 'free', renewalDate: '' };
+  const subscription = subscriptionUserId ? getSubscription(subscriptionUserId) : { status: 'Expired' as const, planId: 'free', renewalDate: '', advancedCvEligible: false, aiEntitlements: [] as string[], seekerId: '', seekerName: '', email: '', startedAt: 'Not started', featured: false };
+  const canUseAdvancedCv = subscription.advancedCvEligible;
+  const canUseProfileAssistant = Array.isArray(subscription.aiEntitlements) && subscription.aiEntitlements.includes('AI_PROFILE_ASSISTANT');
+  const canUseCvOptimizer = Array.isArray(subscription.aiEntitlements) && subscription.aiEntitlements.includes('AI_CV_OPTIMIZER');
+  const selectedTemplateIsAdvanced = TEMPLATES.find((template) => template.style === selectedTemplate)?.advanced ?? false;
+  const renderedTemplate: CVTemplateId = selectedTemplateIsAdvanced && !canUseAdvancedCv ? 'modern' : selectedTemplate;
+
+  const handleTemplateSelection = (template: CVTemplateId) => {
+    setSelectedTemplate(template);
+    setTemplateSelectionChanged(true);
+  };
+
+  const runProfileAssistant = async () => {
+    if (!token || !canUseProfileAssistant || isAiLoading) return;
+    setIsAiLoading(true); setAiError('');
+    const result = await requestProfileAssistant({ professionalTitle: profile.personalInfo.title, bio: profile.personalInfo.summary, skills: profile.skills, experience: profile.experience, education: profile.education, request: aiRequest }, token);
+    setIsAiLoading(false);
+    if (result.ok) setAiSuggestions(result.data.data.suggestions);
+    else setAiError(result.error.message || 'AI assistance is unavailable.');
+  };
+
+  const runCvOptimizer = async () => {
+    if (!token || !canUseCvOptimizer || isAiLoading) return;
+    setIsAiLoading(true); setAiError('');
+    const cv = { personalInfo: profile.personalInfo, summary: profile.personalInfo.summary, experience: profile.experience, education: profile.education, skills: profile.skills, certifications: profile.certifications, languages: profile.languages, projects: profile.projects };
+    const result = await requestCvOptimizer({ cv, request: 'Suggest concise, achievement-oriented improvements without inventing facts.' }, token);
+    setIsAiLoading(false);
+    if (result.ok) setAiCvSuggestions(result.data.data.suggestions);
+    else setAiError(result.error.message || 'AI assistance is unavailable.');
+  };
 
   useEffect(() => {
     if (!token) {
@@ -384,6 +421,7 @@ function ProfilePage() {
       setProfile(loadedProfile);
       setLoadedProfileSnapshot(loadedProfile);
       setSelectedTemplate(apiProfile.cvTemplate ?? 'modern');
+      setTemplateSelectionChanged(false);
       setProfilePictureUrl(apiProfile.profilePictureUrl ?? null);
       setResumeUrl(apiProfile.resumeUrl ?? null);
       if (apiProfile.resumeUrl) {
@@ -795,6 +833,7 @@ function ProfilePage() {
       return;
     }
 
+    const shouldPersistTemplate = canUseAdvancedCv || !selectedTemplateIsAdvanced || templateSelectionChanged;
     const cvPayload = {
       bio: profile.personalInfo.summary.trim(),
       education: profile.education as ApiEducationItem[],
@@ -806,7 +845,7 @@ function ProfilePage() {
       languages: profile.languages,
       projects: profile.projects,
       linkedinUrl: profile.personalInfo.linkedin.trim(),
-      cvTemplate: selectedTemplate,
+      ...(shouldPersistTemplate ? { cvTemplate: selectedTemplate } : {}),
     };
 
     setIsSaving(true);
@@ -831,6 +870,8 @@ function ProfilePage() {
       showNotification({ title: issues.length > 0 ? 'Please fix the following before saving' : 'Save failed', message, tone: 'error' });
       return;
     }
+
+    setTemplateSelectionChanged(false);
 
     const incompleteProfileFields = [
       !onboardingLocation.country.trim() ? 'country' : '',
@@ -1280,12 +1321,38 @@ function ProfilePage() {
               {(cvWorkflowMode === 'template' || cvWorkflowMode === 'imported' || cvWorkflowMode === 'import-review') && (
                 <>
                   <div className="seeker-cv-template-choices" aria-label="CV templates">
-                    {TEMPLATES.map((template) => (
-                      <button type="button" key={template.id} className={selectedTemplate === template.style ? 'seeker-cv-template-choice seeker-cv-template-choice--active' : 'seeker-cv-template-choice'} onClick={() => setSelectedTemplate(template.style)}>
+                    {TEMPLATES.filter((template) => !template.advanced).map((template) => (
+                      <button type="button" key={template.id} className={selectedTemplate === template.style ? 'seeker-cv-template-choice seeker-cv-template-choice--active' : 'seeker-cv-template-choice'} onClick={() => handleTemplateSelection(template.style)}>
                         <span>{template.name}</span>
                         <small>{template.description}</small>
                       </button>
                     ))}
+                  </div>
+                  <div className="seeker-cv-advanced-templates" aria-labelledby="advanced-cv-designs-title">
+                    <div className="seeker-cv-advanced-templates__heading">
+                      <div>
+                        <span className="seeker-cv-summary__eyebrow">Advanced CV</span>
+                        <h3 id="advanced-cv-designs-title">Advanced CV designs</h3>
+                        <p>Premium presentation options for a more tailored CV.</p>
+                      </div>
+                      {!canUseAdvancedCv ? <div className="seeker-cv-advanced-templates__actions"><span className="seeker-cv-advanced-templates__locked">Requires Advanced CV</span><button type="button" onClick={() => document.getElementById('subscription-options')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}>View plans</button></div> : null}
+                    </div>
+                    <div className="seeker-cv-template-choices seeker-cv-template-choices--advanced">
+                      {TEMPLATES.filter((template) => template.advanced).map((template) => (
+                        <button
+                          type="button"
+                          key={template.id}
+                          disabled={!canUseAdvancedCv}
+                          aria-label={canUseAdvancedCv ? `Use ${template.name} CV design` : `${template.name} requires Advanced CV`}
+                          className={`${selectedTemplate === template.style && canUseAdvancedCv ? 'seeker-cv-template-choice seeker-cv-template-choice--active' : 'seeker-cv-template-choice'}${!canUseAdvancedCv ? ' seeker-cv-template-choice--locked' : ''}`}
+                          onClick={() => handleTemplateSelection(template.style)}
+                        >
+                          <span className="seeker-cv-template-thumb" aria-hidden="true"><CVTemplateRenderer data={sampleCVData} template={template.style} /></span>
+                          <span>{template.name}</span>
+                          <small>{canUseAdvancedCv ? template.description : 'Available with an eligible subscription'}</small>
+                        </button>
+                      ))}
+                    </div>
                   </div>
                   {cvWorkflowMode === 'imported' && (
                     <div className="seeker-cv-import-status" role="status">
@@ -1303,7 +1370,7 @@ function ProfilePage() {
                       certifications: profile.certifications,
                       languages: profile.languages,
                       projects: profile.projects,
-                    }} template={selectedTemplate} />
+                    }} template={renderedTemplate} />
                   </div>
                   <div className="seeker-cv-workspace__actions">
                     <button type="button" onClick={handleEditCvContent}><FaEdit /> Edit CV content</button>
@@ -1326,7 +1393,22 @@ function ProfilePage() {
               )}
             </section>
 
-            <section className="seeker-card seeker-subscription-card">
+            <section className="seeker-card seeker-ai-panel" aria-labelledby="ai-profile-tools-title">
+              <div className="seeker-ai-panel__heading">
+                <div><span className="seeker-cv-summary__eyebrow">Premium AI</span><h2 id="ai-profile-tools-title">Profile and CV guidance</h2><p>Review suggestions before changing your profile or CV.</p></div>
+                {(!canUseProfileAssistant && !canUseCvOptimizer) ? <span className="seeker-cv-advanced-templates__locked">Premium feature</span> : null}
+              </div>
+              <label className="seeker-ai-panel__request"><span>What would you like help with?</span><textarea value={aiRequest} onChange={(event) => setAiRequest(event.target.value)} maxLength={500} rows={2} disabled={!canUseProfileAssistant && !canUseCvOptimizer} /></label>
+              <div className="seeker-ai-panel__actions">
+                <button type="button" onClick={() => void runProfileAssistant()} disabled={!canUseProfileAssistant || isAiLoading}>{isAiLoading ? 'Thinking...' : 'Improve profile'}</button>
+                <button type="button" onClick={() => void runCvOptimizer()} disabled={!canUseCvOptimizer || isAiLoading}>Optimize CV</button>
+              </div>
+              {aiError ? <p role="alert" className="seeker-ai-panel__error">{aiError}</p> : null}
+              {aiSuggestions.length > 0 ? <div className="seeker-ai-panel__results"><h3>Profile suggestions</h3>{aiSuggestions.map((item, index) => <article key={`${item.section}-${index}`}><strong>{item.section}</strong><p>{item.suggestion}</p><small>{item.reason}</small>{item.section.toLowerCase() === 'bio' ? <button type="button" onClick={() => setProfile((current) => ({ ...current, personalInfo: { ...current.personalInfo, summary: item.suggestion } }))}>Use in editor</button> : null}</article>)}</div> : null}
+              {aiCvSuggestions.length > 0 ? <div className="seeker-ai-panel__results"><h3>CV suggestions</h3>{aiCvSuggestions.map((item, index) => <article key={`${item.section}-${index}`}><strong>{item.section}</strong><p>{item.suggested}</p><small>{item.reason}</small>{item.section.toLowerCase() === 'summary' ? <button type="button" onClick={() => setProfile((current) => ({ ...current, personalInfo: { ...current.personalInfo, summary: item.suggested } }))}>Use in editor</button> : null}</article>)}</div> : null}
+            </section>
+
+            <section id="subscription-options" className="seeker-card seeker-subscription-card">
               <div className="seeker-subscription-card__heading">
                 <div>
                   <span className="seeker-subscription-eyebrow"><FaCrown /> Profile visibility</span>
@@ -1707,7 +1789,7 @@ function ProfilePage() {
       <CVTemplateSelector
         isOpen={isTemplateModalOpen}
         selectedTemplate={selectedTemplate}
-        onSelectTemplate={(template) => setSelectedTemplate(template as any)}
+        onSelectTemplate={(template) => handleTemplateSelection(template as CVTemplateId)}
         onClose={() => setIsTemplateModalOpen(false)}
       />
     </div>

@@ -21,6 +21,7 @@ import './styles/seeker-onboarding.css';
 import './styles/seeker-typography.css';
 import './styles/employer.css';
 import './styles/employer-applicants.css';
+import './styles/employer-candidates.css';
 import './styles/messages.css';
 import './styles/admin.css';
 import './styles/payments.css';
@@ -28,6 +29,9 @@ import './styles/subscriptions.css';
 import './styles/contracts.css';
 import './styles/admin-release.css';
 import './styles/dashboard-theme.css';
+import './styles/email-preferences.css';
+import './styles/admin-communications.css';
+import './styles/job-updates-popup.css';
 
 ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
   <React.StrictMode>

@@ -41,9 +41,22 @@ export interface CVData {
   }>;
 }
 
+export type CVTemplateId = 'modern' | 'professional' | 'creative' | 'minimalist' | 'executive' | 'ats' | 'compact';
+
+export const sampleCVData: CVData = {
+  personalInfo: { fullName: 'Alex Morgan', title: 'Product Designer', email: 'alex@example.com', phone: '+234 800 000 0000', location: 'Lagos, Nigeria' },
+  summary: 'Product designer focused on clear, accessible digital experiences.',
+  experience: [{ jobTitle: 'Product Designer', company: 'Example Studio', startDate: '2022', endDate: '', currentlyWorking: true, description: 'Led product design from discovery through delivery.' }],
+  education: [{ degree: 'BSc Design', school: 'University', year: '2021' }],
+  skills: ['Product design', 'Research', 'Figma'],
+  certifications: [{ name: 'UX Certification', issuer: 'Design Institute' }],
+  languages: [{ name: 'English', proficiency: 'Professional' }],
+  projects: [{ name: 'Hiring platform', description: 'A focused candidate experience.', technologies: ['Figma'], projectUrl: '', githubUrl: '', startDate: '2023', endDate: '' }],
+};
+
 interface CVTemplateRendererProps {
   data: CVData;
-  template: 'modern' | 'professional' | 'creative' | 'minimalist';
+  template: CVTemplateId;
 }
 
 function AdditionalSections({ data, className }: { data: CVData; className: string }) {
@@ -364,6 +377,61 @@ function MinimalistTemplate({ data }: { data: CVData }) {
   );
 }
 
+function ExecutiveTemplate({ data }: { data: CVData }) {
+  return <div className="cv-executive">
+    <header className="cv-executive__header">
+      <div><h1>{data.personalInfo.fullName}</h1><p>{data.personalInfo.title}</p></div>
+      <div className="cv-executive__contact">
+        {data.personalInfo.email && <span>{data.personalInfo.email}</span>}
+        {data.personalInfo.phone && <span>{data.personalInfo.phone}</span>}
+        {data.personalInfo.location && <span>{data.personalInfo.location}</span>}
+      </div>
+    </header>
+    <div className="cv-executive__grid">
+      <main>
+        {data.summary && <section><h2>Profile</h2><p>{data.summary}</p></section>}
+        {data.experience.length > 0 && <section><h2>Experience</h2>{data.experience.map((item) => <div className="cv-executive__entry" key={`${item.jobTitle}-${item.company}`}><div><strong>{item.jobTitle}</strong><span>{item.company}</span></div><time>{item.startDate} - {item.currentlyWorking ? 'Present' : item.endDate}</time><p>{item.description}</p></div>)}</section>}
+        {data.education.length > 0 && <section><h2>Education</h2>{data.education.map((item) => <div className="cv-executive__entry" key={`${item.degree}-${item.school}`}><div><strong>{item.degree}</strong><span>{item.school}</span></div><time>{item.year}</time></div>)}</section>}
+      </main>
+      <aside>
+        {data.skills.length > 0 && <section><h2>Expertise</h2><ul>{data.skills.map((skill) => <li key={skill}>{skill}</li>)}</ul></section>}
+        {data.certifications.length > 0 && <section><h2>Credentials</h2>{data.certifications.map((item) => <p key={`${item.name}-${item.issuer}`}><strong>{item.name}</strong><span>{item.issuer}</span></p>)}</section>}
+        <AdditionalSections data={data} className="cv-executive__section" />
+      </aside>
+    </div>
+  </div>;
+}
+
+function AtsTemplate({ data }: { data: CVData }) {
+  return <div className="cv-ats">
+    <header><h1>{data.personalInfo.fullName}</h1><p>{data.personalInfo.title}</p><div>{[data.personalInfo.email, data.personalInfo.phone, data.personalInfo.location].filter(Boolean).join(' | ')}</div></header>
+    {data.summary && <section><h2>Professional Summary</h2><p>{data.summary}</p></section>}
+    {data.experience.length > 0 && <section><h2>Experience</h2>{data.experience.map((item) => <article key={`${item.jobTitle}-${item.company}`}><div><strong>{item.jobTitle}</strong><span>{item.company}</span><time>{item.startDate} - {item.currentlyWorking ? 'Present' : item.endDate}</time></div><p>{item.description}</p></article>)}</section>}
+    {data.education.length > 0 && <section><h2>Education</h2>{data.education.map((item) => <article key={`${item.degree}-${item.school}`}><strong>{item.degree}</strong><span>{item.school}</span><time>{item.year}</time></article>)}</section>}
+    {data.skills.length > 0 && <section><h2>Skills</h2><p>{data.skills.join(' | ')}</p></section>}
+    {data.certifications.length > 0 && <section><h2>Certifications</h2>{data.certifications.map((item) => <p key={`${item.name}-${item.issuer}`}><strong>{item.name}</strong> - {item.issuer}</p>)}</section>}
+    <AdditionalSections data={data} className="cv-ats__section" />
+  </div>;
+}
+
+function CompactTemplate({ data }: { data: CVData }) {
+  return <div className="cv-compact">
+    <header><div><h1>{data.personalInfo.fullName}</h1><p>{data.personalInfo.title}</p></div><div>{[data.personalInfo.email, data.personalInfo.phone, data.personalInfo.location].filter(Boolean).map((item) => <span key={item}>{item}</span>)}</div></header>
+    <div className="cv-compact__body">
+      <main>
+        {data.summary && <section><h2>Summary</h2><p>{data.summary}</p></section>}
+        {data.experience.length > 0 && <section><h2>Experience</h2>{data.experience.map((item) => <article key={`${item.jobTitle}-${item.company}`}><div><strong>{item.jobTitle}</strong><span>{item.company}</span></div><time>{item.startDate} - {item.currentlyWorking ? 'Present' : item.endDate}</time><p>{item.description}</p></article>)}</section>}
+        {data.education.length > 0 && <section><h2>Education</h2>{data.education.map((item) => <article key={`${item.degree}-${item.school}`}><strong>{item.degree}</strong><span>{item.school}</span><time>{item.year}</time></article>)}</section>}
+      </main>
+      <aside>
+        {data.skills.length > 0 && <section><h2>Skills</h2><ul>{data.skills.map((skill) => <li key={skill}>{skill}</li>)}</ul></section>}
+        {data.certifications.length > 0 && <section><h2>Certifications</h2>{data.certifications.map((item) => <p key={`${item.name}-${item.issuer}`}><strong>{item.name}</strong><br />{item.issuer}</p>)}</section>}
+        <AdditionalSections data={data} className="cv-compact__section" />
+      </aside>
+    </div>
+  </div>;
+}
+
 function CVTemplateRenderer({ data, template }: CVTemplateRendererProps) {
   const renderTemplate = () => {
     switch (template) {
@@ -375,6 +443,12 @@ function CVTemplateRenderer({ data, template }: CVTemplateRendererProps) {
         return <CreativeTemplate data={data} />;
       case 'minimalist':
         return <MinimalistTemplate data={data} />;
+      case 'executive':
+        return <ExecutiveTemplate data={data} />;
+      case 'ats':
+        return <AtsTemplate data={data} />;
+      case 'compact':
+        return <CompactTemplate data={data} />;
       default:
         return <ModernTemplate data={data} />;
     }

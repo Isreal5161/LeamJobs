@@ -1,4 +1,4 @@
-import type { CVData } from '../components/cv-templates/CVTemplateRenderer';
+import type { CVData, CVTemplateId } from '../components/cv-templates/CVTemplateRenderer';
 
 export const API_BASE_URL = 'https://leamjobs.com/api';
 export const PROFILE_IMAGE_UPDATED_EVENT = 'leamjobs-profile-image-updated';
@@ -30,6 +30,49 @@ export type ApiFailure = {
 };
 
 export type ApiResponse<T> = ApiSuccess<T> | ApiFailure;
+
+export type NotificationActor = {
+  id: string;
+  firstName: string | null;
+  lastName: string | null;
+};
+
+export type AppNotification = {
+  id: string;
+  recipientUserId: string;
+  actorUserId: string | null;
+  actor: NotificationActor | null;
+  type: 'INFO' | 'SUCCESS' | 'WARNING' | 'ALERT';
+  category: 'GENERAL' | 'JOB' | 'APPLICATION' | 'MESSAGE' | 'INVITATION' | 'SUBSCRIPTION' | 'CONTRACT' | 'PAYMENT' | 'ADMIN';
+  eventKey: string;
+  title: string;
+  message: string;
+  link: string | null;
+  metadata: Record<string, unknown> | null;
+  isRead: boolean;
+  readAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type NotificationListResponse = {
+  success: true;
+  data: {
+    notifications: AppNotification[];
+    unreadCount: number;
+    nextCursor: string | null;
+  };
+};
+
+export type NotificationReadResponse = {
+  success: true;
+  data: { notification: AppNotification };
+};
+
+export type EmailPreferences = {
+  marketingEmailsEnabled: boolean;
+  transactionalEmailsEnabled: true;
+};
 
 export type SeekerDashboardProfile = {
   id: string;
@@ -264,6 +307,37 @@ export type EmployerJobResponse = {
   data: { job: EmployerJob };
 };
 
+export type EmployerCandidate = {
+  id: string;
+  firstName: string;
+  lastName: string;
+  profile: {
+    professionalTitle: string | null;
+    bio: string | null;
+    location: string | null;
+    skills: string[];
+    profilePictureUrl: string | null;
+  };
+  visibilityBoosted: boolean;
+  featured: boolean;
+};
+
+export type EmployerCandidatesResponse = {
+  success: true;
+  data: {
+    candidates: EmployerCandidate[];
+    pagination: { limit: number; hasMore: boolean; nextCursor: string | null };
+  };
+};
+
+export type EmployerCandidatesQuery = {
+  limit?: number;
+  cursor?: string;
+  search?: string;
+  location?: string;
+  skill?: string;
+};
+
 export type AdminJob = {
   id: string;
   employerId: string;
@@ -385,7 +459,7 @@ export type EmployerApplicant = {
   languages: LanguageItem[] | null;
   projects: ProjectItem[] | null;
   linkedinUrl: string | null;
-  cvTemplate: 'modern' | 'professional' | 'creative' | 'minimalist' | null;
+  cvTemplate: CVTemplateId | null;
 };
 
 export type EmployerApplicationListItem = {
@@ -489,7 +563,22 @@ export type EmployerConversation = {
   lastMessage: EmployerMessage | null;
   lastMessageAt: string | null;
   unreadCount: number;
+  invitation: EmployerInvitation | null;
 };
+
+export type EmployerInvitation = {
+  id: string;
+  status: 'PENDING' | 'ACCEPTED' | 'DECLINED' | 'EXPIRED' | 'CANCELLED';
+  message: string;
+  createdAt: string;
+  respondedAt: string | null;
+  expiresAt: string | null;
+  applicationId: string | null;
+  job: { id: string; title: string; location: string; status: string; applicationDeadline: string | null };
+  employer: { id: string; firstName: string; lastName: string; companyName: string | null; companyLogoUrl: string | null } | null;
+};
+
+export type SeekerInvitation = EmployerInvitation;
 
 export type EmployerMessage = {
   id: string;
@@ -525,6 +614,14 @@ export type EmployerReadResponse = {
   success: true;
   data: { conversationId: string; unreadCount: number };
 };
+
+export function createEmployerInvitation(payload: { seekerId: string; jobId: string; message: string }, token: string) {
+  return request<{ success: true; data: { invitation: EmployerInvitation } }>({ method: 'POST', endpoint: '/employer/invitations', body: payload, token });
+}
+
+export function respondToSeekerInvitation(invitationId: string, response: 'ACCEPTED' | 'DECLINED', token: string) {
+  return request<{ success: true; data: { invitation: SeekerInvitation } }>({ method: 'PATCH', endpoint: `/seeker/invitations/${encodeURIComponent(invitationId)}`, body: { response }, token });
+}
 
 export type EmployerJobPayload = {
   title: string;
@@ -649,7 +746,7 @@ export type GetSeekerProfileResponse = {
       certifications: CertificationItem[] | null;
       languages: LanguageItem[] | null;
       projects: ProjectItem[] | null;
-      cvTemplate: 'modern' | 'professional' | 'creative' | 'minimalist' | null;
+      cvTemplate: CVTemplateId | null;
       linkedinUrl: string | null;
       resumeUrl: string | null;
       resumeObjectKey: string | null;
@@ -726,7 +823,7 @@ export type UpdateSeekerCVPayload = {
   experience?: ExperienceItem[];
   certifications?: CertificationItem[];
   linkedinUrl?: string | null;
-  cvTemplate?: 'modern' | 'professional' | 'creative' | 'minimalist' | null;
+  cvTemplate?: CVTemplateId | null;
   languages?: LanguageItem[] | null;
   projects?: ProjectItem[] | null;
 };
@@ -742,7 +839,7 @@ export type UpdateSeekerCVResponse = {
     languages: LanguageItem[] | null;
     projects: ProjectItem[] | null;
     linkedinUrl: string | null;
-    cvTemplate: 'modern' | 'professional' | 'creative' | 'minimalist' | null;
+    cvTemplate: CVTemplateId | null;
   };
 };
 
@@ -884,6 +981,95 @@ export function updateEmployerProfile(payload: EmployerProfilePayload, token: st
 
 export function getEmployerJobs(token: string) {
   return request<EmployerJobsResponse>({ method: 'GET', endpoint: '/employer/jobs', token });
+}
+
+export function getEmployerCandidates(query: EmployerCandidatesQuery, token: string) {
+  const params = new URLSearchParams();
+  params.set('limit', String(query.limit ?? 25));
+  if (query.cursor) params.set('cursor', query.cursor);
+  if (query.search?.trim()) params.set('search', query.search.trim());
+  if (query.location?.trim()) params.set('location', query.location.trim());
+  if (query.skill?.trim()) params.set('skill', query.skill.trim());
+
+  return request<EmployerCandidatesResponse>({
+    method: 'GET',
+    endpoint: `/employer/candidates?${params.toString()}`,
+    token,
+  });
+}
+
+export function getNotifications(token: string, role: 'SEEKER' | 'EMPLOYER' | 'ADMIN', limit = 20, cursor?: string) {
+  const params = new URLSearchParams();
+  params.set('limit', String(limit));
+  if (cursor) params.set('cursor', cursor);
+
+  return request<NotificationListResponse>({
+    method: 'GET',
+    endpoint: `/${role.toLowerCase()}/notifications?${params.toString()}`,
+    token,
+  });
+}
+
+export function markNotificationRead(token: string, role: 'SEEKER' | 'EMPLOYER' | 'ADMIN', notificationId: string) {
+  return request<NotificationReadResponse>({
+    method: 'PATCH',
+    endpoint: `/${role.toLowerCase()}/notifications/${encodeURIComponent(notificationId)}/read`,
+    token,
+  });
+}
+
+export function markAllNotificationsRead(token: string, role: 'SEEKER' | 'EMPLOYER' | 'ADMIN') {
+  return request<{ success: true; data: { count: number } }>({
+    method: 'PATCH',
+    endpoint: `/${role.toLowerCase()}/notifications/read-all`,
+    token,
+  });
+}
+
+export type AdminEmailTemplate = { id: string; key: 'WELCOME_SEEKER' | 'WELCOME_EMPLOYER'; name: string; kind: string; subject: string; heading: string; body: string; ctaLabel: string | null; ctaUrl: string | null; isActive: boolean; updatedAt: string };
+export type AdminEmailCampaign = { id: string; eventKey: string; subject: string; heading: string; body: string; ctaLabel: string | null; ctaUrl: string | null; segment: string; status: 'DRAFT' | 'SENT'; recipientCount: number | null; createdAt: string; updatedAt: string };
+export type AdminCommunicationFields = { subject: string; heading: string; body: string; ctaLabel?: string | null; ctaUrl?: string | null; isActive?: boolean; segment?: string };
+
+export function getAdminEmailTemplates(token: string) { return request<{ success: true; data: { templates: AdminEmailTemplate[] } }>({ method: 'GET', endpoint: '/admin/communications/templates', token }); }
+export function updateAdminEmailTemplate(token: string, key: string, body: AdminCommunicationFields) { return request<{ success: true; data: { template: AdminEmailTemplate } }>({ method: 'PATCH', endpoint: `/admin/communications/templates/${key}`, body, token }); }
+export function previewAdminEmailTemplate(token: string, key: string, body: Partial<AdminCommunicationFields>) { return request<{ success: true; data: { subject: string; html: string; text: string } }>({ method: 'POST', endpoint: `/admin/communications/templates/${key}/preview`, body, token }); }
+export function createAdminCampaign(token: string, body: AdminCommunicationFields) { return request<{ success: true; data: { campaign: AdminEmailCampaign } }>({ method: 'POST', endpoint: '/admin/communications/campaigns', body, token }); }
+export function updateAdminCampaign(token: string, id: string, body: Partial<AdminCommunicationFields>) { return request<{ success: true; data: { campaign: AdminEmailCampaign } }>({ method: 'PATCH', endpoint: `/admin/communications/campaigns/${id}`, body, token }); }
+export function getAdminCampaignPreview(token: string, id: string) { return request<{ success: true; data: { campaign: AdminEmailCampaign; recipientCount: number; subject: string; html: string; text: string } }>({ method: 'GET', endpoint: `/admin/communications/campaigns/${id}/preview`, token }); }
+export function getAdminRecipientCount(token: string, segment: string) { return request<{ success: true; data: { recipientCount: number } }>({ method: 'GET', endpoint: `/admin/communications/recipients/count?segment=${encodeURIComponent(segment)}`, token }); }
+export function sendAdminCampaign(token: string, id: string) { return request<{ success: true; data: { campaign: AdminEmailCampaign } }>({ method: 'POST', endpoint: `/admin/communications/campaigns/${id}/send`, token }); }
+
+export function getEmailPreferences(token: string) {
+  return request<{ success: true; data: EmailPreferences }>({ method: 'GET', endpoint: '/auth/email-preferences', token });
+}
+
+export function updateEmailPreferences(token: string, marketingEmailsEnabled: boolean) {
+  return request<{ success: true; data: EmailPreferences }>({
+    method: 'PATCH',
+    endpoint: '/auth/email-preferences',
+    body: { marketingEmailsEnabled },
+    token,
+  });
+}
+
+export function requestPasswordReset(email: string) {
+  return request<{ message: string }>({ method: 'POST', endpoint: '/auth/forgot-password', body: { email } });
+}
+
+export function resetPassword(token: string, password: string) {
+  return request<{ message: string }>({ method: 'POST', endpoint: '/auth/reset-password', body: { token, password } });
+}
+
+export function subscribeToJobUpdates(email: string) {
+  return request<{ success: true; data: { message: string } }>({ method: 'POST', endpoint: '/jobs/job-updates/subscribe', body: { email } });
+}
+
+export function unsubscribeFromJobUpdates(token: string) {
+  return request<{ success: true; data: { message: string } }>({ method: 'GET', endpoint: `/jobs/job-updates/unsubscribe?token=${encodeURIComponent(token)}` });
+}
+
+export function unsubscribeFromMarketingEmails(token: string) {
+  return request<{ success: true; data: { message: string } }>({ method: 'GET', endpoint: `/auth/unsubscribe?token=${encodeURIComponent(token)}` });
 }
 
 export function getAdminJobs(token: string, status?: 'PENDING' | 'APPROVED' | 'REJECTED' | 'CLOSED') {
@@ -1117,6 +1303,200 @@ export function getAdminPayments(token: string, query: AdminPaymentsQuery = {}) 
   if (query.search?.trim()) params.set('search', query.search.trim());
   const queryString = params.toString();
   return request<AdminPaymentsResponse>({ method: 'GET', endpoint: `/admin/payments${queryString ? `?${queryString}` : ''}`, token });
+}
+
+export type AdminSubscriptionPlan = {
+  id: string;
+  key: string;
+  name: string;
+  description: string | null;
+  price: string | null;
+  currency: string | null;
+  billingInterval: 'MONTHLY';
+  active: boolean;
+  public: boolean;
+  displayOrder: number;
+  benefits: string[];
+  entitlements: { key: string; displayName: string; description: string | null; isActive: boolean }[];
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type AdminSubscriptionPayment = {
+  id: string;
+  amount: string | null;
+  currency: string;
+  status: string;
+  provider: string;
+  providerReference: string;
+  transactionId: string | null;
+  verifiedAt: string | null;
+  createdAt: string;
+};
+
+export type AdminSubscription = {
+  id: string;
+  userId: string;
+  seeker: { id: string; name: string; email: string };
+  plan: { id: string; key: string; name: string };
+  status: 'PENDING' | 'ACTIVE' | 'EXPIRED' | 'CANCELLED' | 'FAILED';
+  startDate: string | null;
+  endDate: string | null;
+  priceSnapshot: string | null;
+  currencySnapshot: string | null;
+  billingInterval: 'MONTHLY' | null;
+  cancelledAt: string | null;
+  cancellationReason: string | null;
+  nextRenewalAt: string | null;
+  latestPayment: AdminSubscriptionPayment | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type AdminSubscriptionSummary = {
+  subscriptionCounts: { total: number; active: number; pending: number; expired: number; cancelled: number; failed: number };
+  plans: { planKey: string; active: number }[];
+  payments: { successful: number; failed: number };
+  revenue: { currency: string; amount: string }[];
+};
+
+export type AdminSubscriptionsQuery = {
+  limit?: number;
+  cursor?: string;
+  status?: AdminSubscription['status'];
+  plan?: string;
+  currency?: string;
+  from?: string;
+  to?: string;
+  search?: string;
+};
+
+export type AdminSubscriptionPlanPayload = {
+  key: string;
+  displayName: string;
+  description?: string | null;
+  price?: number | null;
+  currency?: string | null;
+  billingInterval: 'MONTHLY';
+  isActive: boolean;
+  isPublic: boolean;
+  displayOrder: number;
+  benefits: string[];
+  entitlementKeys: string[];
+};
+
+export function getAdminSubscriptionPlans(token: string) {
+  return request<{ success: true; data: { plans: AdminSubscriptionPlan[] } }>({ method: 'GET', endpoint: '/admin/subscription-plans', token });
+}
+
+export function createAdminSubscriptionPlan(payload: AdminSubscriptionPlanPayload, token: string) {
+  return request<{ success: true; data: { plan: AdminSubscriptionPlan } }>({ method: 'POST', endpoint: '/admin/subscription-plans', body: payload, token });
+}
+
+export function updateAdminSubscriptionPlan(planId: string, payload: Partial<AdminSubscriptionPlanPayload>, token: string) {
+  return request<{ success: true; data: { plan: AdminSubscriptionPlan } }>({ method: 'PATCH', endpoint: `/admin/subscription-plans/${encodeURIComponent(planId)}`, body: payload, token });
+}
+
+export function getAdminSubscriptionSummary(token: string) {
+  return request<{ success: true; data: AdminSubscriptionSummary }>({ method: 'GET', endpoint: '/admin/subscriptions/summary', token });
+}
+
+export function getAdminSubscriptions(token: string, query: AdminSubscriptionsQuery = {}) {
+  const params = new URLSearchParams();
+  if (query.limit !== undefined) params.set('limit', String(query.limit));
+  if (query.cursor) params.set('cursor', query.cursor);
+  if (query.status) params.set('status', query.status);
+  if (query.plan) params.set('plan', query.plan);
+  if (query.currency?.trim()) params.set('currency', query.currency.trim().toUpperCase());
+  if (query.from) params.set('from', query.from);
+  if (query.to) params.set('to', query.to);
+  if (query.search?.trim()) params.set('search', query.search.trim());
+  const queryString = params.toString();
+  return request<{ success: true; data: { items: AdminSubscription[]; nextCursor: string | null } }>({ method: 'GET', endpoint: `/admin/subscriptions${queryString ? `?${queryString}` : ''}`, token });
+}
+
+export function getAdminSubscription(id: string, token: string) {
+  return request<{ success: true; data: { subscription: AdminSubscription & { payments: AdminSubscriptionPayment[]; events: { id: string; eventType: string; occurredAt: string; providerReference: string | null }[] } } }>({ method: 'GET', endpoint: `/admin/subscriptions/${encodeURIComponent(id)}`, token });
+}
+
+export type SeekerSubscriptionPlan = {
+  id: string;
+  key: string;
+  displayName: string;
+  description: string | null;
+  price: string | null;
+  currency: string | null;
+  billingInterval: 'MONTHLY';
+  active: boolean;
+  public: boolean;
+  benefits: string[];
+  entitlements?: string[];
+};
+
+export type SeekerSubscriptionState = {
+  subscriptions: Array<{
+    id: string;
+    userId: string;
+    planId: string;
+    status: string;
+    priceSnapshot: string | null;
+    currencySnapshot: string | null;
+    billingIntervalSnapshot: 'MONTHLY' | null;
+    startDate: string | null;
+    endDate: string | null;
+    cancelledAt: string | null;
+    cancellationReason: string | null;
+    nextRenewalAt: string | null;
+    createdAt: string;
+    updatedAt: string;
+    plan: SeekerSubscriptionPlan | null;
+    payments: Array<{ id: string; subscriptionId: string | null; providerReference: string; transactionId: string | null; amount: string | null; currency: string; status: string; paymentType: string; provider: string; verifiedAt: string | null; createdAt: string; checkoutUrl: string | null }>;
+  }>;
+  currentSubscription: string | null;
+  activeSubscription: string | null;
+};
+
+export function getSeekerSubscriptionPlans(token: string) {
+  return request<{ success: true; data: { plans: SeekerSubscriptionPlan[] } }>({ method: 'GET', endpoint: '/seeker/subscription-plans', token });
+}
+
+export function getSeekerSubscriptions(token: string) {
+  return request<{ success: true; data: SeekerSubscriptionState }>({ method: 'GET', endpoint: '/seeker/subscriptions', token });
+}
+
+export type AiSuggestion = { section: string; suggestion: string; reason: string };
+export type AiProfileResponse = { success: true; data: { suggestions: AiSuggestion[] } };
+export type AiCvResponse = { success: true; data: { summary: string | null; suggestions: { section: string; original: string; suggested: string; reason: string }[] } };
+export type AiApplicationResponse = { success: true; data: { coverLetter: string; alignmentPoints: string[]; strengths: string[]; gaps: string[] } };
+
+export function requestProfileAssistant(body: Record<string, unknown>, token: string) {
+  return request<AiProfileResponse>({ method: 'POST', endpoint: '/seeker/ai/profile-assistant', body, token });
+}
+
+export function requestCvOptimizer(body: Record<string, unknown>, token: string) {
+  return request<AiCvResponse>({ method: 'POST', endpoint: '/seeker/ai/cv-optimizer', body, token });
+}
+
+export function requestApplicationAssistance(body: Record<string, unknown>, token: string) {
+  return request<AiApplicationResponse>({ method: 'POST', endpoint: '/seeker/ai/application-assistance', body, token });
+}
+
+export function createSeekerSubscriptionCheckout(planId: string, token: string, idempotencyKey?: string) {
+  return request<{ success: true; data: { alreadyInitialized: boolean; checkoutUrl: string | null; payment: Record<string, unknown>; subscription: Record<string, unknown> | null } }>({
+    method: 'POST',
+    endpoint: '/seeker/subscriptions/checkout',
+    body: { planId, ...(idempotencyKey ? { idempotencyKey } : {}) },
+    token,
+  });
+}
+
+export function verifySeekerSubscriptionPayment(providerReference: string | undefined, transactionId: string | undefined, token: string) {
+  return request<{ success: true; data: { payment: Record<string, unknown>; subscription: Record<string, unknown> | null; alreadyVerified: boolean } }>({
+    method: 'POST',
+    endpoint: '/seeker/subscriptions/verify',
+    body: { ...(providerReference ? { providerReference } : {}), ...(transactionId ? { transactionId } : {}) },
+    token,
+  });
 }
 
 export type SiteContentResponse = { success: true; data: { content: Record<string, unknown> } };
@@ -1586,6 +1966,7 @@ export type SeekerConversation = {
   lastMessage: SeekerMessage | null;
   lastMessageAt: string | null;
   unreadCount: number;
+  invitation: SeekerInvitation | null;
 };
 
 export type SeekerConversationsResponse = {
@@ -1736,6 +2117,7 @@ export type CreateSeekerPayoutAccountPayload = {
   country: string;
   accountHolderName: string;
   bankName?: string;
+  bankCode?: string;
   accountNumber?: string;
   payoutIdentifier?: string;
   currency?: string;

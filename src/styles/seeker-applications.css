@@ -1162,3 +1162,12 @@
     flex: 1 1 100%;
   }
 }
+
+.seeker-ai-application { display: grid; gap: .65rem; margin-top: 1rem; padding: .9rem; border: 1px solid #dbe3ee; border-radius: 8px; background: #fbfdff; }
+.seeker-ai-application p { margin: .25rem 0 0; color: #64748b; font-size: .84rem; }
+.seeker-ai-application > button { width: max-content; min-height: 38px; padding: 0 .85rem; border: 0; border-radius: 7px; background: #0e4ae1; color: #fff; font-weight: 800; }
+.seeker-ai-application > button:disabled { opacity: .55; cursor: not-allowed; }
+.seeker-ai-application__result { display: grid; gap: .5rem; }
+.seeker-ai-application__result h4 { margin: 0; color: #0f172a; }
+.seeker-ai-application__result textarea { width: 100%; resize: vertical; padding: .65rem; border: 1px solid #dbe3ee; border-radius: 7px; font: inherit; }
+.seeker-ai-application__result ul { margin: 0; padding-left: 1.2rem; color: #475569; }

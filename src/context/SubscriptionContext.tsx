@@ -1,25 +1,12 @@
-import { createContext, useContext, useMemo, useEffect, useState, type ReactNode } from 'react';
+import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useAuth } from './AuthContext';
+import { getSeekerSubscriptionPlans, getSeekerSubscriptions } from '../services/api';
 
 export type SubscriptionPlanId = 'free' | 'professional' | 'premium';
-export type SubscriptionStatus = 'Active' | 'Cancelled' | 'Expired';
-
-const STORAGE_KEY = 'job-portal-subscription-data';
-
-const loadStoredState = () => {
-  if (typeof window === 'undefined') {
-    return null;
-  }
-
-  try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
-    return raw ? JSON.parse(raw) : null;
-  } catch {
-    return null;
-  }
-};
+export type SubscriptionStatus = 'Pending' | 'Active' | 'Cancelled' | 'Expired' | 'Failed';
 
 export type SubscriptionPlan = {
-  id: SubscriptionPlanId;
+  id: SubscriptionPlanId | string;
   name: string;
   price: number;
   visibilityBoost: number;
@@ -33,11 +20,13 @@ export type SeekerSubscription = {
   seekerId: string;
   seekerName: string;
   email: string;
-  planId: SubscriptionPlanId;
+  planId: SubscriptionPlanId | string;
   status: SubscriptionStatus;
   startedAt: string;
   renewalDate: string;
   featured: boolean;
+  advancedCvEligible: boolean;
+  aiEntitlements: string[];
 };
 
 export const subscriptionPlans: SubscriptionPlan[] = [
@@ -51,69 +40,6 @@ export const subscriptionPlans: SubscriptionPlan[] = [
     featuredPriority: 0,
     featuredEligible: false,
   },
-  {
-    id: 'professional',
-    name: 'Professional',
-    price: 12,
-    visibilityBoost: 8,
-    description: 'More visibility when your skills match a role.',
-    benefits: ['Priority recommendations', 'Professional badge', 'Profile visibility boost'],
-    featuredPriority: 10,
-    featuredEligible: true,
-  },
-  {
-    id: 'premium',
-    name: 'Premium',
-    price: 24,
-    visibilityBoost: 15,
-    description: 'Maximum relevant visibility for active job seekers.',
-    benefits: ['Highest recommendation priority', 'Premium badge', 'Featured candidate placement'],
-    featuredPriority: 20,
-    featuredEligible: true,
-  },
-];
-
-const initialSubscriptions: SeekerSubscription[] = [
-  {
-    seekerId: 'sarah-johnson',
-    seekerName: 'Sarah Johnson',
-    email: 'sarah.johnson@example.com',
-    planId: 'professional',
-    status: 'Active',
-    startedAt: 'Aug 1, 2026',
-    renewalDate: 'Sep 1, 2026',
-    featured: true,
-  },
-  {
-    seekerId: 'michael-chen',
-    seekerName: 'Michael Chen',
-    email: 'michael.chen@example.com',
-    planId: 'free',
-    status: 'Active',
-    startedAt: 'Aug 12, 2026',
-    renewalDate: 'Not applicable',
-    featured: false,
-  },
-  {
-    seekerId: 'amina-bello',
-    seekerName: 'Amina Bello',
-    email: 'amina.bello@example.com',
-    planId: 'premium',
-    status: 'Active',
-    startedAt: 'Jul 20, 2026',
-    renewalDate: 'Aug 20, 2026',
-    featured: true,
-  },
-  {
-    seekerId: 'daniel-ross',
-    seekerName: 'Daniel Ross',
-    email: 'daniel.ross@example.com',
-    planId: 'free',
-    status: 'Active',
-    startedAt: 'Aug 9, 2026',
-    renewalDate: 'Not applicable',
-    featured: false,
-  },
 ];
 
 type SubscriptionContextValue = {
@@ -126,20 +52,83 @@ type SubscriptionContextValue = {
   getSubscription: (seekerId: string) => SeekerSubscription;
   getVisibilityBoost: (seekerId: string) => number;
   getRecommendationScore: (seekerId: string) => number;
+  isLoading: boolean;
+  refresh: () => Promise<void>;
 };
 
 const SubscriptionContext = createContext<SubscriptionContextValue | undefined>(undefined);
 
 export function SubscriptionProvider({ children }: { children: ReactNode }) {
-  const storedState = useMemo(() => loadStoredState(), []);
-  const [plans, setPlans] = useState<SubscriptionPlan[]>(storedState?.plans ?? subscriptionPlans);
-  const [subscriptions, setSubscriptions] = useState<SeekerSubscription[]>(storedState?.subscriptions ?? initialSubscriptions);
+  const { token, user } = useAuth();
+  const [plans, setPlans] = useState<SubscriptionPlan[]>(subscriptionPlans);
+  const [subscriptions, setSubscriptions] = useState<SeekerSubscription[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const refresh = useMemo(() => async () => {
+    if (!token || !user || user.role !== 'SEEKER') {
+      setPlans(subscriptionPlans);
+      setSubscriptions([]);
+      setIsLoading(false);
+      return;
+    }
+
+    setIsLoading(true);
+    const [plansResult, subscriptionsResult] = await Promise.all([
+      getSeekerSubscriptionPlans(token),
+      getSeekerSubscriptions(token),
+    ]);
+
+    if (plansResult.ok && plansResult.data?.data?.plans) {
+      setPlans(plansResult.data.data.plans.map((plan) => ({
+        id: plan.key.toLowerCase(),
+        name: plan.displayName,
+        price: Number(plan.price ?? 0),
+        visibilityBoost: 0,
+        description: plan.description ?? 'Subscription plan',
+        benefits: plan.benefits ?? [],
+        featuredPriority: 0,
+        featuredEligible: false,
+      })));
+    }
+
+    if (subscriptionsResult.ok && subscriptionsResult.data?.data) {
+      const nextSubscriptions: SeekerSubscription[] = (subscriptionsResult.data.data.subscriptions ?? []).map((item) => {
+        const aiEntitlements = Array.isArray(item.plan?.entitlements)
+          ? (item.plan.entitlements as string[]).filter((key) => typeof key === 'string' && key.startsWith('AI_'))
+          : [];
+
+        return {
+          seekerId: item.userId,
+          seekerName: item.plan?.displayName ? item.plan.displayName : 'Seeker',
+          email: user.email,
+          planId: item.planId,
+          status: item.status === 'ACTIVE'
+            ? 'Active'
+            : item.status === 'PENDING'
+              ? 'Pending'
+              : item.status === 'CANCELLED'
+                ? 'Cancelled'
+                : item.status === 'FAILED'
+                  ? 'Failed'
+                  : 'Expired',
+          startedAt: item.startDate ?? 'Not started',
+          renewalDate: item.nextRenewalAt ?? 'Not applicable',
+          featured: false,
+          advancedCvEligible: item.plan?.entitlements?.includes('ADVANCED_CV') ?? false,
+          aiEntitlements,
+        };
+      });
+      setSubscriptions(nextSubscriptions);
+    } else {
+      setSubscriptions([]);
+    }
+
+    setIsLoading(false);
+  }, [token, user]);
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      window.localStorage.setItem(STORAGE_KEY, JSON.stringify({ plans, subscriptions }));
-    }
-  }, [plans, subscriptions]);
+    void refresh();
+  }, [refresh]);
 
   const value = useMemo<SubscriptionContextValue>(() => {
     const getSubscription = (seekerId: string) => subscriptions.find((subscription) => subscription.seekerId === seekerId) ?? {
@@ -151,6 +140,8 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
       startedAt: 'Not started',
       renewalDate: 'Not applicable',
       featured: false,
+      advancedCvEligible: false,
+      aiEntitlements: [],
     };
 
     const getVisibilityBoost = (seekerId: string) => {
@@ -161,11 +152,7 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
     const getRecommendationScore = (seekerId: string) => {
       const subscription = getSubscription(seekerId);
       const plan = plans.find((item) => item.id === subscription.planId) ?? plans[0];
-
-      if (subscription.status !== 'Active') {
-        return 0;
-      }
-
+      if (subscription.status !== 'Active') return 0;
       return (plan.visibilityBoost ?? 0) + (subscription.featured && plan.featuredEligible ? plan.featuredPriority : 0);
     };
 
@@ -175,41 +162,14 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
       getSubscription,
       getVisibilityBoost,
       getRecommendationScore,
-      updateSubscription: (seekerId, planId) => setSubscriptions((current) => current.map((subscription) => subscription.seekerId === seekerId ? {
-        ...subscription,
-        planId,
-        status: planId === 'free' ? 'Cancelled' : 'Active',
-        renewalDate: planId === 'free' ? 'Not applicable' : 'Sep 21, 2026',
-        featured: planId === 'free' ? false : subscription.featured,
-      } : subscription)),
-      updateSubscriptionStatus: (seekerId, status) => setSubscriptions((current) => current.map((subscription) => {
-        if (subscription.seekerId !== seekerId) {
-          return subscription;
-        }
-
-        const shouldKeepFeatured = status === 'Active' && subscription.planId !== 'free';
-        return {
-          ...subscription,
-          status,
-          featured: shouldKeepFeatured ? subscription.featured : false,
-        };
-      })),
-      toggleFeatured: (seekerId) => setSubscriptions((current) => current.map((subscription) => {
-        if (subscription.seekerId !== seekerId) {
-          return subscription;
-        }
-
-        const plan = plans.find((item) => item.id === subscription.planId) ?? plans[0];
-        const nextFeatured = !(subscription.featured && plan.featuredEligible) ? plan.featuredEligible && subscription.status === 'Active' : false;
-
-        return {
-          ...subscription,
-          featured: nextFeatured,
-        };
-      })),
-      updatePlan: (planId, updates) => setPlans((current) => current.map((plan) => plan.id === planId ? { ...plan, ...updates } : plan)),
+      updateSubscription: () => undefined,
+      updateSubscriptionStatus: () => undefined,
+      toggleFeatured: () => undefined,
+      updatePlan: () => undefined,
+      isLoading,
+      refresh,
     };
-  }, [plans, subscriptions]);
+  }, [plans, subscriptions, isLoading, refresh]);
 
   return <SubscriptionContext.Provider value={value}>{children}</SubscriptionContext.Provider>;
 }

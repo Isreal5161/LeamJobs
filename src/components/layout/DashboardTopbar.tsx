@@ -1,8 +1,8 @@
-import { useEffect, useState } from 'react';
-import { Link, NavLink } from 'react-router-dom';
-import { FaBars, FaTimes } from 'react-icons/fa';
+import { useEffect, useMemo, useState } from 'react';
+import { Link, NavLink, useNavigate } from 'react-router-dom';
+import { FaBell, FaBars, FaCheck, FaTimes } from 'react-icons/fa';
 import AccountMenu from './AccountMenu';
-import { getEmployerProfile, getEmployerProfileLogo, getSeekerProfile, getSeekerProfilePicture, PROFILE_IMAGE_UPDATED_EVENT } from '../../services/api';
+import { getEmployerProfile, getEmployerProfileLogo, getNotifications, getSeekerProfile, getSeekerProfilePicture, markAllNotificationsRead, markNotificationRead, PROFILE_IMAGE_UPDATED_EVENT, type AppNotification } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 
 type DashboardTopbarProps = {
@@ -25,6 +25,7 @@ const primaryNav: Record<'seeker' | 'employer' | 'admin', { label: string; to: s
   employer: [
     { label: 'Dashboard', to: '/employer/dashboard' },
     { label: 'Jobs', to: '/employer/jobs' },
+    { label: 'Candidates', to: '/employer/candidates' },
     { label: 'Applicants', to: '/employer/applicants' },
     { label: 'Messages', to: '/employer/messages' },
   ],
@@ -34,6 +35,7 @@ const primaryNav: Record<'seeker' | 'employer' | 'admin', { label: string; to: s
     { label: 'Job Posts', to: '/admin/jobs' },
     { label: 'Users', to: '/admin/users' },
     { label: 'Companies', to: '/admin/companies' },
+    { label: 'Communications', to: '/admin/communications' },
   ],
 };
 
@@ -64,13 +66,41 @@ function DashboardTopbar({
   onLogout,
 }: DashboardTopbarProps) {
   const { token, user } = useAuth();
+  const navigate = useNavigate();
   const [accountName, setAccountName] = useState(userName || '');
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [isImageLoading, setIsImageLoading] = useState(false);
+  const [notifications, setNotifications] = useState<AppNotification[]>([]);
+  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
+  const [isRefreshingNotifications, setIsRefreshingNotifications] = useState(false);
+
+  const unreadCount = useMemo(() => notifications.filter((item) => !item.isRead).length, [notifications]);
 
   useEffect(() => {
     setAccountName(userName || '');
   }, [userName]);
+
+  useEffect(() => {
+    if (!role || !token) {
+      setNotifications([]);
+      return undefined;
+    }
+
+    let active = true;
+    const loadNotifications = async () => {
+      setIsRefreshingNotifications(true);
+      const result = await getNotifications(token, role.toUpperCase() as 'SEEKER' | 'EMPLOYER' | 'ADMIN');
+      if (!active) return;
+      if (result.ok) {
+        setNotifications(result.data.data.notifications);
+      }
+      setIsRefreshingNotifications(false);
+    };
+
+    void loadNotifications();
+
+    return () => { active = false; };
+  }, [role, token]);
 
   useEffect(() => {
     if (!role || !token) return undefined;
@@ -135,6 +165,31 @@ function DashboardTopbar({
     };
   }, [role, token, user, userName]);
 
+  const handleNotificationClick = async (notification: AppNotification) => {
+    if (!token || !role) return;
+
+    if (!notification.isRead) {
+      const result = await markNotificationRead(token, role.toUpperCase() as 'SEEKER' | 'EMPLOYER' | 'ADMIN', notification.id);
+      if (result.ok) {
+        setNotifications((current) => current.map((item) => item.id === notification.id ? { ...item, isRead: true, readAt: new Date().toISOString() } : item));
+      }
+    }
+
+    if (notification.link) {
+      const target = notification.link.startsWith('/') ? notification.link : `/${notification.link}`;
+      navigate(target);
+    }
+    setIsNotificationsOpen(false);
+  };
+
+  const handleMarkAllRead = async () => {
+    if (!token || !role) return;
+    const result = await markAllNotificationsRead(token, role.toUpperCase() as 'SEEKER' | 'EMPLOYER' | 'ADMIN');
+    if (result.ok) {
+      setNotifications((current) => current.map((item) => ({ ...item, isRead: true, readAt: new Date().toISOString() })));
+    }
+  };
+
   const brand = (
     <Link className="dashboard-topbar__brand" to="/" aria-label="Go to LeamJobs welcome page">
       <span className="dashboard-topbar__mark">LJ</span>
@@ -160,14 +215,60 @@ function DashboardTopbar({
             </NavLink>
           ))}
         </nav>
-        <AccountMenu
-          items={accountNav[role]}
-          userName={accountName}
-          roleLabel={role === 'employer' ? 'Employer' : role === 'admin' ? 'Admin' : 'Job Seeker'}
-          imageUrl={imageUrl}
-          isImageLoading={isImageLoading}
-          onLogout={onLogout}
-        />
+        <div className="dashboard-topbar__utility">
+          <div className="dashboard-topbar__notification-wrap">
+            <button
+              type="button"
+              className="dashboard-topbar__notification-button"
+              aria-label="Open notifications"
+              onClick={() => setIsNotificationsOpen((open) => !open)}
+            >
+              <FaBell aria-hidden="true" />
+              {unreadCount > 0 ? <span className="dashboard-topbar__notification-badge">{unreadCount > 9 ? '9+' : unreadCount}</span> : null}
+            </button>
+            {isNotificationsOpen ? (
+              <div className="dashboard-topbar__notification-panel">
+                <div className="dashboard-topbar__notification-header">
+                  <strong>Notifications</strong>
+                  {notifications.length > 0 ? (
+                    <button type="button" className="dashboard-topbar__notification-mark-all" onClick={handleMarkAllRead}>Mark all read</button>
+                  ) : null}
+                </div>
+                {isRefreshingNotifications ? <div className="dashboard-topbar__notification-empty">Loading…</div> : notifications.length === 0 ? (
+                  <div className="dashboard-topbar__notification-empty">No notifications yet.</div>
+                ) : (
+                  <div className="dashboard-topbar__notification-list">
+                    {notifications.slice(0, 6).map((notification) => (
+                      <button
+                        key={notification.id}
+                        type="button"
+                        className={`dashboard-topbar__notification-item ${notification.isRead ? '' : 'dashboard-topbar__notification-item--unread'}`}
+                        onClick={() => void handleNotificationClick(notification)}
+                      >
+                        <span className="dashboard-topbar__notification-type">{notification.type}</span>
+                        <strong>{notification.title}</strong>
+                        <small>{notification.message}</small>
+                        <time>{new Date(notification.createdAt).toLocaleDateString()}</time>
+                        {!notification.isRead ? <FaCheck className="dashboard-topbar__notification-dot" aria-hidden="true" /> : null}
+                      </button>
+                    ))}
+                  </div>
+                )}
+                <button type="button" className="dashboard-topbar__notification-view-all" onClick={() => { setIsNotificationsOpen(false); navigate(`/${role}/notifications`); }}>
+                  View all notifications
+                </button>
+              </div>
+            ) : null}
+          </div>
+          <AccountMenu
+            items={accountNav[role]}
+            userName={accountName}
+            roleLabel={role === 'employer' ? 'Employer' : role === 'admin' ? 'Admin' : 'Job Seeker'}
+            imageUrl={imageUrl}
+            isImageLoading={isImageLoading}
+            onLogout={onLogout}
+          />
+        </div>
       </header>
     );
   }

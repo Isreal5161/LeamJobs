@@ -12,6 +12,7 @@ import {
   FaStar,
   FaCrown,
   FaUser,
+  FaCog,
 } from 'react-icons/fa';
 
 type SidebarProps = {
@@ -29,13 +30,16 @@ const sidebarLinks = {
     { label: 'Messages', to: '/seeker/messages', icon: FaComments },
     { label: 'Payments', to: '/seeker/payments', icon: FaMoneyBillWave },
     { label: 'Profile', to: '/seeker/profile', icon: FaUser },
+    { label: 'Settings', to: '/seeker/settings', icon: FaCog },
   ],
   employer: [
     { label: 'Dashboard', to: '/employer/dashboard', icon: FaHome },
     { label: 'Jobs', to: '/employer/jobs', icon: FaBriefcase },
+    { label: 'Candidates', to: '/employer/candidates', icon: FaUser },
     { label: 'Applicants', to: '/employer/applicants', icon: FaClipboardList },
     { label: 'Messages', to: '/employer/messages', icon: FaComments },
     { label: 'Company Profile', to: '/employer/profile', icon: FaUser },
+    { label: 'Settings', to: '/employer/settings', icon: FaCog },
   ],
   admin: [
     { label: 'Overview', to: '/admin/dashboard', icon: FaHome },
@@ -48,6 +52,7 @@ const sidebarLinks = {
     { label: 'Companies', to: '/admin/companies', icon: FaBuilding },
     { label: 'Payments', to: '/admin/payments', icon: FaMoneyBillWave },
     { label: 'Subscriptions', to: '/admin/subscriptions', icon: FaCrown },
+    { label: 'Settings', to: '/admin/settings', icon: FaCog },
   ],
 };
 

@@ -1,6 +1,6 @@
 import { NavLink, Outlet } from 'react-router-dom';
 import { useState } from 'react';
-import { FaBuilding, FaCrown, FaEdit, FaFilter, FaFlag, FaHome, FaMoneyBillWave, FaStar, FaUser } from 'react-icons/fa';
+import { FaBell, FaBuilding, FaCrown, FaEdit, FaFilter, FaFlag, FaHome, FaMoneyBillWave, FaStar, FaUser } from 'react-icons/fa';
 import DashboardTopbar from '../components/layout/DashboardTopbar';
 import MobileBottomNav from '../components/layout/MobileBottomNav';
 import { useAuth } from '../context/AuthContext';
@@ -16,6 +16,7 @@ const adminMenuLinks = [
   { label: 'Companies', to: '/admin/companies', icon: FaBuilding },
   { label: 'Payments', to: '/admin/payments', icon: FaMoneyBillWave },
   { label: 'Subscriptions', to: '/admin/subscriptions', icon: FaCrown },
+  { label: 'Communications', to: '/admin/communications', icon: FaBell },
 ];
 
 function AdminLayout() {

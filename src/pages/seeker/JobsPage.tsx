@@ -96,7 +96,7 @@ function JobsPage() {
       setIsLoading(false);
     });
     if (!search && !location && !jobType) {
-      void getSeekerRecommendations({ limit: 6 }, token).then((result) => {
+      void getSeekerRecommendations({ limit: 12 }, token).then((result) => {
         if (isMounted && result.ok) setRecommendations(result.data.data.recommendations);
       });
     } else {
