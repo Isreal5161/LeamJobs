@@ -134,7 +134,7 @@ export function JobForm({
         </div>
 
         <label className="employer-form__field">
-          <span>Job overview</span>
+          <span>Job Description</span>
           <textarea
             id="description"
             aria-invalid={Boolean(validationErrors.description)}

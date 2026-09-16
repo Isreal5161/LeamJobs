@@ -208,7 +208,7 @@ export const validateForm = (form: JobForm): Record<string, string> => {
   }
 
   if (!form.description.trim()) {
-    nextErrors.description = 'Job overview is required.';
+    nextErrors.description = 'Job Description is required.';
   }
 
   if (form.departmentChoice === 'Other' && !form.departmentCustom.trim()) {
