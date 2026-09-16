@@ -1,7 +1,6 @@
 ﻿import { useEffect, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import {
-  FaBell,
   FaBriefcase,
   FaCalendarAlt,
   FaCheck,
@@ -203,8 +202,6 @@ function ApplicationsPage() {
       jobId: selectedJob.id,
       ...(proposal.trim() ? { coverLetter: proposal.trim() } : {}),
       cvSource,
-      resumeUrl,
-      resumeObjectKey,
     };
 
     setIsSubmitting(true);
@@ -309,9 +306,6 @@ function ApplicationsPage() {
               <p>Track progress, outcomes, and job income</p>
             </div>
           </div>
-          <button className="seeker-icon-button seeker-icon-button--alert" type="button" aria-label="Notifications">
-            <FaBell />
-          </button>
         </div>
         <label className="seeker-search" aria-label="Search applications">
           <FaSearch />

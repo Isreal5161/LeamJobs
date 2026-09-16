@@ -14,7 +14,16 @@
   border-radius: var(--seeker-card-radius);
   background: var(--seeker-hero);
   box-shadow: var(--seeker-card-shadow);
-  color: #ffffff;
+  color: var(--seeker-text);
+}
+
+.seeker-applications-hero h1,
+.seeker-applications-hero p {
+  color: var(--seeker-text);
+}
+
+.seeker-applications-hero p {
+  color: var(--seeker-muted);
 }
 
 .seeker-applications-content,

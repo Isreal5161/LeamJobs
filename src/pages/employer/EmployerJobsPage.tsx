@@ -1,6 +1,5 @@
 ﻿import { FormEvent, useEffect, useState } from 'react';
 import {
-  FaBell,
   FaCalendarAlt,
   FaCheckCircle,
   FaEdit,
@@ -358,9 +357,6 @@ function EmployerJobsPage() {
             <p>Create, update, and monitor your real job posts.</p>
           </div>
           <div className="employer-hero__actions">
-            <button className="employer-icon-button" type="button" aria-label="Notifications">
-              <FaBell />
-            </button>
             <button className="employer-button employer-button--light" type="button" onClick={startCreating}>
               <FaPlus /> Post job
             </button>

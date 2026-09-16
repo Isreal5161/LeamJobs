@@ -4,7 +4,7 @@
   flex-direction: column;
   background: #f8fafc;
   overflow-x: hidden;
-  --seeker-hero: #123f68;
+  --seeker-hero: #f8fbff;
   --seeker-accent: #0e4ae1;
   --seeker-accent-hover: #0b3bcb;
   --seeker-text: #172033;
@@ -1858,6 +1858,15 @@ input:focus-visible,
   .seeker-section-heading {
     gap: 0.6rem;
     align-items: center;
+    justify-content: flex-start;
+  }
+
+  .seeker-section-heading > div {
+    min-width: 0;
+  }
+
+  .seeker-section-heading > a {
+    margin-left: auto;
   }
 
   .seeker-progress__footer,

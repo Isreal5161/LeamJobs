@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  FaBell,
   FaBriefcase,
   FaChartLine,
   FaChevronRight,
@@ -203,9 +202,6 @@ function EmployerDashboardPage() {
             <p>Post roles, review talent, and keep your pipeline moving.</p>
           </div>
           <div className="employer-hero__actions">
-            <button className="employer-icon-button" type="button" aria-label="Notifications">
-              <FaBell />
-            </button>
             <Link className="employer-button employer-button--light" to="/employer/jobs">
               <FaPlus />
               Post Job

@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import {
-  FaBell,
   FaBriefcase,
   FaBuilding,
   FaCheckCircle,
@@ -204,9 +203,6 @@ function AdminDashboardPage() {
           <h1>{sectionLabels[activeSection]}</h1>
           <p>Moderate jobs, manage accounts, update public content, and keep the hiring marketplace clean.</p>
         </div>
-        <button className="admin-icon-button" type="button" aria-label="Admin notifications">
-          <FaBell />
-        </button>
       </section>
 
       {activeSection === 'dashboard' ? (

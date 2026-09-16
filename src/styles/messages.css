@@ -24,17 +24,17 @@
 }
 
 .seeker-home.messages-page .messages-hero h1 {
-  color: #ffffff;
+  color: var(--seeker-text);
 }
 
 .seeker-home.messages-page .messages-hero p {
-  color: #ffffff;
+  color: var(--seeker-muted);
 }
 
 .messages-eyebrow {
   display: inline-flex;
   margin-bottom: 0.35rem;
-  color: #b8e8d2;
+  color: #2563eb;
   font-size: 0.75rem;
   font-weight: 700;
   text-transform: uppercase;

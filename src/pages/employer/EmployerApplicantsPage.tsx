@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
-  FaArrowLeft, FaBell, FaBriefcase, FaCalendarCheck, FaCheck, FaEnvelope,
+  FaArrowLeft, FaBriefcase, FaCalendarCheck, FaCheck, FaEnvelope,
   FaExternalLinkAlt, FaFileAlt, FaGlobe, FaMapMarkerAlt, FaSearch, FaSpinner, FaTimes, FaWhatsapp,
 } from 'react-icons/fa';
 import ApplicantAvatar from '../../components/employer/ApplicantAvatar';
@@ -507,7 +507,7 @@ function EmployerApplicantsPage() {
 
   return (
     <div className="employer-page employer-applicants-page">
-      <section className="employer-hero employer-hero--compact"><div className="employer-hero__top"><div><span className="employer-eyebrow">Applicant dashboard</span><h1>Review candidate applications</h1><p>Review real applicants, submitted information, and current application status.</p></div><button className="employer-icon-button" type="button" aria-label="Notifications"><FaBell /></button></div></section>
+      <section className="employer-hero employer-hero--compact"><div className="employer-hero__top"><div><span className="employer-eyebrow">Applicant dashboard</span><h1>Review candidate applications</h1><p>Review real applicants, submitted information, and current application status.</p></div></div></section>
       <main className={`employer-content employer-applicants-grid applicant-workspace ${mobileView === 'detail' ? 'applicant-workspace--detail' : ''}`}>
         <section className="employer-panel employer-applicant-list-panel">
           <div className="employer-section-heading employer-applicants-heading"><div><h2>Applicants</h2><p>{selectedJob?.title || 'All jobs'} · {applications.length} candidates</p></div><label className="employer-job-selector"><span className="sr-only">Select job</span><select value={selectedJobId} onChange={(event) => selectJob(event.target.value)} disabled={isLoadingJobs || !jobs.length}><option value="">All jobs ({applications.length})</option>{jobs.map((job) => <option value={job.id} key={job.id}>{job.title} ({job.applicantCount})</option>)}</select></label></div>

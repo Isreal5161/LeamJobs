@@ -1,6 +1,6 @@
 import { type FormEvent, type KeyboardEvent, useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { FaBell, FaBriefcase, FaPaperPlane, FaSearch } from 'react-icons/fa';
+import { FaBriefcase, FaPaperPlane, FaSearch } from 'react-icons/fa';
 import ApplicantAvatar from '../../components/employer/ApplicantAvatar';
 import { useAuth } from '../../context/AuthContext';
 import {
@@ -264,9 +264,6 @@ function MessagesPage({ role }: MessagesPageProps) {
             <h1>Contact {counterpart}</h1>
             <p>Keep conversations, interview updates, and hiring questions in one place.</p>
           </div>
-          <button className={role === 'employer' ? 'employer-icon-button' : 'seeker-icon-button'} type="button" aria-label="Notifications">
-            <FaBell />
-          </button>
         </div>
       </section>
 

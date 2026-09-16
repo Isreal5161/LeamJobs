@@ -6,11 +6,13 @@
 
 .seeker-profile-hero {
   min-width: 0;
-  padding: 2rem;
+  padding: 1.5rem;
   overflow: hidden;
-  border-radius: 8px;
-  background: #0e4ae1;
-  color: #ffffff;
+  border: 1px solid #dfeaf5;
+  border-radius: 18px;
+  background: #f8fbff;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.03);
+  color: #0f172a;
 }
 
 .seeker-profile-hero__top {
@@ -32,7 +34,7 @@
 
 .seeker-profile-hero p {
   margin-top: 0.4rem;
-  color: rgba(255, 255, 255, 0.9);
+  color: #475569;
 }
 
 .seeker-profile-icon-button {
@@ -41,10 +43,10 @@
   justify-content: center;
   width: 48px;
   height: 48px;
-  border: 1px solid rgba(255, 255, 255, 0.38);
+  border: 1px solid #dbeafe;
   border-radius: 14px;
-  background: rgba(255, 255, 255, 0.14);
-  color: #ffffff;
+  background: #eff6ff;
+  color: #1d4ed8;
   font-size: 1.1rem;
 }
 

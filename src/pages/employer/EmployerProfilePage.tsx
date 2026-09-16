@@ -1,6 +1,6 @@
 import { FormEvent, useEffect, useMemo, useRef, useState, type ChangeEvent } from 'react';
 import {
-  FaBell, FaBriefcase, FaBuilding, FaEnvelope, FaGlobe, FaMapMarkerAlt, FaRegSave, FaUsers,
+  FaBriefcase, FaBuilding, FaEnvelope, FaGlobe, FaMapMarkerAlt, FaRegSave, FaUsers,
 } from 'react-icons/fa';
 import { useAuth } from '../../context/AuthContext';
 import {
@@ -257,7 +257,6 @@ function EmployerProfilePage() {
       <section className="employer-hero employer-hero--compact">
         <div className="employer-hero__top">
           <div><span className="employer-eyebrow">Company profile</span><h1>Complete your company profile</h1><p>Keep the company information shown beside your job posts accurate.</p></div>
-          <button className="employer-icon-button" type="button" aria-label="Notifications"><FaBell /></button>
         </div>
       </section>
 
