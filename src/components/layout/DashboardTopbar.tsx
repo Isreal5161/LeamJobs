@@ -5,6 +5,7 @@ import AccountMenu from './AccountMenu';
 import Logo from './Logo';
 import { getEmployerProfile, getEmployerProfileLogo, getNotifications, getSeekerProfile, getSeekerProfilePicture, markAllNotificationsRead, markNotificationRead, PROFILE_IMAGE_UPDATED_EVENT, type AppNotification } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
+import { resolveAccountTypeForPlan, useSubscriptions } from '../../context/SubscriptionContext';
 
 type DashboardTopbarProps = {
   isOpen?: boolean;
@@ -44,6 +45,7 @@ const accountNav: Record<'seeker' | 'employer' | 'admin', { label: string; to: s
   seeker: [
     { label: 'Payments', to: '/seeker/payments' },
     { label: 'Profile', to: '/seeker/profile' },
+    { label: 'Subscription', to: '/seeker/subscription' },
   ],
   employer: [
     { label: 'Company Profile', to: '/employer/profile' },
@@ -68,6 +70,7 @@ function DashboardTopbar({
 }: DashboardTopbarProps) {
   const { token, user } = useAuth();
   const navigate = useNavigate();
+  const { getSubscription, plans } = useSubscriptions();
   const [accountName, setAccountName] = useState(userName || '');
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [isImageLoading, setIsImageLoading] = useState(false);
@@ -76,6 +79,11 @@ function DashboardTopbar({
   const [isRefreshingNotifications, setIsRefreshingNotifications] = useState(false);
 
   const unreadCount = useMemo(() => notifications.filter((item) => !item.isRead).length, [notifications]);
+  const seekerAccountLabel = useMemo(() => {
+    if (role !== 'seeker') return null;
+    const subscription = user?.id ? getSubscription(user.id) : null;
+    return resolveAccountTypeForPlan(subscription?.planId ?? 'free', plans, 'Basic');
+  }, [getSubscription, plans, role, user?.id]);
 
   useEffect(() => {
     setAccountName(userName || '');
@@ -255,6 +263,9 @@ function DashboardTopbar({
               </div>
             ) : null}
           </div>
+          {role === 'seeker' && seekerAccountLabel ? (
+            <span className="dashboard-topbar__account-badge">{seekerAccountLabel}</span>
+          ) : null}
           <AccountMenu
             items={accountNav[role]}
             userName={accountName}

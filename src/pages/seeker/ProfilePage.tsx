@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useState, type ChangeEvent } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   FaArrowLeft,
   FaBriefcase,
   FaCalendarAlt,
   FaCheck,
-  FaCrown,
   FaDownload,
   FaEdit,
   FaEnvelope,
@@ -23,7 +23,7 @@ import {
 import CVTemplateSelector, { TEMPLATES } from '../../components/cv-templates/CVTemplateSelector';
 import CVTemplateRenderer, { CVData, sampleCVData, type CVTemplateId } from '../../components/cv-templates/CVTemplateRenderer';
 import { useAuth } from '../../context/AuthContext';
-import { useSubscriptions, type SubscriptionPlanId } from '../../context/SubscriptionContext';
+import { getAccountTypeLabel, resolveAccountTypeForPlan, useSubscriptions } from '../../context/SubscriptionContext';
 import {
   getSeekerProfile,
   API_BASE_URL,
@@ -324,7 +324,8 @@ function ProfilePage() {
   const [aiCvSuggestions, setAiCvSuggestions] = useState<{ section: string; original: string; suggested: string; reason: string }[]>([]);
   const [isAiLoading, setIsAiLoading] = useState(false);
   const [aiError, setAiError] = useState('');
-  const { plans, getSubscription, updateSubscription } = useSubscriptions();
+  const { plans, getSubscription } = useSubscriptions();
+  const navigate = useNavigate();
 
   const subscriptionUserId = user?.id || '';
   const subscription = subscriptionUserId ? getSubscription(subscriptionUserId) : { status: 'Expired' as const, planId: 'free', renewalDate: '', advancedCvEligible: false, aiEntitlements: [] as string[], seekerId: '', seekerName: '', email: '', startedAt: 'Not started', featured: false };
@@ -1335,7 +1336,7 @@ function ProfilePage() {
                         <h3 id="advanced-cv-designs-title">Advanced CV designs</h3>
                         <p>Premium presentation options for a more tailored CV.</p>
                       </div>
-                      {!canUseAdvancedCv ? <div className="seeker-cv-advanced-templates__actions"><span className="seeker-cv-advanced-templates__locked">Requires Advanced CV</span><button type="button" onClick={() => document.getElementById('subscription-options')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}>View plans</button></div> : null}
+                      {!canUseAdvancedCv ? <div className="seeker-cv-advanced-templates__actions"><span className="seeker-cv-advanced-templates__locked">Requires Advanced CV</span><button type="button" onClick={() => navigate('/seeker/subscription')}>View plans</button></div> : null}
                     </div>
                     <div className="seeker-cv-template-choices seeker-cv-template-choices--advanced">
                       {TEMPLATES.filter((template) => template.advanced).map((template) => (
@@ -1408,29 +1409,17 @@ function ProfilePage() {
               {aiCvSuggestions.length > 0 ? <div className="seeker-ai-panel__results"><h3>CV suggestions</h3>{aiCvSuggestions.map((item, index) => <article key={`${item.section}-${index}`}><strong>{item.section}</strong><p>{item.suggested}</p><small>{item.reason}</small>{item.section.toLowerCase() === 'summary' ? <button type="button" onClick={() => setProfile((current) => ({ ...current, personalInfo: { ...current.personalInfo, summary: item.suggested } }))}>Use in editor</button> : null}</article>)}</div> : null}
             </section>
 
-            <section id="subscription-options" className="seeker-card seeker-subscription-card">
-              <div className="seeker-subscription-card__heading">
+            <section className="seeker-card seeker-profile-account-card" aria-labelledby="profile-account-heading">
+              <div className="seeker-profile-account-card__content">
                 <div>
-                  <span className="seeker-subscription-eyebrow"><FaCrown /> Profile visibility</span>
-                  <h2>Get discovered by more employers</h2>
-                  <p>Choose a plan to increase your visibility when your profile matches a job.</p>
+                  <span className="seeker-cv-summary__eyebrow">Account</span>
+                  <h2 id="profile-account-heading">{resolveAccountTypeForPlan(subscription.planId, plans, 'Basic') === 'Basic' ? 'Upgrade Account' : 'Manage Subscription'}</h2>
+                  <p>Review your account plan and manage your LeamJobs subscription from one place.</p>
                 </div>
-                <span className={`seeker-subscription-status seeker-subscription-status--${subscription.status.toLowerCase()}`}>{subscription.status}</span>
+                <button type="button" className="seeker-profile-account-card__action" onClick={() => navigate('/seeker/subscription')}>
+                  {resolveAccountTypeForPlan(subscription.planId, plans, 'Basic') === 'Basic' ? 'Upgrade Account' : 'Manage Subscription'}
+                </button>
               </div>
-              <div className="seeker-subscription-plan-grid">
-                {plans.map((plan) => (
-                  <article className={`seeker-subscription-plan ${subscription.planId === plan.id ? 'seeker-subscription-plan--active' : ''}`} key={plan.id}>
-                    <div>
-                      <h3>{plan.name}</h3>
-                      <strong>${plan.price}<small>/month</small></strong>
-                    </div>
-                    <p>{plan.description}</p>
-                    <ul>{plan.benefits.map((benefit) => <li key={benefit}>{benefit}</li>)}</ul>
-                    <button type="button" onClick={() => updateSubscription(subscriptionUserId, plan.id as SubscriptionPlanId)}>{subscription.planId === plan.id ? 'Current plan' : plan.id === 'free' ? 'Use Free' : `Choose ${plan.name}`}</button>
-                  </article>
-                ))}
-              </div>
-              <small className="seeker-subscription-renewal">Current plan: {plans.find((plan) => plan.id === subscription.planId)?.name} / Renewal: {subscription.renewalDate} / Recommendation boost: +{plans.find((plan) => plan.id === subscription.planId)?.visibilityBoost ?? 0}%</small>
             </section>
 
             <nav id="seeker-profile-editor" className="seeker-cv-steps" aria-label="CV sections">

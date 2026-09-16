@@ -5,6 +5,36 @@ import { getSeekerSubscriptionPlans, getSeekerSubscriptions } from '../services/
 export type SubscriptionPlanId = 'free' | 'professional' | 'premium';
 export type SubscriptionStatus = 'Pending' | 'Active' | 'Cancelled' | 'Expired' | 'Failed';
 
+export const getAccountTypeLabel = (value?: string | null, fallback = 'Basic') => {
+  const normalized = String(value ?? '').trim().toLowerCase();
+  if (!normalized || normalized === 'basic' || normalized === 'free') return 'Basic';
+  if (normalized === 'professional' || normalized === 'pro') return 'Professional';
+  if (normalized === 'premium' || normalized === 'pre') return 'Premium';
+
+  if (normalized.includes('professional')) return 'Professional';
+  if (normalized.includes('premium')) return 'Premium';
+
+  const fallbackLabel = String(fallback || 'Basic').trim();
+  if (!fallbackLabel) return 'Basic';
+  return fallbackLabel;
+};
+
+export const resolveAccountTypeForPlan = (value?: string | null, availablePlans: SubscriptionPlan[] = [], fallback = 'Basic') => {
+  const trimmed = String(value ?? '').trim();
+  if (!trimmed) return getAccountTypeLabel(fallback, 'Basic');
+
+  const planById = availablePlans.find((plan) => {
+    const candidateIds = [plan.id, plan.name, plan.id ?? '', plan.name ?? ''];
+    return candidateIds.some((candidate) => candidate && candidate.toString().trim().toLowerCase() === trimmed.toLowerCase());
+  });
+
+  if (planById) {
+    return getAccountTypeLabel(planById.name, fallback);
+  }
+
+  return getAccountTypeLabel(trimmed, fallback);
+};
+
 export type SubscriptionPlan = {
   id: SubscriptionPlanId | string;
   name: string;
@@ -79,16 +109,30 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
     ]);
 
     if (plansResult.ok && plansResult.data?.data?.plans) {
-      setPlans(plansResult.data.data.plans.map((plan) => ({
-        id: plan.key.toLowerCase(),
-        name: plan.displayName,
+      const nextPlans = plansResult.data.data.plans.map((plan) => ({
+        id: plan.id,
+        name: getAccountTypeLabel(plan.key, plan.displayName || 'Basic'),
         price: Number(plan.price ?? 0),
         visibilityBoost: 0,
         description: plan.description ?? 'Subscription plan',
         benefits: plan.benefits ?? [],
         featuredPriority: 0,
         featuredEligible: false,
-      })));
+      }));
+
+      setPlans([
+        {
+          id: 'free',
+          name: 'Basic',
+          price: 0,
+          visibilityBoost: 0,
+          description: 'Standard profile visibility and job matching.',
+          benefits: ['Standard recommendations', 'Public profile', 'Application tracking'],
+          featuredPriority: 0,
+          featuredEligible: false,
+        },
+        ...nextPlans.filter((plan) => plan.id !== 'free'),
+      ]);
     }
 
     if (subscriptionsResult.ok && subscriptionsResult.data?.data) {

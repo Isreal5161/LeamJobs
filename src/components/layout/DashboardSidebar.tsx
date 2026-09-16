@@ -31,6 +31,7 @@ const sidebarLinks = {
     { label: 'Messages', to: '/seeker/messages', icon: FaComments },
     { label: 'Payments', to: '/seeker/payments', icon: FaMoneyBillWave },
     { label: 'Profile', to: '/seeker/profile', icon: FaUser },
+    { label: 'Subscription', to: '/seeker/subscription', icon: FaCrown },
     { label: 'Settings', to: '/seeker/settings', icon: FaCog },
   ],
   employer: [
