@@ -54,6 +54,7 @@
   align-items: center;
   justify-content: flex-end;
   gap: 0.7rem;
+  min-width: 0;
   margin-left: auto;
 }
 
@@ -714,6 +715,7 @@
   width: 28px;
   height: 28px;
   flex: 0 0 auto;
+  min-width: 28px;
   border-radius: 50%;
   background: var(--brand-secondary);
   color: #ffffff;
@@ -820,6 +822,44 @@
 }
 
 @media (max-width: 767px) {
+  .seeker-layout__shell,
+  .employer-layout__shell {
+    width: min(100% - 1.5rem, 520px);
+  }
+
+  .seeker-layout .dashboard-topbar,
+  .employer-layout .dashboard-topbar {
+    gap: 0.5rem;
+    padding: 0.55rem 0.65rem;
+  }
+
+  .seeker-layout .dashboard-topbar__brand,
+  .employer-layout .dashboard-topbar__brand {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  .seeker-layout .dashboard-topbar__brand .site-logo__image,
+  .employer-layout .dashboard-topbar__brand .site-logo__image {
+    max-width: 8.5rem;
+  }
+
+  .seeker-layout .dashboard-topbar__brand .site-logo__tagline,
+  .employer-layout .dashboard-topbar__brand .site-logo__tagline {
+    display: none;
+  }
+
+  .seeker-layout .dashboard-topbar__utility,
+  .employer-layout .dashboard-topbar__utility {
+    gap: 0.4rem;
+  }
+
+  .seeker-layout .dashboard-topbar__account-badge,
+  .employer-layout .dashboard-topbar__account-badge {
+    padding: 0.25rem 0.45rem;
+    font-size: 0.65rem;
+  }
+
   .account-menu__name {
     display: none;
   }

@@ -4,6 +4,56 @@
   min-width: 0;
 }
 
+.seeker-profile-account-card__content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.seeker-profile-account-card__content > div {
+  min-width: 0;
+}
+
+.seeker-profile-account-card__action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  min-height: 42px;
+  padding: 0 1rem;
+  border: 0;
+  border-radius: 8px;
+  background: linear-gradient(135deg, var(--brand-primary), var(--brand-primary-active));
+  color: #ffffff;
+  font-size: 0.8rem;
+  font-weight: 800;
+  box-shadow: 0 8px 18px rgba(191, 56, 38, 0.18);
+  cursor: pointer;
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+
+.seeker-profile-account-card__action:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 11px 22px rgba(191, 56, 38, 0.24);
+}
+
+.seeker-profile-account-card__action:focus-visible {
+  outline: 3px solid rgba(239, 80, 54, 0.25);
+  outline-offset: 2px;
+}
+
+@media (max-width: 767px) {
+  .seeker-profile-account-card__content {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .seeker-profile-account-card__action {
+    width: 100%;
+  }
+}
+
 .seeker-profile-hero {
   min-width: 0;
   padding: 1.5rem;
