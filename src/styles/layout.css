@@ -475,7 +475,7 @@
   }
 
   .mobile-bottom-nav__item--active {
-    color: #0e4ae1;
+    color: var(--brand-primary-active);
     font-weight: 800;
   }
 

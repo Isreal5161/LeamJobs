@@ -3845,7 +3845,7 @@
     width: auto;
     height: 76px;
     padding: 0.55rem 0.7rem;
-    border: 1px solid rgba(14, 74, 225, 0.12);
+    border: 1px solid color-mix(in srgb, var(--brand-primary-active) 18%, #ffffff);
     border-radius: 24px;
     background: rgba(255, 255, 255, 0.94);
     box-shadow: 0 20px 45px rgba(15, 23, 42, 0.18);
@@ -3872,9 +3872,9 @@
   }
 
   .mobile-bottom-nav--admin .mobile-bottom-nav__item--active {
-    background: #0e4ae1;
+    background: var(--brand-primary-active);
     color: #ffffff;
-    box-shadow: 0 10px 22px rgba(14, 74, 225, 0.24);
+    box-shadow: 0 10px 22px color-mix(in srgb, var(--brand-primary-active) 24%, transparent);
   }
 
   .mobile-bottom-nav--admin .mobile-bottom-nav__item:active {
