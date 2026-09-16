@@ -2198,6 +2198,73 @@
   color: #0f172a;
 }
 
+.admin-button--danger {
+  border: 0;
+  background: #b91c1c;
+  color: #ffffff;
+}
+
+.admin-button--danger:hover {
+  background: #991b1b;
+}
+
+.admin-confirmation-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 120;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  background: rgba(15, 23, 42, 0.45);
+}
+
+.admin-confirmation-dialog {
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr);
+  gap: 1rem;
+  width: min(520px, 100%);
+  padding: 1.25rem;
+  border: 1px solid #dbe3ee;
+  border-radius: 14px;
+  background: #ffffff;
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.2);
+}
+
+.admin-confirmation-dialog__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  background: #fff1f2;
+  color: #b91c1c;
+}
+
+.admin-confirmation-dialog h2,
+.admin-confirmation-dialog p {
+  margin: 0;
+}
+
+.admin-confirmation-dialog h2 {
+  margin-top: 0.25rem;
+  color: #0f172a;
+  font-size: 1.2rem;
+}
+
+.admin-confirmation-dialog p {
+  margin-top: 0.45rem;
+  color: #64748b;
+  line-height: 1.5;
+}
+
+.admin-confirmation-dialog__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.65rem;
+  margin-top: 1.1rem;
+}
+
 .admin-job-detail-panel {
   position: sticky;
   top: 1rem;

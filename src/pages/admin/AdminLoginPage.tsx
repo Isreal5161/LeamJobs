@@ -4,6 +4,7 @@ import { FaEnvelope, FaEye, FaEyeSlash, FaLock, FaShieldAlt } from 'react-icons/
 import Button from '../../components/common/Button';
 import Input from '../../components/common/Input';
 import { useAuth } from '../../context/AuthContext';
+import { getUserFacingError } from '../../utils/userFacingError';
 
 function AdminLoginPage() {
   const navigate = useNavigate();
@@ -39,8 +40,7 @@ function AdminLoginPage() {
       const from = (location.state as { from?: { pathname?: string } } | null)?.from;
       navigate(from && from.pathname ? from.pathname : '/admin/moderation', { replace: true });
     } catch (loginError) {
-      const message = loginError instanceof Error ? loginError.message : 'We could not sign you in. Please try again.';
-      setError(message);
+      setError(getUserFacingError(loginError, 'auth').message);
     } finally {
       setIsSubmitting(false);
     }

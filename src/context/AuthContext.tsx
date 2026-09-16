@@ -88,7 +88,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
 
     if (!result.ok) {
-      throw new Error(result.error.message || 'Unable to sign in. Please try again.');
+      throw new Error(result.error.message);
     }
 
     const nextToken = result.data.token;

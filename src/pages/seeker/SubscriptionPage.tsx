@@ -4,6 +4,7 @@ import { FaArrowLeft, FaCheck, FaCrown, FaShieldAlt } from 'react-icons/fa';
 import { useAuth } from '../../context/AuthContext';
 import { getAccountTypeLabel, resolveAccountTypeForPlan, useSubscriptions } from '../../context/SubscriptionContext';
 import { createSeekerSubscriptionCheckout, verifySeekerSubscriptionPayment } from '../../services/api';
+import { getUserFacingError } from '../../utils/userFacingError';
 
 const formatDateLabel = (value?: string | null) => {
   if (!value) return 'Not available';
@@ -64,7 +65,7 @@ function SubscriptionPage() {
 
       window.location.href = result.data.data.checkoutUrl;
     } catch (error) {
-      setCheckoutError(error instanceof Error ? error.message : 'We could not start your subscription checkout.');
+      setCheckoutError(getUserFacingError(error, 'payment').message);
     } finally {
       setIsSubmitting(null);
     }
@@ -86,7 +87,7 @@ function SubscriptionPage() {
       }
       window.location.href = '/seeker/subscription';
     } catch (error) {
-      setCheckoutError(error instanceof Error ? error.message : 'We could not verify your payment.');
+      setCheckoutError(getUserFacingError(error, 'payment').message);
     } finally {
       setIsSubmitting(null);
     }

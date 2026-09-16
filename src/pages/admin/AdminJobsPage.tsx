@@ -7,6 +7,7 @@ import {
   FaClock,
   FaDollarSign,
   FaEdit,
+  FaExclamationTriangle,
   FaEye,
   FaMapMarkerAlt,
   FaPlus,
@@ -25,6 +26,7 @@ import {
   createAdminJob,
   getAdminCompanies,
   getAdminJobs,
+  removeAdminJob,
   type AdminCompany,
   type AdminJob,
   type EmployerJob,
@@ -109,6 +111,8 @@ function AdminJobsPage() {
   });
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
   const [submitFeedback, setSubmitFeedback] = useState<{ tone: 'success' | 'error'; message: string } | null>(null);
+  const [jobPendingRemoval, setJobPendingRemoval] = useState<AdminJob | null>(null);
+  const [isRemoving, setIsRemoving] = useState(false);
 
   useEffect(() => {
     if (!submitFeedback) {
@@ -365,6 +369,26 @@ function AdminJobsPage() {
     setReloadKey((value) => value + 1);
   };
 
+  const handleRemoveJob = async () => {
+    if (!token || !jobPendingRemoval || isRemoving) return;
+
+    setIsRemoving(true);
+    setSubmitFeedback(null);
+    const result = await removeAdminJob(jobPendingRemoval.id, token);
+
+    if (!result.ok) {
+      setSubmitFeedback({ tone: 'error', message: result.error.message || 'We could not remove this job.' });
+      setIsRemoving(false);
+      return;
+    }
+
+    setJobPendingRemoval(null);
+    setIsRemoving(false);
+    setSelectedJobId('');
+    setSubmitFeedback({ tone: 'success', message: 'Job removed successfully. It is no longer available to job seekers or the public.' });
+    setReloadKey((value) => value + 1);
+  };
+
   if (isLoading) {
     return <AdminPageSkeleton showToolbar={false} statCards={4} rows={3} />;
   }
@@ -617,6 +641,10 @@ function AdminJobsPage() {
                   <FaEdit />
                   <span>Edit</span>
                 </button>
+                <button className="admin-button admin-button--danger admin-button--icon" type="button" onClick={() => setJobPendingRemoval(selectedJob)}>
+                  <FaTimes />
+                  <span>Remove Job</span>
+                </button>
               </div>
             </div>
 
@@ -667,6 +695,26 @@ function AdminJobsPage() {
           </article>
         ) : null}
       </section>
+
+      {jobPendingRemoval ? (
+        <div className="admin-confirmation-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget && !isRemoving) setJobPendingRemoval(null); }}>
+          <section className="admin-confirmation-dialog" role="dialog" aria-modal="true" aria-labelledby="remove-job-title">
+            <div className="admin-confirmation-dialog__icon"><FaExclamationTriangle /></div>
+            <div>
+              <span className="admin-eyebrow">Job control</span>
+              <h2 id="remove-job-title">Remove this job?</h2>
+              <p>This job will no longer be available to job seekers or visible on the public jobs page.</p>
+              <div className="admin-confirmation-dialog__actions">
+                <button type="button" className="admin-button admin-button--secondary" onClick={() => setJobPendingRemoval(null)} disabled={isRemoving}>Cancel</button>
+                <button type="button" className="admin-button admin-button--danger" onClick={() => void handleRemoveJob()} disabled={isRemoving}>
+                  <FaTimes />
+                  <span>{isRemoving ? 'Removing...' : 'Remove Job'}</span>
+                </button>
+              </div>
+            </div>
+          </section>
+        </div>
+      ) : null}
     </div>
   );
 }

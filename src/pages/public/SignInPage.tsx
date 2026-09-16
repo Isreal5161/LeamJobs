@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import Button from '../../components/common/Button';
 import Input from '../../components/common/Input';
 import { useAuth } from '../../context/AuthContext';
+import { getUserFacingError } from '../../utils/userFacingError';
 import { FaApple, FaCheck, FaEnvelope, FaEye, FaEyeSlash, FaGoogle, FaLock } from 'react-icons/fa';
 
 type AuthRole = 'seeker' | 'employer';
@@ -106,8 +107,7 @@ function SignInPage({ role = 'seeker' }: SignInPageProps) {
       const from = (location.state as { from?: Location } | null)?.from;
       navigate(from && from.pathname ? from.pathname : destinationMap[actualRole], { replace: true });
     } catch (loginError) {
-      const message = loginError instanceof Error ? loginError.message : 'We could not sign you in. Please try again.';
-      setError(message);
+      setError(getUserFacingError(loginError, 'auth').message);
     } finally {
       setIsSubmitting(false);
     }

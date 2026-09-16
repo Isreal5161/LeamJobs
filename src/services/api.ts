@@ -1,4 +1,5 @@
 import type { CVData, CVTemplateId } from '../components/cv-templates/CVTemplateRenderer';
+import { errorContextForEndpoint, getUserFacingError, normalizeApiError, type UserFacingErrorContext } from '../utils/userFacingError';
 
 export const API_BASE_URL = 'https://leamjobs.com/api';
 export const PROFILE_IMAGE_UPDATED_EVENT = 'leamjobs-profile-image-updated';
@@ -11,6 +12,7 @@ export type ApiRequestOptions = {
   body?: unknown;
   token?: string;
   headers?: HeadersInit;
+  errorContext?: UserFacingErrorContext;
 };
 
 export type ApiSuccess<T> = {
@@ -26,6 +28,7 @@ export type ApiFailure = {
     message: string;
     code?: string;
     details?: unknown;
+    fieldErrors?: Record<string, string>;
   };
 };
 
@@ -849,6 +852,7 @@ export async function request<T>({
   body,
   token,
   headers: customHeaders,
+  errorContext,
 }: ApiRequestOptions): Promise<ApiResponse<T>> {
   const headers = new Headers(customHeaders);
 
@@ -874,14 +878,21 @@ export async function request<T>({
         ? data as { message?: string; errors?: unknown; error?: { message?: string; code?: string } }
         : undefined;
 
+      const normalizedError = normalizeApiError({
+        status: response.status,
+        message: errorData?.message ?? errorData?.error?.message,
+        code: errorData?.error?.code,
+        details: errorData?.errors,
+        context: errorContext ?? errorContextForEndpoint(endpoint),
+      });
+      const safeDetails = normalizedError.fieldErrors
+        ? Object.entries(normalizedError.fieldErrors).map(([field, message]) => ({ field, message }))
+        : undefined;
+
       return {
         ok: false,
         status: response.status,
-        error: {
-          message: errorData?.message ?? errorData?.error?.message ?? 'Request failed',
-          code: errorData?.error?.code,
-          details: errorData?.errors,
-        },
+        error: { ...normalizedError, details: safeDetails },
       };
     }
 
@@ -894,9 +905,7 @@ export async function request<T>({
     return {
       ok: false,
       status: 0,
-      error: {
-        message: error instanceof Error ? error.message : 'Network request failed',
-      },
+      error: { ...getUserFacingError(error, errorContext ?? errorContextForEndpoint(endpoint)) },
     };
   }
 }
@@ -948,12 +957,22 @@ async function getProtectedBlob(endpoint: string, token: string, fallbackMessage
       headers: { Authorization: `Bearer ${token}` },
     });
     if (!response.ok) {
-      const data = await response.json().catch(() => undefined) as { message?: string } | undefined;
-      return { ok: false, status: response.status, error: { message: data?.message ?? fallbackMessage } };
+      const data = await response.json().catch(() => undefined) as { message?: string; error?: { message?: string; code?: string }; errors?: unknown } | undefined;
+      const normalizedError = normalizeApiError({
+        status: response.status,
+        message: data?.message ?? data?.error?.message ?? fallbackMessage,
+        code: data?.error?.code,
+        details: data?.errors,
+        context: errorContextForEndpoint(endpoint),
+      });
+      const safeDetails = normalizedError.fieldErrors
+        ? Object.entries(normalizedError.fieldErrors).map(([field, message]) => ({ field, message }))
+        : undefined;
+      return { ok: false, status: response.status, error: { ...normalizedError, details: safeDetails } };
     }
     return { ok: true, status: response.status, data: await response.blob() };
   } catch (error) {
-    return { ok: false, status: 0, error: { message: error instanceof Error ? error.message : fallbackMessage } };
+    return { ok: false, status: 0, error: getUserFacingError(error, errorContextForEndpoint(endpoint)) };
   }
 }
 
@@ -1577,6 +1596,10 @@ export function approveAdminJob(jobId: string, token: string) {
   return request<AdminJobResponse>({ method: 'PATCH', endpoint: `/admin/jobs/${encodeURIComponent(jobId)}/approve`, token });
 }
 
+export function removeAdminJob(jobId: string, token: string) {
+  return request<AdminJobResponse>({ method: 'PATCH', endpoint: `/admin/jobs/${encodeURIComponent(jobId)}/remove`, token });
+}
+
 export function rejectAdminJob(jobId: string, rejectionReason: string, token: string) {
   return request<AdminJobResponse>({
     method: 'PATCH',
@@ -1788,12 +1811,22 @@ export async function getEmployerApplicationResume(jobId: string, applicationId:
       headers: { Authorization: `Bearer ${token}` },
     });
     if (!response.ok) {
-      const data = await response.json().catch(() => undefined) as { message?: string } | undefined;
-      return { ok: false, status: response.status, error: { message: data?.message ?? 'CV could not be loaded.' } };
+      const data = await response.json().catch(() => undefined) as { message?: string; error?: { message?: string; code?: string }; errors?: unknown } | undefined;
+      const normalizedError = normalizeApiError({
+        status: response.status,
+        message: data?.message ?? data?.error?.message ?? 'CV could not be loaded.',
+        code: data?.error?.code,
+        details: data?.errors,
+        context: 'upload',
+      });
+      const safeDetails = normalizedError.fieldErrors
+        ? Object.entries(normalizedError.fieldErrors).map(([field, message]) => ({ field, message }))
+        : undefined;
+      return { ok: false, status: response.status, error: { ...normalizedError, details: safeDetails } };
     }
     return { ok: true, status: response.status, data: await response.blob() };
   } catch (error) {
-    return { ok: false, status: 0, error: { message: error instanceof Error ? error.message : 'CV could not be loaded.' } };
+    return { ok: false, status: 0, error: getUserFacingError(error, 'upload') };
   }
 }
 
@@ -1804,12 +1837,22 @@ export async function getAdminJobApplicationResume(jobId: string, applicationId:
       headers: { Authorization: `Bearer ${token}` },
     });
     if (!response.ok) {
-      const data = await response.json().catch(() => undefined) as { message?: string } | undefined;
-      return { ok: false, status: response.status, error: { message: data?.message ?? 'CV could not be loaded.' } };
+      const data = await response.json().catch(() => undefined) as { message?: string; error?: { message?: string; code?: string }; errors?: unknown } | undefined;
+      const normalizedError = normalizeApiError({
+        status: response.status,
+        message: data?.message ?? data?.error?.message ?? 'CV could not be loaded.',
+        code: data?.error?.code,
+        details: data?.errors,
+        context: 'upload',
+      });
+      const safeDetails = normalizedError.fieldErrors
+        ? Object.entries(normalizedError.fieldErrors).map(([field, message]) => ({ field, message }))
+        : undefined;
+      return { ok: false, status: response.status, error: { ...normalizedError, details: safeDetails } };
     }
     return { ok: true, status: response.status, data: await response.blob() };
   } catch (error) {
-    return { ok: false, status: 0, error: { message: error instanceof Error ? error.message : 'CV could not be loaded.' } };
+    return { ok: false, status: 0, error: getUserFacingError(error, 'upload') };
   }
 }
 
