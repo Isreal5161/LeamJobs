@@ -21,7 +21,7 @@
 .job-detail-hero {
   min-height: 270px;
   padding: 2.2rem 0 5.8rem;
-  background: #86a98b;
+  background: linear-gradient(135deg, var(--brand-secondary) 0%, #453d91 100%);
   color: #ffffff;
 }
 
@@ -110,8 +110,8 @@
   gap: 0.45rem;
   padding: 0.35rem 0.7rem;
   border-radius: 8px;
-  background: #dfeee1;
-  color: #2f6c3f;
+  background: var(--brand-background);
+  color: var(--brand-primary-active);
   font-size: 0.88rem;
   font-weight: 800;
 }
@@ -235,7 +235,8 @@
 }
 
 .job-detail-skill--blue {
-  background: #e7f0ff;
+  background: var(--brand-secondary-light);
+  color: var(--brand-secondary);
 }
 
 .job-detail-company-card {
@@ -259,7 +260,7 @@
   align-items: center;
   gap: 0.55rem;
   margin-top: 0.85rem;
-  color: #2f6c3f;
+  color: var(--brand-secondary);
   font-weight: 800;
 }
 
@@ -291,17 +292,26 @@
 }
 
 .job-detail-quick-facts svg {
-  color: #0e4ae1;
+  color: var(--brand-secondary);
 }
 
 .job-detail-apply-link {
   min-height: 52px;
+  border: 0;
   border-radius: 8px;
+  background: var(--brand-primary-active);
+  color: #ffffff;
   font-size: 1rem;
 }
 
+.job-detail-apply-link:hover,
+.job-detail-apply-link:focus-visible {
+  background: var(--brand-primary-hover);
+  color: #ffffff;
+}
+
 .job-detail-signin-link {
-  color: #0e4ae1;
+  color: var(--brand-secondary);
   font-weight: 800;
   text-align: center;
 }

@@ -47,7 +47,7 @@
 .admin-layout .admin-button--primary {
   background: var(--brand-primary-active);
   border-color: var(--brand-primary-active);
-  color: #ffffff;
+  color: #ffffff !important;
 }
 
 .seeker-layout .seeker-button--primary:hover,
