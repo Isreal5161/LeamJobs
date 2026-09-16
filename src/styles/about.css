@@ -28,7 +28,7 @@
 
 .about-page__eyebrow {
   margin: 0 0 0.4rem;
-  color: #0e4ae1;
+  color: var(--brand-secondary);
   font-size: 0.84rem;
   font-weight: 800;
   letter-spacing: 0;
@@ -132,8 +132,8 @@
 .about-illustration__card--chart span {
   position: absolute;
   inset: 20px 24px;
-  border-left: 3px solid #0e4ae1;
-  border-bottom: 3px solid #0e4ae1;
+  border-left: 3px solid var(--brand-secondary);
+  border-bottom: 3px solid var(--brand-secondary);
   transform: skew(-12deg);
 }
 
@@ -234,7 +234,7 @@
 }
 
 .about-person--two .about-person__body {
-  background: #0e4ae1;
+  background: var(--brand-secondary);
 }
 
 .about-person--two .about-person__hair {

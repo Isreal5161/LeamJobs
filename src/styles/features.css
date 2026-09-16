@@ -98,8 +98,8 @@
   place-items: center;
   flex: 0 0 auto;
   border-radius: 8px;
-  background: #eff5ff;
-  color: #0e4ae1;
+  background: var(--brand-secondary-light);
+  color: var(--brand-secondary);
 }
 
 .features-job-row__icon {
@@ -147,7 +147,7 @@
   border-radius: 50%;
   background:
     radial-gradient(circle at center, #ffffff 0 54%, transparent 55%),
-    conic-gradient(#0e4ae1 0 72%, #e7edf6 72% 100%);
+    conic-gradient(var(--brand-secondary) 0 72%, #e7edf6 72% 100%);
   color: #0f172a;
   font-size: 1.5rem;
   font-weight: 800;
@@ -163,7 +163,7 @@
 .features-preview small {
   display: inline-block;
   margin-top: 0.55rem;
-  color: #0e4ae1;
+  color: var(--brand-secondary);
   font-size: 0.78rem;
   font-weight: 800;
 }

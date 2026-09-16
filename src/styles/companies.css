@@ -156,7 +156,7 @@
   height: 72px;
   border-radius: 8px;
   background: #ffffff;
-  color: #0e4ae1;
+  color: var(--brand-secondary);
   font-size: 2rem;
   box-shadow: 0 18px 30px rgba(15, 23, 42, 0.09);
 }
@@ -211,8 +211,8 @@
 }
 
 .companies-filter--active {
-  border-color: #0e4ae1;
-  background: #0e4ae1;
+  border-color: var(--brand-secondary);
+  background: var(--brand-secondary);
   color: #ffffff;
 }
 

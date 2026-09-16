@@ -241,8 +241,8 @@
   height: max-content;
   padding: 0.3rem 0.55rem;
   border-radius: 999px;
-  background: #e7f0ff;
-  color: #0e4ae1;
+  background: var(--brand-secondary-light);
+  color: var(--brand-secondary);
   font-size: 0.72rem;
   font-weight: 650;
   white-space: nowrap;
@@ -293,8 +293,8 @@
   min-height: 40px;
   padding: 0.55rem 0.9rem;
   border-radius: 999px;
-  background: #eff5ff;
-  color: #0e4ae1;
+  background: var(--brand-secondary-light);
+  color: var(--brand-secondary);
   font-size: 0.75rem;
   font-weight: 700;
   line-height: 1;
@@ -303,7 +303,7 @@
 }
 
 .seeker-application-card__link:hover {
-  background: #dfe9ff;
+  background: #e7e2fb;
 }
 
 .seeker-applications-page .seeker-search {
@@ -398,7 +398,7 @@
   width: 44px;
   height: 44px;
   border-radius: 12px;
-  background: #0e4ae1;
+  background: var(--brand-secondary);
   color: #ffffff;
 }
 
@@ -468,7 +468,7 @@
   width: 72%;
   height: 100%;
   border-radius: inherit;
-  background: #0e4ae1;
+  background: var(--brand-secondary);
 }
 
 .seeker-application-modal-backdrop {

@@ -106,7 +106,7 @@
 .hero-actions__primary {
   min-width: 196px;
   border-radius: 999px;
-  box-shadow: 0 10px 24px rgba(14, 74, 225, 0.35);
+  box-shadow: 0 10px 24px rgba(239, 80, 54, 0.22);
   animation: heroCtaRise 0.55s ease-out both;
 }
 
@@ -126,7 +126,7 @@
 
 .hero-actions__secondary:hover {
   background: #ffffff;
-  color: #0e4ae1;
+  color: var(--brand-secondary);
   transform: translateY(-2px);
 }
 
@@ -160,13 +160,13 @@
 .hero-actions__employer:hover {
   border-color: #ffffff;
   background: #ffffff;
-  color: #0e4ae1;
+  color: var(--brand-secondary);
   transform: translateY(-2px);
 }
 
 .hero-actions__employer:hover span,
 .hero-actions__employer:hover svg {
-  color: #0e4ae1;
+  color: var(--brand-secondary);
 }
 
 .hero__stats {
@@ -225,7 +225,7 @@
   width: 1rem;
   height: 0.18rem;
   border-radius: 999px;
-  background: #0e4ae1;
+  background: var(--brand-secondary);
   z-index: 0;
 }
 

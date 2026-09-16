@@ -1,14 +1,14 @@
 .job-updates-popup-backdrop{position:fixed;inset:0;z-index:160;display:grid;place-items:center;padding:1rem;background:rgba(15,23,42,.42)}
 .job-updates-popup{position:relative;width:min(100%,430px);padding:2rem;border:1px solid #dbe3ee;border-radius:14px;background:#fff;box-shadow:0 24px 60px rgba(15,23,42,.2);color:#172033}
 .job-updates-popup__close{position:absolute;top:1rem;right:1rem;display:grid;place-items:center;width:36px;height:36px;border:1px solid #dbe3ee;border-radius:8px;background:#f8fafc;color:#475569;cursor:pointer}
-.job-updates-popup__close:hover,.job-updates-popup__close:focus-visible{border-color:#0e4ae1;background:#eff5ff;color:#0e4ae1}
+.job-updates-popup__close:hover,.job-updates-popup__close:focus-visible{border-color:var(--brand-secondary);background:var(--brand-secondary-light);color:var(--brand-secondary)}
 .job-updates-popup__eyebrow{display:block;margin-bottom:.6rem;color:#c2410c;font-size:.72rem;font-weight:800;letter-spacing:.09em;text-transform:uppercase}
 .job-updates-popup h2{max-width:320px;margin:0 2rem .7rem 0;color:#172033;font-size:1.45rem;line-height:1.2}
 .job-updates-popup p{margin:0;color:#64748b;font-size:.92rem;line-height:1.55}
 .job-updates-popup form{display:grid;gap:.55rem;margin-top:1.35rem}
 .job-updates-popup label{color:#334155;font-size:.82rem;font-weight:700}
 .job-updates-popup input{width:100%;min-height:44px;padding:.7rem .8rem;border:1px solid #cbd5e1;border-radius:8px;background:#fff;color:#172033;outline:0}
-.job-updates-popup input:focus{border-color:#0e4ae1;box-shadow:0 0 0 3px rgba(14,74,225,.14)}
+.job-updates-popup input:focus{border-color:var(--brand-secondary);box-shadow:0 0 0 3px rgba(50,47,106,.14)}
 .job-updates-popup__button{display:inline-flex;align-items:center;justify-content:center;min-height:44px;margin-top:.3rem;padding:.65rem 1rem;border:1px solid var(--brand-primary-active);border-radius:8px;background:var(--brand-primary-active);color:#fff;font-weight:800;cursor:pointer}
 .job-updates-popup__button:hover,.job-updates-popup__button:focus-visible{background:var(--brand-primary-hover)}
 .job-updates-popup__button:disabled{cursor:wait;opacity:.7}

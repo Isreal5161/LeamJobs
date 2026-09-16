@@ -43,10 +43,10 @@
   justify-content: center;
   width: 48px;
   height: 48px;
-  border: 1px solid color-mix(in srgb, var(--brand-primary-active) 18%, #ffffff);
+  border: 1px solid color-mix(in srgb, var(--brand-secondary) 18%, #ffffff);
   border-radius: 14px;
   background: var(--brand-background);
-  color: var(--brand-primary-active);
+  color: var(--brand-secondary);
   font-size: 1.1rem;
 }
 
