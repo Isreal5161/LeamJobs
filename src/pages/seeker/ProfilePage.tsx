@@ -1507,7 +1507,6 @@ function ProfilePage() {
                         </label>
                       </div>
                     </form>
-                    {renderStepControls('personal')}
                   </section>
                 )}
 
@@ -1532,7 +1531,6 @@ function ProfilePage() {
                         />
                       </label>
                     </form>
-                    {renderStepControls('summary')}
                   </section>
                 )}
 
@@ -1617,7 +1615,6 @@ function ProfilePage() {
                         ))}
                       </div>
                     )}
-                    {renderStepControls('experience')}
                   </section>
                 )}
 
@@ -1639,7 +1636,6 @@ function ProfilePage() {
                         </div>
                       ))}</div>
                     )}
-                    {renderStepControls('education')}
                   </section>
                 )}
 
@@ -1649,7 +1645,6 @@ function ProfilePage() {
                     {addPanel === 'skill' && renderAddPanel('skill')}
                     {profile.skills.length === 0 ? <div className="seeker-step-empty-state"><p>No skills added yet. You can skip this step and return later.</p></div> : <div className="seeker-form-list">{profile.skills.map((skill, index) => <div className="seeker-form-item seeker-form-item--inline" key={`${skill}-${index}`}><input type="text" list="skill-suggestions" value={skill} placeholder="Type a skill or choose a suggestion" onChange={(event) => updateSkill(index, event.target.value)} /><button type="button" className="seeker-delete-button" onClick={() => removeSkill(index)}><FaTrash /></button></div>)}</div>}
                     <datalist id="skill-suggestions">{skillSuggestions.map((skill) => <option value={skill} key={skill} />)}</datalist>
-                    {renderStepControls('skills')}
                   </section>
                 )}
 
@@ -1659,7 +1654,6 @@ function ProfilePage() {
                     {addPanel === 'qualification' && renderAddPanel('qualification')}
                     {profile.certifications.length === 0 ? <div className="seeker-step-empty-state"><p>No qualifications added yet. You can skip this step for now.</p></div> : <div className="seeker-form-list">{profile.certifications.map((item) => <div className="seeker-form-item" key={item.id}><div className="seeker-form-item__header"><strong>Certification</strong><button type="button" className="seeker-delete-button" onClick={() => removeCertification(item.id)}><FaTrash /></button></div><form className="seeker-profile-form"><label className={getValidationIssue(`certifications.${profile.certifications.indexOf(item)}.name`) ? 'seeker-field--invalid' : ''}><span>Qualification or Certificate</span><input type="text" list="qualification-suggestions" value={item.name} placeholder="Type a qualification or choose a suggestion" aria-invalid={Boolean(getValidationIssue(`certifications.${profile.certifications.indexOf(item)}.name`))} onChange={(event) => updateCertification(item.id, 'name', event.target.value)} />{renderValidationMessage(`certifications.${profile.certifications.indexOf(item)}.name`)}</label><label className={getValidationIssue(`certifications.${profile.certifications.indexOf(item)}.issuer`) ? 'seeker-field--invalid' : ''}><span>Issuer</span><input type="text" value={item.issuer} aria-invalid={Boolean(getValidationIssue(`certifications.${profile.certifications.indexOf(item)}.issuer`))} onChange={(event) => updateCertification(item.id, 'issuer', event.target.value)} />{renderValidationMessage(`certifications.${profile.certifications.indexOf(item)}.issuer`)}</label></form></div>)}</div>}
                     <datalist id="qualification-suggestions">{qualificationSuggestions.map((qualification) => <option value={qualification} key={qualification} />)}</datalist>
-                    {renderStepControls('certifications')}
                   </section>
                 )}
 
@@ -1667,7 +1661,6 @@ function ProfilePage() {
                   <section className="seeker-card seeker-editor-card">
                     <div className="seeker-editor-card__heading"><div><h2>Languages</h2><p>Add languages you speak and choose your proficiency.</p></div><button type="button" aria-label="Add language" onClick={addLanguage}><FaPlus /></button></div>
                     {profile.languages.length === 0 ? <div className="seeker-step-empty-state"><p>No languages added yet. You can skip this step and return later.</p></div> : <div className="seeker-form-list">{profile.languages.map((item) => <div className="seeker-form-item" key={item.id}><div className="seeker-form-item__header"><strong>Language</strong><button type="button" className="seeker-delete-button" onClick={() => removeLanguage(item.id)}><FaTrash /></button></div><div className="seeker-profile-form__split"><div className={`seeker-combobox ${getValidationIssue(`languages.${profile.languages.indexOf(item)}.name`) ? 'seeker-field--invalid' : ''}`}><label htmlFor={`language-${item.id}`}>Language</label><input id={`language-${item.id}`} value={languageQueries[item.id] ?? item.name} placeholder="Search or type a language" aria-invalid={Boolean(getValidationIssue(`languages.${profile.languages.indexOf(item)}.name`))} onFocus={() => setOpenLanguageId(item.id)} onChange={(event) => { setLanguageQueries((current) => ({ ...current, [item.id]: event.target.value })); updateLanguage(item.id, 'name', event.target.value); setOpenLanguageId(item.id); }} onKeyDown={(event) => { const options = getLanguageSuggestions(onboardingLocation.country, languageQueries[item.id] ?? item.name); if (event.key === 'Escape') setOpenLanguageId(null); if (event.key === 'Enter' && options[0]) { event.preventDefault(); selectLanguage(item.id, options[0]); } }} />{openLanguageId === item.id && getLanguageSuggestions(onboardingLocation.country, languageQueries[item.id] ?? item.name).length > 0 && <div className="seeker-combobox__options" role="listbox">{getLanguageSuggestions(onboardingLocation.country, languageQueries[item.id] ?? item.name).map((language) => <button type="button" role="option" key={language} onMouseDown={(event) => event.preventDefault()} onClick={() => selectLanguage(item.id, language)}>{language}</button>)}</div>}{renderValidationMessage(`languages.${profile.languages.indexOf(item)}.name`)}</div><label className={getValidationIssue(`languages.${profile.languages.indexOf(item)}.proficiency`) ? 'seeker-field--invalid' : ''}><span>Proficiency</span><select value={item.proficiency} aria-invalid={Boolean(getValidationIssue(`languages.${profile.languages.indexOf(item)}.proficiency`))} onChange={(event) => updateLanguage(item.id, 'proficiency', event.target.value)}>{['Basic', 'Conversational', 'Professional', 'Fluent', 'Native'].map((level) => <option key={level}>{level}</option>)}</select>{renderValidationMessage(`languages.${profile.languages.indexOf(item)}.proficiency`)}</label></div></div>)}</div>}
-                    {renderStepControls('languages')}
                   </section>
                 )}
 
@@ -1675,12 +1668,11 @@ function ProfilePage() {
                   <section className="seeker-card seeker-editor-card">
                     <div className="seeker-editor-card__heading"><div><h2>Projects &amp; Work Samples</h2><p>Show client jobs, creative work, services, repairs, business work, or software projects.</p></div><button type="button" aria-label="Add project" onClick={addProject}><FaPlus /></button></div>
                     {profile.projects.length === 0 ? <div className="seeker-step-empty-state"><p>No work samples yet. You can skip this step and return later.</p></div> : <div className="seeker-form-list">{profile.projects.map((item) => <div className="seeker-form-item" key={item.id}><div className="seeker-form-item__header"><strong>Work Sample</strong><button type="button" className="seeker-delete-button" onClick={() => removeProject(item.id)}><FaTrash /></button></div><form className="seeker-profile-form"><label className={getValidationIssue(`projects.${profile.projects.indexOf(item)}.name`) ? 'seeker-field--invalid' : ''}><span>Work or project name</span><input value={item.name} placeholder="e.g. Bridal Makeup for a Wedding" aria-invalid={Boolean(getValidationIssue(`projects.${profile.projects.indexOf(item)}.name`))} onChange={(event) => updateProject(item.id, 'name', event.target.value)} />{renderValidationMessage(`projects.${profile.projects.indexOf(item)}.name`)}</label><label><span>Description</span><textarea value={item.description} placeholder="Describe what you did and the result." onChange={(event) => updateProject(item.id, 'description', event.target.value)} /></label><label><span>Tools or technologies used (optional)</span><input value={item.technologies.join(', ')} placeholder="Optional: tools, materials, or technologies" onChange={(event) => updateProjectTechnologies(item.id, event.target.value)} /></label><div className="seeker-profile-form__split"><label><span>Work/project link (optional)</span><input type="url" value={item.projectUrl} placeholder="Website, portfolio, social media, or other link" onChange={(event) => updateProject(item.id, 'projectUrl', event.target.value)} /></label><label><span>GitHub URL (optional)</span><input type="url" value={item.githubUrl} onChange={(event) => updateProject(item.id, 'githubUrl', event.target.value)} /></label></div><div className="seeker-profile-form__split"><label><span>Start date (optional)</span><input type="month" value={item.startDate} onChange={(event) => updateProject(item.id, 'startDate', event.target.value)} /></label><label><span>End date (optional)</span><input type="month" value={item.endDate} onChange={(event) => updateProject(item.id, 'endDate', event.target.value)} /></label></div></form></div>)}</div>}
-                    {renderStepControls('projects')}
                   </section>
                 )}
 
                 {activeStep === 'linkedin' && (
-                  <section className="seeker-card seeker-editor-card"><div className="seeker-editor-card__heading"><div><h2>LinkedIn</h2><p>Add your LinkedIn profile so employers can verify your background.</p></div></div><form className="seeker-profile-form"><label><span>LinkedIn profile URL</span><input type="url" value={profile.personalInfo.linkedin} placeholder="https://linkedin.com/in/yourname" onChange={(event) => updatePersonalInfo('linkedin', event.target.value)} /></label></form>{renderStepControls('linkedin')}</section>
+                  <section className="seeker-card seeker-editor-card"><div className="seeker-editor-card__heading"><div><h2>LinkedIn</h2><p>Add your LinkedIn profile so employers can verify your background.</p></div></div><form className="seeker-profile-form"><label><span>LinkedIn profile URL</span><input type="url" value={profile.personalInfo.linkedin} placeholder="https://linkedin.com/in/yourname" onChange={(event) => updatePersonalInfo('linkedin', event.target.value)} /></label></form></section>
                 )}
 
                 {activeStep === 'review' && (
@@ -1704,7 +1696,6 @@ function ProfilePage() {
                         <div><strong>LinkedIn</strong>{renderReviewStatus(Boolean(profile.personalInfo.linkedin.trim()), 'Complete')}</div>
                       </div>
                     </div>
-                    {renderStepControls('review')}
                   </section>
                 )}
           </div>
@@ -1735,6 +1726,7 @@ function ProfilePage() {
             </section>
           </aside>
             </section>
+            {renderStepControls(activeStep)}
           </>
         )}
       </main>
