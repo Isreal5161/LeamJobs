@@ -5,13 +5,18 @@ import {
   FaCheck,
   FaEye,
   FaHeading,
+  FaHistory,
   FaSave,
+  FaTimes,
   FaPaperPlane,
 } from "react-icons/fa";
 import { useAuth } from "../../context/AuthContext";
 import {
   createAdminCampaign,
   getAdminCampaignPreview,
+  getAdminCampaignDeliveries,
+  getAdminCampaignReport,
+  getAdminCampaignRecords,
   getAdminEmailTemplates,
   getAdminRecipientCount,
   previewAdminEmailTemplate,
@@ -19,6 +24,8 @@ import {
   updateAdminCampaign,
   updateAdminEmailTemplate,
   type AdminCommunicationFields,
+  type AdminCampaignDelivery,
+  type AdminCampaignRecord,
   type AdminEmailTemplate,
 } from "../../services/api";
 
@@ -35,6 +42,23 @@ const blankCampaign: AdminCommunicationFields = {
   ctaUrl: "",
   segment: "ALL_MARKETING_USERS",
 };
+
+const audienceLabels: Record<string, string> = {
+  ALL_MARKETING_USERS: "All opted-in registered users",
+  SEEKERS: "Opted-in seekers",
+  EMPLOYERS: "Opted-in employers",
+  PUBLIC_JOB_SUBSCRIBERS: "Public job-update subscribers",
+};
+
+const reportStatusLabels: Record<string, string> = {
+  DRAFT: "Draft",
+  IN_PROGRESS: "In progress",
+  SENT: "Sent",
+  PARTIALLY_FAILED: "Partially failed",
+  FAILED: "Failed",
+};
+
+const formatCampaignDate = (value: string | null) => value ? new Date(value).toLocaleString() : "Not available";
 
 function AdminCommunicationsPage() {
   const { token } = useAuth();
@@ -60,6 +84,14 @@ function AdminCommunicationsPage() {
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
   const [templatesLoading, setTemplatesLoading] = useState(true);
+  const [campaignRecords, setCampaignRecords] = useState<AdminCampaignRecord[]>([]);
+  const [campaignRecordsLoading, setCampaignRecordsLoading] = useState(true);
+  const [campaignRecordsError, setCampaignRecordsError] = useState("");
+  const [selectedCampaign, setSelectedCampaign] = useState<AdminCampaignRecord | null>(null);
+  const [campaignDeliveries, setCampaignDeliveries] = useState<AdminCampaignDelivery[]>([]);
+  const [campaignReportLoading, setCampaignReportLoading] = useState(false);
+  const [campaignReportError, setCampaignReportError] = useState("");
+  const [campaignReportPreview, setCampaignReportPreview] = useState<{ subject: string; html: string } | null>(null);
   const campaignBodyRef = useRef<HTMLTextAreaElement>(null);
 
   const loadTemplates = async () => {
@@ -72,6 +104,20 @@ function AdminCommunicationsPage() {
   };
   useEffect(() => {
     void loadTemplates();
+  }, [token]);
+
+  const loadCampaignRecords = async () => {
+    if (!token) return;
+    setCampaignRecordsLoading(true);
+    setCampaignRecordsError("");
+    const result = await getAdminCampaignRecords(token);
+    if (result.ok) setCampaignRecords(result.data.data.records);
+    else setCampaignRecordsError(result.error.message || "Unable to load campaign records.");
+    setCampaignRecordsLoading(false);
+  };
+
+  useEffect(() => {
+    void loadCampaignRecords();
   }, [token]);
 
   const editTemplate = (template: AdminEmailTemplate) => {
@@ -201,6 +247,29 @@ function AdminCommunicationsPage() {
     } else
       setError(result.error.message || "Unable to render campaign preview.");
   };
+  const openCampaignReport = async (record: AdminCampaignRecord) => {
+    if (!token) return;
+    setSelectedCampaign(record);
+    setCampaignDeliveries([]);
+    setCampaignReportPreview(null);
+    setCampaignReportError("");
+    setCampaignReportLoading(true);
+    const [reportResult, deliveriesResult] = await Promise.all([
+      getAdminCampaignReport(token, record.campaign.id),
+      getAdminCampaignDeliveries(token, record.campaign.id),
+    ]);
+    if (reportResult.ok) setSelectedCampaign(reportResult.data.data);
+    else setCampaignReportError(reportResult.error.message || "Unable to load campaign report.");
+    if (deliveriesResult.ok) setCampaignDeliveries(deliveriesResult.data.data.deliveries);
+    else setCampaignReportError(deliveriesResult.error.message || "Unable to load delivery records.");
+    setCampaignReportLoading(false);
+  };
+  const loadCampaignReportPreview = async () => {
+    if (!token || !selectedCampaign) return;
+    const result = await getAdminCampaignPreview(token, selectedCampaign.campaign.id);
+    if (result.ok) setCampaignReportPreview({ subject: result.data.data.subject, html: result.data.data.html });
+    else setCampaignReportError(result.error.message || "Unable to render campaign preview.");
+  };
   const sendCampaign = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!token) return;
@@ -249,6 +318,7 @@ function AdminCommunicationsPage() {
       setCampaignPreview(null);
       setRecipientCount(pendingSend.count);
       setPendingSend(null);
+      void loadCampaignRecords();
     } else setError(sent.error.message || "Unable to queue campaign.");
     setSaving(false);
   };
@@ -481,6 +551,48 @@ function AdminCommunicationsPage() {
           </div>
         </form>
       </section>
+      <section className="admin-communications-section" aria-labelledby="campaign-records-title">
+        <div className="admin-communications-section__heading">
+          <div>
+            <span className="admin-eyebrow"><FaHistory /> Campaign history</span>
+            <h2 id="campaign-records-title">Campaign records</h2>
+            <p>Review queued campaigns and the actual delivery-worker results for each recipient.</p>
+          </div>
+        </div>
+        {campaignRecordsLoading ? (
+          <div className="admin-communications-records-state" aria-busy="true">Loading campaign records...</div>
+        ) : campaignRecordsError ? (
+          <div className="admin-communications-error" role="alert">{campaignRecordsError}</div>
+        ) : campaignRecords.length === 0 ? (
+          <div className="admin-communications-records-state">No promotional campaigns have been created yet.</div>
+        ) : (
+          <div className="admin-communications-records-list">
+            {campaignRecords.map((record) => (
+              <article className="admin-communications-record" key={record.campaign.id}>
+                <div className="admin-communications-record__main">
+                  <div className="admin-communications-record__title-row">
+                    <h3>{record.campaign.subject}</h3>
+                    <span className={`admin-communications-status admin-communications-status--${record.delivery.reportingStatus.toLowerCase()}`}>
+                      {reportStatusLabels[record.delivery.reportingStatus]}
+                    </span>
+                  </div>
+                  <p>{audienceLabels[record.campaign.segment] || record.campaign.segment}</p>
+                  <small>Created {formatCampaignDate(record.campaign.createdAt)}</small>
+                </div>
+                <div className="admin-communications-record__counts" aria-label="Campaign delivery counts">
+                  <span><strong>{record.delivery.recipientCount}</strong> recipients</span>
+                  <span><strong>{record.delivery.sent}</strong> sent</span>
+                  <span><strong>{record.delivery.pending + record.delivery.processing}</strong> active</span>
+                  <span><strong>{record.delivery.failed}</strong> failed</span>
+                </div>
+                <button type="button" className="admin-button admin-button--secondary" onClick={() => void openCampaignReport(record)}>
+                  <FaEye /> View report
+                </button>
+              </article>
+            ))}
+          </div>
+        )}
+      </section>
       {editor ? (
         <div
           className="admin-communications-modal"
@@ -585,6 +697,63 @@ function AdminCommunicationsPage() {
                 <FaSave /> Save
               </button>
             </div>
+          </div>
+        </div>
+      ) : null}
+      {selectedCampaign ? (
+        <div className="admin-communications-modal" role="dialog" aria-modal="true" aria-labelledby="campaign-report-title">
+          <div className="admin-communications-modal__panel admin-communications-report-panel">
+            <div className="admin-communications-modal__header">
+              <div>
+                <span className="admin-eyebrow">Campaign report</span>
+                <h2 id="campaign-report-title">{selectedCampaign.campaign.subject}</h2>
+              </div>
+              <button type="button" onClick={() => setSelectedCampaign(null)} aria-label="Close campaign report"><FaTimes /></button>
+            </div>
+            {campaignReportLoading ? <div className="admin-communications-records-state">Loading report...</div> : null}
+            {campaignReportError ? <div className="admin-communications-error" role="alert">{campaignReportError}</div> : null}
+            {!campaignReportLoading ? (
+              <>
+                <div className="admin-communications-report-meta">
+                  <span><strong>Audience</strong>{audienceLabels[selectedCampaign.campaign.segment] || selectedCampaign.campaign.segment}</span>
+                  <span><strong>Created</strong>{formatCampaignDate(selectedCampaign.campaign.createdAt)}</span>
+                  <span><strong>Queued</strong>{formatCampaignDate(selectedCampaign.campaign.sentAt)}</span>
+                  <span><strong>State</strong><em className={`admin-communications-status admin-communications-status--${selectedCampaign.delivery.reportingStatus.toLowerCase()}`}>{reportStatusLabels[selectedCampaign.delivery.reportingStatus]}</em></span>
+                </div>
+                <div className="admin-communications-report-counts">
+                  <div><strong>{selectedCampaign.delivery.recipientCount}</strong><span>Recipients</span></div>
+                  <div><strong>{selectedCampaign.delivery.sent}</strong><span>Sent</span></div>
+                  <div><strong>{selectedCampaign.delivery.pending}</strong><span>Pending</span></div>
+                  <div><strong>{selectedCampaign.delivery.processing}</strong><span>Processing</span></div>
+                  <div><strong>{selectedCampaign.delivery.failed}</strong><span>Failed</span></div>
+                </div>
+                <div className="admin-communications-report-content">
+                  <h3>Original content</h3>
+                  <dl>
+                    <dt>Subject</dt><dd>{selectedCampaign.campaign.subject}</dd>
+                    <dt>Heading</dt><dd>{selectedCampaign.campaign.heading}</dd>
+                    <dt>Message</dt><dd className="admin-communications-report-body">{selectedCampaign.campaign.body}</dd>
+                    <dt>CTA label</dt><dd>{selectedCampaign.campaign.ctaLabel || "None"}</dd>
+                    <dt>CTA URL</dt><dd>{selectedCampaign.campaign.ctaUrl || "None"}</dd>
+                  </dl>
+                  <button type="button" className="admin-button admin-button--secondary" onClick={() => void loadCampaignReportPreview()}>
+                    <FaEye /> {campaignReportPreview ? "Refresh preview" : "Preview email"}
+                  </button>
+                  {campaignReportPreview ? <div className="admin-communications-preview"><strong>{campaignReportPreview.subject}</strong><iframe title="Campaign email preview" srcDoc={campaignReportPreview.html} /></div> : null}
+                </div>
+                <div className="admin-communications-report-content">
+                  <h3>Recipient deliveries</h3>
+                  {campaignDeliveries.length === 0 ? <p className="admin-communications-records-state">No delivery records are available for this campaign.</p> : (
+                    <div className="admin-communications-delivery-table-wrap">
+                      <table className="admin-communications-delivery-table">
+                        <thead><tr><th>Recipient</th><th>Status</th><th>Attempts</th><th>Created</th><th>Sent</th><th>Failure</th></tr></thead>
+                        <tbody>{campaignDeliveries.map((delivery) => <tr key={delivery.id}><td>{delivery.recipientEmail}</td><td><span className={`admin-communications-status admin-communications-status--${delivery.status.toLowerCase()}`}>{delivery.status}</span></td><td>{delivery.attempts}</td><td>{formatCampaignDate(delivery.createdAt)}</td><td>{formatCampaignDate(delivery.sentAt)}</td><td>{delivery.lastError || "-"}</td></tr>)}</tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+              </>
+            ) : null}
           </div>
         </div>
       ) : null}

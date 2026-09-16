@@ -253,6 +253,59 @@
 .admin-communications-card--skeleton span:nth-child(2) { width: 72%; }
 .admin-communications-card--skeleton span:nth-child(3) { width: 44%; }
 @keyframes admin-communications-shimmer { 50% { opacity: 0.45; } }
+.admin-communications-records-list { display: grid; gap: 12px; }
+.admin-communications-records-state {
+  padding: 24px;
+  border: 1px dashed #cbdad2;
+  border-radius: 10px;
+  color: #64736d;
+  background: #fff;
+}
+.admin-communications-record {
+  display: grid;
+  grid-template-columns: minmax(220px, 1.4fr) minmax(260px, 1fr) auto;
+  align-items: center;
+  gap: 18px;
+  padding: 18px 20px;
+  border: 1px solid #dce7e1;
+  border-radius: 10px;
+  background: #fff;
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.04);
+}
+.admin-communications-record__title-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.admin-communications-record h3 { margin: 0; font-size: 1rem; }
+.admin-communications-record p { margin: 6px 0; color: #52635b; font-size: 0.88rem; }
+.admin-communications-record small { color: #87948e; }
+.admin-communications-record__counts { display: flex; flex-wrap: wrap; gap: 7px 14px; color: #64736d; font-size: 0.8rem; }
+.admin-communications-record__counts strong { color: #172033; font-size: 1rem; }
+.admin-communications-status { display: inline-flex; align-items: center; width: fit-content; padding: 4px 8px; border-radius: 999px; font-size: 0.7rem; font-style: normal; font-weight: 800; white-space: nowrap; }
+.admin-communications-status--draft { color: #52635b; background: #eef2f0; }
+.admin-communications-status--in_progress,
+.admin-communications-status--pending,
+.admin-communications-status--processing { color: #8a5a09; background: #fff3d6; }
+.admin-communications-status--sent { color: #27734f; background: #e8f4ed; }
+.admin-communications-status--partially_failed { color: #8a5a09; background: #fff3d6; }
+.admin-communications-status--failed { color: #9b3e31; background: #fff0ed; }
+.admin-communications-report-panel { width: min(1040px, 100%); }
+.admin-communications-report-meta { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+.admin-communications-report-meta span { display: grid; gap: 4px; color: #52635b; font-size: 0.82rem; }
+.admin-communications-report-meta strong { color: #87948e; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.05em; }
+.admin-communications-report-counts { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; }
+.admin-communications-report-counts div { display: grid; gap: 4px; padding: 12px; border: 1px solid #dce7e1; border-radius: 8px; background: #f8fafc; }
+.admin-communications-report-counts strong { color: #172033; font-size: 1.25rem; }
+.admin-communications-report-counts span { color: #64736d; font-size: 0.75rem; }
+.admin-communications-report-content { display: grid; gap: 12px; }
+.admin-communications-report-content h3 { margin: 0; color: #172033; font-size: 1rem; }
+.admin-communications-report-content dl { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 8px 16px; margin: 0; padding: 14px; border: 1px solid #dce7e1; border-radius: 8px; background: #fbfdfc; }
+.admin-communications-report-content dt { color: #87948e; font-size: 0.8rem; font-weight: 800; }
+.admin-communications-report-content dd { min-width: 0; margin: 0; color: #33443c; overflow-wrap: anywhere; }
+.admin-communications-report-body { white-space: pre-wrap; }
+.admin-communications-delivery-table-wrap { overflow-x: auto; border: 1px solid #dce7e1; border-radius: 8px; }
+.admin-communications-delivery-table { width: 100%; min-width: 760px; border-collapse: collapse; font-size: 0.8rem; }
+.admin-communications-delivery-table th,
+.admin-communications-delivery-table td { padding: 10px 12px; border-bottom: 1px solid #edf2ef; text-align: left; vertical-align: top; }
+.admin-communications-delivery-table th { color: #64736d; background: #f8fafc; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.04em; }
+.admin-communications-delivery-table tr:last-child td { border-bottom: 0; }
 @media (max-width: 700px) {
   .admin-communications-page {
     padding: 24px 16px 56px;
@@ -272,5 +325,11 @@
     width: 100%;
     margin: 0;
   }
+  .admin-communications-record { grid-template-columns: 1fr; gap: 12px; }
+  .admin-communications-record .admin-button { justify-self: start; }
+  .admin-communications-report-meta,
+  .admin-communications-report-counts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .admin-communications-report-content dl { grid-template-columns: 1fr; gap: 4px; }
+  .admin-communications-report-content dt:not(:first-child) { margin-top: 8px; }
 }
 @media (prefers-reduced-motion: reduce) { .admin-communications-card--skeleton span { animation: none; } }

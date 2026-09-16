@@ -1027,7 +1027,10 @@ export function markAllNotificationsRead(token: string, role: 'SEEKER' | 'EMPLOY
 }
 
 export type AdminEmailTemplate = { id: string; key: 'WELCOME_SEEKER' | 'WELCOME_EMPLOYER'; name: string; kind: string; subject: string; heading: string; body: string; ctaLabel: string | null; ctaUrl: string | null; isActive: boolean; updatedAt: string };
-export type AdminEmailCampaign = { id: string; eventKey: string; subject: string; heading: string; body: string; ctaLabel: string | null; ctaUrl: string | null; segment: string; status: 'DRAFT' | 'SENT'; recipientCount: number | null; createdAt: string; updatedAt: string };
+export type AdminEmailCampaign = { id: string; eventKey: string; subject: string; heading: string; body: string; ctaLabel: string | null; ctaUrl: string | null; segment: string; status: 'DRAFT' | 'SENDING' | 'SENT'; recipientCount: number | null; createdAt: string; sentAt: string | null; updatedAt: string };
+export type AdminCampaignDeliveryCounts = { recipientCount: number; total: number; sent: number; pending: number; processing: number; failed: number; reportingStatus: 'DRAFT' | 'IN_PROGRESS' | 'SENT' | 'PARTIALLY_FAILED' | 'FAILED' };
+export type AdminCampaignRecord = { campaign: AdminEmailCampaign; delivery: AdminCampaignDeliveryCounts };
+export type AdminCampaignDelivery = { id: string; recipientEmail: string; status: 'PENDING' | 'PROCESSING' | 'SENT' | 'FAILED'; attempts: number; createdAt: string; sentAt: string | null; lastError: string | null };
 export type AdminCommunicationFields = { subject: string; heading: string; body: string; ctaLabel?: string | null; ctaUrl?: string | null; isActive?: boolean; segment?: string };
 
 export function getAdminEmailTemplates(token: string) { return request<{ success: true; data: { templates: AdminEmailTemplate[] } }>({ method: 'GET', endpoint: '/admin/communications/templates', token }); }
@@ -1046,6 +1049,9 @@ export function updateAdminCampaign(token: string, id: string, body: Partial<Adm
 export function getAdminCampaignPreview(token: string, id: string) { return request<{ success: true; data: { campaign: AdminEmailCampaign; recipientCount: number; subject: string; html: string; text: string } }>({ method: 'GET', endpoint: `/admin/communications/campaigns/${id}/preview`, token }); }
 export function getAdminRecipientCount(token: string, segment: string) { return request<{ success: true; data: { recipientCount: number } }>({ method: 'GET', endpoint: `/admin/communications/recipients/count?segment=${encodeURIComponent(segment)}`, token }); }
 export function sendAdminCampaign(token: string, id: string) { return request<{ success: true; data: { campaign: AdminEmailCampaign } }>({ method: 'POST', endpoint: `/admin/communications/campaigns/${id}/send`, token }); }
+export function getAdminCampaignRecords(token: string, page = 1, limit = 20) { return request<{ success: true; data: { records: AdminCampaignRecord[]; pagination: { page: number; limit: number; total: number; pages: number } } }>({ method: 'GET', endpoint: `/admin/communications/campaigns?page=${page}&limit=${limit}`, token }); }
+export function getAdminCampaignReport(token: string, id: string) { return request<{ success: true; data: AdminCampaignRecord }>({ method: 'GET', endpoint: `/admin/communications/campaigns/${id}/report`, token }); }
+export function getAdminCampaignDeliveries(token: string, id: string) { return request<{ success: true; data: { campaignId: string; deliveries: AdminCampaignDelivery[] } }>({ method: 'GET', endpoint: `/admin/communications/campaigns/${id}/deliveries`, token }); }
 
 export function getEmailPreferences(token: string) {
   return request<{ success: true; data: EmailPreferences }>({ method: 'GET', endpoint: '/auth/email-preferences', token });
