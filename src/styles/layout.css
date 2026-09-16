@@ -163,7 +163,7 @@
 
 .site-footer__links a:hover,
 .site-footer__bottom a:hover {
-  color: #0e4ae1;
+  color: var(--brand-primary-active);
 }
 
 .site-footer__subscribe {
@@ -199,22 +199,22 @@
 
 .site-footer__subscribe input:focus {
   outline: none;
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12);
+  border-color: var(--brand-primary-active);
+  box-shadow: 0 0 0 3px rgba(239, 80, 54, 0.12);
 }
 
 .site-footer__subscribe button {
   min-height: 48px;
   border: 0;
   border-radius: 8px;
-  background: #0e4ae1;
+  background: var(--brand-primary-active);
   color: #ffffff;
   padding: 0 1.15rem;
   font-weight: 800;
 }
 
 .site-footer__subscribe button:hover {
-  background: #2563eb;
+  background: var(--brand-primary-hover);
 }
 
 .site-footer__bottom {

@@ -43,10 +43,10 @@
   justify-content: center;
   width: 48px;
   height: 48px;
-  border: 1px solid #dbeafe;
+  border: 1px solid color-mix(in srgb, var(--brand-primary-active) 18%, #ffffff);
   border-radius: 14px;
-  background: #eff6ff;
-  color: #1d4ed8;
+  background: var(--brand-background);
+  color: var(--brand-primary-active);
   font-size: 1.1rem;
 }
 
@@ -109,8 +109,8 @@
   width: max-content;
   padding: 0.3rem 0.7rem;
   border-radius: 999px;
-  background: #eff5ff;
-  color: #0e4ae1;
+  background: var(--brand-secondary-light);
+  color: var(--brand-secondary);
   font-weight: 800;
 }
 
@@ -161,7 +161,7 @@
   width: 82%;
   height: 100%;
   border-radius: inherit;
-  background: #0e4ae1;
+  background: var(--brand-secondary);
 }
 
 .seeker-cv-summary__actions,
@@ -220,14 +220,14 @@
 .seeker-editor-card__tools button,
 .seeker-section-heading button,
 .seeker-profile-actions button:first-child {
-  border: 1px solid rgba(14, 74, 225, 0.22);
+  border: 1px solid color-mix(in srgb, var(--brand-primary-active) 20%, #ffffff);
   background: #ffffff;
-  color: #0e4ae1;
+  color: var(--brand-secondary);
 }
 
 .seeker-profile-actions button:last-child {
   border: 0;
-  background: #0e4ae1;
+  background: var(--brand-primary-active);
   color: #ffffff;
 }
 
@@ -242,10 +242,10 @@
   gap: 0.55rem;
   min-height: 42px;
   padding: 0 1rem;
-  border: 1px solid rgba(14, 74, 225, 0.22);
+  border: 1px solid color-mix(in srgb, var(--brand-primary-active) 20%, #ffffff);
   border-radius: 8px;
   background: #ffffff;
-  color: #0e4ae1;
+  color: var(--brand-secondary);
   cursor: pointer;
   font-weight: 800;
 }
@@ -983,15 +983,15 @@
 }
 
 .seeker-step-button--primary {
-  border: 1px solid #0e4ae1;
-  background: #0e4ae1;
+  border: 1px solid var(--brand-primary-active);
+  background: var(--brand-primary-active);
   color: #ffffff;
 }
 
 .seeker-step-button--primary:hover,
 .seeker-step-button--primary:focus-visible {
-  border-color: #0b3bcb;
-  background: #0b3bcb;
+  border-color: var(--brand-primary-hover);
+  background: var(--brand-primary-hover);
 }
 
 .seeker-step-button--secondary {

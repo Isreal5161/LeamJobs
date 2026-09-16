@@ -123,8 +123,8 @@ button {
 }
 
 .leamjobs-spinner--accent {
-  border-color: rgba(14, 74, 225, 0.2);
-  border-top-color: #0e4ae1;
+  border-color: color-mix(in srgb, var(--brand-secondary) 18%, transparent);
+  border-top-color: var(--brand-secondary);
 }
 
 .leamjobs-spinner--lg {

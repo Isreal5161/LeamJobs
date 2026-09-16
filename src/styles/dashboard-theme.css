@@ -37,6 +37,42 @@
   background: var(--dashboard-primary-light);
 }
 
+/* Keep authenticated surfaces on the same coral/indigo brand language. */
+.seeker-layout .seeker-button--primary,
+.seeker-layout .button--primary,
+.seeker-layout .seeker-job-card__apply-btn--primary,
+.seeker-layout .seeker-jobs-load-more,
+.seeker-layout .seeker-filter-apply,
+.employer-layout .employer-button--primary,
+.admin-layout .admin-button--primary {
+  background: var(--brand-primary-active);
+  border-color: var(--brand-primary-active);
+  color: #ffffff;
+}
+
+.seeker-layout .seeker-button--primary:hover,
+.seeker-layout .button--primary:hover,
+.seeker-layout .seeker-job-card__apply-btn--primary:hover,
+.seeker-layout .seeker-jobs-load-more:hover,
+.seeker-layout .seeker-filter-apply:hover,
+.employer-layout .employer-button--primary:hover,
+.admin-layout .admin-button--primary:hover {
+  background: var(--brand-primary-hover);
+  border-color: var(--brand-primary-hover);
+}
+
+.seeker-layout .seeker-layout__main a:not(.seeker-button--primary):not(.button--primary),
+.employer-layout .employer-layout__main a:not(.employer-button--primary),
+.admin-layout .admin-layout__main a:not(.admin-button--primary) {
+  color: var(--brand-secondary);
+}
+
+.seeker-layout .seeker-layout__main a:hover,
+.employer-layout .employer-layout__main a:hover,
+.admin-layout .admin-layout__main a:hover {
+  color: var(--brand-primary-active);
+}
+
 .seeker-layout .dashboard-topbar__link:hover,
 .employer-layout .dashboard-topbar__link:hover,
 .admin-layout .dashboard-topbar__link:hover {
@@ -161,6 +197,43 @@
   border-color: var(--dashboard-secondary);
   background: var(--dashboard-secondary-light);
   color: var(--dashboard-secondary-hover);
+}
+
+.admin-layout .admin-eyebrow,
+.admin-layout .admin-review-kicker,
+.admin-layout .admin-analytics-controls button,
+.admin-layout .admin-token-list button,
+.admin-layout .admin-row-actions button,
+.admin-layout .admin-mini-actions button,
+.admin-layout .admin-recommend-card button,
+.admin-layout .admin-real-seeker-cv,
+.admin-layout .admin-company-logo,
+.admin-layout .admin-real-seeker-avatar {
+  color: var(--brand-secondary);
+}
+
+.admin-layout .admin-analytics-control--active,
+.admin-layout .admin-status--role,
+.admin-layout .admin-token-list button,
+.admin-layout .admin-real-seeker-cv {
+  border-color: color-mix(in srgb, var(--brand-secondary) 24%, #ffffff);
+  background: var(--brand-secondary-light);
+}
+
+.employer-layout .employer-eyebrow,
+.employer-layout .employer-icon-button,
+.employer-layout .employer-row-action,
+.employer-layout .employer-list-tools > button,
+.employer-layout .employer-section-heading a,
+.employer-layout .employer-section-heading button {
+  color: var(--brand-secondary);
+}
+
+.seeker-layout .seeker-section-heading a,
+.seeker-layout .seeker-job-card__metadata svg,
+.seeker-layout .seeker-application-card__meta svg,
+.seeker-layout .seeker-profile-tags span {
+  color: var(--brand-secondary);
 }
 
 .seeker-layout .seeker-application-status--accepted,

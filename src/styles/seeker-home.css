@@ -66,17 +66,17 @@
   width: 42px;
   height: 42px;
   flex: 0 0 auto;
-  border: 1px solid rgba(14, 74, 225, 0.14);
+  border: 1px solid color-mix(in srgb, var(--brand-primary-active) 18%, #ffffff);
   border-radius: 10px;
   background: #ffffff;
-  color: #0e4ae1;
-  box-shadow: 0 10px 22px rgba(14, 74, 225, 0.08);
+  color: var(--brand-secondary);
+  box-shadow: 0 10px 22px rgba(50, 47, 106, 0.08);
   cursor: pointer;
   transition: border-color 0.18s ease, transform 0.18s ease, box-shadow 0.18s ease;
 }
 
 .dashboard-topbar__notification-button:hover {
-  border-color: rgba(14, 74, 225, 0.28);
+  border-color: color-mix(in srgb, var(--brand-secondary) 28%, #ffffff);
   transform: translateY(-1px);
 }
 

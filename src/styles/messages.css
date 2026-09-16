@@ -34,7 +34,7 @@
 .messages-eyebrow {
   display: inline-flex;
   margin-bottom: 0.35rem;
-  color: #2563eb;
+  color: var(--brand-secondary);
   font-size: 0.75rem;
   font-weight: 700;
   text-transform: uppercase;
@@ -229,7 +229,7 @@
 .messages-composer button:disabled { background: #cbd5e1; color: #64748b; cursor: not-allowed; }
 
 .messages-invitation-card { margin-bottom: 1rem; padding: 1rem; border: 1px solid #cbdcf8; border-radius: 8px; background: #f7faff; }
-.messages-invitation-card__eyebrow { color: #1d4ed8; font-size: .72rem; font-weight: 800; letter-spacing: .08em; }
+.messages-invitation-card__eyebrow { color: var(--brand-secondary); font-size: .72rem; font-weight: 800; letter-spacing: .08em; }
 .messages-invitation-card h3 { margin: .35rem 0; color: #0f172a; }
 .messages-invitation-card p { margin: 0; color: #475569; line-height: 1.55; white-space: pre-wrap; }
 .messages-invitation-card__actions { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: .85rem; }

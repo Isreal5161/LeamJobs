@@ -180,7 +180,7 @@
 
 .admin-button--primary,
 .admin-add-control button {
-  background: #111827;
+  background: var(--brand-primary-active);
   color: #ffffff;
 }
 
@@ -188,7 +188,7 @@
   min-height: 44px;
   gap: 0.5rem;
   padding-inline: 1rem;
-  box-shadow: 0 10px 24px rgba(14, 74, 225, 0.2);
+  box-shadow: 0 10px 24px rgba(239, 80, 54, 0.18);
 }
 
 .admin-button--cta:focus-visible,

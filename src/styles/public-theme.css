@@ -4,39 +4,39 @@
 }
 
 .public-layout .button--primary {
-  background: var(--primary);
+  background: var(--brand-primary-active);
   color: #ffffff;
 }
 
 .public-layout .button--primary:hover,
 .public-layout .button--primary:focus-visible {
-  background: var(--primary-hover);
+  background: var(--brand-primary-hover);
 }
 
 .public-layout .button--outline,
 .public-layout .button--secondary {
-  border-color: var(--secondary);
-  color: var(--secondary);
+  border-color: var(--brand-secondary);
+  color: var(--brand-secondary);
 }
 
 .public-layout .button--outline:hover,
 .public-layout .button--outline:focus-visible,
 .public-layout .button--secondary:hover,
 .public-layout .button--secondary:focus-visible {
-  border-color: var(--secondary-hover);
-  background: var(--secondary-light);
-  color: var(--secondary-hover);
+  border-color: var(--brand-secondary-hover);
+  background: var(--brand-secondary-light);
+  color: var(--brand-secondary-hover);
 }
 
 .public-layout .navbar__center a:hover,
 .public-layout .navbar__actions a:hover,
 .public-layout .site-footer__links a:hover,
 .public-layout .site-footer__bottom a:hover {
-  color: var(--primary);
+  color: var(--brand-primary-active);
 }
 
 .public-layout .navbar__center a.navbar__link--active::after {
-  background: var(--primary);
+  background: var(--brand-primary-active);
 }
 
 .public-layout .site-footer__subscribe button {
@@ -49,7 +49,21 @@
 }
 
 .public-layout--welcome .hero__panel {
-  background-color: #123f68;
+  background-color: var(--brand-secondary);
+}
+
+.public-layout .navbar__center a,
+.public-layout .navbar__actions a,
+.public-layout .site-footer__links a,
+.public-layout .site-footer__bottom a {
+  color: var(--brand-secondary);
+}
+
+.public-layout .navbar__center a:hover,
+.public-layout .navbar__actions a:hover,
+.public-layout .site-footer__links a:hover,
+.public-layout .site-footer__bottom a:hover {
+  color: var(--brand-primary-active);
 }
 
 .public-layout--welcome .hero-actions__employer {

@@ -60,8 +60,8 @@
   width: 44px;
   height: 44px;
   border-radius: 12px;
-  background: #e7f0ff;
-  color: #0e4ae1;
+  background: var(--brand-secondary-light);
+  color: var(--brand-secondary);
 }
 
 .seeker-application-stat__icon--success {
@@ -148,7 +148,7 @@
 
 .seeker-application-tabs .seeker-application-tab--active {
   border-color: var(--seeker-accent);
-  background: #0e4ae1;
+  background: var(--brand-primary-active);
   color: #ffffff;
 }
 

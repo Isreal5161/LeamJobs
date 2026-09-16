@@ -141,7 +141,7 @@
 .admin-communications-campaign textarea:focus,
 .admin-communications-campaign select:focus,
 .admin-communications-modal__panel input:focus,
-.admin-communications-modal__panel textarea:focus { border-color: #0e4ae1; outline: 0; box-shadow: 0 0 0 3px rgba(14, 74, 225, 0.12); }
+.admin-communications-modal__panel textarea:focus { border-color: var(--brand-secondary); outline: 0; box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand-secondary) 18%, transparent); }
 .admin-communications-form-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -227,7 +227,7 @@
   background: #f4f7f5;
 }
 .admin-button--primary {
-  background: #0e4ae1;
+  background: var(--brand-primary-active);
   color: #fff;
   border: 0;
   border-radius: 8px;
@@ -244,7 +244,7 @@
   font-weight: 800;
   cursor: pointer;
 }
-.admin-button--primary:hover { background: #0b3bcb; }
+.admin-button--primary:hover { background: var(--brand-primary-hover); }
 .admin-button--primary:disabled,
 .admin-button--secondary:disabled { cursor: wait; opacity: 0.65; }
 .admin-communications-card--skeleton { display: grid; gap: 12px; min-height: 142px; align-content: center; }

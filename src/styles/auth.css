@@ -166,7 +166,7 @@
 
 .auth-benefits svg {
   flex: 0 0 auto;
-  color: #0e4ae1;
+  color: var(--brand-primary-active);
 }
 
 .auth-panel--form {

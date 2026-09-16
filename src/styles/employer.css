@@ -71,7 +71,7 @@
 .employer-eyebrow {
   display: inline-flex;
   margin-bottom: 0.4rem;
-  color: #2563eb;
+  color: var(--brand-secondary);
   font-size: 0.72rem;
   font-weight: 700;
   text-transform: uppercase;
@@ -111,9 +111,9 @@
 .employer-icon-button {
   width: 42px;
   height: 42px;
-  border: 1px solid #dbeafe;
-  background: #eff6ff;
-  color: #1d4ed8;
+  border: 1px solid color-mix(in srgb, var(--brand-primary-active) 16%, #ffffff);
+  background: var(--brand-background);
+  color: var(--brand-primary-active);
   font-size: 1rem;
 }
 
@@ -124,9 +124,9 @@
 }
 
 .employer-button--primary {
-  background: #1d4ed8;
+  background: var(--brand-primary-active);
   color: #ffffff;
-  box-shadow: 0 8px 20px rgba(29, 78, 216, 0.18);
+  box-shadow: 0 8px 20px rgba(239, 80, 54, 0.18);
 }
 
 .employer-button--light {
@@ -136,9 +136,9 @@
 }
 
 .employer-button--ghost {
-  border-color: #d7e5f8;
+  border-color: color-mix(in srgb, var(--brand-primary-active) 24%, #ffffff);
   background: #f8fafc;
-  color: #1d4ed8;
+  color: var(--brand-secondary);
 }
 
 .employer-button--danger {
@@ -196,7 +196,7 @@
 .employer-section-heading button {
   border: 0;
   background: transparent;
-  color: #0e4ae1;
+  color: var(--brand-secondary);
   font-weight: 900;
 }
 
@@ -222,8 +222,8 @@
   width: 46px;
   height: 46px;
   border-radius: 12px;
-  background: #e7f0ff;
-  color: #0e4ae1;
+  background: var(--brand-secondary-light);
+  color: var(--brand-secondary);
 }
 
 .employer-stat-card__icon--green {
