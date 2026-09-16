@@ -8,6 +8,12 @@
   color: #ffffff;
 }
 
+.public-layout .navbar__actions .button--primary,
+.public-layout .navbar__actions .button--primary:hover,
+.public-layout .navbar__actions .button--primary:focus-visible {
+  color: #ffffff;
+}
+
 .public-layout .button--primary:hover,
 .public-layout .button--primary:focus-visible {
   background: var(--brand-primary-hover);
@@ -221,7 +227,8 @@
   background: var(--background, #f8fafc);
 }
 
-.public-layout--job-detail .job-detail-hero {
+.public-layout--job-detail .job-detail-hero,
+.seeker-layout--job-detail .job-detail-hero {
   background: var(--primary);
 }
 
