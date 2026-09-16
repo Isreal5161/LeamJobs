@@ -40,7 +40,7 @@ function SeekerJobCard({ job, saved = false, listing = false, onToggleBookmark, 
   return (
     <article className={`seeker-job-card${listing ? ' seeker-job-card--listing' : ''}`}>
       <Link className="seeker-job-card__body-link" to={detailPath} aria-label={`View ${title} at ${company}`}>
-        {logoUrl ? <img className="company-logo seeker-job-card__logo" src={logoUrl} alt="" /> : <CompanyLogo company={company} logoText={company.slice(0, 2).toUpperCase()} logoClass="seeker-job-card__logo" />}
+        <CompanyLogo company={company} logoUrl={logoUrl} logoText={company.slice(0, 2).toUpperCase()} logoClass="seeker-job-card__logo" />
         <div className="seeker-job-card__content">
           <div className="seeker-job-card__top">
             {matchScore !== undefined && <span>{matchScore}% Match</span>}

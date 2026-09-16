@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { FaArrowLeft, FaBuilding, FaCheck, FaChevronRight, FaClock, FaMapMarkerAlt } from 'react-icons/fa';
 import { useAuth } from '../../context/AuthContext';
 import { getPublicJob, getSeekerJob, type SeekerDashboardJob } from '../../services/api';
+import CompanyLogo from '../../components/jobs/CompanyLogo';
 
 const skillClasses = ['job-detail-skill--pink', 'job-detail-skill--purple', 'job-detail-skill--green', 'job-detail-skill--yellow', 'job-detail-skill--blue'];
 
@@ -144,7 +145,7 @@ function JobDetailsPage() {
 
       <div className="job-detail-layout">
         <section className="job-detail-summary card" aria-label={`${job.title} at ${companyName}`}>
-          {logoUrl ? <img className="company-logo" src={logoUrl} alt="" /> : <span className="company-logo" aria-hidden="true">{getInitials(companyName)}</span>}
+          <CompanyLogo company={companyName} logoUrl={logoUrl} logoText={getInitials(companyName)} />
           <div className="job-detail-summary__content">
             <div className="job-detail-summary__top">
               <h2>{job.title}</h2>
@@ -206,7 +207,7 @@ function JobDetailsPage() {
           {job.benefits.length ? <section className="job-detail-section"><h2>Benefits</h2><ul className="job-detail-check-list">{job.benefits.map((benefit) => <li key={benefit}><FaCheck /><span>{benefit}</span></li>)}</ul></section> : null}
 
           <section className="job-detail-company-card card">
-            {logoUrl ? <img className="company-logo" src={logoUrl} alt="" /> : <span className="company-logo" aria-hidden="true">{getInitials(companyName)}</span>}
+            <CompanyLogo company={companyName} logoUrl={logoUrl} logoText={getInitials(companyName)} />
             <div>
               <h2>About {companyName}</h2>
               <p>{job.company?.description || 'Company information is not available.'}</p>

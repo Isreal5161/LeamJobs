@@ -950,7 +950,7 @@ export function getEmployerProfile(token: string) {
   return request<EmployerProfileResponse>({ method: 'GET', endpoint: '/employer/profile', token });
 }
 
-async function getProtectedBlob(endpoint: string, token: string, fallbackMessage: string): Promise<ApiResponse<Blob>> {
+export async function getProtectedBlob(endpoint: string, token: string, fallbackMessage: string): Promise<ApiResponse<Blob>> {
   try {
     const response = await fetch(`${API_BASE_URL}${endpoint}`, {
       method: 'GET',
