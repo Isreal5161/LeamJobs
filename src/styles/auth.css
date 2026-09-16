@@ -62,7 +62,7 @@
 
 .auth-brand-card__eyebrow,
 .auth-form-heading span {
-  color: #0e4ae1;
+  color: var(--secondary);
   font-size: 0.78rem;
   font-weight: 800;
   letter-spacing: 0;
@@ -133,7 +133,7 @@
   width: 46px;
   height: 46px;
   border-radius: 8px;
-  background: #0e4ae1;
+  background: var(--primary);
   color: #ffffff;
 }
 

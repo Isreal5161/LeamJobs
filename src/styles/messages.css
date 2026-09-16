@@ -3,8 +3,8 @@
   --messages-muted: #64748b;
   --messages-border: #dbe3ee;
   --messages-border-soft: #e7edf4;
-  --messages-accent: #0e4ae1;
-  --messages-accent-hover: #0b3bcb;
+  --messages-accent: var(--brand-primary-active);
+  --messages-accent-hover: var(--brand-primary-hover);
   min-width: 0;
 }
 

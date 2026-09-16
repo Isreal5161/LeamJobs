@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link, NavLink, useNavigate } from 'react-router-dom';
+import { NavLink, useNavigate } from 'react-router-dom';
 import { FaBell, FaBars, FaCheck, FaTimes } from 'react-icons/fa';
 import AccountMenu from './AccountMenu';
+import Logo from './Logo';
 import { getEmployerProfile, getEmployerProfileLogo, getNotifications, getSeekerProfile, getSeekerProfilePicture, markAllNotificationsRead, markNotificationRead, PROFILE_IMAGE_UPDATED_EVENT, type AppNotification } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 
@@ -191,13 +192,7 @@ function DashboardTopbar({
   };
 
   const brand = (
-    <Link className="dashboard-topbar__brand" to="/" aria-label="Go to LeamJobs welcome page">
-      <span className="dashboard-topbar__mark">LJ</span>
-      <div className="dashboard-topbar__copy">
-        <strong>LeamJobs</strong>
-        <span>Career workspace</span>
-      </div>
-    </Link>
+    <Logo className="dashboard-topbar__brand" tagline="Career workspace" />
   );
 
   if (role) {

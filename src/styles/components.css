@@ -11,12 +11,12 @@
 }
 
 .button--primary {
-  background: #0e4ae1;
+  background: var(--primary);
   color: #ffffff;
 }
 
 .button--primary:hover {
-  background: #0b3bcb;
+  background: var(--primary-hover);
 }
 
 .navbar__actions .button--primary {
@@ -25,16 +25,16 @@
 
 .button--outline {
   background: #ffffff;
-  color: #0e4ae1;
-  border: 1px solid rgba(14, 74, 225, 0.24);
+  color: var(--secondary);
+  border: 1px solid color-mix(in srgb, var(--secondary) 28%, #ffffff);
 }
 
 .button--outline:hover {
-  background: #eff5ff;
+  background: var(--secondary-light);
 }
 
 .button--apply {
-  background: #0e4ae1;
+  background: var(--primary);
   color: #ffffff;
   border: 1px solid transparent;
   width: 78px;
@@ -46,13 +46,13 @@
 }
 
 .button--apply:hover {
-  background: #0b3bcb;
+  background: var(--primary-hover);
 }
 
 .button--detail {
   background: #ffffff;
-  color: #0e4ae1;
-  border: 1px solid #0e4ae1;
+  color: var(--secondary);
+  border: 1px solid var(--secondary);
   min-height: 34px;
   padding: 0 0.85rem;
   border-radius: 12px;
@@ -61,13 +61,13 @@
 }
 
 .button--detail:hover {
-  background: #eff5ff;
+  background: var(--secondary-light);
 }
 
 .button--secondary {
   background: #ffffff;
-  border: 1px solid rgba(14, 74, 225, 0.18);
-  color: #0e4ae1;
+  border: 1px solid color-mix(in srgb, var(--secondary) 22%, #ffffff);
+  color: var(--secondary);
   padding: 0.55rem 0.95rem;
   font-size: 0.88rem;
 }

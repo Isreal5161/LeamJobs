@@ -5,7 +5,7 @@
   --applicant-soft: #f7f9fc;
   --applicant-muted: #64748b;
   --applicant-text: #0f172a;
-  --applicant-accent: #1d4ed8;
+  --applicant-accent: var(--brand-secondary);
   grid-template-columns: minmax(300px, 360px) minmax(0, 1fr);
   align-items: start;
   gap: 1.25rem;

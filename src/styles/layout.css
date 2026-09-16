@@ -23,20 +23,19 @@
   color: #0f172a;
 }
 
-.site-logo__mark {
-  width: 2.5rem;
+.site-logo__image {
+  display: block;
+  width: auto;
   height: 2.5rem;
-  border-radius: 50%;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  background: linear-gradient(135deg, #e60d26 0%, #0e4ae1 100%);
-  color: #ffffff;
-  font-size: 0.95rem;
+  max-width: min(13rem, 62vw);
+  object-fit: contain;
 }
 
-.site-logo__text {
-  font-size: 1.15rem;
+.site-logo__tagline {
+  display: grid;
+  color: #64748b;
+  font-size: 0.78rem;
+  font-weight: 700;
 }
 
 .navbar__center,
@@ -47,7 +46,6 @@
 }
 
 .navbar__center {
-  flex: 1;
   justify-content: center;
 }
 
@@ -66,7 +64,7 @@
 }
 
 .navbar__center a.navbar__link--active {
-  color: #0f172a;
+  color: var(--secondary);
 }
 
 .navbar__center a.navbar__link--active::after {
@@ -77,7 +75,7 @@
   width: 34px;
   height: 3px;
   border-radius: 999px;
-  background: #0e4ae1;
+  background: var(--primary);
   transform: translateX(-50%);
 }
 
@@ -342,10 +340,6 @@
     flex-wrap: nowrap;
   }
 
-  .site-logo__text {
-    font-size: 1rem;
-  }
-
   /* hide center menu on mobile */
   .navbar__center {
     display: none;
@@ -400,13 +394,9 @@
   }
 
   /* Reduce logo mark and text slightly on mobile to save space */
-  .site-logo__mark {
-    width: 2rem;
+  .site-logo__image {
     height: 2rem;
-  }
-
-  .site-logo__text {
-    font-size: 0.95rem;
+    max-width: 10rem;
   }
 
   /* Slightly reduce left/right container padding so actions fit */

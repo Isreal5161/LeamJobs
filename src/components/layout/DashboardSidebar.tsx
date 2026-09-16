@@ -1,4 +1,5 @@
-import { Link, NavLink } from 'react-router-dom';
+import { NavLink } from 'react-router-dom';
+import Logo from './Logo';
 import {
   FaBriefcase,
   FaBuilding,
@@ -98,13 +99,7 @@ function DashboardSidebar({ role, isOpen = true, onNavigate }: SidebarProps) {
   return (
     <aside className={`dashboard-menu ${isOpen ? 'dashboard-menu--open' : 'dashboard-menu--closed'}`}>
       <div className="dashboard-menu__header">
-        <Link className="dashboard-menu__brand" to="/" aria-label="Go to LeamJobs welcome page" tabIndex={isOpen ? 0 : -1}>
-          <span className="dashboard-menu__mark">LJ</span>
-          <div className="dashboard-menu__brand-copy">
-            <strong>LeamJobs</strong>
-            <span>Career menu</span>
-          </div>
-        </Link>
+        <Logo className="dashboard-menu__brand" tagline="Career menu" />
       </div>
 
       {navItems ? (

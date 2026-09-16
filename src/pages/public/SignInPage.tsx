@@ -23,7 +23,7 @@ const authContent = {
     emailPlaceholder: 'you@example.com',
     submitLabel: 'Sign in',
     forgotPath: '/forgot-password',
-    switchText: 'New to LearnJobs?',
+    switchText: 'New to LeamJobs?',
     switchLink: 'Create an account',
     switchPath: '/register',
     dashboardPath: '/seeker/dashboard',
@@ -43,7 +43,7 @@ const authContent = {
     emailPlaceholder: 'hiring@company.com',
     submitLabel: 'Sign in to hiring',
     forgotPath: '/forgot-password',
-    switchText: 'Hiring on LearnJobs?',
+    switchText: 'Hiring on LeamJobs?',
     switchLink: 'Create employer account',
     switchPath: '/employers/register',
     dashboardPath: '/employer/dashboard',
@@ -121,7 +121,7 @@ function SignInPage({ role = 'seeker' }: SignInPageProps) {
             <span className="auth-brand-card__eyebrow">{content.eyebrow}</span>
             <h1 id="signin-title">{content.title}</h1>
             <p>{content.description}</p>
-            <div className="auth-metrics" aria-label="LearnJobs platform metrics">
+            <div className="auth-metrics" aria-label="LeamJobs platform metrics">
               {content.metrics.map((metric) => (
                 <div key={metric.label}>
                   <strong>{metric.value}</strong>

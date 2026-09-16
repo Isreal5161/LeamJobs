@@ -5,8 +5,8 @@
   background: #f8fafc;
   overflow-x: hidden;
   --seeker-hero: #f8fbff;
-  --seeker-accent: #0e4ae1;
-  --seeker-accent-hover: #0b3bcb;
+  --seeker-accent: var(--brand-primary-active);
+  --seeker-accent-hover: var(--brand-primary-hover);
   --seeker-text: #172033;
   --seeker-muted: #64748b;
   --seeker-border: #dbe3ee;
@@ -37,7 +37,6 @@
 
 .dashboard-topbar__brand,
 .dashboard-topbar__toggle,
-.dashboard-topbar__mark,
 .dashboard-topbar__notification-button,
 .dashboard-topbar__notification-mark-all,
 .dashboard-topbar__notification-view-all,
@@ -609,32 +608,10 @@
   text-decoration: none;
 }
 
-.dashboard-topbar__mark {
-  width: 42px;
-  height: 42px;
-  flex: 0 0 auto;
-  border-radius: 8px;
-  background: #0e4ae1;
-  color: #ffffff;
-  font-weight: 900;
-  letter-spacing: 0;
-}
-
-.dashboard-topbar__copy {
-  display: grid;
-  min-width: 0;
-}
-
-.dashboard-topbar__copy strong {
-  color: #0f172a;
-  line-height: 1.1;
-}
-
-.dashboard-topbar__copy span {
-  margin-top: 0.22rem;
-  color: #64748b;
-  font-size: 0.82rem;
-  font-weight: 700;
+.dashboard-topbar__brand .site-logo__tagline,
+.dashboard-menu__brand .site-logo__tagline {
+  margin-left: 0.1rem;
+  white-space: nowrap;
 }
 
 .dashboard-topbar__toggle {
@@ -861,7 +838,6 @@
     font-size: 0.85rem;
   }
 
-  .dashboard-topbar--dashboard .dashboard-topbar__copy span,
   .dashboard-topbar--dashboard .account-menu__name {
     display: none;
   }
@@ -901,41 +877,12 @@
   transition: opacity 0.18s ease, transform 0.18s ease;
 }
 
-.dashboard-menu__mark,
 .dashboard-menu__icon,
 .dashboard-menu__toggle {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   flex: 0 0 auto;
-}
-
-.dashboard-menu__mark {
-  width: 42px;
-  height: 42px;
-  border-radius: 8px;
-  background: #0e4ae1;
-  color: #ffffff;
-  font-weight: 900;
-  letter-spacing: 0;
-}
-
-.dashboard-menu__brand-copy {
-  display: grid;
-  min-width: 0;
-}
-
-.dashboard-menu__brand-copy strong {
-  color: #0f172a;
-  font-size: 1rem;
-  line-height: 1.1;
-}
-
-.dashboard-menu__brand-copy span {
-  margin-top: 0.25rem;
-  color: #64748b;
-  font-size: 0.82rem;
-  font-weight: 700;
 }
 
 .dashboard-menu__toggle {

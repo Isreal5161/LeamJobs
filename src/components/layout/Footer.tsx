@@ -1,6 +1,7 @@
 import { FormEvent, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { subscribeToJobUpdates } from '../../services/api';
+import Logo from './Logo';
 
 type FooterProps = {
   /** 'compact' is the short authenticated seeker/employer footer; default is the full public footer. */
@@ -43,10 +44,7 @@ function Footer({ variant = 'full' }: FooterProps) {
     <footer className="site-footer">
       <div className="container site-footer__inner">
         <div className="site-footer__brand">
-          <Link to="/" className="site-footer__logo">
-            <span className="site-logo__mark">LJ</span>
-            <span>LearnJobs</span>
-          </Link>
+          <Logo className="site-footer__logo" />
           <p>Modern hiring tools for job seekers and companies building better teams.</p>
         </div>
 

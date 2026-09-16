@@ -1,10 +1,10 @@
 :root {
-  --dashboard-primary: var(--primary, #0e4ae1);
-  --dashboard-primary-hover: var(--primary-hover, #0b3bcb);
-  --dashboard-primary-light: var(--primary-light, #eff5ff);
-  --dashboard-secondary: var(--secondary, #c2410c);
-  --dashboard-secondary-hover: var(--secondary-hover, #9a3412);
-  --dashboard-secondary-light: var(--secondary-light, #fff7ed);
+  --dashboard-primary: var(--primary, #bf3826);
+  --dashboard-primary-hover: var(--primary-hover, #d9432d);
+  --dashboard-primary-light: var(--primary-light, #fff7f5);
+  --dashboard-secondary: var(--secondary, #322f6a);
+  --dashboard-secondary-hover: var(--secondary-hover, #282554);
+  --dashboard-secondary-light: var(--secondary-light, #f0effa);
 }
 
 .seeker-layout,
@@ -13,14 +13,14 @@
   --dashboard-control-radius: 10px;
 }
 
-.seeker-layout .dashboard-topbar__mark,
-.employer-layout .dashboard-topbar__mark,
-.admin-layout .dashboard-topbar__mark,
-.seeker-layout .dashboard-menu__mark,
-.employer-layout .dashboard-menu__mark,
-.admin-layout .dashboard-menu__mark {
-  background: var(--dashboard-primary);
-  box-shadow: inset 0 -3px 0 var(--dashboard-secondary);
+.seeker-layout .dashboard-topbar__brand .site-logo__image,
+.employer-layout .dashboard-topbar__brand .site-logo__image,
+.admin-layout .dashboard-topbar__brand .site-logo__image,
+.seeker-layout .dashboard-menu__brand .site-logo__image,
+.employer-layout .dashboard-menu__brand .site-logo__image,
+.admin-layout .dashboard-menu__brand .site-logo__image {
+  height: 42px;
+  max-width: 150px;
 }
 
 .seeker-layout .dashboard-topbar__toggle,
@@ -142,7 +142,7 @@
 .admin-layout select:focus,
 .admin-layout textarea:focus {
   border-color: var(--dashboard-primary);
-  box-shadow: 0 0 0 3px rgba(14, 74, 225, 0.12);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--dashboard-primary) 18%, transparent);
   outline: none;
 }
 

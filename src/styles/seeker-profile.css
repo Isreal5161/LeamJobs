@@ -1449,6 +1449,8 @@
   .seeker-step-actions {
     align-items: stretch;
     flex-direction: column;
+    margin-right: 0.9rem;
+    margin-left: 0.9rem;
   }
 
   .seeker-step-actions__left,

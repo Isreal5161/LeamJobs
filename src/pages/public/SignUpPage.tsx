@@ -16,7 +16,7 @@ const authContent = {
     previewMeta: 'Remote-ready profile 86% complete',
     steps: ['Create your profile', 'Get matched with relevant jobs', 'Apply with confidence'],
     headingLabel: 'Create account',
-    heading: 'Join LearnJobs',
+    heading: 'Join LeamJobs',
     nameLabel: 'Full name',
     namePlaceholder: 'Alex Morgan',
     emailLabel: 'Email address',

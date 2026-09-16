@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth, type AuthRole } from '../../context/AuthContext';
 import { getSeekerProfile } from '../../services/api';
+import Logo from '../layout/Logo';
 
 type ProtectedRouteProps = {
   children: JSX.Element;
@@ -65,10 +66,7 @@ function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) {
   if (isLoading) {
     return (
       <div className="auth-loading" role="status" aria-live="polite" aria-label="Loading LeamJobs">
-        <div className="auth-loading__brand site-logo" aria-hidden="true">
-          <span className="site-logo__mark">LJ</span>
-          <span className="site-logo__text">LeamJobs</span>
-        </div>
+        <Logo className="auth-loading__brand" />
         <span className="leamjobs-spinner leamjobs-spinner--accent leamjobs-spinner--lg" aria-hidden="true" />
       </div>
     );
