@@ -1805,6 +1805,7 @@ input:focus-visible,
 
 @media (max-width: 767px) {
   .seeker-layout__shell {
+    width: 100%;
     padding: 1rem 0 1.5rem;
   }
 
