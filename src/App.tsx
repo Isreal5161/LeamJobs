@@ -83,7 +83,7 @@ function App() {
             <Route path="jobs/:jobId" element={<JobDetailsPage />} />
             <Route path="*" element={<NotFoundPage />} />
           </Route>
-          <Route path="/admin/login" element={<AdminLoginPage />} />
+          <Route path="/Leamjobs2026admin/login" element={<AdminLoginPage />} />
           <Route path="/seeker" element={<ProtectedRoute allowedRoles={['SEEKER']}><SeekerLayout /></ProtectedRoute>}>
             <Route index element={<Navigate to="dashboard" replace />} />
             <Route path="dashboard" element={<Homepage />} />

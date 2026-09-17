@@ -12,7 +12,7 @@ type ProtectedRouteProps = {
 const ROLE_LOGIN_PATH: Record<AuthRole, string> = {
   SEEKER: '/login',
   EMPLOYER: '/employers/login',
-  ADMIN: '/admin/login',
+  ADMIN: '/Leamjobs2026admin/login',
 };
 
 const ROLE_DASHBOARD_PATH: Record<AuthRole, string> = {
@@ -74,7 +74,7 @@ function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) {
 
   if (!user) {
     const loginPath = location.pathname.startsWith('/admin')
-      ? '/admin/login'
+      ? ROLE_LOGIN_PATH.ADMIN
       : location.pathname.startsWith('/employer')
         ? '/employers/login'
         : '/login';
