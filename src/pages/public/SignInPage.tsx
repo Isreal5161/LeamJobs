@@ -78,7 +78,7 @@ function SignInPage({ role = 'seeker' }: SignInPageProps) {
     setIsSubmitting(true);
 
     try {
-      const user = await login(email, password);
+      const user = await login(email, password, role === 'employer' ? 'EMPLOYER' : 'SEEKER');
 
       if (!user.role) {
         setError('Your account could not be loaded. Please try again.');

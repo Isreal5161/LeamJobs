@@ -21,9 +21,11 @@ import { useAuth } from '../../context/AuthContext';
 import {
   closeEmployerJob,
   createEmployerJob,
+  getEmployerVerification,
   getEmployerJobs,
   updateEmployerJob,
   type EmployerJob,
+  type EmployerVerificationStatus,
 } from '../../services/api';
 
 const departments = [
@@ -91,6 +93,7 @@ function EmployerJobsPage() {
   const [query, setQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<(typeof statusFilters)[number]>('All posts');
   const [isLoading, setIsLoading] = useState(true);
+  const [verificationStatus, setVerificationStatus] = useState<EmployerVerificationStatus>('PENDING');
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState('');
   const [submitFeedback, setSubmitFeedback] = useState<{ tone: 'success' | 'error'; message: string } | null>(null);
@@ -105,16 +108,20 @@ function EmployerJobsPage() {
     setIsLoading(true);
     setError('');
 
-    void getEmployerJobs(token).then((result) => {
+    void Promise.all([getEmployerJobs(token), getEmployerVerification(token)]).then(([jobsResult, verificationResult]) => {
       if (!active) return;
 
-      if (!result.ok) {
-        setError(result.error.message || 'We could not load your jobs.');
+      if (!jobsResult.ok) {
+        setError(jobsResult.error.message || 'We could not load your jobs.');
         setIsLoading(false);
         return;
       }
 
-      const nextJobs = result.data.data.jobs;
+      if (verificationResult.ok) {
+        setVerificationStatus(verificationResult.data.data.verification.status ?? 'PENDING');
+      }
+
+      const nextJobs = jobsResult.data.data.jobs;
       setJobs(nextJobs);
       setSelectedJobId('');
       setIsCreating(false);
@@ -179,6 +186,11 @@ function EmployerJobsPage() {
   };
 
   const startCreating = () => {
+    if (verificationStatus !== 'APPROVED') {
+      setSubmitFeedback({ tone: 'error', message: 'Company verification is required before you can post a job.' });
+      return;
+    }
+
     setIsCreating(true);
     setSelectedJobId('');
     setSubmitFeedback(null);
@@ -358,10 +370,19 @@ function EmployerJobsPage() {
           </div>
           <div className="employer-hero__actions">
             <button className="employer-button employer-button--light" type="button" onClick={startCreating}>
-              <FaPlus /> Post job
+              <FaPlus /> {verificationStatus === 'APPROVED' ? 'Post job' : 'Complete verification'}
             </button>
           </div>
         </div>
+        {verificationStatus !== 'APPROVED' ? (
+          <div className="employer-page-notice employer-page-notice--warning" role="status">
+            {verificationStatus === 'REJECTED'
+              ? 'Your verification needs attention before you can post jobs.'
+              : verificationStatus === 'PENDING'
+                ? 'Your company verification is under review. Job posting will unlock after approval.'
+                : 'Complete company verification before posting jobs.'}
+          </div>
+        ) : null}
       </section>
 
       <main className="employer-content employer-jobs-grid">

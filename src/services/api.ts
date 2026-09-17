@@ -214,12 +214,18 @@ export type EmployerProfile = {
   industry: string | null;
   companySize: string | null;
   location: string | null;
+  address: string | null;
+  state: string | null;
+  country: string | null;
+  linkedinUrl: string | null;
+  twitterUrl: string | null;
+  facebookUrl: string | null;
   companyLogoUrl: string | null;
 };
 
 export type EmployerProfileData = {
   profile: EmployerProfile | null;
-  account: { email: string };
+  account: { email: string; phone?: string | null };
 };
 
 export type EmployerProfileResponse = {
@@ -244,6 +250,13 @@ export type EmployerProfilePayload = {
   industry?: string | null;
   companySize?: string | null;
   location?: string | null;
+  address?: string | null;
+  state?: string | null;
+  country?: string | null;
+  linkedinUrl?: string | null;
+  twitterUrl?: string | null;
+  facebookUrl?: string | null;
+  phone?: string | null;
 };
 
 export type EmployerJob = {
@@ -1000,6 +1013,151 @@ export function updateEmployerProfile(payload: EmployerProfilePayload, token: st
 
 export function getEmployerJobs(token: string) {
   return request<EmployerJobsResponse>({ method: 'GET', endpoint: '/employer/jobs', token });
+}
+
+export type EmployerVerificationDocumentKind = 'CAC' | 'TRADE_LICENSE' | 'TAX_CERTIFICATE' | 'UTILITY_BILL' | 'IDENTITY_SUPPORTING' | 'OTHER';
+export type EmployerVerificationStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
+
+export type EmployerVerificationDocument = {
+  id: string;
+  kind: EmployerVerificationDocumentKind;
+  fileName: string;
+  contentType: string;
+  fileSize: number | null;
+  uploadedAt: string;
+};
+
+export type EmployerVerificationSummary = {
+  id: string;
+  userId: string;
+  status: EmployerVerificationStatus;
+  submittedAt: string | null;
+  reviewedAt: string | null;
+  reviewedById: string | null;
+  declineReason: string | null;
+  registrationNumber: string | null;
+  registrationType: 'CAC' | 'BN' | 'OTHER' | null;
+  employer: {
+    id: string;
+    email: string;
+    phone?: string | null;
+    firstName: string | null;
+    lastName: string | null;
+    company: {
+      companyName: string | null;
+      companyDescription: string | null;
+      website: string | null;
+      industry: string | null;
+      companySize: string | null;
+      location: string | null;
+      address: string | null;
+      state: string | null;
+      country: string | null;
+      linkedinUrl: string | null;
+      twitterUrl: string | null;
+      facebookUrl: string | null;
+      companyLogoUrl: string | null;
+    } | null;
+  } | null;
+  documents: EmployerVerificationDocument[];
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type EmployerVerificationResponse = {
+  success: true;
+  data: { verification: EmployerVerificationSummary };
+};
+
+export type EmployerVerificationSubmission = {
+  id: string;
+  status: EmployerVerificationStatus;
+  submittedAt: string | null;
+  reviewedAt: string | null;
+  declineReason: string | null;
+  employer: {
+    id: string;
+    email: string;
+    firstName: string | null;
+    lastName: string | null;
+    companyName: string | null;
+    company: Record<string, string | null> | null;
+  } | null;
+  documentCount: number;
+};
+
+export type EmployerVerificationSubmissionsResponse = {
+  success: true;
+  data: { verificationSubmissions: EmployerVerificationSubmission[] };
+};
+
+export function getEmployerVerification(token: string) {
+  return request<EmployerVerificationResponse>({ method: 'GET', endpoint: '/employer/verification', token });
+}
+
+export function submitEmployerVerification(payload: { registrationNumber: string; registrationType: 'CAC' | 'BN' | 'OTHER' }, token: string) {
+  return request<EmployerVerificationResponse>({ method: 'POST', endpoint: '/employer/verification', body: payload, token });
+}
+
+export function uploadEmployerVerificationDocument(file: File, kind: string, token: string) {
+  const body = new FormData();
+  body.append('file', file);
+  body.append('kind', kind);
+  return request<{ success: true; data: { document: EmployerVerificationDocument } }>({
+    method: 'POST',
+    endpoint: '/employer/verification/documents',
+    body,
+    token,
+  });
+}
+
+export async function getEmployerVerificationDocument(documentId: string, token: string): Promise<ApiResponse<Blob>> {
+  return getProtectedBlob(`/employer/verification/documents/${encodeURIComponent(documentId)}`, token, 'Verification document could not be loaded.');
+}
+
+export function deleteEmployerVerificationDocument(documentId: string, token: string) {
+  return request<{ success: true; data: { success: true } }>({
+    method: 'DELETE',
+    endpoint: `/employer/verification/documents/${encodeURIComponent(documentId)}`,
+    token,
+  });
+}
+
+export function getAdminVerificationSubmissions(token: string) {
+  return request<EmployerVerificationSubmissionsResponse>({
+    method: 'GET',
+    endpoint: '/admin/verification-submissions',
+    token,
+  });
+}
+
+export function getAdminVerificationSubmission(verificationId: string, token: string) {
+  return request<EmployerVerificationResponse>({
+    method: 'GET',
+    endpoint: `/admin/verification-submissions/${encodeURIComponent(verificationId)}`,
+    token,
+  });
+}
+
+export function approveAdminVerification(verificationId: string, token: string) {
+  return request<EmployerVerificationResponse>({
+    method: 'PATCH',
+    endpoint: `/admin/verification-submissions/${encodeURIComponent(verificationId)}/approve`,
+    token,
+  });
+}
+
+export function rejectAdminVerification(verificationId: string, reason: string, token: string) {
+  return request<EmployerVerificationResponse>({
+    method: 'PATCH',
+    endpoint: `/admin/verification-submissions/${encodeURIComponent(verificationId)}/reject`,
+    body: { reason },
+    token,
+  });
+}
+
+export async function getAdminVerificationDocument(documentId: string, token: string): Promise<ApiResponse<Blob>> {
+  return getProtectedBlob(`/admin/verification-documents/${encodeURIComponent(documentId)}`, token, 'Verification document could not be loaded.');
 }
 
 export function getEmployerCandidates(query: EmployerCandidatesQuery, token: string) {

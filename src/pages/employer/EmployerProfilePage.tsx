@@ -21,6 +21,13 @@ type ProfileForm = {
   industry: string;
   companySize: string;
   location: string;
+  address: string;
+  state: string;
+  country: string;
+  linkedinUrl: string;
+  twitterUrl: string;
+  facebookUrl: string;
+  phone: string;
 };
 
 type FormErrors = Partial<Record<keyof ProfileForm, string>>;
@@ -32,6 +39,13 @@ const emptyForm: ProfileForm = {
   industry: '',
   companySize: '',
   location: '',
+  address: '',
+  state: '',
+  country: '',
+  linkedinUrl: '',
+  twitterUrl: '',
+  facebookUrl: '',
+  phone: '',
 };
 
 const formFromProfile = (profile: EmployerProfile): ProfileForm => ({
@@ -41,6 +55,13 @@ const formFromProfile = (profile: EmployerProfile): ProfileForm => ({
   industry: profile.industry ?? '',
   companySize: profile.companySize ?? '',
   location: profile.location ?? '',
+  address: profile.address ?? '',
+  state: profile.state ?? '',
+  country: profile.country ?? '',
+  linkedinUrl: profile.linkedinUrl ?? '',
+  twitterUrl: profile.twitterUrl ?? '',
+  facebookUrl: profile.facebookUrl ?? '',
+  phone: '',
 });
 
 const initialsFor = (companyName: string) => companyName.trim().split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part[0]?.toUpperCase()).join('');
@@ -76,7 +97,7 @@ function EmployerProfilePage() {
         setError(result.error.message || 'We could not load your company profile.');
       } else {
         setEmail(result.data.data.account.email);
-        setForm(result.data.data.profile ? formFromProfile(result.data.data.profile) : emptyForm);
+        setForm(result.data.data.profile ? { ...formFromProfile(result.data.data.profile), phone: result.data.data.account.phone ?? '' } : { ...emptyForm, phone: result.data.data.account.phone ?? '' });
         if (result.data.data.profile?.companyLogoUrl) {
           const logoResult = await getEmployerProfileLogo(token);
           if (active && logoResult.ok) replaceLogoUrl(URL.createObjectURL(logoResult.data));
@@ -106,6 +127,10 @@ function EmployerProfilePage() {
     if (form.industry.trim().length > 120) errors.industry = 'Industry must be 120 characters or fewer.';
     if (form.companySize.trim().length > 100) errors.companySize = 'Company size must be 100 characters or fewer.';
     if (form.location.trim().length > 160) errors.location = 'Location must be 160 characters or fewer.';
+    if (form.address.trim().length > 240) errors.address = 'Company address must be 240 characters or fewer.';
+    if (form.state.trim().length > 120) errors.state = 'State must be 120 characters or fewer.';
+    if (form.country.trim().length > 120) errors.country = 'Country must be 120 characters or fewer.';
+    if (form.phone.trim().length > 40) errors.phone = 'Company phone must be 40 characters or fewer.';
     if (form.website.trim()) {
       try {
         new URL(form.website.trim());
@@ -130,6 +155,13 @@ function EmployerProfilePage() {
       industry: form.industry.trim() || null,
       companySize: form.companySize.trim() || null,
       location: form.location.trim() || null,
+      address: form.address.trim() || null,
+      state: form.state.trim() || null,
+      country: form.country.trim() || null,
+      linkedinUrl: form.linkedinUrl.trim() || null,
+      twitterUrl: form.twitterUrl.trim() || null,
+      facebookUrl: form.facebookUrl.trim() || null,
+      phone: form.phone.trim() || null,
     };
     const result = await updateEmployerProfile(payload, token);
     if (!result.ok) {
@@ -139,7 +171,7 @@ function EmployerProfilePage() {
       if (!savedProfile) {
         setError('The saved company profile was not returned.');
       } else {
-        setForm(formFromProfile(savedProfile));
+        setForm({ ...formFromProfile(savedProfile), phone: result.data.data.account.phone ?? '' });
         setEmail(result.data.data.account.email);
         setSaveMessage('Company profile saved.');
       }
@@ -277,9 +309,13 @@ function EmployerProfilePage() {
             {error ? <p className="employer-action-error" role="alert">{error}</p> : null}
             {saveMessage ? <p className="employer-profile-success" role="status">{saveMessage}</p> : null}
             <label><span>Company name</span><input required maxLength={160} type="text" value={form.companyName} onChange={(event) => setField('companyName', event.target.value)} aria-invalid={Boolean(fieldErrors.companyName)} placeholder="Your company name" />{fieldErrors.companyName ? <small role="alert">{fieldErrors.companyName}</small> : null}</label>
-            <label><span>Company email <small>(account email, read-only)</small></span><input type="email" value={email} readOnly aria-readonly="true" /></label>
+            <div className="employer-form__split"><label><span>Company email <small>(account email, read-only)</small></span><input type="email" value={email} readOnly aria-readonly="true" /></label><label><span>Company phone</span><input type="tel" maxLength={40} value={form.phone} onChange={(event) => setField('phone', event.target.value)} aria-invalid={Boolean(fieldErrors.phone)} placeholder="+234..." />{fieldErrors.phone ? <small role="alert">{fieldErrors.phone}</small> : null}</label></div>
             <div className="employer-form__split"><label><span>Website</span><input type="url" value={form.website} onChange={(event) => setField('website', event.target.value)} aria-invalid={Boolean(fieldErrors.website)} placeholder="https://example.com" />{fieldErrors.website ? <small role="alert">{fieldErrors.website}</small> : null}</label><label><span>Industry</span><input type="text" maxLength={120} value={form.industry} onChange={(event) => setField('industry', event.target.value)} aria-invalid={Boolean(fieldErrors.industry)} placeholder="Industry" />{fieldErrors.industry ? <small role="alert">{fieldErrors.industry}</small> : null}</label></div>
             <div className="employer-form__split"><label><span>Company size</span><input type="text" maxLength={100} value={form.companySize} onChange={(event) => setField('companySize', event.target.value)} aria-invalid={Boolean(fieldErrors.companySize)} placeholder="e.g. 11-50 employees" />{fieldErrors.companySize ? <small role="alert">{fieldErrors.companySize}</small> : null}</label><label><span>Location</span><input type="text" maxLength={160} value={form.location} onChange={(event) => setField('location', event.target.value)} aria-invalid={Boolean(fieldErrors.location)} placeholder="City, country" />{fieldErrors.location ? <small role="alert">{fieldErrors.location}</small> : null}</label></div>
+            <label><span>Company address</span><input type="text" maxLength={240} value={form.address} onChange={(event) => setField('address', event.target.value)} aria-invalid={Boolean(fieldErrors.address)} placeholder="Street address" />{fieldErrors.address ? <small role="alert">{fieldErrors.address}</small> : null}</label>
+            <div className="employer-form__split"><label><span>State</span><input type="text" maxLength={120} value={form.state} onChange={(event) => setField('state', event.target.value)} aria-invalid={Boolean(fieldErrors.state)} placeholder="State or region" />{fieldErrors.state ? <small role="alert">{fieldErrors.state}</small> : null}</label><label><span>Country</span><input type="text" maxLength={120} value={form.country} onChange={(event) => setField('country', event.target.value)} aria-invalid={Boolean(fieldErrors.country)} placeholder="Country" />{fieldErrors.country ? <small role="alert">{fieldErrors.country}</small> : null}</label></div>
+            <div className="employer-form__split"><label><span>LinkedIn</span><input type="url" value={form.linkedinUrl} onChange={(event) => setField('linkedinUrl', event.target.value)} placeholder="https://linkedin.com/company/..." /></label><label><span>X / Twitter</span><input type="url" value={form.twitterUrl} onChange={(event) => setField('twitterUrl', event.target.value)} placeholder="https://x.com/..." /></label></div>
+            <label><span>Facebook</span><input type="url" value={form.facebookUrl} onChange={(event) => setField('facebookUrl', event.target.value)} placeholder="https://facebook.com/..." /></label>
             <label><span>Company description</span><textarea maxLength={5000} rows={6} value={form.companyDescription} onChange={(event) => setField('companyDescription', event.target.value)} aria-invalid={Boolean(fieldErrors.companyDescription)} placeholder="Describe your company for candidates." />{fieldErrors.companyDescription ? <small role="alert">{fieldErrors.companyDescription}</small> : null}</label>
             <div className="employer-editor-actions"><button className="employer-button employer-button--primary" type="submit" disabled={isSaving}><FaRegSave /> {isSaving ? 'Saving...' : 'Save profile'}</button></div>
           </form>

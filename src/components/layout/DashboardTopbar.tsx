@@ -49,6 +49,7 @@ const accountNav: Record<'seeker' | 'employer' | 'admin', { label: string; to: s
   ],
   employer: [
     { label: 'Company Profile', to: '/employer/profile' },
+    { label: 'Verification', to: '/employer/verification' },
   ],
   admin: [
     { label: 'Page Content', to: '/admin/content' },
@@ -56,6 +57,7 @@ const accountNav: Record<'seeker' | 'employer' | 'admin', { label: string; to: s
     { label: 'Recommendations', to: '/admin/recommendations' },
     { label: 'Payments', to: '/admin/payments' },
     { label: 'Subscriptions', to: '/admin/subscriptions' },
+    { label: 'Verifications', to: '/admin/verifications' },
   ],
 };
 

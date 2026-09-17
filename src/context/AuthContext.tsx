@@ -20,7 +20,7 @@ type AuthContextValue = {
   token: string | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  login: (email: string, password: string) => Promise<AuthUser>;
+  login: (email: string, password: string, requestedRole?: AuthRole) => Promise<AuthUser>;
   logout: () => void;
 };
 
@@ -77,13 +77,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return result.data;
   }, [clearSession]);
 
-  const login = useCallback(async (email: string, password: string) => {
+  const login = useCallback(async (email: string, password: string, requestedRole?: AuthRole) => {
     const result = await request<{ token: string; user: AuthUser }>({
       method: 'POST',
       endpoint: '/auth/login',
       body: {
         email: email.trim(),
         password,
+        ...(requestedRole ? { role: requestedRole } : {}),
       },
     });
 

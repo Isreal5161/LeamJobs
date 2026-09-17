@@ -12,6 +12,27 @@ type NormalizeErrorInput = {
 
 const technicalMessagePattern = /(failed to fetch|network error|network request|prisma|sql|database|stack trace|\bat\s+\w+\s+\(|internal server|endpoint|api\/?|axios|fetch\(|timeout|timed out|econn|enotfound|socket|syntaxerror|typeerror)/i;
 const safeBusinessMessagePattern = /(already applied|already closed|already exists|insufficient|exceeds|balance|not enough|invalid|expired|does not match|cannot be|can't|must be|is required|is unavailable|not available|not found|permission|unauthorized|forbidden|withdrawal amount|pending invitation)/i;
+const safeVerificationMessages = new Set([
+  'Your company verification is already under review.',
+  'Your company is already verified.',
+  'Your company verification was declined. Please review the reason and resubmit.',
+  'Company verification is required before you can post a job.',
+  'Your company verification is currently under review.',
+  'Complete your company profile before submitting verification',
+  'CAC, BN, or business registration number is required',
+  'A valid registration type is required',
+  'A valid verification document type is required',
+  'A document file is required',
+  'Verification documents must be 10 MB or smaller',
+  'The uploaded document is empty',
+  'Unsupported document type. Please upload a PDF, JPG, PNG, or WEBP image.',
+  'The uploaded file name is invalid',
+  'Documents cannot be changed while verification is being reviewed.',
+  'Your verification changed while it was being submitted. Please review the current status and try again.',
+  'This verification document could not be saved because it was submitted more than once.',
+  'This verification has not been submitted for review.',
+  'This verification was already reviewed.',
+]);
 
 const contextForEndpoint = (endpoint: string): UserFacingErrorContext => {
   const normalized = endpoint.toLowerCase();
@@ -35,7 +56,7 @@ const isSafeMessage = (message: string) => {
   return normalized.length > 0
     && normalized.length <= 240
     && !technicalMessagePattern.test(normalized)
-    && safeBusinessMessagePattern.test(normalized);
+    && (safeBusinessMessagePattern.test(normalized) || safeVerificationMessages.has(normalized));
 };
 
 const safeFieldErrors = (details: unknown) => {
@@ -62,6 +83,9 @@ export const normalizeApiError = ({ status = 0, message, code, details, context 
   }
 
   if (status === 401) return { message: 'Your session has expired. Please sign in again.', code: code ?? 'UNAUTHORIZED', fieldErrors };
+  if (['ROLE_MISMATCH', 'EMPLOYER_NOT_VERIFIED', 'VERIFICATION_STATE_CONFLICT'].includes(String(code)) && isSafeMessage(rawMessage)) {
+    return { message: rawMessage, code: code ?? 'FORBIDDEN', fieldErrors };
+  }
   if (status === 403) return { message: "You don't have permission to perform this action.", code: code ?? 'FORBIDDEN', fieldErrors };
   if (status === 404) return { message: "We couldn't find what you're looking for.", code: code ?? 'NOT_FOUND', fieldErrors };
   if (status === 408 || /timed out|timeout/i.test(rawMessage)) return { message: 'The request took too long to complete. Please try again.', code: code ?? 'TIMEOUT', fieldErrors };

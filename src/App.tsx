@@ -24,6 +24,7 @@ import EmployerJobsPage from './pages/employer/EmployerJobsPage';
 import EmployerApplicantsPage from './pages/employer/EmployerApplicantsPage';
 import EmployerCandidatesPage from './pages/employer/EmployerCandidatesPage';
 import EmployerProfilePage from './pages/employer/EmployerProfilePage';
+import EmployerVerificationPage from './pages/employer/EmployerVerificationPage';
 import MessagesPage from './pages/messages/MessagesPage';
 import AdminDashboardPage from './pages/admin/AdminDashboardPage';
 import AdminOverviewPage from './pages/admin/AdminOverviewPage';
@@ -53,6 +54,7 @@ import SettingsPage from './pages/settings/EmailPreferencesPage';
 import PublicJobUpdatesUnsubscribePage from './pages/public/PublicJobUpdatesUnsubscribePage';
 import MarketingUnsubscribePage from './pages/public/MarketingUnsubscribePage';
 import AdminCommunicationsPage from './pages/admin/AdminCommunicationsPage';
+import AdminVerificationPage from './pages/admin/AdminVerificationPage';
 
 function App() {
   return (
@@ -106,6 +108,7 @@ function App() {
             <Route path="contracts/:contractId" element={<ContractPage role="EMPLOYER" />} />
             <Route path="messages" element={<MessagesPage role="employer" />} />
             <Route path="profile" element={<EmployerProfilePage />} />
+            <Route path="verification" element={<EmployerVerificationPage />} />
             <Route path="notifications" element={<NotificationsPage role="employer" />} />
             <Route path="settings" element={<SettingsPage role="employer" />} />
           </Route>
@@ -126,6 +129,7 @@ function App() {
             <Route path="analytics" element={<AdminAnalyticsPage />} />
             <Route path="payments" element={<AdminPaymentsPage />} />
             <Route path="subscriptions" element={<AdminSubscriptionsPage />} />
+            <Route path="verifications" element={<AdminVerificationPage />} />
             <Route path="notifications" element={<NotificationsPage role="admin" />} />
             <Route path="communications" element={<AdminCommunicationsPage />} />
             <Route path="settings" element={<SettingsPage role="admin" />} />
