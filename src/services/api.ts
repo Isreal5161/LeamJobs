@@ -1037,6 +1037,21 @@ export type EmployerVerificationSummary = {
   declineReason: string | null;
   registrationNumber: string | null;
   registrationType: 'CAC' | 'BN' | 'OTHER' | null;
+  submittedCompany: {
+    companyName: string | null;
+    companyDescription: string | null;
+    website: string | null;
+    industry: string | null;
+    companySize: string | null;
+    location: string | null;
+    address: string | null;
+    state: string | null;
+    country: string | null;
+    linkedinUrl: string | null;
+    twitterUrl: string | null;
+    facebookUrl: string | null;
+  } | null;
+  submittedCompanySource: 'SUBMITTED' | 'LEGACY_PROFILE_FALLBACK' | 'NONE';
   employer: {
     id: string;
     email: string;
@@ -1075,6 +1090,8 @@ export type EmployerVerificationSubmission = {
   submittedAt: string | null;
   reviewedAt: string | null;
   declineReason: string | null;
+  submittedCompany: EmployerVerificationSummary['submittedCompany'];
+  submittedCompanySource: EmployerVerificationSummary['submittedCompanySource'];
   employer: {
     id: string;
     email: string;
@@ -1095,7 +1112,7 @@ export function getEmployerVerification(token: string) {
   return request<EmployerVerificationResponse>({ method: 'GET', endpoint: '/employer/verification', token });
 }
 
-export function submitEmployerVerification(payload: { registrationNumber: string; registrationType: 'CAC' | 'BN' | 'OTHER' }, token: string) {
+export function submitEmployerVerification(payload: { registrationNumber: string; registrationType: 'CAC' | 'BN' | 'OTHER'; company: EmployerVerificationSummary['submittedCompany'] }, token: string) {
   return request<EmployerVerificationResponse>({ method: 'POST', endpoint: '/employer/verification', body: payload, token });
 }
 

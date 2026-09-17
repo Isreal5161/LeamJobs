@@ -9,6 +9,7 @@ import {
   uploadEmployerVerificationDocument,
   type EmployerVerificationDocumentKind,
   type EmployerVerificationStatus,
+  type EmployerVerificationSummary,
 } from '../../services/api';
 
 const docKinds: { value: EmployerVerificationDocumentKind; label: string }[] = [
@@ -28,6 +29,11 @@ const statusMeta: Record<EmployerVerificationStatus, { label: string; tone: 'war
 
 const formatDate = (value: string | null) => (value ? new Intl.DateTimeFormat(undefined, { dateStyle: 'medium' }).format(new Date(value)) : 'Not available');
 
+type CompanyForm = NonNullable<EmployerVerificationSummary['submittedCompany']>;
+const emptyCompany: CompanyForm = {
+  companyName: '', companyDescription: '', website: '', industry: '', companySize: '', location: '', address: '', state: '', country: '', linkedinUrl: '', twitterUrl: '', facebookUrl: '',
+};
+
 function EmployerVerificationPage() {
   const { token } = useAuth();
   const [status, setStatus] = useState<EmployerVerificationStatus>('PENDING');
@@ -44,6 +50,7 @@ function EmployerVerificationPage() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [selectedKind, setSelectedKind] = useState<EmployerVerificationDocumentKind>('CAC');
+  const [company, setCompany] = useState<CompanyForm>(emptyCompany);
 
   const loadVerification = async () => {
     if (!token) {
@@ -68,6 +75,7 @@ function EmployerVerificationPage() {
     setRegistrationNumber(verification.registrationNumber ?? '');
     setRegistrationType(verification.registrationType ?? 'CAC');
     setDocuments(verification.documents ?? []);
+    setCompany(verification.submittedCompany ?? emptyCompany);
     setIsLoading(false);
   };
 
@@ -129,7 +137,7 @@ function EmployerVerificationPage() {
     setIsSubmitting(true);
     setError('');
     setSuccess('');
-    const result = await submitEmployerVerification({ registrationNumber: registrationNumber.trim(), registrationType }, token);
+    const result = await submitEmployerVerification({ registrationNumber: registrationNumber.trim(), registrationType, company }, token);
     if (!result.ok) {
       setError(result.error.message || 'We could not submit your verification request.');
     } else {
@@ -226,6 +234,12 @@ function EmployerVerificationPage() {
 
           <div className="employer-verification-upload">
             <div className="employer-verification-field-grid">
+              <label htmlFor="verification-company-name">Company name
+                <input id="verification-company-name" type="text" maxLength={160} value={company.companyName ?? ''} onChange={(event) => setCompany((current) => ({ ...current, companyName: event.target.value }))} disabled={!canEditDocuments} placeholder="Registered company name" />
+              </label>
+              <label htmlFor="verification-industry">Industry
+                <input id="verification-industry" type="text" maxLength={120} value={company.industry ?? ''} onChange={(event) => setCompany((current) => ({ ...current, industry: event.target.value }))} disabled={!canEditDocuments} placeholder="e.g. Digital technology" />
+              </label>
               <label htmlFor="registration-type">Registration type
                 <select id="registration-type" value={registrationType} onChange={(event) => setRegistrationType(event.target.value as 'CAC' | 'BN' | 'OTHER')} disabled={!canEditDocuments}>
                   <option value="CAC">CAC</option>
@@ -236,6 +250,16 @@ function EmployerVerificationPage() {
               <label htmlFor="registration-number">Registration number
                 <input id="registration-number" type="text" maxLength={120} value={registrationNumber} onChange={(event) => setRegistrationNumber(event.target.value)} disabled={!canEditDocuments} placeholder="CAC or BN registration number" />
               </label>
+            </div>
+            <label htmlFor="verification-description">About the company
+              <textarea id="verification-description" rows={4} maxLength={5000} value={company.companyDescription ?? ''} onChange={(event) => setCompany((current) => ({ ...current, companyDescription: event.target.value }))} disabled={!canEditDocuments} placeholder="Describe what your company does" />
+            </label>
+            <div className="employer-verification-field-grid">
+              {(['website', 'linkedinUrl', 'twitterUrl', 'facebookUrl', 'companySize', 'location', 'address', 'state', 'country'] as const).map((field) => (
+                <label key={field} htmlFor={`verification-${field}`}>{field === 'linkedinUrl' ? 'LinkedIn URL' : field === 'twitterUrl' ? 'X / Twitter URL' : field === 'facebookUrl' ? 'Facebook URL' : field.replace(/([A-Z])/g, ' $1').replace(/^./, (character) => character.toUpperCase())}
+                  <input id={`verification-${field}`} type="text" value={company[field] ?? ''} onChange={(event) => setCompany((current) => ({ ...current, [field]: event.target.value }))} disabled={!canEditDocuments} />
+                </label>
+              ))}
             </div>
             <div className="employer-verification-upload__heading">
               <div>

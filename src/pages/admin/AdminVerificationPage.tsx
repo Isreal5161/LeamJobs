@@ -15,6 +15,7 @@ import {
   rejectAdminVerification,
   type EmployerVerificationDocument,
   type EmployerVerificationStatus,
+  type EmployerVerificationSummary,
 } from '../../services/api';
 
 const statusMeta: Record<EmployerVerificationStatus, { label: string; tone: 'warning' | 'success' | 'danger' | 'neutral'; icon: typeof FaClock }> = {
@@ -25,7 +26,7 @@ const statusMeta: Record<EmployerVerificationStatus, { label: string; tone: 'war
 
 function AdminVerificationPage() {
   const { token } = useAuth();
-  const [list, setList] = useState<Array<{ id: string; status: EmployerVerificationStatus; submittedAt: string | null; reviewedAt: string | null; declineReason: string | null; employer: { id: string; email: string; firstName: string | null; lastName: string | null; companyName: string | null } | null; documentCount: number }>>([]);
+  const [list, setList] = useState<Array<{ id: string; status: EmployerVerificationStatus; submittedAt: string | null; reviewedAt: string | null; declineReason: string | null; submittedCompany: EmployerVerificationSummary['submittedCompany']; submittedCompanySource: EmployerVerificationSummary['submittedCompanySource']; employer: { id: string; email: string; firstName: string | null; lastName: string | null; companyName: string | null } | null; documentCount: number }>>([]);
   const [selectedId, setSelectedId] = useState<string>('');
   const [selectedVerification, setSelectedVerification] = useState<null | {
     id: string;
@@ -34,6 +35,8 @@ function AdminVerificationPage() {
     declineReason: string | null;
     registrationNumber: string | null;
     registrationType: 'CAC' | 'BN' | 'OTHER' | null;
+    submittedCompany: EmployerVerificationSummary['submittedCompany'];
+    submittedCompanySource: EmployerVerificationSummary['submittedCompanySource'];
     documents: EmployerVerificationDocument[];
     employer: { id: string; email: string; phone?: string | null; firstName: string | null; lastName: string | null; company: { companyName: string | null; companyDescription: string | null; website: string | null; industry: string | null; companySize: string | null; location: string | null; address: string | null; state: string | null; country: string | null; linkedinUrl: string | null; twitterUrl: string | null; facebookUrl: string | null; companyLogoUrl: string | null } | null } | null;
   }>(null);
@@ -142,6 +145,9 @@ function AdminVerificationPage() {
   };
 
   const selectedStatusMeta = useMemo(() => selectedVerification ? statusMeta[selectedVerification.status] : statusMeta.PENDING, [selectedVerification]);
+  const canDecide = selectedVerification?.status === 'PENDING';
+  const companyForReview = selectedVerification?.submittedCompany
+    ?? (selectedVerification?.submittedCompanySource === 'LEGACY_PROFILE_FALLBACK' ? selectedVerification.employer?.company : null);
 
   if (isLoading) {
     return <div className="admin-page admin-empty-state"><strong>Loading verification queue…</strong></div>;
@@ -173,7 +179,8 @@ function AdminVerificationPage() {
                 onClick={() => setSelectedId(item.id)}
               >
                 <div>
-                  <strong>{item.employer?.companyName || 'Company not set'}</strong>
+                  <strong>{item.submittedCompany?.companyName || (item.submittedCompanySource === 'LEGACY_PROFILE_FALLBACK' ? item.employer?.companyName : null) || 'Company not set'}</strong>
+                  {item.submittedCompanySource === 'LEGACY_PROFILE_FALLBACK' ? <small>Legacy profile data</small> : null}
                   <small>{item.employer ? `${item.employer.firstName ?? ''} ${item.employer.lastName ?? ''}`.trim() || item.employer.email : item.id}</small>
                 </div>
                 <span className={`admin-pill admin-pill--${statusMeta[item.status].tone}`}>{statusMeta[item.status].label}</span>
@@ -192,8 +199,9 @@ function AdminVerificationPage() {
             <>
               <div className="admin-review-header">
                 <div>
-                  <span className="admin-eyebrow">Submission</span>
-                  <h2>{selectedVerification.employer?.company?.companyName || selectedVerification.employer?.email || 'Employer verification'}</h2>
+                  <span className="admin-eyebrow">Submitted for verification</span>
+                  <h2>{companyForReview?.companyName || selectedVerification.employer?.email || 'Employer verification'}</h2>
+                  <p className="admin-review-header__meta">{selectedVerification.employer?.email || 'No employer email'} · {selectedVerification.registrationType || 'Registration'} {selectedVerification.registrationNumber || 'number not provided'}</p>
                 </div>
                 <span className={`admin-pill admin-pill--${selectedStatusMeta.tone}`}>
                   <selectedStatusMeta.icon />
@@ -202,25 +210,30 @@ function AdminVerificationPage() {
               </div>
 
               <div className="admin-review-grid">
-                <div>
-                  <p><strong>Contact:</strong> {selectedVerification.employer?.email || 'Unknown'}</p>
-                  <p><strong>Phone:</strong> {selectedVerification.employer?.phone || 'Not provided'}</p>
-                  <p><strong>Company:</strong> {selectedVerification.employer?.company?.companyName || 'Not provided'}</p>
-                  <p><strong>Registration:</strong> {selectedVerification.registrationType || 'Not provided'} {selectedVerification.registrationNumber || ''}</p>
-                  <p><strong>Website:</strong> {selectedVerification.employer?.company?.website || 'Not provided'}</p>
-                  <p><strong>Location:</strong> {selectedVerification.employer?.company?.location || 'Not provided'}</p>
-                  <p><strong>Address:</strong> {selectedVerification.employer?.company?.address || 'Not provided'}</p>
-                  <p><strong>State / country:</strong> {[selectedVerification.employer?.company?.state, selectedVerification.employer?.company?.country].filter(Boolean).join(', ') || 'Not provided'}</p>
-                </div>
-                <div>
-                  <p><strong>Industry:</strong> {selectedVerification.employer?.company?.industry || 'Not provided'}</p>
-                  <p><strong>Company size:</strong> {selectedVerification.employer?.company?.companySize || 'Not provided'}</p>
-                  <p><strong>Description:</strong> {selectedVerification.employer?.company?.companyDescription || 'Not provided'}</p>
-                  <p><strong>Social links:</strong> {[selectedVerification.employer?.company?.linkedinUrl, selectedVerification.employer?.company?.twitterUrl, selectedVerification.employer?.company?.facebookUrl].filter(Boolean).join(', ') || 'Not provided'}</p>
-                </div>
+                <section className="admin-review-section">
+                  <h3>Submitted company details</h3>
+                  <dl className="admin-review-facts">
+                    <div><dt>Contact</dt><dd>{selectedVerification.employer?.email || 'Unknown'}</dd></div>
+                    <div><dt>Phone</dt><dd>{selectedVerification.employer?.phone || 'Not provided'}</dd></div>
+                    <div><dt>Website</dt><dd>{companyForReview?.website || 'Not provided'}</dd></div>
+                    <div><dt>Location</dt><dd>{companyForReview?.location || 'Not provided'}</dd></div>
+                    <div><dt>Address</dt><dd>{companyForReview?.address || 'Not provided'}</dd></div>
+                    <div><dt>State / country</dt><dd>{[companyForReview?.state, companyForReview?.country].filter(Boolean).join(', ') || 'Not provided'}</dd></div>
+                  </dl>
+                </section>
+                <section className="admin-review-section">
+                  <h3>Submitted business profile</h3>
+                  <dl className="admin-review-facts">
+                    <div><dt>Industry</dt><dd>{companyForReview?.industry || 'Not provided'}</dd></div>
+                    <div><dt>Company size</dt><dd>{companyForReview?.companySize || 'Not provided'}</dd></div>
+                  </dl>
+                  <p className="admin-review-description">{companyForReview?.companyDescription || 'No company description provided.'}</p>
+                  {selectedVerification.submittedCompanySource !== 'SUBMITTED' ? <p className="admin-review-header__meta">Legacy record: company details are from the current public profile because no submitted snapshot was stored.</p> : null}
+                </section>
               </div>
 
-              <div className="admin-verification-docs">
+              <section className="admin-review-section admin-verification-docs">
+                <div className="admin-review-section__heading"><div><h3>Submitted documents</h3><p>Open each document to verify the employer details.</p></div><span>{selectedVerification.documents.length} attached</span></div>
                 {selectedVerification.documents.length === 0 ? (
                   <div className="admin-empty-state admin-empty-state--compact"><FaFileAlt /><p>No documents attached.</p></div>
                 ) : (
@@ -234,9 +247,10 @@ function AdminVerificationPage() {
                     </article>
                   ))
                 )}
-              </div>
+              </section>
 
-              <div className="admin-review-action-block">
+              <div className={`admin-review-action-block ${!canDecide ? 'admin-review-action-block--closed' : ''}`}>
+                <div className="admin-review-section__heading"><div><h3>Decision</h3><p>{canDecide ? 'Approve this submission or reject it with a clear reason.' : `This submission is already ${selectedStatusMeta.label.toLowerCase()}.`}</p></div></div>
                 <label htmlFor="verification-rejection-reason">Rejection reason</label>
                 <textarea
                   id="verification-rejection-reason"
@@ -244,12 +258,13 @@ function AdminVerificationPage() {
                   value={decisionReason}
                   onChange={(event) => setDecisionReason(event.target.value)}
                   placeholder="Required only when rejecting a submission"
+                  disabled={!canDecide || isSubmitting}
                 />
                 <div className="admin-review-actions">
-                  <button type="button" className="admin-review-action admin-review-action--approve" disabled={isSubmitting} onClick={() => void handleApprove()}>
+                  <button type="button" className="admin-review-action admin-review-action--approve" disabled={!canDecide || isSubmitting} onClick={() => void handleApprove()}>
                     {isSubmitting ? 'Processing…' : 'Approve'}
                   </button>
-                  <button type="button" className="admin-review-action admin-review-action--reject" disabled={isSubmitting} onClick={() => void handleReject()}>
+                  <button type="button" className="admin-review-action admin-review-action--reject" disabled={!canDecide || isSubmitting} onClick={() => void handleReject()}>
                     Reject
                   </button>
                 </div>
