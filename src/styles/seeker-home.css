@@ -833,20 +833,39 @@
     padding: 0.55rem 0.65rem;
   }
 
-  .seeker-layout .dashboard-topbar__brand,
-  .employer-layout .dashboard-topbar__brand {
+  .seeker-layout .dashboard-topbar.dashboard-topbar--dashboard .dashboard-topbar__brand,
+  .employer-layout .dashboard-topbar.dashboard-topbar--dashboard .dashboard-topbar__brand {
     flex: 1 1 auto;
     min-width: 0;
   }
 
-  .seeker-layout .dashboard-topbar__brand .site-logo__image,
-  .employer-layout .dashboard-topbar__brand .site-logo__image {
+  .seeker-layout .dashboard-topbar.dashboard-topbar--dashboard .dashboard-topbar__brand .site-logo__image,
+  .employer-layout .dashboard-topbar.dashboard-topbar--dashboard .dashboard-topbar__brand .site-logo__image {
     max-width: 8.5rem;
   }
 
   .seeker-layout .dashboard-topbar__brand .site-logo__tagline,
   .employer-layout .dashboard-topbar__brand .site-logo__tagline {
-    display: none;
+    display: grid;
+    margin-left: 0;
+    color: #64748b;
+    font-size: 0.65rem;
+    line-height: 1.1;
+    white-space: nowrap;
+  }
+
+  .seeker-layout .dashboard-topbar__brand,
+  .employer-layout .dashboard-topbar__brand {
+    flex: 0 1 auto;
+    gap: 0.45rem;
+    max-width: calc(100% - 6.5rem);
+  }
+
+  .seeker-layout .dashboard-topbar__brand .site-logo__image,
+  .employer-layout .dashboard-topbar__brand .site-logo__image {
+    width: auto;
+    height: 36px;
+    max-width: 7.5rem;
   }
 
   .seeker-layout .dashboard-topbar__utility,
