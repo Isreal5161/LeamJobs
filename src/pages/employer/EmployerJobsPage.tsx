@@ -1,4 +1,5 @@
 ﻿import { FormEvent, useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   FaCalendarAlt,
   FaCheckCircle,
@@ -86,6 +87,7 @@ const focusField = (fieldId: string) => {
 
 function EmployerJobsPage() {
   const { token } = useAuth();
+  const navigate = useNavigate();
   const [jobs, setJobs] = useState<EmployerJob[]>([]);
   const [selectedJobId, setSelectedJobId] = useState('');
   const [isCreating, setIsCreating] = useState(false);
@@ -196,6 +198,10 @@ function EmployerJobsPage() {
     setSubmitFeedback(null);
     setValidationErrors({});
     setForm({ ...emptyJobForm, requirements: [''], responsibilities: [''], skills: [''], benefits: [] });
+  };
+
+  const openVerification = () => {
+    navigate('/employer/verification');
   };
 
   const cancelEditing = () => {
@@ -368,11 +374,13 @@ function EmployerJobsPage() {
             <h1>Manage open positions</h1>
             <p>Create, update, and monitor your real job posts.</p>
           </div>
-          <div className="employer-hero__actions">
-            <button className="employer-button employer-button--light" type="button" onClick={startCreating}>
-              <FaPlus /> {verificationStatus === 'APPROVED' ? 'Post job' : 'Complete verification'}
-            </button>
-          </div>
+          {verificationStatus !== 'APPROVED' ? (
+            <div className="employer-hero__actions">
+              <button className="employer-button employer-button--light" type="button" onClick={openVerification}>
+                <FaPlus /> Complete verification
+              </button>
+            </div>
+          ) : null}
         </div>
         {verificationStatus !== 'APPROVED' ? (
           <div className="employer-page-notice employer-page-notice--warning" role="status">

@@ -225,27 +225,40 @@ function EmployerVerificationPage() {
           ) : null}
 
           <div className="employer-verification-upload">
-            <label htmlFor="registration-type">Registration type</label>
-            <select id="registration-type" value={registrationType} onChange={(event) => setRegistrationType(event.target.value as 'CAC' | 'BN' | 'OTHER')} disabled={!canEditDocuments}>
-              <option value="CAC">CAC</option>
-              <option value="BN">Business name (BN)</option>
-              <option value="OTHER">Other registration</option>
-            </select>
-            <label htmlFor="registration-number">Registration number</label>
-            <input id="registration-number" type="text" maxLength={120} value={registrationNumber} onChange={(event) => setRegistrationNumber(event.target.value)} disabled={!canEditDocuments} placeholder="CAC or BN registration number" />
-            <label htmlFor="verification-kind">Document type</label>
-            <select id="verification-kind" value={selectedKind} onChange={(event) => setSelectedKind(event.target.value as EmployerVerificationDocumentKind)} disabled={!canEditDocuments}>
-              {docKinds.map((kind) => (
-                <option key={kind.value} value={kind.value}>{kind.label}</option>
-              ))}
-            </select>
-
-            <label className="employer-upload-button" htmlFor="verification-file-input" aria-disabled={!canEditDocuments}>
-              <FaUpload />
-              Upload document
-            </label>
-            <input id="verification-file-input" type="file" accept=".pdf,.png,.jpg,.jpeg,.webp" onChange={handleUpload} disabled={isUploading || !canEditDocuments} />
-            <small>Accepted: PDF, JPG, PNG, WEBP. Max size 10 MB.</small>
+            <div className="employer-verification-field-grid">
+              <label htmlFor="registration-type">Registration type
+                <select id="registration-type" value={registrationType} onChange={(event) => setRegistrationType(event.target.value as 'CAC' | 'BN' | 'OTHER')} disabled={!canEditDocuments}>
+                  <option value="CAC">CAC</option>
+                  <option value="BN">Business name (BN)</option>
+                  <option value="OTHER">Other registration</option>
+                </select>
+              </label>
+              <label htmlFor="registration-number">Registration number
+                <input id="registration-number" type="text" maxLength={120} value={registrationNumber} onChange={(event) => setRegistrationNumber(event.target.value)} disabled={!canEditDocuments} placeholder="CAC or BN registration number" />
+              </label>
+            </div>
+            <div className="employer-verification-upload__heading">
+              <div>
+                <strong>Supporting document</strong>
+                <small>Upload a clear document that matches your registration details.</small>
+              </div>
+              <FaFileAlt aria-hidden="true" />
+            </div>
+            <div className="employer-verification-upload__controls">
+              <label htmlFor="verification-kind">Document type
+                <select id="verification-kind" value={selectedKind} onChange={(event) => setSelectedKind(event.target.value as EmployerVerificationDocumentKind)} disabled={!canEditDocuments}>
+                  {docKinds.map((kind) => (
+                    <option key={kind.value} value={kind.value}>{kind.label}</option>
+                  ))}
+                </select>
+              </label>
+              <label className="employer-upload-button" htmlFor="verification-file-input" aria-disabled={!canEditDocuments}>
+                <FaUpload />
+                {isUploading ? 'Uploading...' : 'Choose document'}
+              </label>
+              <input id="verification-file-input" type="file" accept=".pdf,.png,.jpg,.jpeg,.webp" onChange={handleUpload} disabled={isUploading || !canEditDocuments} />
+            </div>
+            <small className="employer-verification-upload__hint">Accepted: PDF, JPG, PNG, or WEBP. Maximum size 10 MB.</small>
           </div>
 
           <div className="employer-verification-docs">
