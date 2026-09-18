@@ -38,7 +38,7 @@ function AdminVerificationPage() {
     submittedCompany: EmployerVerificationSummary['submittedCompany'];
     submittedCompanySource: EmployerVerificationSummary['submittedCompanySource'];
     documents: EmployerVerificationDocument[];
-    employer: { id: string; email: string; phone?: string | null; firstName: string | null; lastName: string | null; company: { companyName: string | null; companyDescription: string | null; website: string | null; industry: string | null; companySize: string | null; location: string | null; address: string | null; state: string | null; country: string | null; linkedinUrl: string | null; twitterUrl: string | null; facebookUrl: string | null; companyLogoUrl: string | null } | null } | null;
+    employer: { id: string; email: string; phone?: string | null; firstName: string | null; lastName: string | null; company: { companyName: string | null; companyDescription: string | null; website: string | null; industry: string | null; companySize: string | null; phoneNumber: string | null; location: string | null; address: string | null; state: string | null; country: string | null; linkedinUrl: string | null; twitterUrl: string | null; facebookUrl: string | null; companyLogoUrl: string | null } | null } | null;
   }>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isDetailLoading, setIsDetailLoading] = useState(false);
@@ -214,7 +214,7 @@ function AdminVerificationPage() {
                   <h3>Submitted company details</h3>
                   <dl className="admin-review-facts">
                     <div><dt>Contact</dt><dd>{selectedVerification.employer?.email || 'Unknown'}</dd></div>
-                    <div><dt>Phone</dt><dd>{selectedVerification.employer?.phone || 'Not provided'}</dd></div>
+                    <div><dt>Phone</dt><dd>{companyForReview?.phoneNumber || selectedVerification.employer?.phone || 'Not provided'}</dd></div>
                     <div><dt>Website</dt><dd>{companyForReview?.website || 'Not provided'}</dd></div>
                     <div><dt>Location</dt><dd>{companyForReview?.location || 'Not provided'}</dd></div>
                     <div><dt>Address</dt><dd>{companyForReview?.address || 'Not provided'}</dd></div>

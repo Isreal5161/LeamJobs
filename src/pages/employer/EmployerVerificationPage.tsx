@@ -32,7 +32,7 @@ const formatDate = (value: string | null) => (value ? new Intl.DateTimeFormat(un
 
 type CompanyForm = NonNullable<EmployerVerificationSummary['submittedCompany']>;
 const emptyCompany: CompanyForm = {
-  companyName: '', companyDescription: '', website: '', industry: '', companySize: '', location: '', address: '', state: '', country: '', linkedinUrl: '', twitterUrl: '', facebookUrl: '',
+  companyName: '', companyDescription: '', website: '', industry: '', companySize: '', phoneNumber: '', location: '', address: '', state: '', country: '', linkedinUrl: '', twitterUrl: '', facebookUrl: '',
 };
 
 type VerificationDraft = {
@@ -287,8 +287,8 @@ function EmployerVerificationPage() {
               <textarea id="verification-description" rows={4} maxLength={5000} value={company.companyDescription ?? ''} onChange={(event) => setCompany((current) => ({ ...current, companyDescription: event.target.value }))} disabled={!canEditDocuments} placeholder="Describe what your company does" />
             </label>
             <div className="employer-verification-field-grid">
-              {(['website', 'linkedinUrl', 'twitterUrl', 'facebookUrl', 'companySize', 'location', 'address', 'state', 'country'] as const).map((field) => (
-                <label key={field} htmlFor={`verification-${field}`}>{field === 'linkedinUrl' ? 'LinkedIn URL' : field === 'twitterUrl' ? 'X / Twitter URL' : field === 'facebookUrl' ? 'Facebook URL' : field.replace(/([A-Z])/g, ' $1').replace(/^./, (character) => character.toUpperCase())}
+              {(['website', 'linkedinUrl', 'twitterUrl', 'facebookUrl', 'companySize', 'phoneNumber', 'address', 'state', 'country'] as const).map((field) => (
+                <label key={field} htmlFor={`verification-${field}`}>{field === 'linkedinUrl' ? 'LinkedIn URL' : field === 'twitterUrl' ? 'X / Twitter URL' : field === 'facebookUrl' ? 'Facebook URL' : field === 'phoneNumber' ? 'Phone number' : field.replace(/([A-Z])/g, ' $1').replace(/^./, (character) => character.toUpperCase())}
                   <input id={`verification-${field}`} type="text" value={company[field] ?? ''} onChange={(event) => setCompany((current) => ({ ...current, [field]: event.target.value }))} disabled={!canEditDocuments} />
                 </label>
               ))}

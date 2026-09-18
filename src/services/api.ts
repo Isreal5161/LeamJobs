@@ -1043,6 +1043,7 @@ export type EmployerVerificationSummary = {
     website: string | null;
     industry: string | null;
     companySize: string | null;
+    phoneNumber: string | null;
     location: string | null;
     address: string | null;
     state: string | null;
@@ -1064,6 +1065,7 @@ export type EmployerVerificationSummary = {
       website: string | null;
       industry: string | null;
       companySize: string | null;
+      phoneNumber: string | null;
       location: string | null;
       address: string | null;
       state: string | null;
