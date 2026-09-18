@@ -35,6 +35,12 @@ const emptyCompany: CompanyForm = {
   companyName: '', companyDescription: '', website: '', industry: '', companySize: '', location: '', address: '', state: '', country: '', linkedinUrl: '', twitterUrl: '', facebookUrl: '',
 };
 
+type VerificationDraft = {
+  registrationNumber: string;
+  registrationType: 'CAC' | 'BN' | 'OTHER';
+  company: CompanyForm;
+};
+
 function EmployerVerificationPage() {
   const { token } = useAuth();
   const navigate = useNavigate();
@@ -54,7 +60,7 @@ function EmployerVerificationPage() {
   const [selectedKind, setSelectedKind] = useState<EmployerVerificationDocumentKind>('CAC');
   const [company, setCompany] = useState<CompanyForm>(emptyCompany);
 
-  const loadVerification = async () => {
+  const loadVerification = async (draft?: VerificationDraft) => {
     if (!token) {
       setIsLoading(false);
       return;
@@ -74,10 +80,10 @@ function EmployerVerificationPage() {
     setSubmittedAt(verification.submittedAt ?? null);
     setReviewedAt(verification.reviewedAt ?? null);
     setDeclineReason(verification.declineReason ?? null);
-    setRegistrationNumber(verification.registrationNumber ?? '');
-    setRegistrationType(verification.registrationType ?? 'CAC');
+    setRegistrationNumber(draft?.registrationNumber ?? verification.registrationNumber ?? '');
+    setRegistrationType(draft?.registrationType ?? verification.registrationType ?? 'CAC');
     setDocuments(verification.documents ?? []);
-    setCompany(verification.submittedCompany ?? emptyCompany);
+    setCompany(draft?.company ?? verification.submittedCompany ?? emptyCompany);
     setIsLoading(false);
   };
 
@@ -102,13 +108,14 @@ function EmployerVerificationPage() {
     setIsUploading(true);
     setError('');
     setSuccess('');
+    const draft: VerificationDraft = { registrationNumber, registrationType, company };
 
     const result = await uploadEmployerVerificationDocument(file, selectedKind, token);
     if (!result.ok) {
       setError(result.error.message || 'We could not upload this document.');
     } else {
       setSuccess('Document uploaded successfully.');
-      await loadVerification();
+      await loadVerification(draft);
     }
 
     setIsUploading(false);
@@ -120,12 +127,13 @@ function EmployerVerificationPage() {
     setIsDeleting(documentId);
     setError('');
     setSuccess('');
+    const draft: VerificationDraft = { registrationNumber, registrationType, company };
     const result = await deleteEmployerVerificationDocument(documentId, token);
     if (!result.ok) {
       setError(result.error.message || 'This document could not be removed.');
     } else {
       setSuccess('Document removed.');
-      await loadVerification();
+      await loadVerification(draft);
     }
     setIsDeleting(null);
   };
