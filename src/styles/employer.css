@@ -1620,6 +1620,67 @@
   font-size: 0.9rem;
 }
 
+.employer-verification-approved {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  margin-top: 1rem;
+  padding: 1.1rem;
+  border: 1px solid #b7e3c5;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #f0fdf4 0%, #ffffff 100%);
+}
+
+.employer-verification-approved__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: #dcfce7;
+  color: #16803c;
+  font-size: 1.35rem;
+}
+
+.employer-verification-approved__content {
+  display: grid;
+  gap: 0.45rem;
+  min-width: 0;
+}
+
+.employer-verification-approved__eyebrow {
+  color: #16803c;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.employer-verification-approved h2,
+.employer-verification-approved p {
+  margin: 0;
+}
+
+.employer-verification-approved h2 {
+  color: #0f172a;
+  font-size: 1.2rem;
+  line-height: 1.25;
+}
+
+.employer-verification-approved p {
+  max-width: 620px;
+  color: #475569;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.employer-verification-approved .employer-button {
+  justify-self: start;
+  margin-top: 0.35rem;
+}
+
 .employer-verification-upload {
   display: grid;
   gap: 1rem;
@@ -1912,6 +1973,14 @@
 
   .employer-verification-doc__actions .employer-button {
     flex: 1;
+  }
+
+  .employer-verification-approved {
+    flex-direction: column;
+  }
+
+  .employer-verification-approved .employer-button {
+    width: 100%;
   }
 
   .employer-job-row {

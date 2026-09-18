@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState, type ChangeEvent } from 'react';
-import { FaCheckCircle, FaClock, FaExclamationTriangle, FaFileAlt, FaTimesCircle, FaUpload } from 'react-icons/fa';
+import { FaBriefcase, FaCheckCircle, FaClock, FaExclamationTriangle, FaFileAlt, FaTimesCircle, FaUpload } from 'react-icons/fa';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import {
   deleteEmployerVerificationDocument,
@@ -36,6 +37,7 @@ const emptyCompany: CompanyForm = {
 
 function EmployerVerificationPage() {
   const { token } = useAuth();
+  const navigate = useNavigate();
   const [status, setStatus] = useState<EmployerVerificationStatus>('PENDING');
   const [submittedAt, setSubmittedAt] = useState<string | null>(null);
   const [reviewedAt, setReviewedAt] = useState<string | null>(null);
@@ -222,6 +224,22 @@ function EmployerVerificationPage() {
             </div>
           </div>
 
+          {status === 'APPROVED' ? (
+            <div className="employer-verification-approved" role="status">
+              <div className="employer-verification-approved__icon" aria-hidden="true">
+                <FaCheckCircle />
+              </div>
+              <div className="employer-verification-approved__content">
+                <span className="employer-verification-approved__eyebrow">Verified company</span>
+                <h2>Your company is already verified</h2>
+                <p>Your company has been approved by LeamJobs. You can now post opportunities and start hiring.</p>
+                <button type="button" className="employer-button employer-button--primary" onClick={() => navigate('/employer/jobs')}>
+                  <FaBriefcase /> Post a job and start hiring
+                </button>
+              </div>
+            </div>
+          ) : null}
+
           {declineReason ? (
             <div className="employer-verification-alert">
               <FaExclamationTriangle />
@@ -232,7 +250,7 @@ function EmployerVerificationPage() {
             </div>
           ) : null}
 
-          <div className="employer-verification-upload">
+          {status !== 'APPROVED' ? <div className="employer-verification-upload">
             <div className="employer-verification-field-grid">
               <label htmlFor="verification-company-name">Company name
                 <input id="verification-company-name" type="text" maxLength={160} value={company.companyName ?? ''} onChange={(event) => setCompany((current) => ({ ...current, companyName: event.target.value }))} disabled={!canEditDocuments} placeholder="Registered company name" />
@@ -283,9 +301,9 @@ function EmployerVerificationPage() {
               <input id="verification-file-input" type="file" accept=".pdf,.png,.jpg,.jpeg,.webp" onChange={handleUpload} disabled={isUploading || !canEditDocuments} />
             </div>
             <small className="employer-verification-upload__hint">Accepted: PDF, JPG, PNG, or WEBP. Maximum size 10 MB.</small>
-          </div>
+          </div> : null}
 
-          <div className="employer-verification-docs">
+          {status !== 'APPROVED' ? <div className="employer-verification-docs">
             {documents.length === 0 ? (
               <div className="employer-empty-state employer-empty-state--compact">
                 <FaFileAlt />
@@ -308,10 +326,10 @@ function EmployerVerificationPage() {
                 </article>
               ))
             )}
-          </div>
+          </div> : null}
         </section>
 
-        <aside className="employer-panel employer-verification-aside">
+        {status !== 'APPROVED' ? <aside className="employer-panel employer-verification-aside">
           <h2>Next steps</h2>
           <ul>
             <li>Upload clear company registration or identity documents.</li>
@@ -327,7 +345,7 @@ function EmployerVerificationPage() {
           >
             {isSubmitting ? 'Submitting…' : status === 'REJECTED' ? 'Resubmit for review' : 'Submit for review'}
           </button>
-        </aside>
+        </aside> : null}
       </main>
     </div>
   );
