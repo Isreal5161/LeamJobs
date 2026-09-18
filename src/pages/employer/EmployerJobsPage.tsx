@@ -96,6 +96,7 @@ function EmployerJobsPage() {
   const [statusFilter, setStatusFilter] = useState<(typeof statusFilters)[number]>('All posts');
   const [isLoading, setIsLoading] = useState(true);
   const [verificationStatus, setVerificationStatus] = useState<EmployerVerificationStatus>('PENDING');
+  const [verificationSubmittedAt, setVerificationSubmittedAt] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState('');
   const [submitFeedback, setSubmitFeedback] = useState<{ tone: 'success' | 'error'; message: string } | null>(null);
@@ -121,7 +122,9 @@ function EmployerJobsPage() {
       }
 
       if (verificationResult.ok) {
-        setVerificationStatus(verificationResult.data.data.verification.status ?? 'PENDING');
+        const verification = verificationResult.data.data.verification;
+        setVerificationStatus(verification.status ?? 'PENDING');
+        setVerificationSubmittedAt(verification.submittedAt ?? null);
       }
 
       const nextJobs = jobsResult.data.data.jobs;
@@ -393,7 +396,7 @@ function EmployerJobsPage() {
             <p>
               {verificationStatus === 'REJECTED'
                 ? 'Review the feedback, update your information or documents, and resubmit your company for review.'
-                : 'Complete your company verification so employers can trust your business and you can unlock job posting.'}
+                : 'Verify your company so employers can trust your business and you can unlock job posting.'}
             </p>
             <ul>
               <li>Tell us about your company and how people can reach you.</li>
@@ -430,9 +433,9 @@ function EmployerJobsPage() {
           <div className="employer-page-notice employer-page-notice--warning" role="status">
             {verificationStatus === 'REJECTED'
               ? 'Your verification needs attention before you can post jobs.'
-              : verificationStatus === 'PENDING'
+              : verificationStatus === 'PENDING' && verificationSubmittedAt
                 ? 'Your company verification is under review. Job posting will unlock after approval.'
-                : 'Complete company verification before posting jobs.'}
+                : 'Your company needs to be verified before you can post jobs.'}
           </div>
         ) : null}
       </section>
