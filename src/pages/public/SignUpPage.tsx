@@ -105,6 +105,11 @@ function SignUpPage({ role = 'seeker' }: SignUpPageProps) {
     setErrors((current) => ({ ...current, [field]: '' }));
   };
 
+  const handleGoogleSignup = async () => {
+    const targetRole = roleValues[role];
+    window.location.href = `${import.meta.env.VITE_API_BASE_URL ?? 'https://leamjobs.com/api'}/auth/google/start?role=${encodeURIComponent(targetRole)}`;
+  };
+
   const submitRegistration = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
@@ -207,7 +212,7 @@ function SignUpPage({ role = 'seeker' }: SignUpPageProps) {
             <h2>{content.heading}</h2>
           </div>
 
-          <button type="button" className="auth-social-button auth-social-button--full">
+          <button type="button" className="auth-social-button auth-social-button--full" onClick={handleGoogleSignup}>
             <FaGoogle />
             Continue with Google
           </button>
