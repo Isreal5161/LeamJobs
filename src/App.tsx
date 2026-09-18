@@ -12,6 +12,7 @@ import WelcomePage from './pages/public/WelcomePage';
 import NotFoundPage from './pages/public/NotFoundPage';
 import SignInPage from './pages/public/SignInPage';
 import SignUpPage from './pages/public/SignUpPage';
+import VerifyEmailPage from './pages/public/VerifyEmailPage';
 import JobDetailsPage from './pages/public/JobDetailsPage';
 import Homepage from './pages/seeker/Homepage';
 import JobsPage from './pages/seeker/JobsPage';
@@ -76,10 +77,12 @@ function App() {
             <Route path="signin" element={<Navigate to="/login" replace />} />
             <Route path="register" element={<SignUpPage />} />
             <Route path="signup" element={<Navigate to="/register" replace />} />
+            <Route path="verify-email" element={<VerifyEmailPage />} />
             <Route path="employers/login" element={<SignInPage role="employer" />} />
             <Route path="employers/signin" element={<Navigate to="/employers/login" replace />} />
             <Route path="employers/register" element={<SignUpPage role="employer" />} />
             <Route path="employers/signup" element={<Navigate to="/employers/register" replace />} />
+            <Route path="employers/verify-email" element={<VerifyEmailPage role="employer" />} />
             <Route path="jobs/:jobId" element={<JobDetailsPage />} />
             <Route path="*" element={<NotFoundPage />} />
           </Route>

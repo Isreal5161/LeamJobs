@@ -1266,6 +1266,22 @@ export function requestPasswordReset(email: string) {
   return request<{ message: string }>({ method: 'POST', endpoint: '/auth/forgot-password', body: { email } });
 }
 
+export function verifyEmailCode(email: string, code: string) {
+  return request<{ success: true; message: string; user: { id: string; email: string; firstName: string; lastName: string; isVerified: boolean; isActive: boolean } }>({
+    method: 'POST',
+    endpoint: '/auth/verify-email',
+    body: { email, code },
+  });
+}
+
+export function resendEmailVerification(email: string) {
+  return request<{ success: true; message: string }>({
+    method: 'POST',
+    endpoint: '/auth/verify-email/resend',
+    body: { email },
+  });
+}
+
 export function resetPassword(token: string, password: string) {
   return request<{ message: string }>({ method: 'POST', endpoint: '/auth/reset-password', body: { token, password } });
 }

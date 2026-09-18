@@ -1,5 +1,5 @@
 import { FormEvent, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import Button from '../../components/common/Button';
 import Input from '../../components/common/Input';
 import { request } from '../../services/api';
@@ -84,10 +84,11 @@ const getPasswordError = (password: string) => {
 
 function SignUpPage({ role = 'seeker' }: SignUpPageProps) {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const content = authContent[role];
   const [form, setForm] = useState<RegistrationForm>({
     fullName: '',
-    email: '',
+    email: searchParams.get('email')?.trim() ?? '',
     companyName: '',
     phone: '',
     password: '',
@@ -98,12 +99,10 @@ function SignUpPage({ role = 'seeker' }: SignUpPageProps) {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [errors, setErrors] = useState<RegistrationErrors>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [successMessage, setSuccessMessage] = useState('');
 
   const setField = <Field extends keyof RegistrationForm>(field: Field, value: RegistrationForm[Field]) => {
     setForm((current) => ({ ...current, [field]: value }));
     setErrors((current) => ({ ...current, [field]: '' }));
-    setSuccessMessage('');
   };
 
   const submitRegistration = async (event: FormEvent<HTMLFormElement>) => {
@@ -148,7 +147,9 @@ function SignUpPage({ role = 'seeker' }: SignUpPageProps) {
     setIsSubmitting(false);
 
     if (result.ok) {
-      setSuccessMessage('Your account was created successfully. Continue to login to access your account.');
+      const nextPath = role === 'employer' ? '/employers/verify-email' : '/verify-email';
+      const email = encodeURIComponent(form.email.trim());
+      navigate(`${nextPath}?email=${email}`, { replace: true });
       return;
     }
 
@@ -216,7 +217,6 @@ function SignUpPage({ role = 'seeker' }: SignUpPageProps) {
           </div>
 
           {errors.form ? <p role="alert">{errors.form}</p> : null}
-          {successMessage ? <p role="status">{successMessage}</p> : null}
 
           <form className="auth-form" onSubmit={submitRegistration} noValidate>
             <label className="auth-field">
@@ -347,14 +347,9 @@ function SignUpPage({ role = 'seeker' }: SignUpPageProps) {
             </label>
             {errors.terms ? <small role="alert">{errors.terms}</small> : null}
 
-            <Button type="submit" variant="primary" fullWidth className="auth-submit" disabled={isSubmitting || Boolean(successMessage)}>
+            <Button type="submit" variant="primary" fullWidth className="auth-submit" disabled={isSubmitting}>
               {isSubmitting ? 'Creating account...' : content.submitLabel}
             </Button>
-            {successMessage ? (
-              <Button type="button" variant="secondary" fullWidth onClick={() => navigate(content.switchPath)}>
-                Continue to login
-              </Button>
-            ) : null}
           </form>
 
           <p className="auth-switch">
