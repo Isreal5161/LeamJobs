@@ -156,7 +156,7 @@ function Homepage() {
       </form>
 
       <div className="seeker-home__content">
-        <section className="seeker-card seeker-progress" aria-labelledby="profile-completion-heading">
+        <section className="seeker-card seeker-progress seeker-home__panel seeker-home__panel--progress" aria-labelledby="profile-completion-heading">
           <div className="seeker-section-heading">
             <div>
               <p className="seeker-card__label">Overview</p>
@@ -176,7 +176,7 @@ function Homepage() {
           </div>
         </section>
 
-        <section className="seeker-card seeker-cv" aria-labelledby="cv-header">
+        <section className="seeker-card seeker-cv seeker-home__panel seeker-home__panel--cv" aria-labelledby="cv-header">
           <div className="seeker-section-heading">
             <div>
               <p className="seeker-card__label">Profile</p>
@@ -212,7 +212,7 @@ function Homepage() {
           )}
         </section>
 
-        <section className="seeker-card seeker-stats" aria-label="Application overview">
+        <section className="seeker-card seeker-stats seeker-home__panel seeker-home__panel--stats" aria-label="Application overview">
           {isLoading ? (
             <>
               {renderSkeletonCard('seeker-stats__skeleton')}
@@ -227,7 +227,7 @@ function Homepage() {
           ))}
         </section>
 
-        <section className="seeker-card seeker-portfolio" aria-labelledby="recent-applications-heading">
+        <section className="seeker-card seeker-portfolio seeker-home__panel seeker-home__panel--activity" aria-labelledby="recent-applications-heading">
           <div className="seeker-section-heading">
             <div>
               <p className="seeker-card__label">Activity</p>
@@ -269,7 +269,7 @@ function Homepage() {
           )}
         </section>
 
-        <section className="seeker-card seeker-recommendations seeker-jobs-page" aria-labelledby="approved-jobs-heading">
+        <section className="seeker-card seeker-recommendations seeker-jobs-page seeker-home__panel seeker-home__panel--jobs" aria-labelledby="approved-jobs-heading">
           <div className="seeker-section-heading">
             <div>
               <p className="seeker-card__label">Discover</p>
