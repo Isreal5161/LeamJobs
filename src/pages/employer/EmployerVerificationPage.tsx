@@ -91,7 +91,13 @@ function EmployerVerificationPage() {
     void loadVerification();
   }, [token]);
 
-  const statusInfo = useMemo(() => statusMeta[status] ?? statusMeta.PENDING, [status]);
+  const statusInfo = useMemo(() => {
+    if (status === 'PENDING' && !submittedAt) {
+      return { label: 'Unverified', tone: 'neutral' as const, icon: FaExclamationTriangle };
+    }
+
+    return statusMeta[status] ?? statusMeta.PENDING;
+  }, [status, submittedAt]);
 
   const handleUpload = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
