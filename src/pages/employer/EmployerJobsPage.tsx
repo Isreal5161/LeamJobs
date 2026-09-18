@@ -101,6 +101,7 @@ function EmployerJobsPage() {
   const [submitFeedback, setSubmitFeedback] = useState<{ tone: 'success' | 'error'; message: string } | null>(null);
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
   const [reloadKey, setReloadKey] = useState(0);
+  const [isVerificationWelcomeOpen, setIsVerificationWelcomeOpen] = useState(false);
 
   useEffect(() => {
     if (!token) return;
@@ -201,8 +202,19 @@ function EmployerJobsPage() {
   };
 
   const openVerification = () => {
-    navigate('/employer/verification');
+    setIsVerificationWelcomeOpen(true);
   };
+
+  useEffect(() => {
+    if (!isVerificationWelcomeOpen) return undefined;
+
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setIsVerificationWelcomeOpen(false);
+    };
+
+    window.addEventListener('keydown', handleEscape);
+    return () => window.removeEventListener('keydown', handleEscape);
+  }, [isVerificationWelcomeOpen]);
 
   const cancelEditing = () => {
     setIsCreating(false);
@@ -367,6 +379,38 @@ function EmployerJobsPage() {
 
   return (
     <div className="employer-page employer-jobs-page">
+      {isVerificationWelcomeOpen ? (
+        <div
+          className="employer-verification-welcome-backdrop"
+          role="presentation"
+          onMouseDown={(event) => { if (event.target === event.currentTarget) setIsVerificationWelcomeOpen(false); }}
+        >
+          <section className="employer-verification-welcome" role="dialog" aria-modal="true" aria-labelledby="employer-verification-welcome-title">
+            <div className="employer-verification-welcome__eyebrow">Welcome to LeamJobs</div>
+            <h2 id="employer-verification-welcome-title">
+              {verificationStatus === 'REJECTED' ? 'Let’s get your verification back on track' : 'Build trust with job seekers'}
+            </h2>
+            <p>
+              {verificationStatus === 'REJECTED'
+                ? 'Review the feedback, update your information or documents, and resubmit your company for review.'
+                : 'Complete your company verification so employers can trust your business and you can unlock job posting.'}
+            </p>
+            <ul>
+              <li>Tell us about your company and how people can reach you.</li>
+              <li>Upload the documents needed for a secure review.</li>
+              <li>Post jobs after your company is approved.</li>
+            </ul>
+            <div className="employer-verification-welcome__actions">
+              <button type="button" className="employer-button employer-button--ghost" onClick={() => setIsVerificationWelcomeOpen(false)}>
+                Maybe later
+              </button>
+              <button type="button" className="employer-button employer-button--primary" onClick={() => { setIsVerificationWelcomeOpen(false); navigate('/employer/verification'); }}>
+                Start verification <FaPlus />
+              </button>
+            </div>
+          </section>
+        </div>
+      ) : null}
       <section className="employer-hero employer-hero--compact">
         <div className="employer-hero__top">
           <div>
@@ -377,7 +421,7 @@ function EmployerJobsPage() {
           {verificationStatus !== 'APPROVED' ? (
             <div className="employer-hero__actions">
               <button className="employer-button employer-button--light" type="button" onClick={openVerification}>
-                <FaPlus /> Complete verification
+                <FaPlus /> {verificationStatus === 'REJECTED' ? 'Review verification' : 'Start verification'}
               </button>
             </div>
           ) : null}

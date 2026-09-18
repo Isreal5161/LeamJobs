@@ -78,6 +78,55 @@
   letter-spacing: 0.08em;
 }
 
+.employer-status-badge {
+  display: inline-flex;
+  align-items: center;
+  align-self: flex-start;
+  flex: 0 0 auto;
+  gap: 0.5rem;
+  min-height: 36px;
+  padding: 0.35rem 0.7rem 0.35rem 0.45rem;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+}
+
+.employer-status-badge svg {
+  width: 24px;
+  height: 24px;
+  padding: 0.32rem;
+  border-radius: 50%;
+  background: currentColor;
+  color: #ffffff;
+}
+
+.employer-status-badge--warning {
+  border-color: #f2d38b;
+  background: #fff8e6;
+  color: #a16207;
+}
+
+.employer-status-badge--success {
+  border-color: #b7e3c5;
+  background: #ecfdf3;
+  color: #166534;
+}
+
+.employer-status-badge--danger {
+  border-color: #f2b8c0;
+  background: #fff1f2;
+  color: #b91c1c;
+}
+
+.employer-status-badge--neutral {
+  border-color: #dbe3ee;
+  background: #f8fafc;
+  color: #475569;
+}
+
 .employer-hero h1 {
   margin: 0;
   font-size: clamp(1.65rem, 2vw, 2.5rem);
@@ -145,6 +194,69 @@
   border-color: rgba(220, 38, 38, 0.16);
   background: #fff1f2;
   color: #b91c1c;
+}
+
+.employer-verification-welcome-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  background: rgba(15, 23, 42, 0.42);
+}
+
+.employer-verification-welcome {
+  display: grid;
+  gap: 0.85rem;
+  width: min(100%, 480px);
+  max-height: calc(100vh - 2rem);
+  overflow-y: auto;
+  padding: 1.5rem;
+  border: 1px solid #dbe3ee;
+  border-radius: 16px;
+  background: #ffffff;
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.2);
+}
+
+.employer-verification-welcome__eyebrow {
+  color: var(--brand-secondary);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.employer-verification-welcome h2,
+.employer-verification-welcome p {
+  margin: 0;
+}
+
+.employer-verification-welcome h2 {
+  color: #0f172a;
+  font-size: clamp(1.35rem, 3vw, 1.8rem);
+  line-height: 1.15;
+}
+
+.employer-verification-welcome p,
+.employer-verification-welcome li {
+  color: #475569;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.employer-verification-welcome ul {
+  display: grid;
+  gap: 0.5rem;
+  margin: 0;
+  padding-left: 1.15rem;
+}
+
+.employer-verification-welcome__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.65rem;
+  padding-top: 0.35rem;
 }
 
 .employer-panel,
@@ -1869,6 +1981,19 @@
 
   .employer-mobile-back {
     display: inline-flex;
+  }
+
+  .employer-verification-welcome {
+    padding: 1.2rem;
+  }
+
+  .employer-verification-welcome__actions {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .employer-verification-welcome__actions .employer-button {
+    width: 100%;
   }
 
 }
