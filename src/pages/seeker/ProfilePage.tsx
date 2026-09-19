@@ -311,6 +311,7 @@ function ProfilePage() {
   const [isSaving, setIsSaving] = useState(false);
   const [isUploadingFile, setIsUploadingFile] = useState(false);
   const [profilePictureUrl, setProfilePictureUrl] = useState<string | null>(null);
+  const [localProfilePictureUrl, setLocalProfilePictureUrl] = useState<string | null>(null);
   const [resumeUrl, setResumeUrl] = useState<string | null>(null);
   const [profilePictureFile, setProfilePictureFile] = useState<File | null>(null);
   const [languageQueries, setLanguageQueries] = useState<Record<string, string>>({});
@@ -464,6 +465,14 @@ function ProfilePage() {
       if (objectUrl) URL.revokeObjectURL(objectUrl);
     };
   }, [profilePictureUrl, token]);
+
+  useEffect(() => {
+    return () => {
+      if (localProfilePictureUrl && localProfilePictureUrl.startsWith('blob:')) {
+        URL.revokeObjectURL(localProfilePictureUrl);
+      }
+    };
+  }, [localProfilePictureUrl]);
 
   useEffect(() => {
     if (!notification) return undefined;
@@ -1079,8 +1088,15 @@ function ProfilePage() {
       event.target.value = '';
       return;
     }
+
+    if (localProfilePictureUrl && localProfilePictureUrl.startsWith('blob:')) {
+      URL.revokeObjectURL(localProfilePictureUrl);
+    }
+
+    const previewUrl = URL.createObjectURL(file);
     setProfilePictureFile(file);
-    setProfilePictureUrl(URL.createObjectURL(file));
+    setLocalProfilePictureUrl(previewUrl);
+
     if (token) {
       setIsUploadingFile(true);
       const result = await uploadSeekerProfilePicture(file, token);
@@ -1088,12 +1104,15 @@ function ProfilePage() {
       if (result.ok) {
         setProfilePictureUrl(result.data.data.profilePictureUrl ?? null);
         setProfilePictureFile(null);
+        setLocalProfilePictureUrl(null);
         window.dispatchEvent(new Event(PROFILE_IMAGE_UPDATED_EVENT));
         showNotification({ title: 'Profile picture updated', message: 'Your profile picture has been uploaded.', tone: 'success' });
       } else {
+        setLocalProfilePictureUrl(null);
         showNotification({ title: 'Upload failed', message: result.error.message, tone: 'error' });
       }
     }
+    event.target.value = '';
   };
 
   const handleRemoveProfilePicture = async () => {
@@ -1104,10 +1123,12 @@ function ProfilePage() {
     if (result.ok) {
       setProfilePictureUrl(null);
       setProfilePictureFile(null);
+      setLocalProfilePictureUrl(null);
       window.dispatchEvent(new Event(PROFILE_IMAGE_UPDATED_EVENT));
       showNotification({ title: 'Profile picture removed', message: 'Your profile picture has been removed.', tone: 'success' });
     } else showNotification({ title: 'Remove failed', message: result.error.message, tone: 'error' });
   };
+  const displayProfilePictureUrl = localProfilePictureUrl ?? profilePictureUrl;
 
   const handleUploadResume = async () => {
     if (!token || !uploadedCvFile || isUploadingFile) return;
@@ -1458,14 +1479,18 @@ function ProfilePage() {
 
                     <form className="seeker-profile-form">
                       <div className="seeker-profile-picture-control">
-                        <span>Profile Photo</span>
-                        {profilePictureUrl ? <img src={profilePictureUrl} alt="Profile" /> : <span aria-hidden="true">{profile.personalInfo.fullName.split(/\s+/).filter(Boolean).map((part) => part[0]).join('').slice(0, 2).toUpperCase() || 'ME'}</span>}
-                        <label className="seeker-cv-upload-control" aria-busy={isUploadingFile}>
-                          {isUploadingFile ? <span className="leamjobs-spinner leamjobs-spinner--accent" aria-hidden="true" /> : null}
-                          {isUploadingFile ? 'Uploading...' : 'Upload Photo'}
-                          <input type="file" accept="image/jpeg,image/png,image/webp" onChange={handleProfilePictureSelect} disabled={isUploadingFile} />
-                        </label>
-                        {profilePictureUrl && <button type="button" onClick={handleRemoveProfilePicture} disabled={isUploadingFile}>Remove picture</button>}
+                        <span className="seeker-profile-picture-control__label">Profile Photo</span>
+                        <div className="seeker-profile-picture-preview">
+                          {displayProfilePictureUrl ? <img src={displayProfilePictureUrl} alt="Profile" /> : <span aria-hidden="true">{profile.personalInfo.fullName.split(/\s+/).filter(Boolean).map((part) => part[0]).join('').slice(0, 2).toUpperCase() || 'ME'}</span>}
+                        </div>
+                        <div className="seeker-profile-picture-actions">
+                          <label className="seeker-profile-upload-button" aria-busy={isUploadingFile}>
+                            {isUploadingFile ? <span className="leamjobs-spinner leamjobs-spinner--accent" aria-hidden="true" /> : null}
+                            {isUploadingFile ? 'Uploading...' : 'Upload Photo'}
+                            <input type="file" accept="image/jpeg,image/png,image/webp" onChange={handleProfilePictureSelect} disabled={isUploadingFile} />
+                          </label>
+                          {displayProfilePictureUrl && <button type="button" className="seeker-profile-remove-button" onClick={handleRemoveProfilePicture} disabled={isUploadingFile}>Remove picture</button>}
+                        </div>
                       </div>
                       <label>
                         <span>Full Name</span>

@@ -11,7 +11,16 @@ import {
 } from 'react-icons/fa';
 import SeekerJobCard from '../../components/jobs/SeekerJobCard';
 import { useAuth } from '../../context/AuthContext';
-import { getSeekerProfile, request, type SeekerDashboardData, type SeekerDashboardJob, type SeekerDashboardResponse, type GetSeekerProfileResponse } from '../../services/api';
+import {
+  getSeekerProfile,
+  getSeekerProfilePicture,
+  PROFILE_IMAGE_UPDATED_EVENT,
+  request,
+  type SeekerDashboardData,
+  type SeekerDashboardJob,
+  type SeekerDashboardResponse,
+  type GetSeekerProfileResponse,
+} from '../../services/api';
 
 const formatDate = (value: string) => new Intl.DateTimeFormat(undefined, {
   dateStyle: 'medium',
@@ -33,6 +42,7 @@ function Homepage() {
   const { user, token } = useAuth();
   const [dashboard, setDashboard] = useState<SeekerDashboardData | null>(null);
   const [profileState, setProfileState] = useState<GetSeekerProfileResponse['data']['profile'] | null>(null);
+  const [profileImageUrl, setProfileImageUrl] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
   const [retryKey, setRetryKey] = useState(0);
@@ -85,6 +95,45 @@ function Homepage() {
     };
   }, [token, retryKey]);
 
+  useEffect(() => {
+    if (!token) {
+      setProfileImageUrl(null);
+      return undefined;
+    }
+
+    let active = true;
+    let objectUrl: string | null = null;
+
+    const loadProfileImage = async () => {
+      if (!profileState?.profilePictureUrl) {
+        if (active) setProfileImageUrl(null);
+        return;
+      }
+
+      const result = await getSeekerProfilePicture(token);
+      if (!active) return;
+      if (result.ok) {
+        objectUrl = URL.createObjectURL(result.data);
+        setProfileImageUrl(objectUrl);
+      } else {
+        setProfileImageUrl(null);
+      }
+    };
+
+    const handleProfileImageUpdate = () => {
+      void loadProfileImage();
+    };
+
+    window.addEventListener(PROFILE_IMAGE_UPDATED_EVENT, handleProfileImageUpdate);
+    void loadProfileImage();
+
+    return () => {
+      active = false;
+      window.removeEventListener(PROFILE_IMAGE_UPDATED_EVENT, handleProfileImageUpdate);
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+    };
+  }, [profileState?.profilePictureUrl, token]);
+
   const handleSearchSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const trimmedValue = searchValue.trim();
@@ -131,7 +180,11 @@ function Homepage() {
     <div className="seeker-home">
       <header className="seeker-home__header">
         <div className="seeker-home__greeting">
-          <div className="seeker-home__avatar" aria-hidden="true">{getInitials(fullName)}</div>
+          {profileImageUrl ? (
+            <img className="seeker-home__avatar seeker-home__avatar--image" src={profileImageUrl} alt={fullName} />
+          ) : (
+            <div className="seeker-home__avatar" aria-hidden="true">{getInitials(fullName)}</div>
+          )}
           <div className="seeker-home__identity">
             <p className="seeker-home__eyebrow">Welcome back</p>
             <h1>{fullName === 'Welcome back' ? fullName : `${fullName}`}</h1>
