@@ -230,11 +230,9 @@ function Homepage() {
         </section>
 
         <section className="seeker-card seeker-cv seeker-home__panel seeker-home__panel--cv" aria-labelledby="cv-header">
-          <div className="seeker-section-heading">
-            <div>
-              <p className="seeker-card__label">Profile</p>
-              <h2 id="cv-header">CV / Resume</h2>
-            </div>
+          <div className="seeker-section-heading seeker-section-heading--split">
+            <p className="seeker-card__label">Profile</p>
+            <h2 id="cv-header">CV / Resume</h2>
           </div>
 
           {isLoading ? (

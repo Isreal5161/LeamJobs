@@ -4,6 +4,7 @@
   flex-direction: column;
   background: #f8fafc;
   overflow-x: hidden;
+  font-family: 'Poppins', 'Inter', 'Segoe UI', sans-serif;
   --seeker-hero: #f8fbff;
   --seeker-accent: var(--brand-primary-active);
   --seeker-accent-hover: var(--brand-primary-hover);
@@ -1255,6 +1256,7 @@
   color: #0f172a;
   font-size: clamp(1.5rem, 3vw, 2.25rem);
   line-height: 1.1;
+  font-weight: 800;
 }
 
 .seeker-home__search {
@@ -1363,6 +1365,13 @@ input:focus-visible,
   gap: 0.8rem;
 }
 
+.seeker-section-heading--split {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 0.8rem;
+}
+
 .seeker-section-heading h2,
 .seeker-section-heading strong,
 .seeker-card__empty-state p,
@@ -1371,6 +1380,23 @@ input:focus-visible,
   color: #0f172a;
   font-size: 1.15rem;
   line-height: 1.2;
+}
+
+.seeker-section-heading--split .seeker-card__label {
+  margin: 0;
+  display: inline-flex;
+  align-items: center;
+  color: #64748b;
+  font-size: 0.7rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.seeker-section-heading--split h2 {
+  margin-left: auto;
+  text-align: right;
+  font-size: 1.1rem;
+  font-weight: 800;
 }
 
 .seeker-section-heading a,
