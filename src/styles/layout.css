@@ -96,8 +96,14 @@
 }
 
 .public-layout > main.container {
+  display: flex;
+  flex-direction: column;
   flex: 1;
   min-width: 0;
+}
+
+.public-layout > main.container > main {
+  flex: 1;
 }
 
 .public-layout--welcome > main.container {
