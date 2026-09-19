@@ -11,6 +11,7 @@ export type JobDetails = {
 export type PublicJob = {
   id: string;
   company: string;
+  logoUrl?: string | null;
   logoText: string;
   logoClass?: string;
   featured?: boolean;

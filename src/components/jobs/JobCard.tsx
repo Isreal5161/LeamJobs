@@ -6,6 +6,7 @@ import type { PublicJob } from '../../data/jobData';
 type JobCardProps = {
   id: string;
   company: string;
+  logoUrl?: string | null;
   logoText: string;
   logoClass?: string;
   featured?: boolean;
@@ -27,6 +28,7 @@ export type RecommendedJob = PublicJob;
 function JobCard({
   id,
   company,
+  logoUrl,
   logoText,
   logoClass,
   featured = false,
@@ -46,7 +48,7 @@ function JobCard({
     <article className="job-card">
       <div className="job-card__inner">
         <div className="job-card__logo-column">
-          <CompanyLogo company={company} logoText={logoText} logoClass={logoClass} />
+          <CompanyLogo company={company} logoUrl={logoUrl} logoText={logoText} logoClass={logoClass} />
         </div>
 
         <div className="job-card__content">
