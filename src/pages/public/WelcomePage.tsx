@@ -22,6 +22,7 @@ const mapJob = (job: SeekerDashboardJob) => {
 
   return {
     id: job.id,
+    employerId: job.employerId,
     company: companyName,
     logoUrl: job.company?.logoUrl ?? null,
     logoText: companyName.slice(0, 2).toUpperCase() || 'C',

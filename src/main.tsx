@@ -11,6 +11,7 @@ import './styles/about.css';
 import './styles/features.css';
 import './styles/how-it-works.css';
 import './styles/companies.css';
+import './styles/company-profile.css';
 import './styles/auth.css';
 import './styles/job-details.css';
 import './styles/seeker-home.css';

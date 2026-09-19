@@ -10,11 +10,12 @@ type SeekerJobCardProps = {
   listing?: boolean;
   onToggleBookmark?: () => void;
   showBookmark?: boolean;
+  publicView?: boolean;
   matchScore?: number;
   matchedSkills?: string[];
 };
 
-function SeekerJobCard({ job, saved = false, listing = false, onToggleBookmark, showBookmark = true, matchScore, matchedSkills }: SeekerJobCardProps) {
+function SeekerJobCard({ job, saved = false, listing = false, onToggleBookmark, showBookmark = true, publicView = false, matchScore, matchedSkills }: SeekerJobCardProps) {
   const isBackendJob = 'jobType' in job && 'skills' in job;
   const company = isBackendJob ? job.company?.name ?? 'Company not provided' : job.company;
   const title = isBackendJob ? job.title : job.role;
@@ -34,7 +35,7 @@ function SeekerJobCard({ job, saved = false, listing = false, onToggleBookmark, 
   const deadline = isBackendJob && job.applicationDeadline
     ? `Apply by ${new Intl.DateTimeFormat(undefined, { dateStyle: 'medium' }).format(new Date(job.applicationDeadline))}`
     : null;
-  const detailPath = `/seeker/jobs/${job.id}`;
+  const detailPath = publicView ? `/jobs/${job.id}` : `/seeker/jobs/${job.id}`;
   const visibleSkills = isBackendJob ? job.skills.slice(0, 3) : [job.level, job.workArrangement];
 
   return (

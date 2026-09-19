@@ -211,7 +211,7 @@ function JobDetailsPage() {
             <div>
               <h2>About {companyName}</h2>
               <p>{job.company?.description || 'Company information is not available.'}</p>
-              <Link to="/companies">
+              <Link to={`/companies/${encodeURIComponent(job.employerId)}`} state={{ fromJob: true, jobTitle: job.title }}>
                 View company profile
                 <FaChevronRight />
               </Link>

@@ -14,6 +14,7 @@ import SignInPage from './pages/public/SignInPage';
 import SignUpPage from './pages/public/SignUpPage';
 import VerifyEmailPage from './pages/public/VerifyEmailPage';
 import JobDetailsPage from './pages/public/JobDetailsPage';
+import CompanyProfilePage from './pages/public/CompanyProfilePage';
 import Homepage from './pages/seeker/Homepage';
 import JobsPage from './pages/seeker/JobsPage';
 import ApplicationsPage from './pages/seeker/ApplicationsPage';
@@ -69,6 +70,7 @@ function App() {
             <Route path="features" element={<FeaturesPage />} />
             <Route path="how-it-works" element={<HowItWorksPage />} />
             <Route path="companies" element={<CompaniesPage />} />
+            <Route path="companies/:employerId" element={<CompanyProfilePage />} />
             <Route path="login" element={<SignInPage />} />
             <Route path="forgot-password" element={<ForgotPasswordPage />} />
             <Route path="reset-password" element={<ResetPasswordPage />} />

@@ -5,6 +5,7 @@ import type { PublicJob } from '../../data/jobData';
 
 type JobCardProps = {
   id: string;
+  employerId?: string;
   company: string;
   logoUrl?: string | null;
   logoText: string;
@@ -27,6 +28,7 @@ export type RecommendedJob = PublicJob;
 
 function JobCard({
   id,
+  employerId,
   company,
   logoUrl,
   logoText,
@@ -53,7 +55,9 @@ function JobCard({
 
         <div className="job-card__content">
           <div className="job-card__company-top">
-            <p className="job-card__company-name">{company}</p>
+            <p className="job-card__company-name">
+              {employerId ? <Link to={`/companies/${encodeURIComponent(employerId)}`}>{company}</Link> : company}
+            </p>
             {featured && <span className="job-card__featured">Featured</span>}
           </div>
           <h3 className="job-card__role">{role}</h3>

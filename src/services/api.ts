@@ -101,6 +101,7 @@ export type SeekerDashboardApplication = {
 
 export type SeekerDashboardJob = {
   id: string;
+  employerId: string;
   title: string;
   description: string;
   location: string;
@@ -690,6 +691,45 @@ export type SeekerJobsResponse = {
   };
 };
 
+export type PublicCompany = {
+  id: string;
+  name: string;
+  logoUrl: string | null;
+  verified: boolean;
+  description: string | null;
+  industry: string | null;
+  companySize: string | null;
+  website: string | null;
+  location: string | null;
+  address: string | null;
+  state: string | null;
+  country: string | null;
+  linkedinUrl: string | null;
+  twitterUrl: string | null;
+  facebookUrl: string | null;
+};
+
+export type PublicCompanyResponse = {
+  success: true;
+  data: {
+    company: PublicCompany;
+    statistics: {
+      jobsPosted: number;
+      applicants: number;
+      candidatesSelected: number;
+    };
+    jobs: SeekerDashboardJob[];
+    pagination: {
+      page: number;
+      limit: number;
+      total: number;
+      totalPages: number;
+      hasNextPage: boolean;
+      hasPreviousPage: boolean;
+    };
+  };
+};
+
 export type SeekerJobsQuery = {
   search?: string;
   location?: string;
@@ -944,6 +984,14 @@ export function getPublicJobs(query: Partial<SeekerJobsQuery> = {}) {
   return request<SeekerJobsResponse>({
     method: 'GET',
     endpoint: `/jobs?${params.toString()}`,
+  });
+}
+
+export function getPublicCompany(employerId: string, page = 1, limit = 12) {
+  const params = new URLSearchParams({ page: String(page), limit: String(limit) });
+  return request<PublicCompanyResponse>({
+    method: 'GET',
+    endpoint: `/public/companies/${encodeURIComponent(employerId)}?${params.toString()}`,
   });
 }
 
