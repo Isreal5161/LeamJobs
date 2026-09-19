@@ -1,7 +1,6 @@
-import { FormEvent, useEffect, useMemo, useState } from 'react';
+import { FormEvent, useEffect, useMemo, useRef, useState, type ClipboardEvent, type KeyboardEvent } from 'react';
 import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import Button from '../../components/common/Button';
-import Input from '../../components/common/Input';
 import { resendEmailVerification, verifyEmailCode } from '../../services/api';
 import { getUserFacingError } from '../../utils/userFacingError';
 
@@ -53,6 +52,7 @@ function VerifyEmailPage({ role = 'seeker' }: VerifyEmailPageProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isResending, setIsResending] = useState(false);
   const [cooldownLeft, setCooldownLeft] = useState(0);
+  const codeInputRefs = useRef<Array<HTMLInputElement | null>>([]);
 
   useEffect(() => {
     setEmail(initialEmail);
@@ -70,6 +70,48 @@ function VerifyEmailPage({ role = 'seeker' }: VerifyEmailPageProps) {
 
   const isCodeValid = /^\d{6}$/.test(code);
   const hasUsableEmail = Boolean(email && email.includes('@') && email.includes('.'));
+
+  const updateCodeAt = (index: number, value: string) => {
+    const nextCode = Array.from({ length: 6 }, (_, codeIndex) => code[codeIndex] ?? '');
+    nextCode[index] = value.replace(/\D/g, '').slice(-1);
+    setCode(nextCode.join('').slice(0, 6));
+  };
+
+  const handleCodeChange = (index: number, value: string) => {
+    const digits = value.replace(/\D/g, '');
+    if (!digits) {
+      updateCodeAt(index, '');
+      return;
+    }
+
+    const nextCode = Array.from({ length: 6 }, (_, codeIndex) => code[codeIndex] ?? '');
+    digits.slice(0, 6 - index).split('').forEach((digit, offset) => {
+      nextCode[index + offset] = digit;
+    });
+    setCode(nextCode.join('').slice(0, 6));
+    codeInputRefs.current[Math.min(index + digits.length, 5)]?.focus();
+  };
+
+  const handleCodeKeyDown = (index: number, event: KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === 'Backspace' && !code[index] && index > 0) {
+      codeInputRefs.current[index - 1]?.focus();
+    }
+    if (event.key === 'ArrowLeft' && index > 0) {
+      event.preventDefault();
+      codeInputRefs.current[index - 1]?.focus();
+    }
+    if (event.key === 'ArrowRight' && index < 5) {
+      event.preventDefault();
+      codeInputRefs.current[index + 1]?.focus();
+    }
+  };
+
+  const handleCodePaste = (event: ClipboardEvent<HTMLInputElement>) => {
+    event.preventDefault();
+    const pastedCode = event.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6);
+    setCode(pastedCode);
+    codeInputRefs.current[Math.min(pastedCode.length, 5)]?.focus();
+  };
 
   const handleChangeEmail = () => {
     const targetUrl = `${copy.signupPath}?email=${encodeURIComponent(email || '')}`;
@@ -185,41 +227,47 @@ function VerifyEmailPage({ role = 'seeker' }: VerifyEmailPageProps) {
           {error ? <p className="auth-feedback auth-feedback--error" role="alert">{error}</p> : null}
 
           <form className="auth-form" onSubmit={handleSubmit} noValidate>
-            <label className="auth-field">
+            <div className="auth-field">
               <span>Verification code</span>
-              <div className="auth-input-wrap">
-                <Input
-                  type="text"
-                  inputMode="numeric"
-                  autoComplete="one-time-code"
-                  maxLength={6}
-                  value={code}
-                  onChange={(event) => setCode(event.target.value.replace(/\D/g, '').slice(0, 6))}
-                  placeholder="123456"
-                  aria-label="Verification code"
-                  disabled={isSubmitting || isResending}
-                />
+              <div className="auth-code-inputs" role="group" aria-label="6-digit verification code">
+                {Array.from({ length: 6 }, (_, index) => (
+                  <input
+                    key={index}
+                    ref={(element) => { codeInputRefs.current[index] = element; }}
+                    className="auth-code-input"
+                    type="text"
+                    inputMode="numeric"
+                    autoComplete={index === 0 ? 'one-time-code' : 'off'}
+                    maxLength={index === 0 ? 6 : 1}
+                    value={code[index] ?? ''}
+                    onChange={(event) => handleCodeChange(index, event.target.value)}
+                    onKeyDown={(event) => handleCodeKeyDown(index, event)}
+                    onPaste={handleCodePaste}
+                    aria-label={`Verification code digit ${index + 1}`}
+                    disabled={isSubmitting || isResending}
+                  />
+                ))}
               </div>
-            </label>
+            </div>
 
             <Button type="submit" variant="primary" fullWidth disabled={isSubmitting || isResending || !isCodeValid}>
               {isSubmitting ? 'Verifying...' : copy.submitLabel}
             </Button>
           </form>
 
-          <div className="auth-form-options auth-form-options--stacked">
+          <div className="auth-secondary-actions">
             <button
               type="button"
-              className="auth-link-button"
+              className="auth-action-button"
               onClick={handleResend}
               disabled={isResending || cooldownLeft > 0}
             >
               {isResending ? 'Sending...' : cooldownLeft > 0 ? `Resend code in ${cooldownLeft}s` : 'Resend code'}
             </button>
-            <button type="button" className="auth-link-button" onClick={handleChangeEmail}>
+            <button type="button" className="auth-action-button auth-action-button--muted" onClick={handleChangeEmail}>
               Change email
             </button>
-            <Link to={copy.signInPath}>{copy.signInText}</Link>
+            <Link className="auth-secondary-actions__signin" to={copy.signInPath}>{copy.signInText}</Link>
           </div>
 
           {message ? (

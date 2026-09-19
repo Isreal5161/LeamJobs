@@ -265,6 +265,46 @@
   border-radius: 8px;
 }
 
+.auth-code-inputs {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 0.6rem;
+  max-width: 360px;
+}
+
+.auth-code-input {
+  width: 100%;
+  aspect-ratio: 1;
+  min-width: 0;
+  min-height: 48px;
+  padding: 0;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  background: #ffffff;
+  color: #0f172a;
+  font-size: 1.35rem;
+  font-weight: 800;
+  text-align: center;
+  caret-color: var(--brand-primary-active);
+  transition: border-color 0.18s ease, box-shadow 0.18s ease, background-color 0.18s ease;
+}
+
+.auth-code-input:hover {
+  border-color: rgba(50, 47, 106, 0.45);
+}
+
+.auth-code-input:focus {
+  border-color: var(--brand-primary-active);
+  background: #fffaf8;
+  box-shadow: 0 0 0 3px rgba(191, 56, 38, 0.14);
+  outline: none;
+}
+
+.auth-code-input:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
 .auth-password-input {
   padding-right: 2.9rem;
 }
@@ -312,6 +352,60 @@
 .auth-switch a {
   color: #0e4ae1;
   font-weight: 800;
+}
+
+.auth-secondary-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.65rem;
+  margin-top: 0.25rem;
+}
+
+.auth-action-button,
+.auth-secondary-actions__signin {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 42px;
+  padding: 0.55rem 0.75rem;
+  border: 1px solid rgba(50, 47, 106, 0.18);
+  border-radius: 8px;
+  background: var(--secondary-light, #f0effa);
+  color: var(--secondary, #322f6a);
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 800;
+  text-align: center;
+  text-decoration: none;
+  cursor: pointer;
+  transition: border-color 0.18s ease, background-color 0.18s ease, color 0.18s ease, transform 0.18s ease;
+}
+
+.auth-action-button:hover,
+.auth-secondary-actions__signin:hover {
+  border-color: rgba(191, 56, 38, 0.3);
+  background: #fff4f1;
+  color: var(--brand-primary-active);
+  transform: translateY(-1px);
+}
+
+.auth-action-button--muted {
+  border-color: rgba(100, 116, 139, 0.2);
+  background: #f8fafc;
+  color: #475569;
+}
+
+.auth-action-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+  transform: none;
+}
+
+.auth-secondary-actions__signin {
+  grid-column: 1 / -1;
+  border-color: transparent;
+  background: transparent;
+  color: var(--brand-secondary);
 }
 
 .auth-check {
@@ -451,5 +545,19 @@
     align-items: flex-start;
     flex-direction: column;
     gap: 0.65rem;
+  }
+
+  .auth-code-inputs {
+    gap: 0.45rem;
+    max-width: none;
+  }
+
+  .auth-code-input {
+    min-height: 44px;
+    font-size: 1.15rem;
+  }
+
+  .auth-secondary-actions {
+    gap: 0.5rem;
   }
 }
