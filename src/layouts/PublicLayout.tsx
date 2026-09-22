@@ -12,6 +12,7 @@ function PublicLayout() {
   const isFeaturesPage = pathname === '/features';
   const isHowPage = pathname === '/how-it-works';
   const isCompaniesPage = pathname === '/companies';
+  const isCompanyDetailsPage = pathname.startsWith('/companies/');
   const isAuthPage = pathname === '/login' || pathname === '/register' || pathname.startsWith('/employers/');
   const isJobDetailsPage = pathname.startsWith('/jobs/');
   const layoutClasses = [
@@ -35,7 +36,7 @@ function PublicLayout() {
       </main>
       <Footer />
       <JobUpdatesSubscriptionPopup enabled={!isAuthPage && !isJobDetailsPage && !pathname.startsWith('/unsubscribe-') && !pathname.startsWith('/reset-password')} />
-      {!isWelcomePage && !isAboutPage && !isFeaturesPage && !isHowPage && !isCompaniesPage && !isAuthPage && !isJobDetailsPage && <MobileBottomNav />}
+      {!isWelcomePage && !isAboutPage && !isFeaturesPage && !isHowPage && !isCompaniesPage && !isCompanyDetailsPage && !isAuthPage && !isJobDetailsPage && <MobileBottomNav />}
     </div>
   );
 }

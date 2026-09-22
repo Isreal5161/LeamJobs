@@ -34,6 +34,15 @@ export type ApiFailure = {
 
 export type ApiResponse<T> = ApiSuccess<T> | ApiFailure;
 
+export type PagePagination = {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+  hasNextPage: boolean;
+  hasPreviousPage: boolean;
+};
+
 export type NotificationActor = {
   id: string;
   firstName: string | null;
@@ -316,7 +325,7 @@ export type EmployerJob = {
 
 export type EmployerJobsResponse = {
   success: true;
-  data: { jobs: EmployerJob[] };
+  data: { jobs: EmployerJob[]; pagination: PagePagination };
 };
 
 export type EmployerJobResponse = {
@@ -409,7 +418,7 @@ export type AdminJob = {
 
 export type AdminJobsResponse = {
   success: true;
-  data: { jobs: AdminJob[] };
+  data: { jobs: AdminJob[]; pagination: PagePagination };
 };
 
 export type AdminJobResponse = {
@@ -547,7 +556,7 @@ export type AdminApplicationDetail = {
 
 export type EmployerApplicationsResponse = {
   success: true;
-  data: { applications: EmployerApplicationListItem[] };
+  data: { applications: EmployerApplicationListItem[]; pagination: PagePagination };
 };
 
 export type EmployerApplicationResponse = {
@@ -557,7 +566,7 @@ export type EmployerApplicationResponse = {
 
 export type AdminApplicationsResponse = {
   success: true;
-  data: { applications: AdminApplicationListItem[]; adminCanManageApplicants: boolean };
+  data: { applications: AdminApplicationListItem[]; adminCanManageApplicants: boolean; pagination: PagePagination };
 };
 
 export type AdminApplicationResponse = {
@@ -609,7 +618,7 @@ export type EmployerMessage = {
 
 export type EmployerConversationsResponse = {
   success: true;
-  data: { conversations: EmployerConversation[] };
+  data: { conversations: EmployerConversation[]; pagination: PagePagination };
 };
 
 export type EmployerConversationResponse = {
@@ -760,6 +769,7 @@ export type SeekerApplicationsResponse = {
       total: number;
       interviews: number;
     };
+    pagination: PagePagination;
   };
 };
 
@@ -1059,8 +1069,8 @@ export function updateEmployerProfile(payload: EmployerProfilePayload, token: st
   return request<EmployerProfileResponse>({ method: 'PATCH', endpoint: '/employer/profile', body: payload, token });
 }
 
-export function getEmployerJobs(token: string) {
-  return request<EmployerJobsResponse>({ method: 'GET', endpoint: '/employer/jobs', token });
+export function getEmployerJobs(token: string, page = 1, limit = 20) {
+  return request<EmployerJobsResponse>({ method: 'GET', endpoint: `/employer/jobs?page=${page}&limit=${limit}`, token });
 }
 
 export type EmployerVerificationDocumentKind = 'CAC' | 'TRADE_LICENSE' | 'TAX_CERTIFICATE' | 'UTILITY_BILL' | 'IDENTITY_SUPPORTING' | 'OTHER';
@@ -1155,7 +1165,7 @@ export type EmployerVerificationSubmission = {
 
 export type EmployerVerificationSubmissionsResponse = {
   success: true;
-  data: { verificationSubmissions: EmployerVerificationSubmission[] };
+  data: { verificationSubmissions: EmployerVerificationSubmission[]; pagination: PagePagination };
 };
 
 export function getEmployerVerification(token: string) {
@@ -1190,10 +1200,10 @@ export function deleteEmployerVerificationDocument(documentId: string, token: st
   });
 }
 
-export function getAdminVerificationSubmissions(token: string) {
+export function getAdminVerificationSubmissions(token: string, page = 1, limit = 20) {
   return request<EmployerVerificationSubmissionsResponse>({
     method: 'GET',
-    endpoint: '/admin/verification-submissions',
+    endpoint: `/admin/verification-submissions?page=${page}&limit=${limit}`,
     token,
   });
 }
@@ -1295,7 +1305,7 @@ export function getAdminRecipientCount(token: string, segment: string) { return 
 export function sendAdminCampaign(token: string, id: string) { return request<{ success: true; data: { campaign: AdminEmailCampaign } }>({ method: 'POST', endpoint: `/admin/communications/campaigns/${id}/send`, token }); }
 export function getAdminCampaignRecords(token: string, page = 1, limit = 20) { return request<{ success: true; data: { records: AdminCampaignRecord[]; pagination: { page: number; limit: number; total: number; pages: number } } }>({ method: 'GET', endpoint: `/admin/communications/campaigns?page=${page}&limit=${limit}`, token }); }
 export function getAdminCampaignReport(token: string, id: string) { return request<{ success: true; data: AdminCampaignRecord }>({ method: 'GET', endpoint: `/admin/communications/campaigns/${id}/report`, token }); }
-export function getAdminCampaignDeliveries(token: string, id: string) { return request<{ success: true; data: { campaignId: string; deliveries: AdminCampaignDelivery[] } }>({ method: 'GET', endpoint: `/admin/communications/campaigns/${id}/deliveries`, token }); }
+export function getAdminCampaignDeliveries(token: string, id: string, page = 1, limit = 50) { return request<{ success: true; data: { campaignId: string; deliveries: AdminCampaignDelivery[]; pagination: PagePagination } }>({ method: 'GET', endpoint: `/admin/communications/campaigns/${id}/deliveries?page=${page}&limit=${limit}`, token }); }
 
 export function getEmailPreferences(token: string) {
   return request<{ success: true; data: EmailPreferences }>({ method: 'GET', endpoint: '/auth/email-preferences', token });
@@ -1346,8 +1356,10 @@ export function unsubscribeFromMarketingEmails(token: string) {
   return request<{ success: true; data: { message: string } }>({ method: 'GET', endpoint: `/auth/unsubscribe?token=${encodeURIComponent(token)}` });
 }
 
-export function getAdminJobs(token: string, status?: 'PENDING' | 'APPROVED' | 'REJECTED' | 'CLOSED') {
-  const endpoint = status ? `/admin/jobs?status=${encodeURIComponent(status)}` : '/admin/jobs';
+export function getAdminJobs(token: string, status?: 'PENDING' | 'APPROVED' | 'REJECTED' | 'CLOSED', page = 1, limit = 20) {
+  const params = new URLSearchParams({ page: String(page), limit: String(limit) });
+  if (status) params.set('status', status);
+  const endpoint = `/admin/jobs?${params.toString()}`;
   return request<AdminJobsResponse>({ method: 'GET', endpoint, token });
 }
 
@@ -1818,11 +1830,11 @@ export type AdminReleaseCandidate = {
 
 export type AdminReleaseCandidatesResponse = {
   success: true;
-  data: { contracts: AdminReleaseCandidate[] };
+  data: { contracts: AdminReleaseCandidate[]; pagination: PagePagination };
 };
 
-export function getAdminReleaseCandidates(token: string) {
-  return request<AdminReleaseCandidatesResponse>({ method: 'GET', endpoint: '/admin/contracts/release-eligible', token });
+export function getAdminReleaseCandidates(token: string, page = 1, limit = 20) {
+  return request<AdminReleaseCandidatesResponse>({ method: 'GET', endpoint: `/admin/contracts/release-eligible?page=${page}&limit=${limit}`, token });
 }
 
 export function releaseAdminContract(contractId: string, token: string) {
@@ -1880,8 +1892,8 @@ export function closeEmployerJob(jobId: string, token: string) {
   return request<EmployerJobResponse>({ method: 'PATCH', endpoint: `/employer/jobs/${encodeURIComponent(jobId)}/close`, token });
 }
 
-export function getEmployerApplications(jobId: string, token: string) {
-  return request<EmployerApplicationsResponse>({ method: 'GET', endpoint: `/employer/jobs/${encodeURIComponent(jobId)}/applications`, token });
+export function getEmployerApplications(jobId: string, token: string, page = 1, limit = 20) {
+  return request<EmployerApplicationsResponse>({ method: 'GET', endpoint: `/employer/jobs/${encodeURIComponent(jobId)}/applications?page=${page}&limit=${limit}`, token });
 }
 
 export function getAdminJobApplications(jobId: string, token: string) {
@@ -2097,8 +2109,8 @@ export async function getAdminJobApplicationResume(jobId: string, applicationId:
   }
 }
 
-export function getEmployerConversations(token: string) {
-  return request<EmployerConversationsResponse>({ method: 'GET', endpoint: '/employer/conversations', token });
+export function getEmployerConversations(token: string, page = 1, limit = 20) {
+  return request<EmployerConversationsResponse>({ method: 'GET', endpoint: `/employer/conversations?page=${page}&limit=${limit}`, token });
 }
 
 export function getEmployerConversation(conversationId: string, token: string) {
@@ -2163,10 +2175,10 @@ export function getSeekerRecommendations(query: { limit?: number; cursor?: strin
   return request<SeekerRecommendationsResponse>({ method: 'GET', endpoint: `/seeker/recommendations?${params.toString()}`, token });
 }
 
-export function getSeekerApplications(token: string) {
+export function getSeekerApplications(token: string, page = 1, limit = 20) {
   return request<SeekerApplicationsResponse>({
     method: 'GET',
-    endpoint: '/seeker/applications',
+    endpoint: `/seeker/applications?page=${page}&limit=${limit}`,
     token,
   });
 }
@@ -2269,7 +2281,7 @@ export type SeekerConversation = {
 
 export type SeekerConversationsResponse = {
   success: true;
-  data: { conversations: SeekerConversation[] };
+  data: { conversations: SeekerConversation[]; pagination: PagePagination };
 };
 
 export type SeekerConversationResponse = {
@@ -2292,8 +2304,8 @@ export type SeekerReadResponse = {
   data: { conversationId: string; unreadCount: number };
 };
 
-export function getSeekerConversations(token: string) {
-  return request<SeekerConversationsResponse>({ method: 'GET', endpoint: '/seeker/conversations', token });
+export function getSeekerConversations(token: string, page = 1, limit = 20) {
+  return request<SeekerConversationsResponse>({ method: 'GET', endpoint: `/seeker/conversations?page=${page}&limit=${limit}`, token });
 }
 
 export function getSeekerConversation(conversationId: string, token: string) {
