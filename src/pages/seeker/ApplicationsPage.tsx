@@ -8,6 +8,7 @@ import {
   FaClock,
   FaExternalLinkAlt,
   FaFileAlt,
+  FaMagic,
   FaSearch,
   FaTimes,
   FaTimesCircle,
@@ -19,7 +20,7 @@ import {
   getSeekerApplications,
   getSeekerJob,
   getSeekerProfile,
-  requestApplicationAssistance,
+  generateApplicationCoverLetter,
   type SeekerApplication,
   type SeekerDashboardJob,
 } from '../../services/api';
@@ -40,7 +41,7 @@ function ApplicationsPage() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { user, token } = useAuth();
-  const { getSubscription } = useSubscriptions();
+  const { aiUsage } = useSubscriptions();
 
   const [applications, setApplications] = useState<SeekerApplication[]>([]);
   const [summary, setSummary] = useState({ total: 0, interviews: 0 });
@@ -54,13 +55,12 @@ function ApplicationsPage() {
   const [jobError, setJobError] = useState('');
   const [submitError, setSubmitError] = useState('');
   const [resumeUrl, setResumeUrl] = useState<string | null>(null);
-  const [resumeObjectKey, setResumeObjectKey] = useState<string | null>(null);
   const [profileOnboardingComplete, setProfileOnboardingComplete] = useState(true);
   const [cvChoice, setCvChoice] = useState<'profile' | 'upload'>('profile');
   const [showCvWarning, setShowCvWarning] = useState(false);
   const [activeFilter, setActiveFilter] = useState<ApplicationFilter>('All');
-  const aiApplicationAvailable = user ? getSubscription(user.id).aiEntitlements.includes('AI_APPLICATION_ASSISTANCE') : false;
-  const [aiApplication, setAiApplication] = useState<{ coverLetter: string; alignmentPoints: string[]; strengths: string[]; gaps: string[] } | null>(null);
+  const aiApplicationAvailable = aiUsage.allowed;
+  const [aiApplication, setAiApplication] = useState<{ coverLetter: string } | null>(null);
   const [isAiLoading, setIsAiLoading] = useState(false);
   const [aiError, setAiError] = useState('');
 
@@ -92,7 +92,6 @@ function ApplicationsPage() {
   useEffect(() => {
     if (!token) {
       setResumeUrl(null);
-      setResumeObjectKey(null);
       setProfileOnboardingComplete(true);
       return undefined;
     }
@@ -106,11 +105,9 @@ function ApplicationsPage() {
       if (result.ok) {
         const profile = result.data.data.profile;
         setResumeUrl(profile.resumeUrl ?? null);
-        setResumeObjectKey(profile.resumeObjectKey ?? null);
         setProfileOnboardingComplete(result.data.data.onboardingComplete ?? true);
       } else {
         setResumeUrl(null);
-        setResumeObjectKey(null);
         setProfileOnboardingComplete(true);
       }
     };
@@ -186,11 +183,20 @@ function ApplicationsPage() {
 
   const runApplicationAssistance = async () => {
     if (!selectedJob || !token || isAiLoading) return;
-    setIsAiLoading(true); setAiError('');
-    const result = await requestApplicationAssistance({ jobId: selectedJob.id, request: 'Draft a concise, truthful cover letter and explain the strongest alignment points.', coverLetter: proposal }, token);
-    setIsAiLoading(false);
-    if (result.ok) setAiApplication(result.data.data);
-    else setAiError(result.error.message || 'AI assistance is unavailable.');
+    setIsAiLoading(true);
+    setAiError('');
+    try {
+      const result = await generateApplicationCoverLetter({ jobId: selectedJob.id, request: 'Draft a concise, truthful cover letter for this job.', coverLetter: proposal || undefined }, token);
+      if (result.ok) setAiApplication(result.data.data);
+      else if (result.status === 401) setAiError('Your session has expired. Please sign in again.');
+      else if (result.status === 403) setAiError('Your AI allowance is exhausted or this feature is not available on your current plan.');
+      else if (result.status === 503) setAiError('The AI provider is temporarily unavailable. Please try again later.');
+      else setAiError(result.error.message || 'AI assistance is unavailable.');
+    } catch {
+      setAiError('We could not reach the AI service. Check your connection and try again.');
+    } finally {
+      setIsAiLoading(false);
+    }
   };
 
   const submitApplication = async () => {
@@ -631,11 +637,18 @@ function ApplicationsPage() {
                     </div>
                   )}
 
-                  {!showCvWarning ? <section className="seeker-ai-application" aria-label="AI application assistance">
-                    <div><strong>Premium application assistance</strong><p>Draft a cover letter and review job alignment before you submit.</p></div>
-                    <button type="button" onClick={() => void runApplicationAssistance()} disabled={!aiApplicationAvailable || isAiLoading}>{!aiApplicationAvailable ? 'Requires Premium' : isAiLoading ? 'Thinking...' : 'Get AI draft'}</button>
+                  {!showCvWarning ? <section className="seeker-ai-application" aria-label="AI cover letter generator">
+                    <div className="seeker-ai-application__heading">
+                      <span className="seeker-ai-application__icon" aria-hidden="true"><FaMagic /></span>
+                      <div><strong>Need help with your cover letter?</strong><p>Generate a truthful, job-specific draft from this role and your profile. You stay in control of the final text.</p></div>
+                    </div>
+                    <div className="seeker-ai-application__action-row">
+                    <button type="button" onClick={() => void runApplicationAssistance()} disabled={!aiApplicationAvailable || isAiLoading}>{isAiLoading ? <><span className="seeker-ai-application__spinner" aria-hidden="true" />Generating...</> : <><FaMagic aria-hidden="true" />{!aiApplicationAvailable ? 'Allowance exhausted' : 'Generate draft'}</>}</button>
+                      <span className="seeker-ai-application__usage" aria-live="polite">{aiUsage.remaining} AI {aiUsage.remaining === 1 ? 'use' : 'uses'} remaining</span>
+                      {!aiApplicationAvailable ? <Link className="seeker-ai-application__plans-link" to="/seeker/subscription">View plans</Link> : null}
+                    </div>
                     {aiError ? <p role="alert">{aiError}</p> : null}
-                    {aiApplication ? <div className="seeker-ai-application__result"><h4>Review draft</h4><textarea value={aiApplication.coverLetter} onChange={(event) => setProposal(event.target.value)} rows={6} /><strong>Alignment</strong><ul>{aiApplication.alignmentPoints.map((point) => <li key={point}>{point}</li>)}</ul><strong>Possible gaps</strong><ul>{aiApplication.gaps.map((gap) => <li key={gap}>{gap}</li>)}</ul></div> : null}
+                    {aiApplication ? <div className="seeker-ai-application__result"><h4>Review and edit your draft</h4><textarea value={aiApplication.coverLetter} onChange={(event) => setAiApplication({ coverLetter: event.target.value })} rows={6} /><button type="button" onClick={() => setProposal(aiApplication.coverLetter)}>Use this draft</button></div> : null}
                   </section> : null}
 
                   {submitError ? <p role="alert">{submitError}</p> : null}

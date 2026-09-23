@@ -32,7 +32,7 @@ const formatSubscriptionPlanName = (planId: string | null | undefined, plans: Pa
 function SubscriptionPage() {
   const { token, user } = useAuth();
   const navigate = useNavigate();
-  const { plans, getSubscription } = useSubscriptions();
+  const { plans, getSubscription, currentPlan, trial, aiUsage } = useSubscriptions();
   const [isSubmitting, setIsSubmitting] = useState<string | null>(null);
   const [checkoutError, setCheckoutError] = useState('');
 
@@ -133,6 +133,15 @@ function SubscriptionPage() {
             <span>Renewal / expiry</span>
             <strong>{formatDateLabel(currentSubscription?.renewalDate)}</strong>
           </article>
+          <article>
+            <span>AI usage</span>
+            <strong>{aiUsage.unlimited ? 'Unlimited' : `${aiUsage.used} / ${aiUsage.limit ?? 0}`}</strong>
+          </article>
+        </div>
+
+        <div className="subscription-trial-summary" aria-live="polite">
+          <strong>{trial ? `${getAccountTypeLabel(trial.grantedPlanKey)} trial active` : 'No active trial'}</strong>
+          <span>{trial ? `Ends ${formatDateLabel(trial.endAt)}` : `Remaining AI uses: ${aiUsage.remaining}`}</span>
         </div>
 
         {checkoutError ? <p className="payment-copy payment-copy--error" role="alert">{checkoutError}</p> : null}
@@ -159,7 +168,7 @@ function SubscriptionPage() {
 
         <div className="subscription-plan-grid">
           {plans.map((plan) => {
-            const isActive = currentSubscription?.planId === plan.id || (currentSubscription?.planId === 'free' && plan.id === 'free');
+            const isActive = currentSubscription?.planId === plan.id || currentPlan.key?.toUpperCase() === (plan.key ?? plan.id).toString().toUpperCase();
             const displayName = getAccountTypeLabel(plan.name, plan.id === 'free' ? 'Basic' : 'Professional');
             const isUpgradeAction = plan.id !== 'free';
 
@@ -170,6 +179,7 @@ function SubscriptionPage() {
                   <strong>{plan.price ? `$${plan.price}` : 'Free'}<small>{plan.price ? '/month' : ''}</small></strong>
                 </div>
                 <p>{plan.description}</p>
+                <span>{plan.aiUnlimited ? 'Unlimited AI usage' : `${plan.aiAllowance ?? 0} AI uses included`}</span>
                 <ul>
                   {plan.benefits.map((benefit) => <li key={benefit}>{benefit}</li>)}
                 </ul>

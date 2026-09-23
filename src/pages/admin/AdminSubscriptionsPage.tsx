@@ -6,7 +6,9 @@ import {
   getAdminSubscriptionPlans,
   getAdminSubscriptionSummary,
   getAdminSubscriptions,
+  getAdminSubscriptionTrialSettings,
   updateAdminSubscriptionPlan,
+  updateAdminSubscriptionTrialSettings,
   type AdminSubscription,
   type AdminSubscriptionPlan,
   type AdminSubscriptionSummary,
@@ -44,6 +46,8 @@ function AdminSubscriptionsPage() {
   const { token } = useAuth();
   const [summary, setSummary] = useState<AdminSubscriptionSummary | null>(null);
   const [plans, setPlans] = useState<AdminSubscriptionPlan[]>([]);
+  const [availableEntitlements, setAvailableEntitlements] = useState<AdminSubscriptionPlan['entitlements']>([]);
+  const [trialSettings, setTrialSettings] = useState({ trialEnabled: true, trialDurationDays: 7, trialPlanKey: 'PREMIUM' });
   const [subscriptions, setSubscriptions] = useState<AdminSubscription[]>([]);
   const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [detail, setDetail] = useState<AdminSubscriptionDetail | null>(null);
@@ -55,6 +59,10 @@ function AdminSubscriptionsPage() {
   const [subsError, setSubsError] = useState('');
   const [detailLoading, setDetailLoading] = useState(false);
   const [savingPlanId, setSavingPlanId] = useState<string | null>(null);
+  const [dirtyPlanIds, setDirtyPlanIds] = useState<Set<string>>(new Set());
+  const [trialLoading, setTrialLoading] = useState(true);
+  const [trialSaving, setTrialSaving] = useState(false);
+  const [trialDirty, setTrialDirty] = useState(false);
   const [filters, setFilters] = useState<{ status: AdminSubscription['status'] | ''; plan: string; currency: string; from: string; to: string; search: string }>({ status: '', plan: '', currency: '', from: '', to: '', search: '' });
   const [query] = useState({ limit: 25 });
 
@@ -78,12 +86,26 @@ function AdminSubscriptionsPage() {
     const result = await getAdminSubscriptionPlans(token);
     if (result.ok) {
       setPlans(result.data.data.plans);
+      setAvailableEntitlements(result.data.data.availableEntitlements ?? result.data.data.plans.flatMap((plan) => plan.availableEntitlements ?? plan.entitlements));
       setPlansError('');
     } else {
       setPlans([]);
       setPlansError(result.error.message || 'Subscription plans could not be loaded.');
     }
     setPlansLoading(false);
+  };
+
+  const fetchTrialSettings = async () => {
+    if (!token) return;
+    setTrialLoading(true);
+    const result = await getAdminSubscriptionTrialSettings(token);
+    if (result.ok) {
+      setTrialSettings(result.data.data.settings);
+      setPlansError('');
+    } else {
+      setPlansError(result.error.message || 'Trial settings could not be loaded.');
+    }
+    setTrialLoading(false);
   };
 
   const fetchSubscriptions = async (append = false) => {
@@ -115,6 +137,7 @@ function AdminSubscriptionsPage() {
   useEffect(() => {
     void fetchSummary();
     void fetchPlans();
+    void fetchTrialSettings();
   }, [token]);
 
   useEffect(() => {
@@ -124,6 +147,7 @@ function AdminSubscriptionsPage() {
 
   const updatePlanState = (planId: string, updates: Partial<AdminSubscriptionPlan>) => {
     setPlans((current) => current.map((plan) => (plan.id === planId ? { ...plan, ...updates } : plan)));
+    setDirtyPlanIds((current) => new Set(current).add(planId));
   };
 
   const handleSavePlan = async (plan: AdminSubscriptionPlan) => {
@@ -140,16 +164,44 @@ function AdminSubscriptionsPage() {
       displayOrder: plan.displayOrder,
       benefits: plan.benefits,
       entitlementKeys: plan.entitlements.map((entitlement) => entitlement.key),
+      aiAllowance: plan.aiAllowance ?? 0,
+      aiUnlimited: plan.aiUnlimited,
+      featureConfig: plan.featureConfig,
     };
 
     const result = await updateAdminSubscriptionPlan(plan.id, payload, token);
     if (result.ok) {
       setPlans((current) => current.map((item) => (item.id === plan.id ? result.data.data.plan : item)));
+      setDirtyPlanIds((current) => {
+        const next = new Set(current);
+        next.delete(plan.id);
+        return next;
+      });
       setPlansError('');
     } else {
       setPlansError(result.error.message || 'Plan could not be updated.');
     }
     setSavingPlanId(null);
+  };
+
+  const toggleEntitlement = (plan: AdminSubscriptionPlan, key: string, enabled: boolean) => {
+    const selected = new Set(plan.entitlements.map((entitlement) => entitlement.key));
+    if (enabled) selected.add(key);
+    else selected.delete(key);
+    const catalog = availableEntitlements.length ? availableEntitlements : plan.availableEntitlements ?? plan.entitlements;
+    updatePlanState(plan.id, { entitlements: catalog.filter((entitlement) => selected.has(entitlement.key)) });
+  };
+
+  const saveTrialSettings = async () => {
+    if (!token) return;
+    setTrialSaving(true);
+    const result = await updateAdminSubscriptionTrialSettings({ id: 'default', ...trialSettings }, token);
+    if (result.ok) {
+      setTrialSettings(result.data.data.settings);
+      setTrialDirty(false);
+    }
+    else setPlansError(result.error.message || 'Trial settings could not be saved.');
+    setTrialSaving(false);
   };
 
   const openSubscriptionDetails = async (subscriptionId: string) => {
@@ -226,7 +278,14 @@ function AdminSubscriptionsPage() {
         {!plansLoading && !plansError && plans.length ? (
           <div className="subscription-plan-grid">
             {plans.map((plan) => (
-              <article className="subscription-plan" key={plan.id}>
+              <article className={`subscription-plan ${dirtyPlanIds.has(plan.id) ? 'subscription-plan--dirty' : ''}`} key={plan.id}>
+                <div className="subscription-plan__header">
+                  <div>
+                    <span className="subscription-plan__key">{plan.key}</span>
+                    <h3>{plan.name}</h3>
+                  </div>
+                  <span className={`subscription-plan__state ${plan.active ? 'subscription-plan__state--active' : ''}`}>{plan.active ? 'Active' : 'Hidden'}</span>
+                </div>
                 <label className="subscription-input">
                   <span>Plan name</span>
                   <input type="text" value={plan.name} onChange={(event) => updatePlanState(plan.id, { name: event.target.value })} />
@@ -243,6 +302,14 @@ function AdminSubscriptionsPage() {
                 <label className="subscription-input">
                   <span>Display order</span>
                   <input type="number" min={0} value={plan.displayOrder} onChange={(event) => updatePlanState(plan.id, { displayOrder: Number(event.target.value) || 0 })} />
+                </label>
+                <label className="subscription-input">
+                  <span>Monthly AI allowance</span>
+                  <span className="subscription-number-input"><input type="number" min={0} max={100000} value={plan.aiAllowance ?? 0} disabled={plan.aiUnlimited} onChange={(event) => updatePlanState(plan.id, { aiAllowance: Number(event.target.value) || 0 })} /><small>{plan.aiUnlimited ? 'unlimited' : 'uses'}</small></span>
+                </label>
+                <label className="subscription-checkbox subscription-toggle-row">
+                  <input type="checkbox" checked={plan.aiUnlimited} onChange={(event) => updatePlanState(plan.id, { aiUnlimited: event.target.checked })} />
+                  <span>Unlimited AI usage</span>
                 </label>
                 <label className="subscription-input">
                   <span>Plan description</span>
@@ -272,13 +339,14 @@ function AdminSubscriptionsPage() {
                   <button type="button" className="subscription-benefit-add" onClick={() => updatePlanState(plan.id, { benefits: [...plan.benefits, 'New benefit'] })}>+ Add benefit</button>
                 </div>
                 <div className="subscription-benefits-editor">
-                  <span>Entitlements</span>
+                  <span>Available features</span>
                   <div className="subscription-benefits-list">
-                    {plan.entitlements.length ? plan.entitlements.map((entitlement) => (
-                      <div className="subscription-benefit-item" key={`${plan.id}-entitlement-${entitlement.key}`}>
-                        <input type="text" value={entitlement.key} readOnly />
-                      </div>
-                    )) : <p className="payment-copy">No entitlements assigned.</p>}
+                    {(availableEntitlements.length ? availableEntitlements : plan.availableEntitlements ?? plan.entitlements).map((entitlement) => (
+                      <label className="subscription-checkbox subscription-feature-option" key={`${plan.id}-entitlement-${entitlement.key}`} title={entitlement.description ?? undefined}>
+                        <input type="checkbox" checked={plan.entitlements.some((assigned) => assigned.key === entitlement.key)} onChange={(event) => toggleEntitlement(plan, entitlement.key, event.target.checked)} />
+                        <span><strong>{entitlement.displayName || label(entitlement.key)}</strong>{entitlement.description ? <small>{entitlement.description}</small> : null}</span>
+                      </label>
+                    ))}
                   </div>
                 </div>
                 <label className="subscription-checkbox">
@@ -289,13 +357,48 @@ function AdminSubscriptionsPage() {
                   <input type="checkbox" checked={plan.public} onChange={(event) => updatePlanState(plan.id, { public: event.target.checked })} />
                   <span>Public</span>
                 </label>
-                <button type="button" className="subscription-action-button" onClick={() => void handleSavePlan(plan)} disabled={savingPlanId === plan.id}>
-                  {savingPlanId === plan.id ? 'Saving…' : 'Save plan'}
-                </button>
+                <div className="subscription-plan__footer">
+                  <span className="subscription-save-status">{dirtyPlanIds.has(plan.id) ? 'Unsaved changes' : 'Saved'}</span>
+                  <button type="button" className="subscription-action-button" onClick={() => void handleSavePlan(plan)} disabled={savingPlanId === plan.id}>
+                    {savingPlanId === plan.id ? 'Saving…' : 'Save plan'}
+                  </button>
+                </div>
               </article>
             ))}
           </div>
         ) : null}
+      </section>
+
+      <section className="admin-panel subscription-panel subscription-panel--editor">
+        <div className="subscription-heading">
+          <div>
+            <span><FaCrown /> Free trial controls</span>
+            <h2>Trial configuration</h2>
+          </div>
+        </div>
+        {trialLoading ? <AdminPageSkeleton rows={1} statCards={0} showToolbar={false} /> : (
+          <>
+            <label className="subscription-checkbox subscription-toggle-row">
+              <input type="checkbox" checked={trialSettings.trialEnabled} onChange={(event) => { setTrialDirty(true); setTrialSettings((current) => ({ ...current, trialEnabled: event.target.checked })); }} />
+              <span>Allow new free trials</span>
+            </label>
+            <label className="subscription-input">
+              <span>Trial duration in days</span>
+              <input type="number" min={1} max={365} value={trialSettings.trialDurationDays} onChange={(event) => { setTrialDirty(true); setTrialSettings((current) => ({ ...current, trialDurationDays: Number(event.target.value) || 1 })); }} />
+            </label>
+            <label className="subscription-input">
+              <span>Trial plan</span>
+              <select value={trialSettings.trialPlanKey} onChange={(event) => { setTrialDirty(true); setTrialSettings((current) => ({ ...current, trialPlanKey: event.target.value })); }}>
+                {plans.filter((plan) => plan.active).map((plan) => <option value={plan.key} key={plan.id}>{plan.name}</option>)}
+              </select>
+            </label>
+            <p className="subscription-editor-copy">Trial AI allowance follows the selected plan&apos;s configured allowance.</p>
+            <div className="subscription-plan__footer">
+              <span className="subscription-save-status">{trialDirty ? 'Unsaved changes' : 'Saved'}</span>
+              <button type="button" className="subscription-action-button" onClick={() => void saveTrialSettings()} disabled={trialSaving || !trialDirty}>{trialSaving ? 'Saving…' : 'Save trial settings'}</button>
+            </div>
+          </>
+        )}
       </section>
 
       <section className="admin-panel subscription-panel">

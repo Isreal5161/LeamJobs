@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { useAuth } from './AuthContext';
-import { getSeekerSubscriptionPlans, getSeekerSubscriptions } from '../services/api';
+import { getSeekerSubscriptionPlans, getSeekerSubscriptions, type SeekerSubscriptionState } from '../services/api';
 
 export type SubscriptionPlanId = 'free' | 'professional' | 'premium';
 export type SubscriptionStatus = 'Pending' | 'Active' | 'Cancelled' | 'Expired' | 'Failed';
@@ -37,6 +37,7 @@ export const resolveAccountTypeForPlan = (value?: string | null, availablePlans:
 
 export type SubscriptionPlan = {
   id: SubscriptionPlanId | string;
+  key?: string;
   name: string;
   price: number;
   visibilityBoost: number;
@@ -44,6 +45,10 @@ export type SubscriptionPlan = {
   benefits: string[];
   featuredPriority: number;
   featuredEligible: boolean;
+  aiAllowance?: number | null;
+  aiUnlimited?: boolean;
+  entitlements?: string[];
+  featureConfig?: Record<string, unknown>;
 };
 
 export type SeekerSubscription = {
@@ -57,6 +62,8 @@ export type SeekerSubscription = {
   featured: boolean;
   advancedCvEligible: boolean;
   aiEntitlements: string[];
+  aiAllowance?: number | null;
+  aiUnlimited?: boolean;
 };
 
 export const subscriptionPlans: SubscriptionPlan[] = [
@@ -84,6 +91,9 @@ type SubscriptionContextValue = {
   getRecommendationScore: (seekerId: string) => number;
   isLoading: boolean;
   refresh: () => Promise<void>;
+  currentPlan: SubscriptionPlan;
+  trial: SeekerSubscriptionState['activeTrial'];
+  aiUsage: SeekerSubscriptionState['aiUsage'];
 };
 
 const SubscriptionContext = createContext<SubscriptionContextValue | undefined>(undefined);
@@ -92,12 +102,18 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
   const { token, user } = useAuth();
   const [plans, setPlans] = useState<SubscriptionPlan[]>(subscriptionPlans);
   const [subscriptions, setSubscriptions] = useState<SeekerSubscription[]>([]);
+  const [currentPlan, setCurrentPlan] = useState<SubscriptionPlan>(subscriptionPlans[0]);
+  const [trial, setTrial] = useState<SeekerSubscriptionState['activeTrial']>(null);
+  const [aiUsage, setAiUsage] = useState<SeekerSubscriptionState['aiUsage']>({ userId: '', planKey: 'BASIC', source: 'FREE', limit: 5, used: 0, remaining: 5, allowed: true, unlimited: false });
   const [isLoading, setIsLoading] = useState(true);
 
   const refresh = useMemo(() => async () => {
     if (!token || !user || user.role !== 'SEEKER') {
       setPlans(subscriptionPlans);
       setSubscriptions([]);
+      setCurrentPlan(subscriptionPlans[0]);
+      setTrial(null);
+      setAiUsage({ userId: '', planKey: 'BASIC', source: 'FREE', limit: 5, used: 0, remaining: 5, allowed: true, unlimited: false });
       setIsLoading(false);
       return;
     }
@@ -116,26 +132,56 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
         visibilityBoost: 0,
         description: plan.description ?? 'Subscription plan',
         benefits: plan.benefits ?? [],
+        key: plan.key,
+        aiAllowance: plan.aiAllowance ?? null,
+        aiUnlimited: plan.aiUnlimited ?? false,
+        entitlements: plan.entitlements ?? [],
+        featureConfig: plan.featureConfig ?? {},
         featuredPriority: 0,
         featuredEligible: false,
       }));
 
-      setPlans([
+      const basicPlan = {
+        id: 'free' as const,
+        key: 'BASIC',
+        name: 'Basic',
+        price: 0,
+        visibilityBoost: 0,
+        description: 'Standard profile visibility and job matching.',
+        benefits: ['Standard recommendations', 'Public profile', 'Application tracking'],
+        featuredPriority: 0,
+        featuredEligible: false,
+        aiAllowance: 5,
+        entitlements: [],
+        featureConfig: { free: true },
+      };
+      setPlans(nextPlans.some((plan) => plan.key === 'BASIC') ? nextPlans : [
         {
-          id: 'free',
-          name: 'Basic',
-          price: 0,
-          visibilityBoost: 0,
-          description: 'Standard profile visibility and job matching.',
-          benefits: ['Standard recommendations', 'Public profile', 'Application tracking'],
-          featuredPriority: 0,
-          featuredEligible: false,
+          ...basicPlan,
         },
-        ...nextPlans.filter((plan) => plan.id !== 'free'),
+        ...nextPlans,
       ]);
     }
 
     if (subscriptionsResult.ok && subscriptionsResult.data?.data) {
+      const state = subscriptionsResult.data.data;
+      setTrial(state.activeTrial);
+      setAiUsage(state.aiUsage);
+      setCurrentPlan({
+        id: state.currentPlan.id,
+        key: state.currentPlan.key,
+        name: getAccountTypeLabel(state.currentPlan.key, state.currentPlan.displayName),
+        price: Number(state.currentPlan.price ?? 0),
+        visibilityBoost: 0,
+        description: state.currentPlan.description ?? 'Subscription plan',
+        benefits: state.currentPlan.benefits ?? [],
+        featuredPriority: 0,
+        featuredEligible: false,
+        aiAllowance: state.currentPlan.aiAllowance ?? null,
+        aiUnlimited: state.currentPlan.aiUnlimited ?? false,
+        entitlements: state.currentPlan.entitlements ?? [],
+        featureConfig: state.currentPlan.featureConfig ?? {},
+      });
       const nextSubscriptions: SeekerSubscription[] = (subscriptionsResult.data.data.subscriptions ?? []).map((item) => {
         const aiEntitlements = Array.isArray(item.plan?.entitlements)
           ? (item.plan.entitlements as string[]).filter((key) => typeof key === 'string' && key.startsWith('AI_'))
@@ -160,11 +206,13 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
           featured: false,
           advancedCvEligible: item.plan?.entitlements?.includes('ADVANCED_CV') ?? false,
           aiEntitlements,
+          aiAllowance: item.plan?.aiAllowance ?? null,
         };
       });
       setSubscriptions(nextSubscriptions);
     } else {
       setSubscriptions([]);
+      setTrial(null);
     }
 
     setIsLoading(false);
@@ -212,8 +260,11 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
       updatePlan: () => undefined,
       isLoading,
       refresh,
+      currentPlan,
+      trial,
+      aiUsage,
     };
-  }, [plans, subscriptions, isLoading, refresh]);
+  }, [plans, subscriptions, isLoading, refresh, currentPlan, trial, aiUsage]);
 
   return <SubscriptionContext.Provider value={value}>{children}</SubscriptionContext.Provider>;
 }

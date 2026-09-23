@@ -778,7 +778,6 @@ export type CreateSeekerApplicationPayload = {
   coverLetter?: string;
   cvSource?: 'template' | 'upload';
   resumeUrl?: string | null;
-  resumeObjectKey?: string | null;
 };
 
 export type CreateSeekerApplicationResponse = {
@@ -815,9 +814,7 @@ export type GetSeekerProfileResponse = {
       cvTemplate: CVTemplateId | null;
       linkedinUrl: string | null;
       resumeUrl: string | null;
-      resumeObjectKey: string | null;
       profilePictureUrl: string | null;
-      profilePictureKey: string | null;
     };
     onboardingComplete: boolean;
   };
@@ -1604,6 +1601,10 @@ export type AdminSubscriptionPlan = {
   displayOrder: number;
   benefits: string[];
   entitlements: { key: string; displayName: string; description: string | null; isActive: boolean }[];
+  availableEntitlements?: { key: string; displayName: string; description: string | null; isActive: boolean }[];
+  aiAllowance: number | null;
+  aiUnlimited: boolean;
+  featureConfig: Record<string, unknown>;
   createdAt: string;
   updatedAt: string;
 };
@@ -1669,10 +1670,29 @@ export type AdminSubscriptionPlanPayload = {
   displayOrder: number;
   benefits: string[];
   entitlementKeys: string[];
+  aiAllowance?: number;
+  aiUnlimited?: boolean;
+  featureConfig?: Record<string, unknown>;
+};
+
+export type AdminSubscriptionTrialSettings = {
+  id: string;
+  trialEnabled: boolean;
+  trialDurationDays: number;
+  trialPlanKey: string;
+  updatedAt?: string;
 };
 
 export function getAdminSubscriptionPlans(token: string) {
-  return request<{ success: true; data: { plans: AdminSubscriptionPlan[] } }>({ method: 'GET', endpoint: '/admin/subscription-plans', token });
+  return request<{ success: true; data: { plans: AdminSubscriptionPlan[]; availableEntitlements: AdminSubscriptionPlan['entitlements'] } }>({ method: 'GET', endpoint: '/admin/subscription-plans', token });
+}
+
+export function getAdminSubscriptionTrialSettings(token: string) {
+  return request<{ success: true; data: { settings: AdminSubscriptionTrialSettings } }>({ method: 'GET', endpoint: '/admin/subscription-trial-settings', token });
+}
+
+export function updateAdminSubscriptionTrialSettings(payload: AdminSubscriptionTrialSettings, token: string) {
+  return request<{ success: true; data: { settings: AdminSubscriptionTrialSettings } }>({ method: 'PATCH', endpoint: '/admin/subscription-trial-settings', body: payload, token });
 }
 
 export function createAdminSubscriptionPlan(payload: AdminSubscriptionPlanPayload, token: string) {
@@ -1717,6 +1737,9 @@ export type SeekerSubscriptionPlan = {
   public: boolean;
   benefits: string[];
   entitlements?: string[];
+  aiAllowance?: number | null;
+  aiUnlimited?: boolean;
+  featureConfig?: Record<string, unknown>;
 };
 
 export type SeekerSubscriptionState = {
@@ -1738,8 +1761,11 @@ export type SeekerSubscriptionState = {
     plan: SeekerSubscriptionPlan | null;
     payments: Array<{ id: string; subscriptionId: string | null; providerReference: string; transactionId: string | null; amount: string | null; currency: string; status: string; paymentType: string; provider: string; verifiedAt: string | null; createdAt: string; checkoutUrl: string | null }>;
   }>;
-  currentSubscription: string | null;
-  activeSubscription: string | null;
+  currentSubscription: SeekerSubscriptionState['subscriptions'][number] | null;
+  activeSubscription: SeekerSubscriptionState['subscriptions'][number] | null;
+  activeTrial: { id: string; grantedPlanKey: string; status: string; startAt: string; endAt: string; durationDays: number; source: string | null } | null;
+  aiUsage: { userId: string; planKey: string; source: string; limit: number | null; used: number; remaining: number | null; allowed: boolean; unlimited?: boolean };
+  currentPlan: SeekerSubscriptionPlan;
 };
 
 export function getSeekerSubscriptionPlans(token: string) {
@@ -1765,6 +1791,10 @@ export function requestCvOptimizer(body: Record<string, unknown>, token: string)
 
 export function requestApplicationAssistance(body: Record<string, unknown>, token: string) {
   return request<AiApplicationResponse>({ method: 'POST', endpoint: '/seeker/ai/application-assistance', body, token });
+}
+
+export function generateApplicationCoverLetter(body: { applicationId?: string; jobId?: string; request?: string; coverLetter?: string }, token: string) {
+  return request<{ success: true; data: { coverLetter: string; planKey: string; remaining: number } }>({ method: 'POST', endpoint: '/seeker/applications/cover-letter/generate', body, token });
 }
 
 export function createSeekerSubscriptionCheckout(planId: string, token: string, idempotencyKey?: string) {
@@ -2222,9 +2252,7 @@ export type ProfileFileResponse = {
   success: true;
   data: {
     profilePictureUrl?: string | null;
-    profilePictureKey?: string | null;
     resumeUrl?: string | null;
-    resumeObjectKey?: string | null;
   };
 };
 

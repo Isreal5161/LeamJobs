@@ -1172,11 +1172,31 @@
   }
 }
 
-.seeker-ai-application { display: grid; gap: .65rem; margin-top: 1rem; padding: .9rem; border: 1px solid #dbe3ee; border-radius: 8px; background: #fbfdff; }
-.seeker-ai-application p { margin: .25rem 0 0; color: #64748b; font-size: .84rem; }
-.seeker-ai-application > button { width: max-content; min-height: 38px; padding: 0 .85rem; border: 0; border-radius: 7px; background: #0e4ae1; color: #fff; font-weight: 800; }
-.seeker-ai-application > button:disabled { opacity: .55; cursor: not-allowed; }
-.seeker-ai-application__result { display: grid; gap: .5rem; }
-.seeker-ai-application__result h4 { margin: 0; color: #0f172a; }
-.seeker-ai-application__result textarea { width: 100%; resize: vertical; padding: .65rem; border: 1px solid #dbe3ee; border-radius: 7px; font: inherit; }
-.seeker-ai-application__result ul { margin: 0; padding-left: 1.2rem; color: #475569; }
+.seeker-ai-application { display: grid; gap: .8rem; margin-top: 1rem; padding: 1rem; border: 1px solid #f2c7bd; border-radius: 10px; background: #fffaf8; box-shadow: 0 6px 16px rgba(50,47,106,.05); }
+.seeker-ai-application__heading { display: grid; grid-template-columns: 2rem minmax(0,1fr); gap: .7rem; align-items: start; }
+.seeker-ai-application__icon { display: grid; place-items: center; width: 2rem; height: 2rem; border-radius: 8px; background: #fde6df; color: #d7442f; }
+.seeker-ai-application__heading strong { color: #322f6a; font-size: .9rem; }
+.seeker-ai-application p { margin: .25rem 0 0; color: #64748b; font-size: .8rem; line-height: 1.5; }
+.seeker-ai-application__action-row { display: flex; flex-wrap: wrap; align-items: center; gap: .7rem; }
+.seeker-ai-application__action-row > button, .seeker-ai-application__result > button { width: max-content; min-height: 40px; padding: 0 .95rem; border: 0; border-radius: 7px; background: #ef5036; color: #fff; font-size: .78rem; font-weight: 800; cursor: pointer; box-shadow: 0 5px 12px rgba(239,80,54,.2); transition: background .18s ease, transform .18s ease, box-shadow .18s ease; }
+.seeker-ai-application__action-row > button:hover:not(:disabled), .seeker-ai-application__result > button:hover { background: #d9432c; transform: translateY(-1px); box-shadow: 0 7px 16px rgba(239,80,54,.26); }
+.seeker-ai-application__action-row > button > svg { margin-right: .4rem; }
+.seeker-ai-application__spinner { display: inline-block; width: .8rem; height: .8rem; margin-right: .45rem; border: 2px solid rgba(255,255,255,.45); border-top-color: #fff; border-radius: 50%; vertical-align: -.12rem; animation: seeker-ai-spin .7s linear infinite; }
+.seeker-ai-application__plans-link { color: #322f6a; font-size: .75rem; font-weight: 750; text-decoration: underline; text-underline-offset: 2px; }
+.seeker-ai-application__action-row > button:focus-visible, .seeker-ai-application__result > button:focus-visible { outline: 3px solid rgba(50,47,106,.28); outline-offset: 2px; }
+.seeker-ai-application__action-row > button:disabled { opacity: .58; cursor: not-allowed; box-shadow: none; }
+.seeker-ai-application__usage { color: #322f6a; font-size: .75rem; font-weight: 700; }
+.seeker-ai-application__result { display: grid; gap: .55rem; padding-top: .75rem; border-top: 1px solid #f2d8d1; }
+.seeker-ai-application__result h4 { margin: 0; color: #322f6a; font-size: .82rem; }
+.seeker-ai-application__result textarea { width: 100%; resize: vertical; min-height: 132px; padding: .7rem; border: 1px solid #dbe3ee; border-radius: 7px; background: #fff; color: #172033; font: inherit; line-height: 1.5; }
+.seeker-ai-application__result textarea:focus { border-color: #322f6a; outline: 3px solid rgba(50,47,106,.12); }
+.seeker-ai-application__result > button { justify-self: start; background: #322f6a; box-shadow: 0 5px 12px rgba(50,47,106,.18); }
+.seeker-ai-application__result > button:hover { background: #272454; box-shadow: 0 7px 16px rgba(50,47,106,.24); }
+.seeker-ai-application [role='alert'] { color: #b42318; font-weight: 650; }
+@keyframes seeker-ai-spin { to { transform: rotate(360deg); } }
+
+@media (max-width: 480px) {
+  .seeker-ai-application { padding: .85rem; }
+  .seeker-ai-application__action-row { align-items: stretch; flex-direction: column; }
+  .seeker-ai-application__action-row > button, .seeker-ai-application__result > button { width: 100%; }
+}
