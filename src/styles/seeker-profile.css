@@ -402,6 +402,62 @@
   text-align: center;
 }
 
+@media (min-width: 768px) {
+  .seeker-cv-mode-card {
+    min-height: 136px;
+    align-content: start;
+    padding: 1.15rem 1.2rem;
+  }
+
+  .seeker-cv-upload-box {
+    grid-template-columns: minmax(190px, 0.8fr) minmax(0, 1.6fr);
+    grid-template-areas:
+      "icon title"
+      "copy controls";
+    align-items: center;
+    justify-items: start;
+    column-gap: 1.25rem;
+    row-gap: 0.35rem;
+    padding: 1.25rem 1.4rem;
+    text-align: left;
+  }
+
+  .seeker-cv-upload-box > svg {
+    grid-area: icon;
+    align-self: end;
+  }
+
+  .seeker-cv-upload-box > strong {
+    grid-area: title;
+    align-self: end;
+    font-size: 1rem;
+  }
+
+  .seeker-cv-upload-box > span {
+    grid-area: copy;
+    max-width: 240px;
+    line-height: 1.45;
+  }
+
+  .seeker-cv-file-controls {
+    grid-area: controls;
+    width: 100%;
+    margin-top: 0;
+  }
+
+  .seeker-cv-file-actions {
+    justify-content: flex-start;
+  }
+
+  .seeker-cv-file-meta {
+    justify-items: start;
+  }
+
+  .seeker-cv-workflow-options {
+    margin-top: 0.2rem;
+  }
+}
+
 .seeker-cv-upload-box > svg {
   color: #0e4ae1;
   font-size: 1.6rem;
