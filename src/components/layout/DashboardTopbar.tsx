@@ -220,6 +220,17 @@ function DashboardTopbar({
             </NavLink>
           ))}
         </nav>
+        {role === 'admin' && onMobileMenuToggle ? (
+          <button
+            type="button"
+            className="dashboard-topbar__toggle"
+            onClick={onMobileMenuToggle}
+            aria-label={mobileMenuOpen ? 'Close admin navigation menu' : 'Open admin navigation menu'}
+            aria-expanded={mobileMenuOpen}
+          >
+            {mobileMenuOpen ? <FaTimes /> : <FaBars />}
+          </button>
+        ) : null}
         <div className="dashboard-topbar__utility">
           <div className="dashboard-topbar__notification-wrap">
             <button

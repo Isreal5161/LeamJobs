@@ -72,6 +72,69 @@
   .admin-layout .dashboard-topbar {
     position: relative;
     z-index: 50;
+    gap: 0.45rem;
+    min-height: 52px;
+    padding: 0.55rem 0.6rem;
+  }
+
+  .admin-layout .dashboard-topbar__brand {
+    flex: 1 1 auto;
+    gap: 0.25rem;
+    min-width: 0;
+    max-width: calc(100% - 6.25rem);
+  }
+
+  .admin-layout .dashboard-topbar__brand .site-logo__image {
+    width: auto;
+    max-width: 5.9rem;
+    height: 24px;
+    flex: 0 0 auto;
+  }
+
+  .admin-layout .dashboard-topbar__brand .site-logo__tagline {
+    display: block;
+    min-width: 0;
+    max-width: 7.25rem;
+    overflow: hidden;
+    font-size: 0.58rem;
+    line-height: 1.1;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .admin-layout .dashboard-topbar__nav {
+    display: none;
+  }
+
+  .admin-layout .dashboard-topbar__toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .admin-layout .dashboard-topbar__utility {
+    flex: 0 0 auto;
+    gap: 0.35rem;
+    margin-left: 0;
+  }
+}
+
+@media (min-width: 768px) and (max-width: 1024px) {
+  .admin-layout .dashboard-topbar__nav {
+    min-width: 0;
+    justify-content: flex-start;
+    overflow-x: auto;
+    scrollbar-width: thin;
+  }
+
+  .admin-layout .dashboard-topbar__link {
+    flex: 0 0 auto;
+    padding: 0.5rem 0.55rem;
+    font-size: 0.78rem;
+  }
+
+  .admin-layout .dashboard-topbar__utility {
+    flex: 0 0 auto;
   }
 }
 
