@@ -10,8 +10,6 @@ import { resolveAccountTypeForPlan, useSubscriptions } from '../../context/Subsc
 type DashboardTopbarProps = {
   isOpen?: boolean;
   onToggle?: () => void;
-  onMobileMenuToggle?: () => void;
-  mobileMenuOpen?: boolean;
   role?: 'seeker' | 'employer' | 'admin';
   userName?: string;
   onLogout?: () => void;
@@ -64,8 +62,6 @@ const accountNav: Record<'seeker' | 'employer' | 'admin', { label: string; to: s
 function DashboardTopbar({
   isOpen = false,
   onToggle,
-  onMobileMenuToggle,
-  mobileMenuOpen = false,
   role,
   userName,
   onLogout,
@@ -220,17 +216,6 @@ function DashboardTopbar({
             </NavLink>
           ))}
         </nav>
-        {role === 'admin' && onMobileMenuToggle ? (
-          <button
-            type="button"
-            className="dashboard-topbar__toggle"
-            onClick={onMobileMenuToggle}
-            aria-label={mobileMenuOpen ? 'Close admin navigation menu' : 'Open admin navigation menu'}
-            aria-expanded={mobileMenuOpen}
-          >
-            {mobileMenuOpen ? <FaTimes /> : <FaBars />}
-          </button>
-        ) : null}
         <div className="dashboard-topbar__utility">
           <div className="dashboard-topbar__notification-wrap">
             <button

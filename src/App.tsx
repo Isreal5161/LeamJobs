@@ -94,6 +94,7 @@ function App() {
             <Route path="dashboard" element={<Homepage />} />
             <Route path="jobs" element={<JobsPage />} />
             <Route path="jobs/:jobId" element={<JobDetailsPage />} />
+            <Route path="companies/:employerId" element={<CompanyProfilePage />} />
             <Route path="applications" element={<ApplicationsPage />} />
             <Route path="contracts/:contractId" element={<ContractPage role="SEEKER" />} />
             <Route path="messages" element={<MessagesPage role="seeker" />} />
