@@ -27,7 +27,7 @@ import { getAccountTypeLabel, resolveAccountTypeForPlan, useSubscriptions } from
 import { startSeekerFreeTrial } from '../../services/api';
 import {
   getSeekerProfile,
-  API_BASE_URL,
+  getSeekerProfilePicture,
   request,
   updateSeekerCV,
   updateSeekerProfile,
@@ -468,9 +468,9 @@ function ProfilePage() {
     let objectUrl = '';
     let isMounted = true;
     const loadPicture = async () => {
-      const response = await fetch(`${API_BASE_URL}${profilePictureUrl}`, { headers: { Authorization: `Bearer ${token}` } });
+      const response = await getSeekerProfilePicture(token);
       if (!response.ok || !isMounted) return;
-      objectUrl = URL.createObjectURL(await response.blob());
+      objectUrl = URL.createObjectURL(response.data);
       setProfilePictureUrl(objectUrl);
     };
 
