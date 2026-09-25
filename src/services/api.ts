@@ -1683,6 +1683,8 @@ export type AdminSubscriptionTrialSettings = {
   updatedAt?: string;
 };
 
+export type AdminSubscriptionTrialSettingsPayload = Pick<AdminSubscriptionTrialSettings, 'trialEnabled' | 'trialDurationDays' | 'trialPlanKey'>;
+
 export function getAdminSubscriptionPlans(token: string) {
   return request<{ success: true; data: { plans: AdminSubscriptionPlan[]; availableEntitlements: AdminSubscriptionPlan['entitlements'] } }>({ method: 'GET', endpoint: '/admin/subscription-plans', token });
 }
@@ -1691,7 +1693,7 @@ export function getAdminSubscriptionTrialSettings(token: string) {
   return request<{ success: true; data: { settings: AdminSubscriptionTrialSettings } }>({ method: 'GET', endpoint: '/admin/subscription-trial-settings', token });
 }
 
-export function updateAdminSubscriptionTrialSettings(payload: AdminSubscriptionTrialSettings, token: string) {
+export function updateAdminSubscriptionTrialSettings(payload: AdminSubscriptionTrialSettingsPayload, token: string) {
   return request<{ success: true; data: { settings: AdminSubscriptionTrialSettings } }>({ method: 'PATCH', endpoint: '/admin/subscription-trial-settings', body: payload, token });
 }
 

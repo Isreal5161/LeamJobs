@@ -195,7 +195,7 @@ function AdminSubscriptionsPage() {
   const saveTrialSettings = async () => {
     if (!token) return;
     setTrialSaving(true);
-    const result = await updateAdminSubscriptionTrialSettings({ id: 'default', ...trialSettings }, token);
+    const result = await updateAdminSubscriptionTrialSettings(trialSettings, token);
     if (result.ok) {
       setTrialSettings(result.data.data.settings);
       setTrialDirty(false);
