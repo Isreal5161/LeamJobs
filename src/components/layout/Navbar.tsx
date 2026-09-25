@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, NavLink } from 'react-router-dom';
 import { FaBars, FaTimes } from 'react-icons/fa';
 import Logo from './Logo';
+import { useAuth } from '../../context/AuthContext';
 
 const NAV_LINKS = [
   { to: '/', label: 'Home' },
@@ -13,6 +14,17 @@ const NAV_LINKS = [
 
 function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
+  const { user, isAuthenticated, logout } = useAuth();
+  const dashboardPath = user?.role === 'ADMIN'
+    ? '/admin/moderation'
+    : user?.role === 'EMPLOYER'
+      ? '/employer/jobs'
+      : '/seeker/dashboard';
+
+  const handleLogout = () => {
+    setMenuOpen(false);
+    logout();
+  };
 
   return (
     <header className="navbar">
@@ -31,12 +43,17 @@ function Navbar() {
           ))}
         </div>
         <div className="navbar__actions">
-          <Link to="/login" className="button button--outline navbar__button">
-            Sign in
-          </Link>
-          <Link to="/register" className="button button--primary navbar__button">
-            Get started
-          </Link>
+          {isAuthenticated ? (
+            <>
+              <button type="button" className="button button--outline navbar__button" onClick={handleLogout}>Log out</button>
+              <Link to={dashboardPath} className="button button--primary navbar__button">Dashboard</Link>
+            </>
+          ) : (
+            <>
+              <Link to="/login" className="button button--outline navbar__button">Sign in</Link>
+              <Link to="/register" className="button button--primary navbar__button">Get started</Link>
+            </>
+          )}
         </div>
         <button
           className="navbar__menu-toggle"
@@ -60,20 +77,17 @@ function Navbar() {
             {link.label}
           </NavLink>
         ))}
-        <NavLink
-          to="/login"
-          onClick={() => setMenuOpen(false)}
-          className={({ isActive }) => (isActive ? 'navbar__link--active' : undefined)}
-        >
-          Sign in
-        </NavLink>
-        <NavLink
-          to="/register"
-          onClick={() => setMenuOpen(false)}
-          className={({ isActive }) => (isActive ? 'navbar__link--active' : undefined)}
-        >
-          Register
-        </NavLink>
+        {isAuthenticated ? (
+          <>
+            <NavLink to={dashboardPath} onClick={() => setMenuOpen(false)}>Dashboard</NavLink>
+            <button type="button" onClick={handleLogout}>Log out</button>
+          </>
+        ) : (
+          <>
+            <NavLink to="/login" onClick={() => setMenuOpen(false)}>Sign in</NavLink>
+            <NavLink to="/register" onClick={() => setMenuOpen(false)}>Register</NavLink>
+          </>
+        )}
       </nav>
     </header>
   );

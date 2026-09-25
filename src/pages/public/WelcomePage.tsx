@@ -5,6 +5,7 @@ import Input from '../../components/common/Input';
 import RecommendedJobs from '../../components/jobs/RecommendedJobs';
 import { FaArrowRight, FaBriefcase, FaBuilding, FaUsers, FaWifi, FaClock, FaPencilAlt, FaMapMarkerAlt, FaDollarSign, FaCode, FaBullhorn } from 'react-icons/fa';
 import { useSiteContent } from '../../context/SiteContentContext';
+import { useAuth } from '../../context/AuthContext';
 import { getPublicJobs, type SeekerDashboardJob } from '../../services/api';
 
 const mapJob = (job: SeekerDashboardJob) => {
@@ -58,6 +59,7 @@ const mapJob = (job: SeekerDashboardJob) => {
 
 function WelcomePage() {
   const { content } = useSiteContent();
+  const { user, isAuthenticated } = useAuth();
   const {
     heroTitle,
     heroSubtitle,
@@ -77,6 +79,12 @@ function WelcomePage() {
   const [publicJobs, setPublicJobs] = useState<ReturnType<typeof mapJob>[]>([]);
   const [isLoadingJobs, setIsLoadingJobs] = useState(true);
   const [jobsError, setJobsError] = useState('');
+  const dashboardPath = user?.role === 'ADMIN'
+    ? '/admin/moderation'
+    : user?.role === 'EMPLOYER'
+      ? '/employer/jobs'
+      : '/seeker/dashboard';
+  const jobsPath = user?.role === 'EMPLOYER' ? '/employer/jobs' : user?.role === 'ADMIN' ? '/admin/jobs' : '/seeker/jobs';
 
   useEffect(() => {
     let isActive = true;
@@ -205,16 +213,16 @@ function WelcomePage() {
           <div className="hero__bottom">
             <div className="hero-actions" aria-label="Account actions">
               <div className="hero-actions__seeker">
-                <Link className="button button--primary hero-actions__primary" to="/register">
-                  {primaryCta}
+                <Link className="button button--primary hero-actions__primary" to={isAuthenticated ? dashboardPath : '/register'}>
+                  {isAuthenticated ? 'Dashboard' : primaryCta}
                 </Link>
-                <Link className="hero-actions__secondary" to="/login">
-                  {secondaryCta}
+                <Link className="hero-actions__secondary" to={isAuthenticated ? jobsPath : '/login'}>
+                  {isAuthenticated ? 'Browse jobs' : secondaryCta}
                 </Link>
               </div>
-              <Link className="hero-actions__employer" to="/employers/register">
-                <span>Hiring?</span>
-                {employerCta}
+              <Link className="hero-actions__employer" to={isAuthenticated ? dashboardPath : '/employers/register'}>
+                <span>{isAuthenticated ? 'Open' : 'Hiring?'}</span>
+                {isAuthenticated ? 'Workspace' : employerCta}
                 <FaArrowRight />
               </Link>
             </div>
