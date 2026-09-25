@@ -80,7 +80,7 @@ function Navbar() {
         {isAuthenticated ? (
           <>
             <NavLink to={dashboardPath} onClick={() => setMenuOpen(false)}>Dashboard</NavLink>
-            <button type="button" onClick={handleLogout}>Log out</button>
+            <button type="button" className="navbar__mobile-action" onClick={handleLogout}>Log out</button>
           </>
         ) : (
           <>
