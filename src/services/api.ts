@@ -1768,12 +1768,26 @@ export type SeekerSubscriptionState = {
   currentPlan: SeekerSubscriptionPlan;
 };
 
+export type SeekerTrialOffer = {
+  available: boolean;
+  durationDays: number;
+  trialPlanKey: string;
+};
+
 export function getSeekerSubscriptionPlans(token: string) {
   return request<{ success: true; data: { plans: SeekerSubscriptionPlan[] } }>({ method: 'GET', endpoint: '/seeker/subscription-plans', token });
 }
 
 export function getSeekerSubscriptions(token: string) {
   return request<{ success: true; data: SeekerSubscriptionState }>({ method: 'GET', endpoint: '/seeker/subscriptions', token });
+}
+
+export function getSeekerTrialOffer(token: string) {
+  return request<{ success: true; data: { offer: SeekerTrialOffer } }>({ method: 'GET', endpoint: '/seeker/subscriptions/trial', token });
+}
+
+export function startSeekerFreeTrial(token: string) {
+  return request<{ success: true; data: { trial: SeekerSubscriptionState['activeTrial'] } }>({ method: 'POST', endpoint: '/seeker/subscriptions/trial', token });
 }
 
 export type AiSuggestion = { section: string; suggestion: string; reason: string };

@@ -24,6 +24,7 @@ import CVTemplateSelector, { TEMPLATES } from '../../components/cv-templates/CVT
 import CVTemplateRenderer, { CVData, sampleCVData, type CVTemplateId } from '../../components/cv-templates/CVTemplateRenderer';
 import { useAuth } from '../../context/AuthContext';
 import { getAccountTypeLabel, resolveAccountTypeForPlan, useSubscriptions } from '../../context/SubscriptionContext';
+import { startSeekerFreeTrial } from '../../services/api';
 import {
   getSeekerProfile,
   API_BASE_URL,
@@ -325,7 +326,8 @@ function ProfilePage() {
   const [aiCvSuggestions, setAiCvSuggestions] = useState<{ section: string; original: string; suggested: string; reason: string }[]>([]);
   const [isAiLoading, setIsAiLoading] = useState(false);
   const [aiError, setAiError] = useState('');
-  const { plans, getSubscription } = useSubscriptions();
+  const { plans, getSubscription, refresh, trialOffer } = useSubscriptions();
+  const [isStartingTrial, setIsStartingTrial] = useState(false);
   const navigate = useNavigate();
 
   const subscriptionUserId = user?.id || '';
@@ -335,6 +337,19 @@ function ProfilePage() {
   const canUseCvOptimizer = Array.isArray(subscription.aiEntitlements) && subscription.aiEntitlements.includes('AI_CV_OPTIMIZER');
   const selectedTemplateIsAdvanced = TEMPLATES.find((template) => template.style === selectedTemplate)?.advanced ?? false;
   const renderedTemplate: CVTemplateId = selectedTemplateIsAdvanced && !canUseAdvancedCv ? 'modern' : selectedTemplate;
+
+  const handleStartTrial = async () => {
+    if (!token || !trialOffer.available || isStartingTrial) return;
+    setIsStartingTrial(true);
+    const result = await startSeekerFreeTrial(token);
+    if (result.ok) {
+      await refresh();
+      showNotification({ title: 'Free trial started', message: `Your ${trialOffer.durationDays}-day free trial is now active.`, tone: 'success' });
+    } else {
+      showNotification({ title: 'Free trial unavailable', message: result.error.message || 'We could not start your free trial.', tone: 'error' });
+    }
+    setIsStartingTrial(false);
+  };
 
   const handleTemplateSelection = (template: CVTemplateId) => {
     setSelectedTemplate(template);
@@ -1437,9 +1452,15 @@ function ProfilePage() {
                   <h2 id="profile-account-heading">{resolveAccountTypeForPlan(subscription.planId, plans, 'Basic') === 'Basic' ? 'Upgrade Account' : 'Manage Subscription'}</h2>
                   <p>Review your account plan and manage your LeamJobs subscription from one place.</p>
                 </div>
-                <button type="button" className="seeker-profile-account-card__action" onClick={() => navigate('/seeker/subscription')}>
-                  {resolveAccountTypeForPlan(subscription.planId, plans, 'Basic') === 'Basic' ? 'Upgrade Account' : 'Manage Subscription'}
-                </button>
+                {trialOffer.available ? (
+                  <button type="button" className="seeker-profile-account-card__action seeker-profile-account-card__action--trial" onClick={() => void handleStartTrial()} disabled={isStartingTrial}>
+                    {isStartingTrial ? 'Starting trial…' : `Start ${trialOffer.durationDays}-day free trial`}
+                  </button>
+                ) : (
+                  <button type="button" className="seeker-profile-account-card__action" onClick={() => navigate('/seeker/subscription')}>
+                    {resolveAccountTypeForPlan(subscription.planId, plans, 'Basic') === 'Basic' ? 'Upgrade Account' : 'Manage Subscription'}
+                  </button>
+                )}
               </div>
             </section>
 

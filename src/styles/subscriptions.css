@@ -48,6 +48,10 @@
 .subscription-plan > span { color: var(--brand-secondary); font-size: .78rem; font-weight: 600; }
 .subscription-input { display: grid; gap: .35rem; color: #475569; font-size: .72rem; font-weight: 600; }
 .subscription-input input, .subscription-input textarea { width: 100%; padding: .45rem .6rem; border: 1px solid #dbe3ee; border-radius: 7px; background: #fff; color: #334155; font-size: .78rem; font-family: inherit; }
+.subscription-trial-plan-field { padding: .8rem; border: 1px solid #dbe3ee; border-radius: 10px; background: linear-gradient(135deg, #fbfcff, #f5f8ff); }
+.subscription-trial-plan-field > span { color: #322f6a; font-size: .75rem; font-weight: 800; }
+.subscription-trial-plan-select { min-height: 44px; padding: 0 .8rem; border: 1px solid rgba(50, 47, 106, .22); border-radius: 9px; background: #ffffff; color: #172033; font: inherit; font-weight: 700; cursor: pointer; box-shadow: 0 4px 12px rgba(50, 47, 106, .06); }
+.subscription-trial-plan-select:focus-visible { outline: 3px solid rgba(50, 47, 106, .18); outline-offset: 2px; border-color: var(--brand-secondary); }
 .subscription-input textarea { resize: vertical; min-height: 82px; }
 .subscription-benefits-editor { display: grid; gap: .45rem; color: #475569; font-size: .72rem; font-weight: 600; }
 .subscription-benefits-list { display: grid; gap: .45rem; }

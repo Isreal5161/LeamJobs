@@ -386,9 +386,9 @@ function AdminSubscriptionsPage() {
               <span>Trial duration in days</span>
               <input type="number" min={1} max={365} value={trialSettings.trialDurationDays} onChange={(event) => { setTrialDirty(true); setTrialSettings((current) => ({ ...current, trialDurationDays: Number(event.target.value) || 1 })); }} />
             </label>
-            <label className="subscription-input">
+            <label className="subscription-input subscription-trial-plan-field">
               <span>Trial plan</span>
-              <select value={trialSettings.trialPlanKey} onChange={(event) => { setTrialDirty(true); setTrialSettings((current) => ({ ...current, trialPlanKey: event.target.value })); }}>
+              <select className="subscription-trial-plan-select" value={trialSettings.trialPlanKey} onChange={(event) => { setTrialDirty(true); setTrialSettings((current) => ({ ...current, trialPlanKey: event.target.value })); }}>
                 {plans.filter((plan) => plan.active).map((plan) => <option value={plan.key} key={plan.id}>{plan.name}</option>)}
               </select>
             </label>

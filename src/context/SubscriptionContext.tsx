@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { useAuth } from './AuthContext';
-import { getSeekerSubscriptionPlans, getSeekerSubscriptions, type SeekerSubscriptionState } from '../services/api';
+import { getSeekerSubscriptionPlans, getSeekerSubscriptions, getSeekerTrialOffer, type SeekerSubscriptionState, type SeekerTrialOffer } from '../services/api';
 
 export type SubscriptionPlanId = 'free' | 'professional' | 'premium';
 export type SubscriptionStatus = 'Pending' | 'Active' | 'Cancelled' | 'Expired' | 'Failed';
@@ -93,6 +93,7 @@ type SubscriptionContextValue = {
   refresh: () => Promise<void>;
   currentPlan: SubscriptionPlan;
   trial: SeekerSubscriptionState['activeTrial'];
+  trialOffer: SeekerTrialOffer;
   aiUsage: SeekerSubscriptionState['aiUsage'];
 };
 
@@ -104,6 +105,7 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
   const [subscriptions, setSubscriptions] = useState<SeekerSubscription[]>([]);
   const [currentPlan, setCurrentPlan] = useState<SubscriptionPlan>(subscriptionPlans[0]);
   const [trial, setTrial] = useState<SeekerSubscriptionState['activeTrial']>(null);
+  const [trialOffer, setTrialOffer] = useState<SeekerTrialOffer>({ available: false, durationDays: 7, trialPlanKey: 'PREMIUM' });
   const [aiUsage, setAiUsage] = useState<SeekerSubscriptionState['aiUsage']>({ userId: '', planKey: 'BASIC', source: 'FREE', limit: 5, used: 0, remaining: 5, allowed: true, unlimited: false });
   const [isLoading, setIsLoading] = useState(true);
 
@@ -113,16 +115,20 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
       setSubscriptions([]);
       setCurrentPlan(subscriptionPlans[0]);
       setTrial(null);
+      setTrialOffer({ available: false, durationDays: 7, trialPlanKey: 'PREMIUM' });
       setAiUsage({ userId: '', planKey: 'BASIC', source: 'FREE', limit: 5, used: 0, remaining: 5, allowed: true, unlimited: false });
       setIsLoading(false);
       return;
     }
 
     setIsLoading(true);
-    const [plansResult, subscriptionsResult] = await Promise.all([
+    const [plansResult, subscriptionsResult, trialOfferResult] = await Promise.all([
       getSeekerSubscriptionPlans(token),
       getSeekerSubscriptions(token),
+      getSeekerTrialOffer(token),
     ]);
+
+    if (trialOfferResult.ok && trialOfferResult.data?.data?.offer) setTrialOffer(trialOfferResult.data.data.offer);
 
     if (plansResult.ok && plansResult.data?.data?.plans) {
       const nextPlans = plansResult.data.data.plans.map((plan) => ({
@@ -213,6 +219,7 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
     } else {
       setSubscriptions([]);
       setTrial(null);
+      setTrialOffer({ available: false, durationDays: 7, trialPlanKey: 'PREMIUM' });
     }
 
     setIsLoading(false);
@@ -262,9 +269,10 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
       refresh,
       currentPlan,
       trial,
+      trialOffer,
       aiUsage,
     };
-  }, [plans, subscriptions, isLoading, refresh, currentPlan, trial, aiUsage]);
+  }, [plans, subscriptions, isLoading, refresh, currentPlan, trial, trialOffer, aiUsage]);
 
   return <SubscriptionContext.Provider value={value}>{children}</SubscriptionContext.Provider>;
 }
