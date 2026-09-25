@@ -312,6 +312,8 @@ function ProfilePage() {
   const [isSaving, setIsSaving] = useState(false);
   const [isUploadingFile, setIsUploadingFile] = useState(false);
   const [profilePictureUrl, setProfilePictureUrl] = useState<string | null>(null);
+  const [profilePictureBlobUrl, setProfilePictureBlobUrl] = useState<string | null>(null);
+  const [profilePictureReloadKey, setProfilePictureReloadKey] = useState(0);
   const [localProfilePictureUrl, setLocalProfilePictureUrl] = useState<string | null>(null);
   const [resumeUrl, setResumeUrl] = useState<string | null>(null);
   const [profilePictureFile, setProfilePictureFile] = useState<File | null>(null);
@@ -463,15 +465,19 @@ function ProfilePage() {
   }, [token]);
 
   useEffect(() => {
-    if (!token || !profilePictureUrl || profilePictureUrl.startsWith('blob:')) return undefined;
+    if (!token || !profilePictureUrl) {
+      setProfilePictureBlobUrl(null);
+      return undefined;
+    }
 
-    let objectUrl = '';
+    let objectUrl: string | null = null;
     let isMounted = true;
+    setProfilePictureBlobUrl(null);
     const loadPicture = async () => {
       const response = await getSeekerProfilePicture(token);
       if (!response.ok || !isMounted) return;
       objectUrl = URL.createObjectURL(response.data);
-      setProfilePictureUrl(objectUrl);
+      setProfilePictureBlobUrl(objectUrl);
     };
 
     void loadPicture();
@@ -479,7 +485,7 @@ function ProfilePage() {
       isMounted = false;
       if (objectUrl) URL.revokeObjectURL(objectUrl);
     };
-  }, [profilePictureUrl, token]);
+  }, [profilePictureReloadKey, profilePictureUrl, token]);
 
   useEffect(() => {
     return () => {
@@ -1118,6 +1124,8 @@ function ProfilePage() {
       setIsUploadingFile(false);
       if (result.ok) {
         setProfilePictureUrl(result.data.data.profilePictureUrl ?? null);
+        setProfilePictureBlobUrl(null);
+        setProfilePictureReloadKey((current) => current + 1);
         setProfilePictureFile(null);
         setLocalProfilePictureUrl(null);
         window.dispatchEvent(new Event(PROFILE_IMAGE_UPDATED_EVENT));
@@ -1137,13 +1145,14 @@ function ProfilePage() {
     setIsUploadingFile(false);
     if (result.ok) {
       setProfilePictureUrl(null);
+      setProfilePictureBlobUrl(null);
       setProfilePictureFile(null);
       setLocalProfilePictureUrl(null);
       window.dispatchEvent(new Event(PROFILE_IMAGE_UPDATED_EVENT));
       showNotification({ title: 'Profile picture removed', message: 'Your profile picture has been removed.', tone: 'success' });
     } else showNotification({ title: 'Remove failed', message: result.error.message, tone: 'error' });
   };
-  const displayProfilePictureUrl = localProfilePictureUrl ?? (profilePictureUrl?.startsWith('blob:') ? profilePictureUrl : null);
+  const displayProfilePictureUrl = localProfilePictureUrl ?? profilePictureBlobUrl;
   const hasProfilePicture = Boolean(localProfilePictureUrl || profilePictureUrl);
 
   const handleUploadResume = async () => {
