@@ -20,6 +20,10 @@ import JobsPage from './pages/seeker/JobsPage';
 import ApplicationsPage from './pages/seeker/ApplicationsPage';
 import ProfilePage from './pages/seeker/ProfilePage';
 import SubscriptionPage from './pages/seeker/SubscriptionPage';
+import PremiumOverviewPage from './pages/seeker/PremiumOverviewPage';
+import SavedJobsPage from './pages/seeker/SavedJobsPage';
+import JobAlertsPage from './pages/seeker/JobAlertsPage';
+import PremiumInsightsPage from './pages/seeker/PremiumInsightsPage';
 import OnboardingPage from './pages/seeker/OnboardingPage';
 import EmployerDashboardPage from './pages/employer/EmployerDashboardPage';
 import EmployerJobsPage from './pages/employer/EmployerJobsPage';
@@ -100,6 +104,10 @@ function App() {
             <Route path="messages" element={<MessagesPage role="seeker" />} />
             <Route path="profile" element={<ProfilePage />} />
             <Route path="subscription" element={<SubscriptionPage />} />
+            <Route path="premium" element={<PremiumOverviewPage />} />
+            <Route path="saved-jobs" element={<SavedJobsPage />} />
+            <Route path="job-alerts" element={<JobAlertsPage />} />
+            <Route path="premium-insights" element={<PremiumInsightsPage />} />
             <Route path="onboarding" element={<OnboardingPage />} />
             <Route path="payments" element={<SeekerPaymentsPage />} />
             <Route path="notifications" element={<NotificationsPage role="seeker" />} />

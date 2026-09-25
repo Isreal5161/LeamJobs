@@ -23,7 +23,7 @@ import {
 import CVTemplateSelector, { TEMPLATES } from '../../components/cv-templates/CVTemplateSelector';
 import CVTemplateRenderer, { CVData, sampleCVData, type CVTemplateId } from '../../components/cv-templates/CVTemplateRenderer';
 import { useAuth } from '../../context/AuthContext';
-import { getAccountTypeLabel, resolveAccountTypeForPlan, useSubscriptions } from '../../context/SubscriptionContext';
+import { getAccountTypeLabel, useSubscriptions } from '../../context/SubscriptionContext';
 import { startSeekerFreeTrial } from '../../services/api';
 import {
   getSeekerProfile,
@@ -41,6 +41,7 @@ import {
   type ExperienceItem as ApiExperienceItem,
   requestProfileAssistant,
   requestCvOptimizer,
+  getAdvancedProfileStrength,
 } from '../../services/api';
 import { downloadCVAsPDF } from '../../utils/cvDownloadUtils';
 import { getLanguageSuggestions } from '../../data/languageSuggestions';
@@ -328,15 +329,23 @@ function ProfilePage() {
   const [aiCvSuggestions, setAiCvSuggestions] = useState<{ section: string; original: string; suggested: string; reason: string }[]>([]);
   const [isAiLoading, setIsAiLoading] = useState(false);
   const [aiError, setAiError] = useState('');
-  const { plans, getSubscription, refresh, trialOffer } = useSubscriptions();
+  const [profileStrength, setProfileStrength] = useState<{ score: number; dimensions: { label: string; score: number; complete: boolean }[]; strengths: string[]; recommendations: string[] } | null>(null);
+  const [profileStrengthError, setProfileStrengthError] = useState('');
+  const { plans, getSubscription, refresh, trialOffer, currentPlan } = useSubscriptions();
   const [isStartingTrial, setIsStartingTrial] = useState(false);
   const navigate = useNavigate();
 
   const subscriptionUserId = user?.id || '';
   const subscription = subscriptionUserId ? getSubscription(subscriptionUserId) : { status: 'Expired' as const, planId: 'free', renewalDate: '', advancedCvEligible: false, aiEntitlements: [] as string[], seekerId: '', seekerName: '', email: '', startedAt: 'Not started', featured: false };
-  const canUseAdvancedCv = subscription.advancedCvEligible;
-  const canUseProfileAssistant = Array.isArray(subscription.aiEntitlements) && subscription.aiEntitlements.includes('AI_PROFILE_ASSISTANT');
-  const canUseCvOptimizer = Array.isArray(subscription.aiEntitlements) && subscription.aiEntitlements.includes('AI_CV_OPTIMIZER');
+  const canonicalEntitlements = Array.isArray(currentPlan?.entitlements) && currentPlan.entitlements.length > 0
+    ? currentPlan.entitlements
+    : Array.isArray(subscription.aiEntitlements)
+      ? subscription.aiEntitlements
+      : [];
+  const canUseAdvancedCv = canonicalEntitlements.includes('AI_CV_IMPROVEMENT');
+  const canUseProfileAssistant = canonicalEntitlements.includes('AI_CV_REVIEW');
+  const canUseCvOptimizer = canonicalEntitlements.includes('AI_CV_IMPROVEMENT');
+  const canUseProfileStrength = currentPlan?.key?.toUpperCase() === 'PREMIUM' && canonicalEntitlements.includes('PROFILE_STRENGTH');
   const selectedTemplateIsAdvanced = TEMPLATES.find((template) => template.style === selectedTemplate)?.advanced ?? false;
   const renderedTemplate: CVTemplateId = selectedTemplateIsAdvanced && !canUseAdvancedCv ? 'modern' : selectedTemplate;
 
@@ -376,6 +385,17 @@ function ProfilePage() {
     if (result.ok) setAiCvSuggestions(result.data.data.suggestions);
     else setAiError(result.error.message || 'AI assistance is unavailable.');
   };
+
+  useEffect(() => {
+    if (!token || !canUseProfileStrength) return;
+    let isMounted = true;
+    void getAdvancedProfileStrength(token).then((result) => {
+      if (!isMounted) return;
+      if (result.ok) setProfileStrength(result.data.data);
+      else setProfileStrengthError(result.error.message || 'Advanced profile strength is unavailable.');
+    });
+    return () => { isMounted = false; };
+  }, [token, canUseProfileStrength]);
 
   useEffect(() => {
     if (!token) {
@@ -1440,6 +1460,12 @@ function ProfilePage() {
               )}
             </section>
 
+            {canUseProfileStrength ? <section className="seeker-card seeker-profile-strength" aria-labelledby="profile-strength-title">
+              <div className="seeker-ai-panel__heading"><div><span className="seeker-cv-summary__eyebrow">Advanced profile</span><h2 id="profile-strength-title">Profile strength</h2><p>Measured from the information currently in your profile.</p></div>{profileStrength ? <strong className="seeker-profile-strength__score">{profileStrength.score}%</strong> : null}</div>
+              {profileStrengthError ? <p role="alert" className="seeker-ai-panel__error">{profileStrengthError}</p> : null}
+              {profileStrength ? <><div className="seeker-profile-strength__grid">{profileStrength.dimensions.map((dimension) => <div key={dimension.label}><span>{dimension.label}</span><strong>{dimension.complete ? 'Complete' : 'Needs attention'}</strong></div>)}</div>{profileStrength.recommendations.length ? <ul className="seeker-profile-strength__recommendations">{profileStrength.recommendations.slice(0, 4).map((recommendation) => <li key={recommendation}>{recommendation}</li>)}</ul> : <p className="seeker-profile-strength__complete">Your profile covers all measured dimensions.</p>}</> : <p role="status">Calculating your profile strength...</p>}
+            </section> : null}
+
             <section className="seeker-card seeker-ai-panel" aria-labelledby="ai-profile-tools-title">
               <div className="seeker-ai-panel__heading">
                 <div><span className="seeker-cv-summary__eyebrow">Premium AI</span><h2 id="ai-profile-tools-title">Profile and CV guidance</h2><p>Review suggestions before changing your profile or CV.</p></div>
@@ -1459,7 +1485,7 @@ function ProfilePage() {
               <div className="seeker-profile-account-card__content">
                 <div>
                   <span className="seeker-cv-summary__eyebrow">Account</span>
-                  <h2 id="profile-account-heading">{resolveAccountTypeForPlan(subscription.planId, plans, 'Basic') === 'Basic' ? 'Upgrade Account' : 'Manage Subscription'}</h2>
+                  <h2 id="profile-account-heading">{getAccountTypeLabel(currentPlan?.key ?? subscription.planId ?? 'free', 'Basic') === 'Basic' ? 'Upgrade Account' : 'Manage Subscription'}</h2>
                   <p>Review your account plan and manage your LeamJobs subscription from one place.</p>
                 </div>
                 {trialOffer.available ? (
@@ -1468,7 +1494,7 @@ function ProfilePage() {
                   </button>
                 ) : (
                   <button type="button" className="seeker-profile-account-card__action" onClick={() => navigate('/seeker/subscription')}>
-                    {resolveAccountTypeForPlan(subscription.planId, plans, 'Basic') === 'Basic' ? 'Upgrade Account' : 'Manage Subscription'}
+                    {getAccountTypeLabel(currentPlan?.key ?? subscription.planId ?? 'free', 'Basic') === 'Basic' ? 'Upgrade Account' : 'Manage Subscription'}
                   </button>
                 )}
               </div>

@@ -744,6 +744,9 @@ export type SeekerJobsQuery = {
   location?: string;
   jobType?: 'NORMAL_EMPLOYMENT' | 'FREELANCE_PROJECT';
   skills?: string[];
+  workArrangement?: 'REMOTE' | 'HYBRID' | 'ONSITE';
+  salaryMin?: number;
+  salaryMax?: number;
   limit?: number;
   cursor?: string;
 };
@@ -985,6 +988,9 @@ export function getPublicJobs(query: Partial<SeekerJobsQuery> = {}) {
   if (query.location?.trim()) params.set('location', query.location.trim());
   if (query.jobType) params.set('jobType', query.jobType);
   if (query.skills?.length) params.set('skills', query.skills.join(','));
+  if (query.workArrangement) params.set('workArrangement', query.workArrangement);
+  if (query.salaryMin !== undefined) params.set('salaryMin', String(query.salaryMin));
+  if (query.salaryMax !== undefined) params.set('salaryMax', String(query.salaryMax));
   params.set('limit', String(query.limit ?? 25));
   if (query.cursor) params.set('cursor', query.cursor);
 
@@ -2220,6 +2226,63 @@ export function getSeekerRecommendations(query: { limit?: number; cursor?: strin
   if (query.cursor) params.set('cursor', query.cursor);
   return request<SeekerRecommendationsResponse>({ method: 'GET', endpoint: `/seeker/recommendations?${params.toString()}`, token });
 }
+
+export type SavedJob = { id: string; savedAt: string; job: SeekerJobListItem };
+export type JobAlert = { id: string; name: string; keywords: string | null; skills: string[]; location: string | null; jobType: 'NORMAL_EMPLOYMENT' | 'FREELANCE_PROJECT' | null; workArrangement: 'REMOTE' | 'HYBRID' | 'ONSITE' | null; salaryMin: number | null; salaryMax: number | null; isActive: boolean; lastRunAt: string | null; createdAt: string; updatedAt: string };
+export type PremiumFeatureResult = { success: true; data: Record<string, unknown> };
+
+export function getSavedJobs(token: string) {
+  return request<{ success: true; data: { items: SavedJob[] } }>({ method: 'GET', endpoint: '/seeker/saved-jobs', token });
+}
+
+export function saveSeekerJob(jobId: string, token: string) {
+  return request<{ success: true; data: { saved: boolean; id: string; limit: number | null } }>({ method: 'POST', endpoint: `/seeker/saved-jobs/${encodeURIComponent(jobId)}`, token });
+}
+
+export function unsaveSeekerJob(jobId: string, token: string) {
+  return request<{ success: true; data: { saved: boolean } }>({ method: 'DELETE', endpoint: `/seeker/saved-jobs/${encodeURIComponent(jobId)}`, token });
+}
+
+export function getSeekerJobAlerts(token: string) {
+  return request<{ success: true; data: { items: JobAlert[]; limits: { alerts: number; planKey: string } } }>({ method: 'GET', endpoint: '/seeker/job-alerts', token });
+}
+
+export function createSeekerJobAlert(body: Omit<JobAlert, 'id' | 'lastRunAt' | 'createdAt' | 'updatedAt'>, token: string) {
+  return request<{ success: true; data: JobAlert }>({ method: 'POST', endpoint: '/seeker/job-alerts', body, token });
+}
+
+export function updateSeekerJobAlert(alertId: string, body: Partial<Omit<JobAlert, 'id' | 'lastRunAt' | 'createdAt' | 'updatedAt'>>, token: string) {
+  return request<{ success: true; data: JobAlert }>({ method: 'PATCH', endpoint: `/seeker/job-alerts/${encodeURIComponent(alertId)}`, body, token });
+}
+
+export function deleteSeekerJobAlert(alertId: string, token: string) {
+  return request<{ success: true; data: { deleted: boolean } }>({ method: 'DELETE', endpoint: `/seeker/job-alerts/${encodeURIComponent(alertId)}`, token });
+}
+
+export function getAdvancedProfileStrength(token: string) {
+  return request<{ success: true; data: { score: number; dimensions: { label: string; score: number; complete: boolean }[]; strengths: string[]; recommendations: string[] } }>({ method: 'GET', endpoint: '/seeker/profile/strength', token });
+}
+
+export function getCareerRecommendations(token: string) {
+  return request<{ success: true; data: { recommendations: { title: string; score: number; matchedSkills: string[] }[]; basedOn: { skills: string[]; currentTitle: string | null } } }>({ method: 'GET', endpoint: '/seeker/career-recommendations', token });
+}
+
+export function getSalaryInsights(token: string, params?: { title?: string; location?: string }) {
+  const query = new URLSearchParams();
+  if (params?.title) query.set('title', params.title);
+  if (params?.location) query.set('location', params.location);
+  return request<{ success: true; data: { sampleSize: number; message?: string; minimum?: number; maximum?: number; average?: number; currency?: string | null; ranges: { title: string; location: string; minimum: number | null; maximum: number | null; currency: string | null }[] } }>({ method: 'GET', endpoint: `/seeker/salary-insights${query.toString() ? `?${query}` : ''}`, token });
+}
+
+export type InterviewPreparation = { questions: { question: string; type: 'technical' | 'behavioral' | 'role'; guidance: string }[]; preparationAreas: string[]; answerFramework: string; remaining: number };
+export type SkillsGapResult = { matchedSkills: string[]; missingSkills: string[]; relatedSkills: string[]; priorities: string[]; recommendations: string[]; remaining: number };
+export type CareerAssistantResult = { answer: string; nextSteps: string[]; referencedProfileData: string[]; remaining: number };
+export function requestInterviewPreparation(body: { jobId: string }, token: string) { return request<{ success: true; data: InterviewPreparation }>({ method: 'POST', endpoint: '/seeker/ai/interview-preparation', body, token }); }
+export function requestCareerAssistant(body: { question: string }, token: string) { return request<{ success: true; data: CareerAssistantResult }>({ method: 'POST', endpoint: '/seeker/ai/career-assistant', body, token }); }
+export function requestSkillsGap(body: { jobId: string }, token: string) { return request<{ success: true; data: SkillsGapResult }>({ method: 'POST', endpoint: '/seeker/ai/skills-gap', body, token }); }
+export function requestPersonalizedJobMatches(token: string) { return request<{ success: true; data: { matches: { jobId: string; score: number; rationale: string; job: SeekerJobListItem }[]; remaining: number } }>({ method: 'POST', endpoint: '/seeker/ai/job-matching', token }); }
+export function getPremiumSupportRequests(token: string) { return request<{ success: true; data: { items: { id: string; subject: string; category: string; message: string; status: string; response: string | null; createdAt: string }[] } }>({ method: 'GET', endpoint: '/seeker/support/requests', token }); }
+export function createPremiumSupportRequest(body: { subject: string; category: string; message: string }, token: string) { return request<{ success: true; data: { id: string; status: string } }>({ method: 'POST', endpoint: '/seeker/support/requests', body, token }); }
 
 export function getSeekerApplications(token: string, page = 1, limit = 20) {
   return request<SeekerApplicationsResponse>({

@@ -1,3 +1,4 @@
+.seeker-jobs-personalized-action { min-height: 36px; padding: 0 .8rem; border: 1px solid rgba(239,80,54,.24); border-radius: 7px; background: #fffaf8; color: #d7442f; font-size: .74rem; font-weight: 800; cursor: pointer; }.seeker-jobs-personalized-action:disabled { opacity: .6; cursor: wait; }.seeker-jobs-personalized-error { margin: 0; color: #b42318; font-size: .8rem; }
 .seeker-jobs-page {
   display: grid;
   gap: var(--seeker-section-gap);

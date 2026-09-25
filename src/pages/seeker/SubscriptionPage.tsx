@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FaArrowLeft, FaCheck, FaCrown, FaShieldAlt } from 'react-icons/fa';
 import { useAuth } from '../../context/AuthContext';
-import { getAccountTypeLabel, resolveAccountTypeForPlan, useSubscriptions } from '../../context/SubscriptionContext';
+import { getAccountTypeLabel, useSubscriptions } from '../../context/SubscriptionContext';
 import { createSeekerSubscriptionCheckout, startSeekerFreeTrial, verifySeekerSubscriptionPayment } from '../../services/api';
 import { getUserFacingError } from '../../utils/userFacingError';
 
@@ -23,12 +23,6 @@ const normalizeStatus = (value?: string | null) => {
   return 'Active';
 };
 
-const formatSubscriptionPlanName = (planId: string | null | undefined, plans: Parameters<typeof resolveAccountTypeForPlan>[1]) => {
-  const mapped = resolveAccountTypeForPlan(planId ?? 'free', plans, 'Basic');
-  if (mapped === 'Basic') return 'Basic';
-  return mapped;
-};
-
 function SubscriptionPage() {
   const { token, user } = useAuth();
   const navigate = useNavigate();
@@ -42,8 +36,8 @@ function SubscriptionPage() {
   }, [getSubscription, user?.id]);
 
   const currentPlanName = useMemo(
-    () => formatSubscriptionPlanName(currentSubscription?.planId ?? 'free', plans),
-    [currentSubscription?.planId, plans],
+    () => getAccountTypeLabel(currentPlan?.key ?? currentSubscription?.planId ?? 'free', 'Basic'),
+    [currentPlan?.key, currentSubscription?.planId],
   );
 
   const handlePlanAction = async (planId: string) => {

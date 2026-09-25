@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
-import { FaArrowLeft, FaBuilding, FaCheck, FaChevronRight, FaClock, FaMapMarkerAlt } from 'react-icons/fa';
+import { FaArrowLeft, FaBuilding, FaCheck, FaChevronRight, FaClock, FaMagic, FaMapMarkerAlt } from 'react-icons/fa';
 import { useAuth } from '../../context/AuthContext';
-import { getPublicJob, getSeekerJob, type SeekerDashboardJob } from '../../services/api';
+import { getPublicJob, getSeekerJob, requestInterviewPreparation, requestSkillsGap, type InterviewPreparation, type SeekerDashboardJob, type SkillsGapResult } from '../../services/api';
+import { useSubscriptions } from '../../context/SubscriptionContext';
 import CompanyLogo from '../../components/jobs/CompanyLogo';
 
 const skillClasses = ['job-detail-skill--pink', 'job-detail-skill--purple', 'job-detail-skill--green', 'job-detail-skill--yellow', 'job-detail-skill--blue'];
@@ -29,11 +30,16 @@ function JobDetailsPage() {
   const { pathname } = useLocation();
   const navigate = useNavigate();
   const { token } = useAuth();
+  const { currentPlan } = useSubscriptions();
   const isSeekerRoute = pathname.startsWith('/seeker/');
   const [job, setJob] = useState<SeekerDashboardJob | null>(null);
   const [alreadyApplied, setAlreadyApplied] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
+  const [interviewPreparation, setInterviewPreparation] = useState<InterviewPreparation | null>(null);
+  const [skillsGap, setSkillsGap] = useState<SkillsGapResult | null>(null);
+  const [aiLoading, setAiLoading] = useState<'interview' | 'skills' | null>(null);
+  const [aiError, setAiError] = useState('');
 
   useEffect(() => {
     let isMounted = true;
@@ -68,6 +74,21 @@ function JobDetailsPage() {
       isMounted = false;
     };
   }, [isSeekerRoute, jobId, token]);
+
+  const runPremiumTool = async (tool: 'interview' | 'skills') => {
+    if (!token || !jobId || aiLoading) return;
+    setAiLoading(tool); setAiError('');
+    if (tool === 'interview') {
+      const result = await requestInterviewPreparation({ jobId }, token);
+      if (result.ok) setInterviewPreparation(result.data.data);
+      else setAiError(result.error.message || 'Interview preparation is unavailable.');
+    } else {
+      const result = await requestSkillsGap({ jobId }, token);
+      if (result.ok) setSkillsGap(result.data.data);
+      else setAiError(result.error.message || 'Skills-gap analysis is unavailable.');
+    }
+    setAiLoading(null);
+  };
 
   if (isLoading) {
     return (
@@ -238,9 +259,12 @@ function JobDetailsPage() {
               </span>
             </div>
             <Link className="button button--primary job-detail-apply-link" to={alreadyApplied ? '/seeker/applications' : detailPath}>{alreadyApplied ? 'View application' : 'Apply Now'}</Link>
+            {isSeekerRoute && currentPlan?.entitlements?.includes('AI_INTERVIEW_PREPARATION') ? <div className="job-detail-premium-tools"><strong><FaMagic aria-hidden="true" /> Premium preparation</strong><button type="button" onClick={() => void runPremiumTool('interview')} disabled={aiLoading !== null}>{aiLoading === 'interview' ? 'Preparing...' : 'Prepare for interview'}</button><button type="button" onClick={() => void runPremiumTool('skills')} disabled={aiLoading !== null}>{aiLoading === 'skills' ? 'Analysing...' : 'Analyse skills gap'}</button>{aiError ? <p role="alert">{aiError}</p> : null}</div> : null}
           </div>
         </aside>
       </div>
+      {interviewPreparation ? <section className="job-detail-ai-result" aria-live="polite"><h2>Interview preparation</h2><p>{interviewPreparation.answerFramework}</p><ul>{interviewPreparation.questions.map((item) => <li key={item.question}><strong>{item.type}</strong><span>{item.question}</span><small>{item.guidance}</small></li>)}</ul></section> : null}
+      {skillsGap ? <section className="job-detail-ai-result" aria-live="polite"><h2>Skills-gap analysis</h2><p><strong>Matched:</strong> {skillsGap.matchedSkills.join(', ') || 'No direct matches found.'}</p><p><strong>Missing:</strong> {skillsGap.missingSkills.join(', ') || 'No missing target skills identified.'}</p><p><strong>Priority areas:</strong> {skillsGap.priorities.join(', ') || 'No priority areas identified.'}</p></section> : null}
 
       <div className="job-detail-bottom-cta">
         <div className="job-detail-mobile-apply-card">

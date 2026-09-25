@@ -210,7 +210,7 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
           startedAt: item.startDate ?? 'Not started',
           renewalDate: item.nextRenewalAt ?? 'Not applicable',
           featured: false,
-          advancedCvEligible: item.plan?.entitlements?.includes('ADVANCED_CV') ?? false,
+          advancedCvEligible: item.plan?.entitlements?.includes('AI_CV_IMPROVEMENT') ?? false,
           aiEntitlements,
           aiAllowance: item.plan?.aiAllowance ?? null,
         };

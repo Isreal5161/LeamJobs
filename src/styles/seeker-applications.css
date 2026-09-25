@@ -1173,6 +1173,11 @@
 }
 
 .seeker-ai-application { display: grid; gap: .8rem; margin-top: 1rem; padding: 1rem; border: 1px solid #f2c7bd; border-radius: 10px; background: #fffaf8; box-shadow: 0 6px 16px rgba(50,47,106,.05); }
+.seeker-application-card__insights { display: grid; gap: .45rem; grid-column: 1 / -1; }
+.seeker-application-card__insights > button { justify-self: start; min-height: 32px; padding: 0 .7rem; border: 1px solid rgba(239,80,54,.24); border-radius: 7px; background: #fffaf8; color: #d7442f; font-size: .72rem; font-weight: 800; cursor: pointer; }
+.seeker-application-card__insights > button:disabled { opacity: .6; cursor: wait; }
+.seeker-application-insights { display: grid; gap: .3rem; padding: .7rem; border-left: 3px solid #ef5036; background: #fffaf8; color: #475569; font-size: .75rem; line-height: 1.45; }
+.seeker-application-insights strong { color: #322f6a; }.seeker-application-insights p { margin: 0; }
 .seeker-ai-application__heading { display: grid; grid-template-columns: 2rem minmax(0,1fr); gap: .7rem; align-items: start; }
 .seeker-ai-application__icon { display: grid; place-items: center; width: 2rem; height: 2rem; border-radius: 8px; background: #fde6df; color: #d7442f; }
 .seeker-ai-application__heading strong { color: #322f6a; font-size: .9rem; }

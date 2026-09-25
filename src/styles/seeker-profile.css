@@ -1256,6 +1256,11 @@
 }
 
 .seeker-ai-panel { display: grid; gap: 1rem; }
+.seeker-profile-strength { display: grid; gap: 1rem; }
+.seeker-profile-strength__score { color: var(--brand-secondary); font-size: 1.8rem; }
+.seeker-profile-strength__grid { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: .6rem; }
+.seeker-profile-strength__grid > div { display: grid; gap: .25rem; padding: .7rem; border: 1px solid #e1e8f1; border-radius: 8px; background: #fbfcfe; }
+.seeker-profile-strength__grid span { color: #64748b; font-size: .72rem; }.seeker-profile-strength__grid strong { color: #172033; font-size: .75rem; }.seeker-profile-strength__recommendations { display: grid; gap: .35rem; margin: 0; padding-left: 1.1rem; color: #475569; font-size: .8rem; }.seeker-profile-strength__complete { margin: 0; color: #047857; font-size: .8rem; font-weight: 700; }
 .seeker-ai-panel__heading { display: flex; justify-content: space-between; gap: 1rem; align-items: flex-start; }
 .seeker-ai-panel__heading h2, .seeker-ai-panel__heading p { margin: .35rem 0 0; }
 .seeker-ai-panel__heading h2 { color: #0f172a; font-size: 1.2rem; }

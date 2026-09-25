@@ -44,6 +44,10 @@ const accountNav: Record<'seeker' | 'employer' | 'admin', { label: string; to: s
     { label: 'Payments', to: '/seeker/payments' },
     { label: 'Profile', to: '/seeker/profile' },
     { label: 'Subscription', to: '/seeker/subscription' },
+    { label: 'Premium tools', to: '/seeker/premium' },
+    { label: 'Saved jobs', to: '/seeker/saved-jobs' },
+    { label: 'Job alerts', to: '/seeker/job-alerts' },
+    { label: 'Career insights', to: '/seeker/premium-insights' },
   ],
   employer: [
     { label: 'Company Profile', to: '/employer/profile' },
@@ -68,7 +72,7 @@ function DashboardTopbar({
 }: DashboardTopbarProps) {
   const { token, user } = useAuth();
   const navigate = useNavigate();
-  const { getSubscription, plans } = useSubscriptions();
+  const { plans, currentPlan } = useSubscriptions();
   const [accountName, setAccountName] = useState(userName || '');
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [isImageLoading, setIsImageLoading] = useState(false);
@@ -79,9 +83,9 @@ function DashboardTopbar({
   const unreadCount = useMemo(() => notifications.filter((item) => !item.isRead).length, [notifications]);
   const seekerAccountLabel = useMemo(() => {
     if (role !== 'seeker') return null;
-    const subscription = user?.id ? getSubscription(user.id) : null;
-    return resolveAccountTypeForPlan(subscription?.planId ?? 'free', plans, 'Basic');
-  }, [getSubscription, plans, role, user?.id]);
+    const resolvedPlanKey = currentPlan?.key ?? 'BASIC';
+    return resolveAccountTypeForPlan(resolvedPlanKey, plans, 'Basic');
+  }, [currentPlan?.key, plans, role]);
 
   useEffect(() => {
     setAccountName(userName || '');
