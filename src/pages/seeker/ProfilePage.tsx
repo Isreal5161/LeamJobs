@@ -1143,7 +1143,8 @@ function ProfilePage() {
       showNotification({ title: 'Profile picture removed', message: 'Your profile picture has been removed.', tone: 'success' });
     } else showNotification({ title: 'Remove failed', message: result.error.message, tone: 'error' });
   };
-  const displayProfilePictureUrl = localProfilePictureUrl ?? profilePictureUrl;
+  const displayProfilePictureUrl = localProfilePictureUrl ?? (profilePictureUrl?.startsWith('blob:') ? profilePictureUrl : null);
+  const hasProfilePicture = Boolean(localProfilePictureUrl || profilePictureUrl);
 
   const handleUploadResume = async () => {
     if (!token || !uploadedCvFile || isUploadingFile) return;
@@ -1510,7 +1511,7 @@ function ProfilePage() {
                             {isUploadingFile ? 'Uploading...' : 'Upload Photo'}
                             <input type="file" accept="image/jpeg,image/png,image/webp" onChange={handleProfilePictureSelect} disabled={isUploadingFile} />
                           </label>
-                          {displayProfilePictureUrl && <button type="button" className="seeker-profile-remove-button" onClick={handleRemoveProfilePicture} disabled={isUploadingFile}>Remove picture</button>}
+                          {hasProfilePicture && <button type="button" className="seeker-profile-remove-button" onClick={handleRemoveProfilePicture} disabled={isUploadingFile}>Remove picture</button>}
                         </div>
                       </div>
                       <label>
