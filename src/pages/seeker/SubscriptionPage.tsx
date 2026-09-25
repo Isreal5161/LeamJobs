@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { FaArrowLeft, FaCheck, FaCrown, FaShieldAlt } from 'react-icons/fa';
 import { useAuth } from '../../context/AuthContext';
 import { getAccountTypeLabel, resolveAccountTypeForPlan, useSubscriptions } from '../../context/SubscriptionContext';
-import { createSeekerSubscriptionCheckout, verifySeekerSubscriptionPayment } from '../../services/api';
+import { createSeekerSubscriptionCheckout, startSeekerFreeTrial, verifySeekerSubscriptionPayment } from '../../services/api';
 import { getUserFacingError } from '../../utils/userFacingError';
 
 const formatDateLabel = (value?: string | null) => {
@@ -32,7 +32,7 @@ const formatSubscriptionPlanName = (planId: string | null | undefined, plans: Pa
 function SubscriptionPage() {
   const { token, user } = useAuth();
   const navigate = useNavigate();
-  const { plans, getSubscription, currentPlan, trial, aiUsage } = useSubscriptions();
+  const { plans, getSubscription, currentPlan, trial, trialOffer, aiUsage, refresh } = useSubscriptions();
   const [isSubmitting, setIsSubmitting] = useState<string | null>(null);
   const [checkoutError, setCheckoutError] = useState('');
 
@@ -64,6 +64,25 @@ function SubscriptionPage() {
       }
 
       window.location.href = result.data.data.checkoutUrl;
+    } catch (error) {
+      setCheckoutError(getUserFacingError(error, 'payment').message);
+    } finally {
+      setIsSubmitting(null);
+    }
+  };
+
+  const handleTrialStart = async (planKey: string) => {
+    if (!token || !user?.id) return;
+    setCheckoutError('');
+    setIsSubmitting(`trial:${planKey}`);
+
+    try {
+      const result = await startSeekerFreeTrial(token);
+      if (!result.ok) {
+        setCheckoutError(result.error?.message || 'We could not start your free trial.');
+        return;
+      }
+      await refresh();
     } catch (error) {
       setCheckoutError(getUserFacingError(error, 'payment').message);
     } finally {
@@ -171,6 +190,12 @@ function SubscriptionPage() {
             const isActive = currentSubscription?.planId === plan.id || currentPlan.key?.toUpperCase() === (plan.key ?? plan.id).toString().toUpperCase();
             const displayName = getAccountTypeLabel(plan.name, plan.id === 'free' ? 'Basic' : 'Professional');
             const isUpgradeAction = plan.id !== 'free';
+            const planKey = (plan.key ?? plan.id).toString().toUpperCase();
+            const isConfiguredTrialPlan = !isActive
+              && plan.id !== 'free'
+              && trialOffer.available
+              && planKey === trialOffer.trialPlanKey.toUpperCase();
+            const trialActionKey = `trial:${planKey}`;
 
             return (
               <article className={`subscription-plan ${isActive ? 'subscription-plan--active' : ''}`} key={plan.id}>
@@ -188,11 +213,21 @@ function SubscriptionPage() {
                   className="subscription-action-button"
                   onClick={() => {
                     if (plan.id === 'free') return;
+                    if (isConfiguredTrialPlan) {
+                      void handleTrialStart(planKey);
+                      return;
+                    }
                     void handlePlanAction(String(plan.id));
                   }}
-                  disabled={isSubmitting === String(plan.id) || isActive}
+                  disabled={isSubmitting === String(plan.id) || isSubmitting === trialActionKey || isActive}
                 >
-                  {isActive ? 'Current plan' : isUpgradeAction ? 'Upgrade' : 'Select plan'}
+                  {isActive
+                    ? 'Current plan'
+                    : isConfiguredTrialPlan
+                      ? `Start ${trialOffer.durationDays} Days Free Trial`
+                      : isUpgradeAction
+                        ? `Upgrade to ${displayName}`
+                        : 'Select plan'}
                 </button>
               </article>
             );
