@@ -327,6 +327,12 @@ function ProfilePage() {
   const [aiRequest, setAiRequest] = useState('Improve my profile summary and identify the strongest profile improvements.');
   const [aiSuggestions, setAiSuggestions] = useState<{ section: string; suggestion: string; reason: string }[]>([]);
   const [aiCvSuggestions, setAiCvSuggestions] = useState<{ section: string; original: string; suggested: string; reason: string }[]>([]);
+  const [pendingAiSuggestion, setPendingAiSuggestion] = useState<{
+    section: string;
+    step: StepKey;
+    targetId: string;
+    value: string;
+  } | null>(null);
   const [isAiLoading, setIsAiLoading] = useState(false);
   const [aiError, setAiError] = useState('');
   const [profileStrength, setProfileStrength] = useState<{ score: number; dimensions: { label: string; score: number; complete: boolean }[]; strengths: string[]; recommendations: string[] } | null>(null);
@@ -571,6 +577,282 @@ function ProfilePage() {
     return 'Start with your basics and build your CV step by step.';
   }, [completionScore]);
 
+  const primaryExperienceId = profile.experience[0]?.id ? `experience-description-${profile.experience[0].id}` : 'experience-root';
+  const primaryEducationId = profile.education[0]?.id ? `education-degree-${profile.education[0].id}` : 'education-root';
+  const primarySkillId = profile.skills.length > 0 ? 'skill-input-0' : 'skills-root';
+  const primaryCertificationId = profile.certifications[0]?.id ? `certification-name-${profile.certifications[0].id}` : 'certifications-root';
+  const primaryLanguageId = profile.languages[0]?.id ? `language-name-${profile.languages[0].id}` : 'languages-root';
+  const primaryProjectId = profile.projects[0]?.id ? `project-description-${profile.projects[0].id}` : 'projects-root';
+
+  const resolveAiEditorTarget = (section: string): { step: StepKey; targetId: string } | null => {
+    const normalized = section.trim().toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+    if (!normalized) return null;
+
+    const matchMap: Record<string, { step: StepKey; targetId: string }> = {
+      bio: { step: 'summary', targetId: 'profile-summary-field' },
+      summary: { step: 'summary', targetId: 'profile-summary-field' },
+      'profile summary': { step: 'summary', targetId: 'profile-summary-field' },
+      title: { step: 'personal', targetId: 'profile-title-field' },
+      'professional title': { step: 'personal', targetId: 'profile-title-field' },
+      experience: { step: 'experience', targetId: primaryExperienceId },
+      'work experience': { step: 'experience', targetId: primaryExperienceId },
+      education: { step: 'education', targetId: primaryEducationId },
+      skills: { step: 'skills', targetId: primarySkillId },
+      qualifications: { step: 'certifications', targetId: primaryCertificationId },
+      certification: { step: 'certifications', targetId: primaryCertificationId },
+      certifications: { step: 'certifications', targetId: primaryCertificationId },
+      languages: { step: 'languages', targetId: primaryLanguageId },
+      projects: { step: 'projects', targetId: primaryProjectId },
+      linkedin: { step: 'linkedin', targetId: 'linkedin-field' },
+      'linked in': { step: 'linkedin', targetId: 'linkedin-field' },
+    };
+
+    return matchMap[normalized] ?? null;
+  };
+
+  const applyAiSuggestionToSection = (section: string, value: string) => {
+    const normalized = section.trim().toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+    if (!normalized) return;
+
+    if (normalized === 'bio' || normalized === 'summary' || normalized === 'profile summary') {
+      setProfile((current) => ({
+        ...current,
+        personalInfo: { ...current.personalInfo, summary: value },
+      }));
+      return;
+    }
+
+    if (normalized === 'title' || normalized === 'professional title') {
+      setProfile((current) => ({
+        ...current,
+        personalInfo: { ...current.personalInfo, title: value },
+      }));
+      return;
+    }
+
+    if (normalized === 'experience' || normalized === 'work experience') {
+      setProfile((current) => {
+        if (current.experience.length === 0) {
+          return {
+            ...current,
+            experience: [{
+              id: createId('experience'),
+              jobTitle: '',
+              company: '',
+              startDate: '',
+              endDate: '',
+              currentlyWorking: false,
+              description: value,
+            }],
+          };
+        }
+
+        return {
+          ...current,
+          experience: current.experience.map((item, index) => (index === 0 ? { ...item, description: value } : item)),
+        };
+      });
+      return;
+    }
+
+    if (normalized === 'education') {
+      setProfile((current) => {
+        if (current.education.length === 0) {
+          return {
+            ...current,
+            education: [{
+              id: createId('education'),
+              degree: value,
+              school: '',
+              year: '',
+            }],
+          };
+        }
+
+        return {
+          ...current,
+          education: current.education.map((item, index) => (index === 0 ? { ...item, degree: value } : item)),
+        };
+      });
+      return;
+    }
+
+    if (normalized === 'skills') {
+      const nextSkills = value
+        .split(',')
+        .map((skill) => skill.trim())
+        .filter(Boolean);
+      setProfile((current) => ({ ...current, skills: nextSkills.length > 0 ? nextSkills : current.skills }));
+      return;
+    }
+
+    if (normalized === 'qualification' || normalized === 'qualifications' || normalized === 'certification' || normalized === 'certifications') {
+      setProfile((current) => ({
+        ...current,
+        certifications: current.certifications.length > 0
+          ? current.certifications.map((item, index) => (index === 0 ? { ...item, name: value } : item))
+          : [{ id: createId('cert'), name: value, issuer: '' }],
+      }));
+      return;
+    }
+
+    if (normalized === 'languages') {
+      setProfile((current) => ({
+        ...current,
+        languages: current.languages.length > 0
+          ? current.languages.map((item, index) => (index === 0 ? { ...item, name: value } : item))
+          : [{ id: createId('language'), name: value, proficiency: 'Conversational' }],
+      }));
+      return;
+    }
+
+    if (normalized === 'projects') {
+      setProfile((current) => ({
+        ...current,
+        projects: current.projects.length > 0
+          ? current.projects.map((item, index) => (index === 0 ? { ...item, description: value } : item))
+          : [{ id: createId('project'), name: '', description: value, technologies: [], projectUrl: '', githubUrl: '', startDate: '', endDate: '' }],
+      }));
+      return;
+    }
+
+    if (normalized === 'linkedin' || normalized === 'linked in') {
+      setProfile((current) => ({
+        ...current,
+        personalInfo: { ...current.personalInfo, linkedin: value },
+      }));
+    }
+  };
+
+  const handleSuggestionUse = (section: string, value: string) => {
+    const target = resolveAiEditorTarget(section);
+    if (!target) {
+      applyAiSuggestionToSection(section, value);
+      return;
+    }
+
+    setPendingAiSuggestion({ section, step: target.step, targetId: target.targetId, value });
+    setActiveStep(target.step);
+    window.setTimeout(() => {
+      const field = document.getElementById(target.targetId) as HTMLElement | null;
+      const previousFocus = document.activeElement as HTMLElement | null;
+      field?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      if (field) {
+        field.focus();
+        if ('setSelectionRange' in field && typeof field.setSelectionRange === 'function') {
+          const inputField = field as HTMLInputElement | HTMLTextAreaElement;
+          inputField.setSelectionRange(inputField.value.length, inputField.value.length);
+        }
+      }
+      if (previousFocus && previousFocus !== document.activeElement && target.step === 'personal') {
+        previousFocus.focus();
+      }
+    }, 60);
+  };
+
+  const applyPendingAiSuggestion = () => {
+    if (!pendingAiSuggestion) return;
+    applyAiSuggestionToSection(pendingAiSuggestion.section, pendingAiSuggestion.value);
+    setPendingAiSuggestion(null);
+  };
+
+  const renderAiPreview = (targetId: string, stepKey: StepKey) => {
+    if (!pendingAiSuggestion || pendingAiSuggestion.targetId !== targetId || activeStep !== stepKey) return null;
+
+    return (
+      <div className="seeker-ai-inline-preview">
+        <div className="seeker-ai-inline-preview__header">
+          <strong>AI suggestion</strong>
+          <span>{pendingAiSuggestion.section}</span>
+        </div>
+        <p>{pendingAiSuggestion.value}</p>
+        <div className="seeker-ai-inline-preview__actions">
+          <button type="button" className="seeker-inline-ai-button seeker-inline-ai-button--primary" onClick={applyPendingAiSuggestion}>Use This AI Content</button>
+          <button type="button" className="seeker-inline-ai-button" onClick={() => setPendingAiSuggestion(null)}>Keep My Version</button>
+        </div>
+      </div>
+    );
+  };
+
+  const startOptimizeProfileFlow = () => {
+    setPendingAiSuggestion(null);
+    setAiError('');
+    setActiveStep('personal');
+    document.getElementById('seeker-profile-editor')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+
+  const generateAiSuggestionForSection = async (section: 'summary' | 'title' | 'experience' | 'education' | 'skills' | 'certifications' | 'languages' | 'projects' | 'linkedin') => {
+    if (!token || !canUseProfileAssistant) return;
+
+    const requestBySection: Record<typeof section, string> = {
+      summary: 'Improve my profile summary to be clear, professional, and grounded only in my actual experience.',
+      title: 'Give me a professional job title that reflects my skills and experience without inventing facts.',
+      experience: 'Improve this work experience description to sound clearer, more professional, and more achievement-focused without inventing facts.',
+      education: 'Improve this education entry to be clearer and more professional while preserving the actual facts.',
+      skills: 'Suggest a concise, relevant set of professional skills based only on the seeker profile and experience.',
+      certifications: 'Suggest relevant professional certifications or qualifications based only on the profile and current experience.',
+      languages: 'Suggest a polished language entry and professional proficiency label based only on the profile.',
+      projects: 'Improve this project or work sample description to sound more polished and outcome-focused without inventing facts.',
+      linkedin: 'Help me craft a clear, professional LinkedIn profile value without inventing qualifications or achievements.',
+    };
+
+    const response = await requestProfileAssistant({
+      professionalTitle: profile.personalInfo.title,
+      bio: profile.personalInfo.summary,
+      skills: profile.skills,
+      experience: profile.experience,
+      education: profile.education,
+      request: requestBySection[section],
+    }, token);
+
+    if (!response.ok) {
+      setAiError(response.error.message || 'AI assistance is unavailable.');
+      return;
+    }
+
+    const suggestions = response.data.data.suggestions ?? [];
+    const allowedSections = {
+      summary: ['summary', 'bio', 'profile summary'],
+      title: ['title', 'professional title'],
+      experience: ['experience', 'work experience', 'role description', 'job description'],
+      education: ['education'],
+      skills: ['skills'],
+      certifications: ['certifications', 'qualification', 'qualifications', 'certification'],
+      languages: ['languages', 'language'],
+      projects: ['projects', 'project', 'work sample'],
+      linkedin: ['linkedin', 'linked in'],
+    } satisfies Record<typeof section, string[]>;
+
+    const nextSuggestion = suggestions.find((item) => {
+      const normalized = item.section.trim().toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+      return allowedSections[section].includes(normalized);
+    }) ?? suggestions[0];
+
+    if (!nextSuggestion) {
+      setAiError('AI returned no field-specific suggestion for this section.');
+      return;
+    }
+
+    const target = resolveAiEditorTarget(nextSuggestion.section || section);
+    if (!target) {
+      setAiError('This field cannot currently be opened directly from AI suggestions.');
+      return;
+    }
+
+    setPendingAiSuggestion({
+      section: nextSuggestion.section || section,
+      step: target.step,
+      targetId: target.targetId,
+      value: nextSuggestion.suggestion,
+    });
+    setActiveStep(target.step);
+    window.setTimeout(() => {
+      const field = document.getElementById(target.targetId) as HTMLElement | null;
+      field?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      field?.focus();
+    }, 60);
+  };
+
   const currentStepIndex = steps.findIndex((step) => step.key === activeStep);
   const currentStep = steps[currentStepIndex] ?? steps[0];
   const isFinalStep = activeStep === 'review';
@@ -613,7 +895,7 @@ function ProfilePage() {
           )}
           <button type="button" className="seeker-step-button seeker-step-button--primary" onClick={isFinalStep ? handleUpdateProfile : () => goToStep(1)} disabled={isFinalStep && isSaving} aria-busy={isFinalStep && isSaving}>
             {isFinalStep && isSaving ? <span className="leamjobs-spinner" aria-hidden="true" /> : null}
-            {isFinalStep ? (isSaving ? 'Updating...' : 'Finish CV') : 'Next'}
+            {isFinalStep ? (isSaving ? 'Updating...' : 'Finish Optimization') : 'Continue'}
           </button>
         </div>
       </div>
@@ -1473,12 +1755,13 @@ function ProfilePage() {
               </div>
               <label className="seeker-ai-panel__request"><span>What would you like help with?</span><textarea value={aiRequest} onChange={(event) => setAiRequest(event.target.value)} maxLength={500} rows={2} disabled={!canUseProfileAssistant && !canUseCvOptimizer} /></label>
               <div className="seeker-ai-panel__actions">
+                <button type="button" onClick={startOptimizeProfileFlow} disabled={isAiLoading}>Optimize Profile</button>
                 <button type="button" onClick={() => void runProfileAssistant()} disabled={!canUseProfileAssistant || isAiLoading}>{isAiLoading ? 'Thinking...' : 'Improve profile'}</button>
                 <button type="button" onClick={() => void runCvOptimizer()} disabled={!canUseCvOptimizer || isAiLoading}>Optimize CV</button>
               </div>
               {aiError ? <p role="alert" className="seeker-ai-panel__error">{aiError}</p> : null}
-              {aiSuggestions.length > 0 ? <div className="seeker-ai-panel__results"><h3>Profile suggestions</h3>{aiSuggestions.map((item, index) => <article key={`${item.section}-${index}`}><strong>{item.section}</strong><p>{item.suggestion}</p><small>{item.reason}</small>{item.section.toLowerCase() === 'bio' ? <button type="button" onClick={() => setProfile((current) => ({ ...current, personalInfo: { ...current.personalInfo, summary: item.suggestion } }))}>Use in editor</button> : null}</article>)}</div> : null}
-              {aiCvSuggestions.length > 0 ? <div className="seeker-ai-panel__results"><h3>CV suggestions</h3>{aiCvSuggestions.map((item, index) => <article key={`${item.section}-${index}`}><strong>{item.section}</strong><p>{item.suggested}</p><small>{item.reason}</small>{item.section.toLowerCase() === 'summary' ? <button type="button" onClick={() => setProfile((current) => ({ ...current, personalInfo: { ...current.personalInfo, summary: item.suggested } }))}>Use in editor</button> : null}</article>)}</div> : null}
+              {aiSuggestions.length > 0 ? <div className="seeker-ai-panel__results"><h3>Profile suggestions</h3>{aiSuggestions.map((item, index) => <article key={`${item.section}-${index}`}><strong>{item.section}</strong><p>{item.suggestion}</p><small>{item.reason}</small><button type="button" onClick={() => handleSuggestionUse(item.section, item.suggestion)}>Use in editor</button></article>)}</div> : null}
+              {aiCvSuggestions.length > 0 ? <div className="seeker-ai-panel__results"><h3>CV suggestions</h3>{aiCvSuggestions.map((item, index) => <article key={`${item.section}-${index}`}><strong>{item.section}</strong><p>{item.suggested}</p><small>{item.reason}</small><button type="button" onClick={() => handleSuggestionUse(item.section, item.suggested)}>Use in editor</button></article>)}</div> : null}
             </section>
 
             <section className="seeker-card seeker-profile-account-card" aria-labelledby="profile-account-heading">
@@ -1553,10 +1836,14 @@ function ProfilePage() {
                         <span>Full Name</span>
                         <input type="text" value={profile.personalInfo.fullName} onChange={(event) => updatePersonalInfo('fullName', event.target.value)} />
                       </label>
-                      <label>
-                        <span>Professional Title</span>
-                        <input type="text" value={profile.personalInfo.title} onChange={(event) => updatePersonalInfo('title', event.target.value)} />
+                      <label htmlFor="profile-title-field">
+                        <span className="seeker-field-header">
+                          <span>Professional Title</span>
+                          <button type="button" className="seeker-inline-ai-button" onClick={() => void generateAiSuggestionForSection('title')}>✨ Use AI</button>
+                        </span>
+                        <input id="profile-title-field" type="text" value={profile.personalInfo.title} onChange={(event) => updatePersonalInfo('title', event.target.value)} />
                       </label>
+                      {renderAiPreview('profile-title-field', 'personal')}
                       <div className="seeker-profile-form__split">
                         <label>
                           <span>Email</span>
@@ -1591,9 +1878,13 @@ function ProfilePage() {
                     </div>
 
                     <form className="seeker-profile-form">
-                      <label>
-                        <span>Profile Summary</span>
+                      <label htmlFor="profile-summary-field">
+                        <span className="seeker-field-header">
+                          <span>Profile Summary</span>
+                          <button type="button" className="seeker-inline-ai-button" onClick={() => void generateAiSuggestionForSection('summary')}>✨ Improve with AI</button>
+                        </span>
                         <textarea
+                          id="profile-summary-field"
                           className="seeker-profile-summary"
                           value={profile.personalInfo.summary}
                           rows={6}
@@ -1601,17 +1892,19 @@ function ProfilePage() {
                           onChange={(event) => updatePersonalInfo('summary', event.target.value)}
                         />
                       </label>
+                      {renderAiPreview('profile-summary-field', 'summary')}
                     </form>
                   </section>
                 )}
 
                 {activeStep === 'experience' && (
-                  <section className="seeker-card seeker-editor-card">
+                  <section id="experience-root" className="seeker-card seeker-editor-card">
                     <div className="seeker-editor-card__heading">
                       <div>
                         <h2>Experience</h2>
                         <p>Add your work experience in reverse chronological order.</p>
                       </div>
+                      <button type="button" className="seeker-inline-ai-button" onClick={() => void generateAiSuggestionForSection('experience')}>✨ Improve with AI</button>
                       <div className="seeker-editor-card__tools">
                         <button type="button" aria-label="Reorder section"><FaGripVertical /></button>
                         <button type="button" aria-label="Edit section"><FaEdit /></button>
@@ -1668,7 +1961,10 @@ function ProfilePage() {
                                 <span>I currently work here</span>
                               </label>
                               <label>
-                                <span>Job Description</span>
+                                <span className="seeker-field-header">
+                                  <span>Job Description</span>
+                                  <button type="button" className="seeker-inline-ai-button" onClick={() => void generateAiSuggestionForSection('experience')}>✨ Improve with AI</button>
+                                </span>
                                 <div className="seeker-rich-editor">
                                   <div className="seeker-rich-editor__toolbar" aria-label="Formatting toolbar">
                                     <strong>B</strong>
@@ -1678,9 +1974,10 @@ function ProfilePage() {
                                     <span>1.</span>
                                     <FaEdit />
                                   </div>
-                                  <textarea value={item.description} onChange={(event) => updateExperience(item.id, 'description', event.target.value)} />
+                                  <textarea id={`experience-description-${item.id}`} value={item.description} onChange={(event) => updateExperience(item.id, 'description', event.target.value)} />
                                 </div>
                               </label>
+                              {renderAiPreview(profile.experience[0]?.id ? `experience-description-${profile.experience[0].id}` : 'experience-root', 'experience')}
                             </form>
                           </div>
                         ))}
@@ -1690,20 +1987,24 @@ function ProfilePage() {
                 )}
 
                 {activeStep === 'education' && (
-                  <section className="seeker-card seeker-editor-card">
+                  <section id="education-root" className="seeker-card seeker-editor-card">
                     <div className="seeker-editor-card__heading">
                       <div><h2>Education</h2><p>Add your education and training.</p></div>
-                      <button type="button" aria-label="Add education" onClick={addEducation}><FaPlus /></button>
+                      <div className="seeker-editor-card__tools">
+                        <button type="button" className="seeker-inline-ai-button" onClick={() => void generateAiSuggestionForSection('education')}>✨ Improve with AI</button>
+                        <button type="button" aria-label="Add education" onClick={addEducation}><FaPlus /></button>
+                      </div>
                     </div>
                     {profile.education.length === 0 ? <div className="seeker-step-empty-state"><p>No education added yet? You can skip this step and return later.</p></div> : (
                       <div className="seeker-form-list">{profile.education.map((item) => (
                         <div className="seeker-form-item" key={item.id}>
                           <div className="seeker-form-item__header"><strong>Education #{profile.education.indexOf(item) + 1}</strong><button type="button" className="seeker-delete-button" onClick={() => removeEducation(item.id)}><FaTrash /></button></div>
                           <form className="seeker-profile-form">
-                            <label className={getValidationIssue(`education.${profile.education.indexOf(item)}.degree`) ? 'seeker-field--invalid' : ''}><span>Degree</span><input type="text" value={item.degree} aria-invalid={Boolean(getValidationIssue(`education.${profile.education.indexOf(item)}.degree`))} onChange={(event) => updateEducation(item.id, 'degree', event.target.value)} />{renderValidationMessage(`education.${profile.education.indexOf(item)}.degree`)}</label>
+                            <label className={getValidationIssue(`education.${profile.education.indexOf(item)}.degree`) ? 'seeker-field--invalid' : ''}><span>Degree</span><input id={`education-degree-${item.id}`} type="text" value={item.degree} aria-invalid={Boolean(getValidationIssue(`education.${profile.education.indexOf(item)}.degree`))} onChange={(event) => updateEducation(item.id, 'degree', event.target.value)} />{renderValidationMessage(`education.${profile.education.indexOf(item)}.degree`)}</label>
                             <label className={getValidationIssue(`education.${profile.education.indexOf(item)}.school`) ? 'seeker-field--invalid' : ''}><span>School</span><input type="text" value={item.school} aria-invalid={Boolean(getValidationIssue(`education.${profile.education.indexOf(item)}.school`))} onChange={(event) => updateEducation(item.id, 'school', event.target.value)} />{renderValidationMessage(`education.${profile.education.indexOf(item)}.school`)}</label>
                             <label className={getValidationIssue(`education.${profile.education.indexOf(item)}.year`) ? 'seeker-field--invalid' : ''}><span>Year</span><input type="text" value={item.year} aria-invalid={Boolean(getValidationIssue(`education.${profile.education.indexOf(item)}.year`))} onChange={(event) => updateEducation(item.id, 'year', event.target.value)} />{renderValidationMessage(`education.${profile.education.indexOf(item)}.year`)}</label>
                           </form>
+                          {renderAiPreview(profile.education[0]?.id ? `education-degree-${profile.education[0].id}` : 'education-root', 'education')}
                         </div>
                       ))}</div>
                     )}
@@ -1711,39 +2012,43 @@ function ProfilePage() {
                 )}
 
                 {activeStep === 'skills' && (
-                  <section className="seeker-card seeker-editor-card">
-                    <div className="seeker-editor-card__heading"><div><h2>Skills</h2><p>Highlight the strengths and abilities that matter most to employers.</p></div><button type="button" aria-label="Add skill" onClick={() => openAddPanel('skill')}><FaPlus /></button></div>
+                  <section id="skills-root" className="seeker-card seeker-editor-card">
+                    <div className="seeker-editor-card__heading"><div><h2>Skills</h2><p>Highlight the strengths and abilities that matter most to employers.</p></div><div className="seeker-editor-card__tools"><button type="button" className="seeker-inline-ai-button" onClick={() => void generateAiSuggestionForSection('skills')}>✨ Suggest Skills</button><button type="button" aria-label="Add skill" onClick={() => openAddPanel('skill')}><FaPlus /></button></div></div>
                     {addPanel === 'skill' && renderAddPanel('skill')}
-                    {profile.skills.length === 0 ? <div className="seeker-step-empty-state"><p>No skills added yet. You can skip this step and return later.</p></div> : <div className="seeker-form-list">{profile.skills.map((skill, index) => <div className="seeker-form-item seeker-form-item--inline" key={`${skill}-${index}`}><input type="text" list="skill-suggestions" value={skill} placeholder="Type a skill or choose a suggestion" onChange={(event) => updateSkill(index, event.target.value)} /><button type="button" className="seeker-delete-button" onClick={() => removeSkill(index)}><FaTrash /></button></div>)}</div>}
+                    {profile.skills.length === 0 ? <div className="seeker-step-empty-state"><p>No skills added yet. You can skip this step and return later.</p></div> : <div className="seeker-form-list">{profile.skills.map((skill, index) => <div className="seeker-form-item seeker-form-item--inline" key={`${skill}-${index}`}><input id={index === 0 ? 'skill-input-0' : undefined} type="text" list="skill-suggestions" value={skill} placeholder="Type a skill or choose a suggestion" onChange={(event) => updateSkill(index, event.target.value)} /><button type="button" className="seeker-delete-button" onClick={() => removeSkill(index)}><FaTrash /></button></div>)}</div>}
+                    {renderAiPreview(profile.skills.length > 0 ? 'skill-input-0' : 'skills-root', 'skills')}
                     <datalist id="skill-suggestions">{skillSuggestions.map((skill) => <option value={skill} key={skill} />)}</datalist>
                   </section>
                 )}
 
                 {activeStep === 'certifications' && (
-                  <section className="seeker-card seeker-editor-card">
-                    <div className="seeker-editor-card__heading"><div><h2>Qualifications</h2><p>Show qualifications, awards, and credentials that strengthen your profile.</p></div><button type="button" aria-label="Add qualification" onClick={() => openAddPanel('qualification')}><FaPlus /></button></div>
+                  <section id="certifications-root" className="seeker-card seeker-editor-card">
+                    <div className="seeker-editor-card__heading"><div><h2>Qualifications</h2><p>Show qualifications, awards, and credentials that strengthen your profile.</p></div><div className="seeker-editor-card__tools"><button type="button" className="seeker-inline-ai-button" onClick={() => void generateAiSuggestionForSection('certifications')}>✨ Improve with AI</button><button type="button" aria-label="Add qualification" onClick={() => openAddPanel('qualification')}><FaPlus /></button></div></div>
                     {addPanel === 'qualification' && renderAddPanel('qualification')}
-                    {profile.certifications.length === 0 ? <div className="seeker-step-empty-state"><p>No qualifications added yet. You can skip this step for now.</p></div> : <div className="seeker-form-list">{profile.certifications.map((item) => <div className="seeker-form-item" key={item.id}><div className="seeker-form-item__header"><strong>Certification</strong><button type="button" className="seeker-delete-button" onClick={() => removeCertification(item.id)}><FaTrash /></button></div><form className="seeker-profile-form"><label className={getValidationIssue(`certifications.${profile.certifications.indexOf(item)}.name`) ? 'seeker-field--invalid' : ''}><span>Qualification or Certificate</span><input type="text" list="qualification-suggestions" value={item.name} placeholder="Type a qualification or choose a suggestion" aria-invalid={Boolean(getValidationIssue(`certifications.${profile.certifications.indexOf(item)}.name`))} onChange={(event) => updateCertification(item.id, 'name', event.target.value)} />{renderValidationMessage(`certifications.${profile.certifications.indexOf(item)}.name`)}</label><label className={getValidationIssue(`certifications.${profile.certifications.indexOf(item)}.issuer`) ? 'seeker-field--invalid' : ''}><span>Issuer</span><input type="text" value={item.issuer} aria-invalid={Boolean(getValidationIssue(`certifications.${profile.certifications.indexOf(item)}.issuer`))} onChange={(event) => updateCertification(item.id, 'issuer', event.target.value)} />{renderValidationMessage(`certifications.${profile.certifications.indexOf(item)}.issuer`)}</label></form></div>)}</div>}
+                    {profile.certifications.length === 0 ? <div className="seeker-step-empty-state"><p>No qualifications added yet. You can skip this step for now.</p></div> : <div className="seeker-form-list">{profile.certifications.map((item) => <div className="seeker-form-item" key={item.id}><div className="seeker-form-item__header"><strong>Certification</strong><button type="button" className="seeker-delete-button" onClick={() => removeCertification(item.id)}><FaTrash /></button></div><form className="seeker-profile-form"><label className={getValidationIssue(`certifications.${profile.certifications.indexOf(item)}.name`) ? 'seeker-field--invalid' : ''}><span>Qualification or Certificate</span><input id={profile.certifications.indexOf(item) === 0 ? `certification-name-${item.id}` : undefined} type="text" list="qualification-suggestions" value={item.name} placeholder="Type a qualification or choose a suggestion" aria-invalid={Boolean(getValidationIssue(`certifications.${profile.certifications.indexOf(item)}.name`))} onChange={(event) => updateCertification(item.id, 'name', event.target.value)} />{renderValidationMessage(`certifications.${profile.certifications.indexOf(item)}.name`)}</label><label className={getValidationIssue(`certifications.${profile.certifications.indexOf(item)}.issuer`) ? 'seeker-field--invalid' : ''}><span>Issuer</span><input type="text" value={item.issuer} aria-invalid={Boolean(getValidationIssue(`certifications.${profile.certifications.indexOf(item)}.issuer`))} onChange={(event) => updateCertification(item.id, 'issuer', event.target.value)} />{renderValidationMessage(`certifications.${profile.certifications.indexOf(item)}.issuer`)}</label></form></div>)}</div>}
+                    {renderAiPreview(profile.certifications[0]?.id ? `certification-name-${profile.certifications[0].id}` : 'certifications-root', 'certifications')}
                     <datalist id="qualification-suggestions">{qualificationSuggestions.map((qualification) => <option value={qualification} key={qualification} />)}</datalist>
                   </section>
                 )}
 
                 {activeStep === 'languages' && (
-                  <section className="seeker-card seeker-editor-card">
+                  <section id="languages-root" className="seeker-card seeker-editor-card">
                     <div className="seeker-editor-card__heading"><div><h2>Languages</h2><p>Add languages you speak and choose your proficiency.</p></div><button type="button" aria-label="Add language" onClick={addLanguage}><FaPlus /></button></div>
-                    {profile.languages.length === 0 ? <div className="seeker-step-empty-state"><p>No languages added yet. You can skip this step and return later.</p></div> : <div className="seeker-form-list">{profile.languages.map((item) => <div className="seeker-form-item" key={item.id}><div className="seeker-form-item__header"><strong>Language</strong><button type="button" className="seeker-delete-button" onClick={() => removeLanguage(item.id)}><FaTrash /></button></div><div className="seeker-profile-form__split"><div className={`seeker-combobox ${getValidationIssue(`languages.${profile.languages.indexOf(item)}.name`) ? 'seeker-field--invalid' : ''}`}><label htmlFor={`language-${item.id}`}>Language</label><input id={`language-${item.id}`} value={languageQueries[item.id] ?? item.name} placeholder="Search or type a language" aria-invalid={Boolean(getValidationIssue(`languages.${profile.languages.indexOf(item)}.name`))} onFocus={() => setOpenLanguageId(item.id)} onChange={(event) => { setLanguageQueries((current) => ({ ...current, [item.id]: event.target.value })); updateLanguage(item.id, 'name', event.target.value); setOpenLanguageId(item.id); }} onKeyDown={(event) => { const options = getLanguageSuggestions(onboardingLocation.country, languageQueries[item.id] ?? item.name); if (event.key === 'Escape') setOpenLanguageId(null); if (event.key === 'Enter' && options[0]) { event.preventDefault(); selectLanguage(item.id, options[0]); } }} />{openLanguageId === item.id && getLanguageSuggestions(onboardingLocation.country, languageQueries[item.id] ?? item.name).length > 0 && <div className="seeker-combobox__options" role="listbox">{getLanguageSuggestions(onboardingLocation.country, languageQueries[item.id] ?? item.name).map((language) => <button type="button" role="option" key={language} onMouseDown={(event) => event.preventDefault()} onClick={() => selectLanguage(item.id, language)}>{language}</button>)}</div>}{renderValidationMessage(`languages.${profile.languages.indexOf(item)}.name`)}</div><label className={getValidationIssue(`languages.${profile.languages.indexOf(item)}.proficiency`) ? 'seeker-field--invalid' : ''}><span>Proficiency</span><select value={item.proficiency} aria-invalid={Boolean(getValidationIssue(`languages.${profile.languages.indexOf(item)}.proficiency`))} onChange={(event) => updateLanguage(item.id, 'proficiency', event.target.value)}>{['Basic', 'Conversational', 'Professional', 'Fluent', 'Native'].map((level) => <option key={level}>{level}</option>)}</select>{renderValidationMessage(`languages.${profile.languages.indexOf(item)}.proficiency`)}</label></div></div>)}</div>}
+                    {profile.languages.length === 0 ? <div className="seeker-step-empty-state"><p>No languages added yet. You can skip this step and return later.</p></div> : <div className="seeker-form-list">{profile.languages.map((item) => <div className="seeker-form-item" key={item.id}><div className="seeker-form-item__header"><strong>Language</strong><button type="button" className="seeker-delete-button" onClick={() => removeLanguage(item.id)}><FaTrash /></button></div><div className="seeker-profile-form__split"><div className={`seeker-combobox ${getValidationIssue(`languages.${profile.languages.indexOf(item)}.name`) ? 'seeker-field--invalid' : ''}`}><label htmlFor={`language-${item.id}`}>Language</label><input id={profile.languages.indexOf(item) === 0 ? `language-name-${item.id}` : `language-${item.id}`} value={languageQueries[item.id] ?? item.name} placeholder="Search or type a language" aria-invalid={Boolean(getValidationIssue(`languages.${profile.languages.indexOf(item)}.name`))} onFocus={() => setOpenLanguageId(item.id)} onChange={(event) => { setLanguageQueries((current) => ({ ...current, [item.id]: event.target.value })); updateLanguage(item.id, 'name', event.target.value); setOpenLanguageId(item.id); }} onKeyDown={(event) => { const options = getLanguageSuggestions(onboardingLocation.country, languageQueries[item.id] ?? item.name); if (event.key === 'Escape') setOpenLanguageId(null); if (event.key === 'Enter' && options[0]) { event.preventDefault(); selectLanguage(item.id, options[0]); } }} />{openLanguageId === item.id && getLanguageSuggestions(onboardingLocation.country, languageQueries[item.id] ?? item.name).length > 0 && <div className="seeker-combobox__options" role="listbox">{getLanguageSuggestions(onboardingLocation.country, languageQueries[item.id] ?? item.name).map((language) => <button type="button" role="option" key={language} onMouseDown={(event) => event.preventDefault()} onClick={() => selectLanguage(item.id, language)}>{language}</button>)}</div>}{renderValidationMessage(`languages.${profile.languages.indexOf(item)}.name`)}</div><label className={getValidationIssue(`languages.${profile.languages.indexOf(item)}.proficiency`) ? 'seeker-field--invalid' : ''}><span>Proficiency</span><select value={item.proficiency} aria-invalid={Boolean(getValidationIssue(`languages.${profile.languages.indexOf(item)}.proficiency`))} onChange={(event) => updateLanguage(item.id, 'proficiency', event.target.value)}>{['Basic', 'Conversational', 'Professional', 'Fluent', 'Native'].map((level) => <option key={level}>{level}</option>)}</select>{renderValidationMessage(`languages.${profile.languages.indexOf(item)}.proficiency`)}</label></div></div>)}</div>}
+                    {renderAiPreview(primaryLanguageId, 'languages')}
                   </section>
                 )}
 
                 {activeStep === 'projects' && (
-                  <section className="seeker-card seeker-editor-card">
+                  <section id="projects-root" className="seeker-card seeker-editor-card">
                     <div className="seeker-editor-card__heading"><div><h2>Projects &amp; Work Samples</h2><p>Show client jobs, creative work, services, repairs, business work, or software projects.</p></div><button type="button" aria-label="Add project" onClick={addProject}><FaPlus /></button></div>
-                    {profile.projects.length === 0 ? <div className="seeker-step-empty-state"><p>No work samples yet. You can skip this step and return later.</p></div> : <div className="seeker-form-list">{profile.projects.map((item) => <div className="seeker-form-item" key={item.id}><div className="seeker-form-item__header"><strong>Work Sample</strong><button type="button" className="seeker-delete-button" onClick={() => removeProject(item.id)}><FaTrash /></button></div><form className="seeker-profile-form"><label className={getValidationIssue(`projects.${profile.projects.indexOf(item)}.name`) ? 'seeker-field--invalid' : ''}><span>Work or project name</span><input value={item.name} placeholder="e.g. Bridal Makeup for a Wedding" aria-invalid={Boolean(getValidationIssue(`projects.${profile.projects.indexOf(item)}.name`))} onChange={(event) => updateProject(item.id, 'name', event.target.value)} />{renderValidationMessage(`projects.${profile.projects.indexOf(item)}.name`)}</label><label><span>Description</span><textarea value={item.description} placeholder="Describe what you did and the result." onChange={(event) => updateProject(item.id, 'description', event.target.value)} /></label><label><span>Tools or technologies used (optional)</span><input value={item.technologies.join(', ')} placeholder="Optional: tools, materials, or technologies" onChange={(event) => updateProjectTechnologies(item.id, event.target.value)} /></label><div className="seeker-profile-form__split"><label><span>Work/project link (optional)</span><input type="url" value={item.projectUrl} placeholder="Website, portfolio, social media, or other link" onChange={(event) => updateProject(item.id, 'projectUrl', event.target.value)} /></label><label><span>GitHub URL (optional)</span><input type="url" value={item.githubUrl} onChange={(event) => updateProject(item.id, 'githubUrl', event.target.value)} /></label></div><div className="seeker-profile-form__split"><label><span>Start date (optional)</span><input type="month" value={item.startDate} onChange={(event) => updateProject(item.id, 'startDate', event.target.value)} /></label><label><span>End date (optional)</span><input type="month" value={item.endDate} onChange={(event) => updateProject(item.id, 'endDate', event.target.value)} /></label></div></form></div>)}</div>}
+                    {profile.projects.length === 0 ? <div className="seeker-step-empty-state"><p>No work samples yet. You can skip this step and return later.</p></div> : <div className="seeker-form-list">{profile.projects.map((item) => <div className="seeker-form-item" key={item.id}><div className="seeker-form-item__header"><strong>Work Sample</strong><button type="button" className="seeker-delete-button" onClick={() => removeProject(item.id)}><FaTrash /></button></div><form className="seeker-profile-form"><label className={getValidationIssue(`projects.${profile.projects.indexOf(item)}.name`) ? 'seeker-field--invalid' : ''}><span>Work or project name</span><input value={item.name} placeholder="e.g. Bridal Makeup for a Wedding" aria-invalid={Boolean(getValidationIssue(`projects.${profile.projects.indexOf(item)}.name`))} onChange={(event) => updateProject(item.id, 'name', event.target.value)} />{renderValidationMessage(`projects.${profile.projects.indexOf(item)}.name`)}</label><label><span>Description</span><textarea id={profile.projects.indexOf(item) === 0 ? `project-description-${item.id}` : undefined} value={item.description} placeholder="Describe what you did and the result." onChange={(event) => updateProject(item.id, 'description', event.target.value)} /></label><label><span>Tools or technologies used (optional)</span><input value={item.technologies.join(', ')} placeholder="Optional: tools, materials, or technologies" onChange={(event) => updateProjectTechnologies(item.id, event.target.value)} /></label><div className="seeker-profile-form__split"><label><span>Work/project link (optional)</span><input type="url" value={item.projectUrl} placeholder="Website, portfolio, social media, or other link" onChange={(event) => updateProject(item.id, 'projectUrl', event.target.value)} /></label><label><span>GitHub URL (optional)</span><input type="url" value={item.githubUrl} onChange={(event) => updateProject(item.id, 'githubUrl', event.target.value)} /></label></div><div className="seeker-profile-form__split"><label><span>Start date (optional)</span><input type="month" value={item.startDate} onChange={(event) => updateProject(item.id, 'startDate', event.target.value)} /></label><label><span>End date (optional)</span><input type="month" value={item.endDate} onChange={(event) => updateProject(item.id, 'endDate', event.target.value)} /></label></div></form></div>)}</div>}
+                    {renderAiPreview(primaryProjectId, 'projects')}
                   </section>
                 )}
 
                 {activeStep === 'linkedin' && (
-                  <section className="seeker-card seeker-editor-card"><div className="seeker-editor-card__heading"><div><h2>LinkedIn</h2><p>Add your LinkedIn profile so employers can verify your background.</p></div></div><form className="seeker-profile-form"><label><span>LinkedIn profile URL</span><input type="url" value={profile.personalInfo.linkedin} placeholder="https://linkedin.com/in/yourname" onChange={(event) => updatePersonalInfo('linkedin', event.target.value)} /></label></form></section>
+                  <section className="seeker-card seeker-editor-card"><div className="seeker-editor-card__heading"><div><h2>LinkedIn</h2><p>Add your LinkedIn profile so employers can verify your background.</p></div><button type="button" className="seeker-inline-ai-button" onClick={() => void generateAiSuggestionForSection('linkedin')}>✨ Improve with AI</button></div><form className="seeker-profile-form"><label htmlFor="linkedin-field"><span>LinkedIn profile URL</span><input id="linkedin-field" type="url" value={profile.personalInfo.linkedin} placeholder="https://linkedin.com/in/yourname" onChange={(event) => updatePersonalInfo('linkedin', event.target.value)} /></label>{renderAiPreview('linkedin-field', 'linkedin')}</form></section>
                 )}
 
                 {activeStep === 'review' && (
