@@ -1,8 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { FaArrowLeft, FaBuilding, FaCheck, FaChevronRight, FaClock, FaMagic, FaMapMarkerAlt } from 'react-icons/fa';
 import { useAuth } from '../../context/AuthContext';
-import { getPublicJob, getSeekerJob, requestInterviewPreparation, requestSkillsGap, type InterviewPreparation, type SeekerDashboardJob, type SkillsGapResult } from '../../services/api';
+import { getAiRateLimitCopy, getPublicJob, getSeekerJob, isAiRateLimitError, requestInterviewPreparation, requestSkillsGap, type InterviewPreparation, type SeekerDashboardJob, type SkillsGapResult } from '../../services/api';
 import { useSubscriptions } from '../../context/SubscriptionContext';
 import CompanyLogo from '../../components/jobs/CompanyLogo';
 
@@ -40,6 +40,15 @@ function JobDetailsPage() {
   const [skillsGap, setSkillsGap] = useState<SkillsGapResult | null>(null);
   const [aiLoading, setAiLoading] = useState<'interview' | 'skills' | null>(null);
   const [aiError, setAiError] = useState('');
+  const [aiServiceModal, setAiServiceModal] = useState<null | {
+    kind: 'rate-limit' | 'temporary' | 'network';
+    title: string;
+    description: string;
+    detail: string;
+    retryAction: 'interview' | 'skills' | null;
+    primaryAction: string;
+  }>(null);
+  const aiServiceModalCloseRef = useRef<HTMLButtonElement | null>(null);
 
   useEffect(() => {
     let isMounted = true;
@@ -75,19 +84,97 @@ function JobDetailsPage() {
     };
   }, [isSeekerRoute, jobId, token]);
 
+  useEffect(() => {
+    if (!aiServiceModal) return undefined;
+
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setAiServiceModal(null);
+    };
+
+    const focusTimer = window.setTimeout(() => {
+      aiServiceModalCloseRef.current?.focus();
+    }, 0);
+
+    window.addEventListener('keydown', handleEscape);
+    return () => {
+      window.clearTimeout(focusTimer);
+      window.removeEventListener('keydown', handleEscape);
+    };
+  }, [aiServiceModal]);
+
+  const handlePremiumToolFailure = (tool: 'interview' | 'skills', result: { ok: boolean; status: number; error?: { message?: string; code?: string; retryAfterSeconds?: number | null } }) => {
+    if (!result.ok) {
+      if (isAiRateLimitError(result.status, result.error)) {
+        const rateLimitCopy = getAiRateLimitCopy(result.error?.retryAfterSeconds ?? null);
+        setAiServiceModal({
+          kind: 'rate-limit',
+          title: rateLimitCopy.title,
+          description: rateLimitCopy.description,
+          detail: rateLimitCopy.detail,
+          retryAction: null,
+          primaryAction: 'Got it',
+        });
+        return true;
+      }
+
+      if (result.status === 0 || /failed to fetch|network error|network request|econn|enotfound|socket/i.test(String(result.error?.message ?? ''))) {
+        setAiServiceModal({
+          kind: 'network',
+          title: 'Connection problem',
+          description: "We couldn't reach the AI service.",
+          detail: 'Please check your internet connection and try again.',
+          retryAction: tool,
+          primaryAction: 'Try Again',
+        });
+        return true;
+      }
+
+      if (result.status === 401 || result.status === 403) {
+        setAiError(result.error?.message || 'Your session has expired. Please sign in again.');
+        return true;
+      }
+
+      if (result.status === 502 || result.status === 503 || result.status === 504) {
+        setAiServiceModal({
+          kind: 'temporary',
+          title: 'AI Interview Preparation Unavailable',
+          description: "We couldn't prepare your interview questions right now.",
+          detail: 'The AI service is temporarily unavailable. Please try again in a moment.',
+          retryAction: tool,
+          primaryAction: 'Try Again',
+        });
+        return true;
+      }
+
+      setAiError(result.error?.message || (tool === 'interview' ? 'Interview preparation is unavailable.' : 'Skills-gap analysis is unavailable.'));
+      return true;
+    }
+
+    return false;
+  };
+
   const runPremiumTool = async (tool: 'interview' | 'skills') => {
     if (!token || !jobId || aiLoading) return;
+    setAiServiceModal(null);
     setAiLoading(tool); setAiError('');
+
     if (tool === 'interview') {
       const result = await requestInterviewPreparation({ jobId }, token);
-      if (result.ok) setInterviewPreparation(result.data.data);
-      else setAiError(result.error.message || 'Interview preparation is unavailable.');
+      setAiLoading(null);
+      if (!result.ok) {
+        if (handlePremiumToolFailure(tool, result)) return;
+        return;
+      }
+      setInterviewPreparation(result.data.data);
     } else {
       const result = await requestSkillsGap({ jobId }, token);
-      if (result.ok) setSkillsGap(result.data.data);
-      else setAiError(result.error.message || 'Skills-gap analysis is unavailable.');
+      setAiLoading(null);
+      if (!result.ok) {
+        if (handlePremiumToolFailure(tool, result)) return;
+        return;
+      }
+      setSkillsGap(result.data.data);
     }
-    setAiLoading(null);
   };
 
   if (isLoading) {
@@ -149,6 +236,14 @@ function JobDetailsPage() {
   const companyName = job.company?.name ?? 'Company not provided';
   const logoUrl = job.company?.logoUrl;
   const detailPath = `/seeker/applications?jobId=${job.id}&apply=true`;
+  const premiumPreparationTools = isSeekerRoute && currentPlan?.entitlements?.includes('AI_INTERVIEW_PREPARATION') ? (
+    <div className="job-detail-premium-tools">
+      <strong><FaMagic aria-hidden="true" /> Premium preparation</strong>
+      <button type="button" onClick={() => void runPremiumTool('interview')} disabled={aiLoading !== null}>{aiLoading === 'interview' ? 'Preparing...' : 'Prepare for interview'}</button>
+      <button type="button" onClick={() => void runPremiumTool('skills')} disabled={aiLoading !== null}>{aiLoading === 'skills' ? 'Analysing...' : 'Analyse skills gap'}</button>
+      {aiError ? <p role="alert">{aiError}</p> : null}
+    </div>
+  ) : null;
 
   return (
     <article className="job-detail-page">
@@ -259,12 +354,45 @@ function JobDetailsPage() {
               </span>
             </div>
             <Link className="button button--primary job-detail-apply-link" to={alreadyApplied ? '/seeker/applications' : detailPath}>{alreadyApplied ? 'View application' : 'Apply Now'}</Link>
-            {isSeekerRoute && currentPlan?.entitlements?.includes('AI_INTERVIEW_PREPARATION') ? <div className="job-detail-premium-tools"><strong><FaMagic aria-hidden="true" /> Premium preparation</strong><button type="button" onClick={() => void runPremiumTool('interview')} disabled={aiLoading !== null}>{aiLoading === 'interview' ? 'Preparing...' : 'Prepare for interview'}</button><button type="button" onClick={() => void runPremiumTool('skills')} disabled={aiLoading !== null}>{aiLoading === 'skills' ? 'Analysing...' : 'Analyse skills gap'}</button>{aiError ? <p role="alert">{aiError}</p> : null}</div> : null}
+            {premiumPreparationTools}
           </div>
         </aside>
       </div>
       {interviewPreparation ? <section className="job-detail-ai-result" aria-live="polite"><h2>Interview preparation</h2><p>{interviewPreparation.answerFramework}</p><ul>{interviewPreparation.questions.map((item) => <li key={item.question}><strong>{item.type}</strong><span>{item.question}</span><small>{item.guidance}</small></li>)}</ul></section> : null}
       {skillsGap ? <section className="job-detail-ai-result" aria-live="polite"><h2>Skills-gap analysis</h2><p><strong>Matched:</strong> {skillsGap.matchedSkills.join(', ') || 'No direct matches found.'}</p><p><strong>Missing:</strong> {skillsGap.missingSkills.join(', ') || 'No missing target skills identified.'}</p><p><strong>Priority areas:</strong> {skillsGap.priorities.join(', ') || 'No priority areas identified.'}</p></section> : null}
+
+      {aiServiceModal && (
+        <div
+          className="job-detail-ai-modal-backdrop"
+          role="presentation"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) setAiServiceModal(null);
+          }}
+        >
+          <section className="job-detail-ai-modal" role="dialog" aria-modal="true" aria-labelledby="job-detail-ai-modal-title">
+            <div className="job-detail-ai-modal__icon" aria-hidden="true">⚠</div>
+            <div className="job-detail-ai-modal__content">
+              <span className="job-detail-ai-modal__eyebrow">AI service</span>
+              <h2 id="job-detail-ai-modal-title">{aiServiceModal.title}</h2>
+              <p>{aiServiceModal.description}</p>
+              <p className="job-detail-ai-modal__detail">{aiServiceModal.detail}</p>
+            </div>
+            <div className="job-detail-ai-modal__actions">
+              {aiServiceModal.primaryAction === 'Got it' ? (
+                <button type="button" ref={aiServiceModalCloseRef} className="button button--primary" onClick={() => setAiServiceModal(null)}>{aiServiceModal.primaryAction}</button>
+              ) : (
+                <>
+                  <button type="button" className="button button--secondary" onClick={() => setAiServiceModal(null)}>Close</button>
+                  <button type="button" ref={aiServiceModalCloseRef} className="button button--primary" onClick={() => {
+                    setAiServiceModal(null);
+                    if (aiServiceModal.retryAction) void runPremiumTool(aiServiceModal.retryAction);
+                  }} disabled={aiLoading !== null}>{aiLoading !== null ? 'Retrying...' : aiServiceModal.primaryAction}</button>
+                </>
+              )}
+            </div>
+          </section>
+        </div>
+      )}
 
       <div className="job-detail-bottom-cta">
         <div className="job-detail-mobile-apply-card">
@@ -286,6 +414,7 @@ function JobDetailsPage() {
           </div>
         </div>
         <Link className="button button--primary job-detail-apply-link" to={alreadyApplied ? '/seeker/applications' : detailPath}>{alreadyApplied ? 'View application' : 'Apply Now'}</Link>
+        {premiumPreparationTools}
       </div>
     </article>
   );
