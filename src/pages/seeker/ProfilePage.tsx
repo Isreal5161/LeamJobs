@@ -333,6 +333,13 @@ function ProfilePage() {
     targetId: string;
     value: string;
   } | null>(null);
+  const [aiApprovalModal, setAiApprovalModal] = useState<{
+    completedSection: StepKey;
+    completedLabel: string;
+    nextSection: StepKey | 'review';
+    nextLabel: string;
+    nextTargetId: string;
+  } | null>(null);
   const [isAiLoading, setIsAiLoading] = useState(false);
   const [aiError, setAiError] = useState('');
   const [profileStrength, setProfileStrength] = useState<{ score: number; dimensions: { label: string; score: number; complete: boolean }[]; strengths: string[]; recommendations: string[] } | null>(null);
@@ -610,71 +617,196 @@ function ProfilePage() {
     return matchMap[normalized] ?? null;
   };
 
-  const applyAiSuggestionToSection = (section: string, value: string) => {
+  const profileSectionLabels: Record<StepKey, string> = {
+    personal: 'Personal Details',
+    summary: 'Profile Summary',
+    experience: 'Experience',
+    education: 'Education',
+    skills: 'Skills',
+    certifications: 'Qualifications',
+    languages: 'Languages',
+    projects: 'Projects',
+    linkedin: 'LinkedIn',
+    review: 'Review',
+  };
+
+  const profileStepCompletionOrder: StepKey[] = ['personal', 'summary', 'experience', 'education', 'skills', 'certifications', 'languages', 'projects', 'linkedin', 'review'];
+  const optionalProfileSections: StepKey[] = ['certifications', 'languages', 'projects'];
+
+  const getProfileSectionTargetId = (stepKey: StepKey, profileState: ProfileState): string => {
+    switch (stepKey) {
+      case 'personal':
+        return 'profile-title-field';
+      case 'summary':
+        return 'profile-summary-field';
+      case 'experience':
+        return profileState.experience[0]?.id ? `experience-description-${profileState.experience[0].id}` : 'experience-root';
+      case 'education':
+        return profileState.education[0]?.id ? `education-degree-${profileState.education[0].id}` : 'education-root';
+      case 'skills':
+        return profileState.skills.length > 0 ? 'skill-input-0' : 'skills-root';
+      case 'certifications':
+        return profileState.certifications[0]?.id ? `certification-name-${profileState.certifications[0].id}` : 'certifications-root';
+      case 'languages':
+        return profileState.languages[0]?.id ? `language-name-${profileState.languages[0].id}` : 'languages-root';
+      case 'projects':
+        return profileState.projects[0]?.id ? `project-description-${profileState.projects[0].id}` : 'projects-root';
+      case 'linkedin':
+        return 'linkedin-field';
+      case 'review':
+        return 'review';
+      default:
+        return 'profile-title-field';
+    }
+  };
+
+  const getProfileSectionCompletionStatus = (stepKey: StepKey, profileState: ProfileState): 'EMPTY' | 'INCOMPLETE' | 'COMPLETE' => {
+    switch (stepKey) {
+      case 'personal': {
+        const personalFields = [
+          profileState.personalInfo.fullName.trim(),
+          profileState.personalInfo.email.trim(),
+          profileState.personalInfo.phone.trim(),
+          profileState.personalInfo.location.trim(),
+        ].filter(Boolean);
+        if (personalFields.length === 0) return 'EMPTY';
+        return personalFields.length >= 2 ? 'COMPLETE' : 'INCOMPLETE';
+      }
+      case 'summary': {
+        const summary = profileState.personalInfo.summary.trim();
+        if (!summary) return 'EMPTY';
+        return summary.length < 80 ? 'INCOMPLETE' : 'COMPLETE';
+      }
+      case 'experience': {
+        if (profileState.experience.length === 0) return 'EMPTY';
+        const hasMeaningfulExperience = profileState.experience.some((item) => item.jobTitle.trim() && item.company.trim() && item.description.trim());
+        return hasMeaningfulExperience ? 'COMPLETE' : 'INCOMPLETE';
+      }
+      case 'education': {
+        if (profileState.education.length === 0) return 'EMPTY';
+        const hasMeaningfulEducation = profileState.education.some((item) => item.degree.trim() || item.school.trim() || item.year.trim());
+        return hasMeaningfulEducation ? 'COMPLETE' : 'INCOMPLETE';
+      }
+      case 'skills': {
+        const skills = profileState.skills.map((skill) => skill.trim()).filter(Boolean);
+        if (skills.length === 0) return 'EMPTY';
+        return skills.length >= 3 ? 'COMPLETE' : 'INCOMPLETE';
+      }
+      case 'certifications': {
+        if (profileState.certifications.length === 0) return 'EMPTY';
+        const hasMeaningfulCertification = profileState.certifications.some((item) => item.name.trim() || item.issuer.trim());
+        return hasMeaningfulCertification ? 'COMPLETE' : 'INCOMPLETE';
+      }
+      case 'languages': {
+        if (profileState.languages.length === 0) return 'EMPTY';
+        const hasMeaningfulLanguage = profileState.languages.some((item) => item.name.trim() && item.proficiency);
+        return hasMeaningfulLanguage ? 'COMPLETE' : 'INCOMPLETE';
+      }
+      case 'projects': {
+        if (profileState.projects.length === 0) return 'EMPTY';
+        const hasMeaningfulProject = profileState.projects.some((item) => item.name.trim() || item.description.trim() || item.projectUrl.trim());
+        return hasMeaningfulProject ? 'COMPLETE' : 'INCOMPLETE';
+      }
+      case 'linkedin': {
+        const linkedin = profileState.personalInfo.linkedin.trim();
+        if (!linkedin) return 'EMPTY';
+        return /^https?:\/\/.+/i.test(linkedin) ? 'COMPLETE' : 'INCOMPLETE';
+      }
+      case 'review':
+        return 'COMPLETE';
+      default:
+        return 'EMPTY';
+    }
+  };
+
+  const getNextIncompleteProfileSection = (startingFrom: StepKey | null, profileState: ProfileState = profile): StepKey | 'review' => {
+    const startIndex = startingFrom ? profileStepCompletionOrder.indexOf(startingFrom) : -1;
+
+    let checked = 0;
+    while (checked < profileStepCompletionOrder.length) {
+      const index = startIndex === -1
+        ? checked
+        : (startIndex + 1 + checked) % profileStepCompletionOrder.length;
+      const step = profileStepCompletionOrder[index];
+      checked += 1;
+
+      if (step === 'review') {
+        const requiredSections: StepKey[] = ['personal', 'summary', 'experience', 'education', 'skills', 'linkedin'];
+        const allRequiredComplete = requiredSections.every((section) => getProfileSectionCompletionStatus(section, profileState) === 'COMPLETE');
+        const optionalSectionsComplete = optionalProfileSections.every((section) => {
+          const status = getProfileSectionCompletionStatus(section, profileState);
+          return status === 'COMPLETE' || status === 'EMPTY';
+        });
+        if (allRequiredComplete && optionalSectionsComplete) return 'review';
+        continue;
+      }
+
+      const status = getProfileSectionCompletionStatus(step, profileState);
+      if (status === 'COMPLETE') continue;
+      if (optionalProfileSections.includes(step) && status === 'EMPTY') continue;
+      return step;
+    }
+
+    return 'review';
+  };
+
+  const applyAiSuggestionToProfile = (current: ProfileState, section: string, value: string): ProfileState => {
     const normalized = section.trim().toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
-    if (!normalized) return;
+    if (!normalized) return current;
 
     if (normalized === 'bio' || normalized === 'summary' || normalized === 'profile summary') {
-      setProfile((current) => ({
+      return {
         ...current,
         personalInfo: { ...current.personalInfo, summary: value },
-      }));
-      return;
+      };
     }
 
     if (normalized === 'title' || normalized === 'professional title') {
-      setProfile((current) => ({
+      return {
         ...current,
         personalInfo: { ...current.personalInfo, title: value },
-      }));
-      return;
+      };
     }
 
     if (normalized === 'experience' || normalized === 'work experience') {
-      setProfile((current) => {
-        if (current.experience.length === 0) {
-          return {
-            ...current,
-            experience: [{
-              id: createId('experience'),
-              jobTitle: '',
-              company: '',
-              startDate: '',
-              endDate: '',
-              currentlyWorking: false,
-              description: value,
-            }],
-          };
-        }
-
+      if (current.experience.length === 0) {
         return {
           ...current,
-          experience: current.experience.map((item, index) => (index === 0 ? { ...item, description: value } : item)),
+          experience: [{
+            id: createId('experience'),
+            jobTitle: '',
+            company: '',
+            startDate: '',
+            endDate: '',
+            currentlyWorking: false,
+            description: value,
+          }],
         };
-      });
-      return;
+      }
+
+      return {
+        ...current,
+        experience: current.experience.map((item, index) => (index === 0 ? { ...item, description: value } : item)),
+      };
     }
 
     if (normalized === 'education') {
-      setProfile((current) => {
-        if (current.education.length === 0) {
-          return {
-            ...current,
-            education: [{
-              id: createId('education'),
-              degree: value,
-              school: '',
-              year: '',
-            }],
-          };
-        }
-
+      if (current.education.length === 0) {
         return {
           ...current,
-          education: current.education.map((item, index) => (index === 0 ? { ...item, degree: value } : item)),
+          education: [{
+            id: createId('education'),
+            degree: value,
+            school: '',
+            year: '',
+          }],
         };
-      });
-      return;
+      }
+
+      return {
+        ...current,
+        education: current.education.map((item, index) => (index === 0 ? { ...item, degree: value } : item)),
+      };
     }
 
     if (normalized === 'skills') {
@@ -682,46 +814,48 @@ function ProfilePage() {
         .split(',')
         .map((skill) => skill.trim())
         .filter(Boolean);
-      setProfile((current) => ({ ...current, skills: nextSkills.length > 0 ? nextSkills : current.skills }));
-      return;
+      return { ...current, skills: nextSkills.length > 0 ? nextSkills : current.skills };
     }
 
     if (normalized === 'qualification' || normalized === 'qualifications' || normalized === 'certification' || normalized === 'certifications') {
-      setProfile((current) => ({
+      return {
         ...current,
         certifications: current.certifications.length > 0
           ? current.certifications.map((item, index) => (index === 0 ? { ...item, name: value } : item))
           : [{ id: createId('cert'), name: value, issuer: '' }],
-      }));
-      return;
+      };
     }
 
     if (normalized === 'languages') {
-      setProfile((current) => ({
+      return {
         ...current,
         languages: current.languages.length > 0
           ? current.languages.map((item, index) => (index === 0 ? { ...item, name: value } : item))
           : [{ id: createId('language'), name: value, proficiency: 'Conversational' }],
-      }));
-      return;
+      };
     }
 
     if (normalized === 'projects') {
-      setProfile((current) => ({
+      return {
         ...current,
         projects: current.projects.length > 0
           ? current.projects.map((item, index) => (index === 0 ? { ...item, description: value } : item))
           : [{ id: createId('project'), name: '', description: value, technologies: [], projectUrl: '', githubUrl: '', startDate: '', endDate: '' }],
-      }));
-      return;
+      };
     }
 
     if (normalized === 'linkedin' || normalized === 'linked in') {
-      setProfile((current) => ({
+      return {
         ...current,
         personalInfo: { ...current.personalInfo, linkedin: value },
-      }));
+      };
     }
+
+    return current;
+  };
+
+  const applyAiSuggestionToSection = (section: string, value: string) => {
+    setProfile((current) => applyAiSuggestionToProfile(current, section, value));
   };
 
   const handleSuggestionUse = (section: string, value: string) => {
@@ -750,10 +884,46 @@ function ProfilePage() {
     }, 60);
   };
 
+  const handleAiApprovalNext = () => {
+    if (!aiApprovalModal) return;
+
+    setAiApprovalModal(null);
+
+    if (aiApprovalModal.nextSection === 'review') {
+      setActiveStep('review');
+      return;
+    }
+
+    setActiveStep(aiApprovalModal.nextSection);
+    window.setTimeout(() => {
+      const target = document.getElementById(aiApprovalModal.nextTargetId) as HTMLElement | null;
+      target?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      target?.focus();
+      if (target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement) {
+        const end = target.value.length;
+        target.setSelectionRange(end, end);
+      }
+    }, 80);
+  };
+
   const applyPendingAiSuggestion = () => {
     if (!pendingAiSuggestion) return;
-    applyAiSuggestionToSection(pendingAiSuggestion.section, pendingAiSuggestion.value);
+
+    const updatedProfile = applyAiSuggestionToProfile(profile, pendingAiSuggestion.section, pendingAiSuggestion.value);
+    const completedSectionKey = pendingAiSuggestion.step;
+    const completedLabel = profileSectionLabels[completedSectionKey] ?? pendingAiSuggestion.section;
+    const nextSection = getNextIncompleteProfileSection(completedSectionKey, updatedProfile);
+    const nextLabel = nextSection === 'review' ? 'Review Profile' : profileSectionLabels[nextSection];
+
+    setProfile(updatedProfile);
     setPendingAiSuggestion(null);
+    setAiApprovalModal({
+      completedSection: completedSectionKey,
+      completedLabel,
+      nextSection,
+      nextLabel,
+      nextTargetId: nextSection === 'review' ? 'review' : getProfileSectionTargetId(nextSection, updatedProfile),
+    });
   };
 
   const renderAiPreview = (targetId: string, stepKey: StepKey) => {
@@ -2149,6 +2319,48 @@ function ProfilePage() {
             <div className="seeker-profile-confirmation__actions">
               <button type="button" className="seeker-step-button seeker-step-button--secondary" onClick={() => setIsImportConfirmationOpen(false)}>Cancel</button>
               <button type="button" className="seeker-step-button seeker-step-button--primary" onClick={() => void startCvImport()} disabled={cvImportStatus === 'processing'}>Import CV</button>
+            </div>
+          </section>
+        </div>
+      )}
+
+      {aiApprovalModal && (
+        <div
+          className="seeker-ai-success-backdrop"
+          role="presentation"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) setAiApprovalModal(null);
+          }}
+        >
+          <section className="seeker-ai-success-modal" role="dialog" aria-modal="true" aria-labelledby="profile-ai-success-title">
+            <div className="seeker-ai-success-modal__icon" aria-hidden="true">✓</div>
+            <div className="seeker-ai-success-modal__content">
+              <span className="seeker-cv-summary__eyebrow">Profile updated</span>
+              <h2 id="profile-ai-success-title">{aiApprovalModal.nextSection === 'review' ? 'Your profile is ready for review' : 'Profile updated'}</h2>
+              <p>
+                {aiApprovalModal.nextSection === 'review'
+                  ? 'Your key profile sections are complete enough for review.'
+                  : `${aiApprovalModal.completedLabel} has been updated with your approved AI content.`}
+              </p>
+              {aiApprovalModal.nextSection !== 'review' ? (
+                <div className="seeker-ai-success-modal__next">
+                  <span>Next recommended</span>
+                  <strong>{aiApprovalModal.nextLabel}</strong>
+                </div>
+              ) : (
+                <div className="seeker-ai-success-modal__next">
+                  <span>Review</span>
+                  <strong>Review Profile</strong>
+                </div>
+              )}
+            </div>
+            <div className="seeker-ai-success-modal__actions">
+              <button type="button" className="seeker-step-button seeker-step-button--secondary" onClick={() => setAiApprovalModal(null)}>
+                {aiApprovalModal.nextSection === 'review' ? 'Continue Editing' : 'Skip'}
+              </button>
+              <button type="button" className="seeker-step-button seeker-step-button--primary" onClick={handleAiApprovalNext}>
+                {aiApprovalModal.nextSection === 'review' ? 'Review Profile' : 'Next →'}
+              </button>
             </div>
           </section>
         </div>
