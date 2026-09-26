@@ -730,21 +730,6 @@ function ProfilePage() {
   const profileStepCompletionOrder: StepKey[] = ['personal', 'summary', 'experience', 'education', 'skills', 'certifications', 'languages', 'projects', 'linkedin', 'review'];
   const optionalProfileSections: StepKey[] = ['certifications', 'languages', 'projects'];
 
-  const profileSectionUpdateCount = useMemo(() => {
-    return profileStepCompletionOrder
-      .filter((step) => step !== 'review')
-      .filter((step) => {
-        const status = getProfileSectionCompletionStatus(step, profile);
-        return status === 'EMPTY' || status === 'INCOMPLETE';
-      }).length;
-  }, [profile]);
-
-  const profileSectionUpdateText = profileSectionUpdateCount === 0
-    ? 'No sections need updates'
-    : profileSectionUpdateCount === 1
-      ? '1 section needs update'
-      : `${profileSectionUpdateCount} sections need updates`;
-
   const getProfileSectionTargetId = (stepKey: StepKey, profileState: ProfileState): string => {
     switch (stepKey) {
       case 'personal':
@@ -830,6 +815,21 @@ function ProfilePage() {
         return 'EMPTY';
     }
   };
+
+  const profileSectionUpdateCount = useMemo(() => {
+    return profileStepCompletionOrder
+      .filter((step) => step !== 'review')
+      .filter((step) => {
+        const status = getProfileSectionCompletionStatus(step, profile);
+        return status === 'EMPTY' || status === 'INCOMPLETE';
+      }).length;
+  }, [profile]);
+
+  const profileSectionUpdateText = profileSectionUpdateCount === 0
+    ? 'No sections need updates'
+    : profileSectionUpdateCount === 1
+      ? '1 section needs update'
+      : `${profileSectionUpdateCount} sections need updates`;
 
   const getNextIncompleteProfileSection = (startingFrom: StepKey | null, profileState: ProfileState = profile): StepKey | 'review' => {
     const startIndex = startingFrom ? profileStepCompletionOrder.indexOf(startingFrom) : -1;
