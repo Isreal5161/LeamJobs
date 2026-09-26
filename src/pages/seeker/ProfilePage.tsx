@@ -1043,6 +1043,32 @@ function ProfilePage() {
     });
   };
 
+  const renderInlineAiButton = (
+    section: 'summary' | 'title' | 'experience' | 'education' | 'skills' | 'certifications' | 'languages' | 'projects' | 'linkedin',
+    label: string,
+  ) => (
+    <button
+      type="button"
+      className="seeker-inline-ai-button"
+      onClick={() => void generateAiSuggestionForSection(section)}
+      disabled={isAiLoading || !canUseProfileAssistant}
+      aria-busy={isAiLoading}
+      aria-live="polite"
+    >
+      {isAiLoading ? (
+        <>
+          <span className="leamjobs-spinner" aria-hidden="true" />
+          <span>Improving...</span>
+        </>
+      ) : (
+        <>
+          <span aria-hidden="true">✨</span>
+          <span>{label}</span>
+        </>
+      )}
+    </button>
+  );
+
   const renderAiPreview = (targetId: string, stepKey: StepKey) => {
     if (!pendingAiSuggestion || pendingAiSuggestion.targetId !== targetId || activeStep !== stepKey) return null;
 
@@ -1069,88 +1095,95 @@ function ProfilePage() {
   };
 
   const generateAiSuggestionForSection = async (section: 'summary' | 'title' | 'experience' | 'education' | 'skills' | 'certifications' | 'languages' | 'projects' | 'linkedin') => {
-    if (!token || !canUseProfileAssistant) return;
+    if (!token || !canUseProfileAssistant || isAiLoading) return;
 
     if (getManualOnlyAiTarget(section)) {
       openManualOnlyAiModal(section);
       return;
     }
 
-    const requestBySection: Record<typeof section, string> = {
-      summary: 'Improve my profile summary to be clear, professional, and grounded only in my actual experience.',
-      title: 'Give me a professional job title that reflects my skills and experience without inventing facts.',
-      experience: 'Improve this work experience description to sound clearer, more professional, and more achievement-focused without inventing facts.',
-      education: 'Improve this education entry to be clearer and more professional while preserving the actual facts.',
-      skills: 'Suggest a concise, relevant set of professional skills based only on the seeker profile and experience.',
-      certifications: 'Suggest relevant professional certifications or qualifications based only on the profile and current experience.',
-      languages: 'Suggest a polished language entry and professional proficiency label based only on the profile.',
-      projects: 'Improve this project or work sample description to sound more polished and outcome-focused without inventing facts.',
-      linkedin: 'Help me craft a clear, professional LinkedIn profile value without inventing qualifications or achievements.',
-    };
+    setIsAiLoading(true);
+    setAiError('');
 
-    const response = await requestProfileAssistant({
-      professionalTitle: profile.personalInfo.title,
-      bio: profile.personalInfo.summary,
-      skills: profile.skills,
-      experience: profile.experience,
-      education: profile.education,
-      request: requestBySection[section],
-    }, token);
+    try {
+      const requestBySection: Record<typeof section, string> = {
+        summary: 'Improve my profile summary to be clear, professional, and grounded only in my actual experience.',
+        title: 'Give me a professional job title that reflects my skills and experience without inventing facts.',
+        experience: 'Improve this work experience description to sound clearer, more professional, and more achievement-focused without inventing facts.',
+        education: 'Improve this education entry to be clearer and more professional while preserving the actual facts.',
+        skills: 'Suggest a concise, relevant set of professional skills based only on the seeker profile and experience.',
+        certifications: 'Suggest relevant professional certifications or qualifications based only on the profile and current experience.',
+        languages: 'Suggest a polished language entry and professional proficiency label based only on the profile.',
+        projects: 'Improve this project or work sample description to sound more polished and outcome-focused without inventing facts.',
+        linkedin: 'Help me craft a clear, professional LinkedIn profile value without inventing qualifications or achievements.',
+      };
 
-    if (handleAiRateLimitResult(response)) return;
-    if (!response.ok) {
-      setAiError(response.error.message || 'AI assistance is unavailable.');
-      return;
+      const response = await requestProfileAssistant({
+        professionalTitle: profile.personalInfo.title,
+        bio: profile.personalInfo.summary,
+        skills: profile.skills,
+        experience: profile.experience,
+        education: profile.education,
+        request: requestBySection[section],
+      }, token);
+
+      if (handleAiRateLimitResult(response)) return;
+      if (!response.ok) {
+        setAiError(response.error.message || 'AI assistance is unavailable.');
+        return;
+      }
+
+      const suggestions = response.data.data.suggestions ?? [];
+      const allowedSections = {
+        summary: ['summary', 'bio', 'profile summary'],
+        title: ['title', 'professional title'],
+        experience: ['experience', 'work experience', 'role description', 'job description'],
+        education: ['education'],
+        skills: ['skills'],
+        certifications: ['certifications', 'qualification', 'qualifications', 'certification'],
+        languages: ['languages', 'language'],
+        projects: ['projects', 'project', 'work sample'],
+        linkedin: ['linkedin', 'linked in'],
+      } satisfies Record<typeof section, string[]>;
+
+      const nextSuggestion = suggestions.find((item) => {
+        const normalized = item.section.trim().toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+        return allowedSections[section].includes(normalized);
+      }) ?? suggestions[0];
+
+      if (!nextSuggestion) {
+        setAiError('AI returned no field-specific suggestion for this section.');
+        return;
+      }
+
+      const suggestedSection = nextSuggestion.section || section;
+      const manualOnlyTarget = getManualOnlyAiTarget(suggestedSection);
+      if (manualOnlyTarget) {
+        openManualOnlyAiModal(suggestedSection);
+        return;
+      }
+
+      const target = resolveAiEditorTarget(suggestedSection);
+      if (!target) {
+        setAiError('This field cannot currently be opened directly from AI suggestions.');
+        return;
+      }
+
+      setPendingAiSuggestion({
+        section: suggestedSection,
+        step: target.step,
+        targetId: target.targetId,
+        value: nextSuggestion.suggestion,
+      });
+      setActiveStep(target.step);
+      window.setTimeout(() => {
+        const field = document.getElementById(target.targetId) as HTMLElement | null;
+        field?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        field?.focus();
+      }, 60);
+    } finally {
+      setIsAiLoading(false);
     }
-
-    const suggestions = response.data.data.suggestions ?? [];
-    const allowedSections = {
-      summary: ['summary', 'bio', 'profile summary'],
-      title: ['title', 'professional title'],
-      experience: ['experience', 'work experience', 'role description', 'job description'],
-      education: ['education'],
-      skills: ['skills'],
-      certifications: ['certifications', 'qualification', 'qualifications', 'certification'],
-      languages: ['languages', 'language'],
-      projects: ['projects', 'project', 'work sample'],
-      linkedin: ['linkedin', 'linked in'],
-    } satisfies Record<typeof section, string[]>;
-
-    const nextSuggestion = suggestions.find((item) => {
-      const normalized = item.section.trim().toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
-      return allowedSections[section].includes(normalized);
-    }) ?? suggestions[0];
-
-    if (!nextSuggestion) {
-      setAiError('AI returned no field-specific suggestion for this section.');
-      return;
-    }
-
-    const suggestedSection = nextSuggestion.section || section;
-    const manualOnlyTarget = getManualOnlyAiTarget(suggestedSection);
-    if (manualOnlyTarget) {
-      openManualOnlyAiModal(suggestedSection);
-      return;
-    }
-
-    const target = resolveAiEditorTarget(suggestedSection);
-    if (!target) {
-      setAiError('This field cannot currently be opened directly from AI suggestions.');
-      return;
-    }
-
-    setPendingAiSuggestion({
-      section: suggestedSection,
-      step: target.step,
-      targetId: target.targetId,
-      value: nextSuggestion.suggestion,
-    });
-    setActiveStep(target.step);
-    window.setTimeout(() => {
-      const field = document.getElementById(target.targetId) as HTMLElement | null;
-      field?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      field?.focus();
-    }, 60);
   };
 
   const currentStepIndex = steps.findIndex((step) => step.key === activeStep);
@@ -2139,7 +2172,7 @@ function ProfilePage() {
                       <label htmlFor="profile-title-field">
                         <span className="seeker-field-header">
                           <span>Professional Title</span>
-                          <button type="button" className="seeker-inline-ai-button" onClick={() => void generateAiSuggestionForSection('title')}>✨ Use AI</button>
+                          {renderInlineAiButton('title', 'Use AI')}
                         </span>
                         <input id="profile-title-field" type="text" value={profile.personalInfo.title} onChange={(event) => updatePersonalInfo('title', event.target.value)} />
                       </label>
@@ -2181,7 +2214,7 @@ function ProfilePage() {
                       <label htmlFor="profile-summary-field">
                         <span className="seeker-field-header">
                           <span>Profile Summary</span>
-                          <button type="button" className="seeker-inline-ai-button" onClick={() => void generateAiSuggestionForSection('summary')}>✨ Improve with AI</button>
+                          {renderInlineAiButton('summary', 'Improve with AI')}
                         </span>
                         <textarea
                           id="profile-summary-field"
@@ -2204,7 +2237,7 @@ function ProfilePage() {
                         <h2>Experience</h2>
                         <p>Add your work experience in reverse chronological order.</p>
                       </div>
-                      <button type="button" className="seeker-inline-ai-button" onClick={() => void generateAiSuggestionForSection('experience')}>✨ Improve with AI</button>
+                      {renderInlineAiButton('experience', 'Improve with AI')}
                       <div className="seeker-editor-card__tools">
                         <button type="button" aria-label="Reorder section"><FaGripVertical /></button>
                         <button type="button" aria-label="Edit section"><FaEdit /></button>
@@ -2263,7 +2296,7 @@ function ProfilePage() {
                               <label>
                                 <span className="seeker-field-header">
                                   <span>Job Description</span>
-                                  <button type="button" className="seeker-inline-ai-button" onClick={() => void generateAiSuggestionForSection('experience')}>✨ Improve with AI</button>
+                                  {renderInlineAiButton('experience', 'Improve with AI')}
                                 </span>
                                 <div className="seeker-rich-editor">
                                   <div className="seeker-rich-editor__toolbar" aria-label="Formatting toolbar">
@@ -2291,7 +2324,7 @@ function ProfilePage() {
                     <div className="seeker-editor-card__heading">
                       <div><h2>Education</h2><p>Add your education and training.</p></div>
                       <div className="seeker-editor-card__tools">
-                        <button type="button" className="seeker-inline-ai-button" onClick={() => void generateAiSuggestionForSection('education')}>✨ Improve with AI</button>
+                        {renderInlineAiButton('education', 'Improve with AI')}
                         <button type="button" aria-label="Add education" onClick={addEducation}><FaPlus /></button>
                       </div>
                     </div>
@@ -2313,7 +2346,7 @@ function ProfilePage() {
 
                 {activeStep === 'skills' && (
                   <section id="skills-root" className="seeker-card seeker-editor-card">
-                    <div className="seeker-editor-card__heading"><div><h2>Skills</h2><p>Highlight the strengths and abilities that matter most to employers.</p></div><div className="seeker-editor-card__tools"><button type="button" className="seeker-inline-ai-button" onClick={() => void generateAiSuggestionForSection('skills')}>✨ Suggest Skills</button><button type="button" aria-label="Add skill" onClick={() => openAddPanel('skill')}><FaPlus /></button></div></div>
+                    <div className="seeker-editor-card__heading"><div><h2>Skills</h2><p>Highlight the strengths and abilities that matter most to employers.</p></div><div className="seeker-editor-card__tools">{renderInlineAiButton('skills', 'Suggest Skills')}<button type="button" aria-label="Add skill" onClick={() => openAddPanel('skill')}><FaPlus /></button></div></div>
                     {addPanel === 'skill' && renderAddPanel('skill')}
                     {profile.skills.length === 0 ? <div className="seeker-step-empty-state"><p>No skills added yet. You can skip this step and return later.</p></div> : <div className="seeker-form-list">{profile.skills.map((skill, index) => <div className="seeker-form-item seeker-form-item--inline" key={`${skill}-${index}`}><input id={index === 0 ? 'skill-input-0' : undefined} type="text" list="skill-suggestions" value={skill} placeholder="Type a skill or choose a suggestion" onChange={(event) => updateSkill(index, event.target.value)} /><button type="button" className="seeker-delete-button" onClick={() => removeSkill(index)}><FaTrash /></button></div>)}</div>}
                     {renderAiPreview(profile.skills.length > 0 ? 'skill-input-0' : 'skills-root', 'skills')}
@@ -2323,7 +2356,7 @@ function ProfilePage() {
 
                 {activeStep === 'certifications' && (
                   <section id="certifications-root" className="seeker-card seeker-editor-card">
-                    <div className="seeker-editor-card__heading"><div><h2>Qualifications</h2><p>Show qualifications, awards, and credentials that strengthen your profile.</p></div><div className="seeker-editor-card__tools"><button type="button" className="seeker-inline-ai-button" onClick={() => void generateAiSuggestionForSection('certifications')}>✨ Improve with AI</button><button type="button" aria-label="Add qualification" onClick={() => openAddPanel('qualification')}><FaPlus /></button></div></div>
+                    <div className="seeker-editor-card__heading"><div><h2>Qualifications</h2><p>Show qualifications, awards, and credentials that strengthen your profile.</p></div><div className="seeker-editor-card__tools">{renderInlineAiButton('certifications', 'Improve with AI')}<button type="button" aria-label="Add qualification" onClick={() => openAddPanel('qualification')}><FaPlus /></button></div></div>
                     {addPanel === 'qualification' && renderAddPanel('qualification')}
                     {profile.certifications.length === 0 ? <div className="seeker-step-empty-state"><p>No qualifications added yet. You can skip this step for now.</p></div> : <div className="seeker-form-list">{profile.certifications.map((item) => <div className="seeker-form-item" key={item.id}><div className="seeker-form-item__header"><strong>Certification</strong><button type="button" className="seeker-delete-button" onClick={() => removeCertification(item.id)}><FaTrash /></button></div><form className="seeker-profile-form"><label className={getValidationIssue(`certifications.${profile.certifications.indexOf(item)}.name`) ? 'seeker-field--invalid' : ''}><span>Qualification or Certificate</span><input id={profile.certifications.indexOf(item) === 0 ? `certification-name-${item.id}` : undefined} type="text" list="qualification-suggestions" value={item.name} placeholder="Type a qualification or choose a suggestion" aria-invalid={Boolean(getValidationIssue(`certifications.${profile.certifications.indexOf(item)}.name`))} onChange={(event) => updateCertification(item.id, 'name', event.target.value)} />{renderValidationMessage(`certifications.${profile.certifications.indexOf(item)}.name`)}</label><label className={getValidationIssue(`certifications.${profile.certifications.indexOf(item)}.issuer`) ? 'seeker-field--invalid' : ''}><span>Issuer</span><input type="text" value={item.issuer} aria-invalid={Boolean(getValidationIssue(`certifications.${profile.certifications.indexOf(item)}.issuer`))} onChange={(event) => updateCertification(item.id, 'issuer', event.target.value)} />{renderValidationMessage(`certifications.${profile.certifications.indexOf(item)}.issuer`)}</label></form></div>)}</div>}
                     {renderAiPreview(profile.certifications[0]?.id ? `certification-name-${profile.certifications[0].id}` : 'certifications-root', 'certifications')}
@@ -2348,7 +2381,7 @@ function ProfilePage() {
                 )}
 
                 {activeStep === 'linkedin' && (
-                  <section className="seeker-card seeker-editor-card"><div className="seeker-editor-card__heading"><div><h2>LinkedIn</h2><p>Add your LinkedIn profile so employers can verify your background.</p></div><button type="button" className="seeker-inline-ai-button" onClick={() => void generateAiSuggestionForSection('linkedin')}>✨ Improve with AI</button></div><form className="seeker-profile-form"><label htmlFor="linkedin-field"><span>LinkedIn profile URL</span><input id="linkedin-field" type="url" value={profile.personalInfo.linkedin} placeholder="https://linkedin.com/in/yourname" onChange={(event) => updatePersonalInfo('linkedin', event.target.value)} /></label>{renderAiPreview('linkedin-field', 'linkedin')}</form></section>
+                  <section className="seeker-card seeker-editor-card"><div className="seeker-editor-card__heading"><div><h2>LinkedIn</h2><p>Add your LinkedIn profile so employers can verify your background.</p></div>{renderInlineAiButton('linkedin', 'Improve with AI')}</div><form className="seeker-profile-form"><label htmlFor="linkedin-field"><span>LinkedIn profile URL</span><input id="linkedin-field" type="url" value={profile.personalInfo.linkedin} placeholder="https://linkedin.com/in/yourname" onChange={(event) => updatePersonalInfo('linkedin', event.target.value)} /></label>{renderAiPreview('linkedin-field', 'linkedin')}</form></section>
                 )}
 
                 {activeStep === 'review' && (
