@@ -1260,8 +1260,43 @@
 
 .seeker-profile-form__split {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: minmax(0, 1.5fr) minmax(180px, 0.9fr);
   gap: 1rem;
+  align-items: end;
+}
+
+.seeker-profile-form__split > * {
+  min-width: 0;
+}
+
+.seeker-profile-form__split .seeker-combobox,
+.seeker-profile-form__split label {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.seeker-profile-form__split select {
+  width: 100%;
+  min-height: 48px;
+  padding: 0 2.7rem 0 0.9rem;
+  border: 1px solid rgba(15, 23, 42, 0.12);
+  border-radius: 10px;
+  background-color: #ffffff;
+  background-image: linear-gradient(45deg, transparent 50%, #475569 50%), linear-gradient(135deg, #475569 50%, transparent 50%);
+  background-position: calc(100% - 18px) calc(50% - 2px), calc(100% - 13px) calc(50% - 2px);
+  background-size: 6px 6px, 6px 6px;
+  background-repeat: no-repeat;
+  color: #0f172a;
+  font: inherit;
+  font-weight: 600;
+  appearance: none;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.75);
+}
+
+.seeker-profile-form__split select:focus {
+  outline: none;
+  border-color: #0e4ae1;
+  box-shadow: 0 0 0 4px rgba(14, 74, 225, 0.12);
 }
 
 .seeker-combobox {
