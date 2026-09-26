@@ -730,6 +730,21 @@ function ProfilePage() {
   const profileStepCompletionOrder: StepKey[] = ['personal', 'summary', 'experience', 'education', 'skills', 'certifications', 'languages', 'projects', 'linkedin', 'review'];
   const optionalProfileSections: StepKey[] = ['certifications', 'languages', 'projects'];
 
+  const profileSectionUpdateCount = useMemo(() => {
+    return profileStepCompletionOrder
+      .filter((step) => step !== 'review')
+      .filter((step) => {
+        const status = getProfileSectionCompletionStatus(step, profile);
+        return status === 'EMPTY' || status === 'INCOMPLETE';
+      }).length;
+  }, [profile]);
+
+  const profileSectionUpdateText = profileSectionUpdateCount === 0
+    ? 'No sections need updates'
+    : profileSectionUpdateCount === 1
+      ? '1 section needs update'
+      : `${profileSectionUpdateCount} sections need updates`;
+
   const getProfileSectionTargetId = (stepKey: StepKey, profileState: ProfileState): string => {
     switch (stepKey) {
       case 'personal':
@@ -1863,7 +1878,7 @@ function ProfilePage() {
                 <div className="seeker-cv-progress">
                   <div>
                     <strong>{completionScore}% complete</strong>
-                    <span>{Math.max(0, 5 - (completionScore / 20))} sections need updates</span>
+                    <span>{profileSectionUpdateText}</span>
                   </div>
                   <span className="seeker-cv-progress__bar"><i style={{ width: `${completionScore}%` }} /></span>
                 </div>
