@@ -714,6 +714,29 @@ function ProfilePage() {
     return matchMap[normalized] ?? null;
   };
 
+  const normalizeApprovedAiValue = (section: string, value: string): string => {
+    const cleaned = value.replace(/\s+/g, ' ').trim();
+    if (!cleaned) return '';
+
+    const instructionPattern = /(?:change|update|replace|rewrite|improve|suggest|recommended)\b/i;
+    const quotedMatches = [...cleaned.matchAll(/["'“”‘’]([^"'“”‘’]+)["'“”‘’]/g)].map((match) => match[1].trim()).filter(Boolean);
+
+    if ((instructionPattern.test(cleaned) || /(?:to|with|into)\s*["'“”‘’]/i.test(cleaned)) && quotedMatches.length >= 2) {
+      return quotedMatches[quotedMatches.length - 1] ?? cleaned;
+    }
+
+    if (quotedMatches.length === 2 && /(?:to|with|into)/i.test(cleaned)) {
+      return quotedMatches[quotedMatches.length - 1] ?? cleaned;
+    }
+
+    if (section.toLowerCase().includes('title') || section.toLowerCase().includes('summary') || section.toLowerCase().includes('linkedin')) {
+      const finalQuote = cleaned.match(/(?:"|“|”|'|‘|’)([^"'“”‘’]+)(?:"|“|”|'|‘|’)\s*$/);
+      if (finalQuote?.[1]) return finalQuote[1].trim();
+    }
+
+    return cleaned;
+  };
+
   const profileSectionLabels: Record<StepKey, string> = {
     personal: 'Personal Details',
     summary: 'Profile Summary',
@@ -866,17 +889,19 @@ function ProfilePage() {
     const normalized = section.trim().toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
     if (!normalized) return current;
 
+    const approvedValue = normalizeApprovedAiValue(section, value);
+
     if (normalized === 'bio' || normalized === 'summary' || normalized === 'profile summary') {
       return {
         ...current,
-        personalInfo: { ...current.personalInfo, summary: value },
+        personalInfo: { ...current.personalInfo, summary: approvedValue },
       };
     }
 
     if (normalized === 'title' || normalized === 'professional title') {
       return {
         ...current,
-        personalInfo: { ...current.personalInfo, title: value },
+        personalInfo: { ...current.personalInfo, title: approvedValue },
       };
     }
 
@@ -891,14 +916,14 @@ function ProfilePage() {
             startDate: '',
             endDate: '',
             currentlyWorking: false,
-            description: value,
+            description: approvedValue,
           }],
         };
       }
 
       return {
         ...current,
-        experience: current.experience.map((item, index) => (index === 0 ? { ...item, description: value } : item)),
+        experience: current.experience.map((item, index) => (index === 0 ? { ...item, description: approvedValue } : item)),
       };
     }
 
@@ -908,7 +933,7 @@ function ProfilePage() {
           ...current,
           education: [{
             id: createId('education'),
-            degree: value,
+            degree: approvedValue,
             school: '',
             year: '',
           }],
@@ -917,12 +942,12 @@ function ProfilePage() {
 
       return {
         ...current,
-        education: current.education.map((item, index) => (index === 0 ? { ...item, degree: value } : item)),
+        education: current.education.map((item, index) => (index === 0 ? { ...item, degree: approvedValue } : item)),
       };
     }
 
     if (normalized === 'skills') {
-      const nextSkills = value
+      const nextSkills = approvedValue
         .split(',')
         .map((skill) => skill.trim())
         .filter(Boolean);
@@ -933,8 +958,8 @@ function ProfilePage() {
       return {
         ...current,
         certifications: current.certifications.length > 0
-          ? current.certifications.map((item, index) => (index === 0 ? { ...item, name: value } : item))
-          : [{ id: createId('cert'), name: value, issuer: '' }],
+          ? current.certifications.map((item, index) => (index === 0 ? { ...item, name: approvedValue } : item))
+          : [{ id: createId('cert'), name: approvedValue, issuer: '' }],
       };
     }
 
@@ -942,8 +967,8 @@ function ProfilePage() {
       return {
         ...current,
         languages: current.languages.length > 0
-          ? current.languages.map((item, index) => (index === 0 ? { ...item, name: value } : item))
-          : [{ id: createId('language'), name: value, proficiency: 'Conversational' }],
+          ? current.languages.map((item, index) => (index === 0 ? { ...item, name: approvedValue } : item))
+          : [{ id: createId('language'), name: approvedValue, proficiency: 'Conversational' }],
       };
     }
 
@@ -951,15 +976,15 @@ function ProfilePage() {
       return {
         ...current,
         projects: current.projects.length > 0
-          ? current.projects.map((item, index) => (index === 0 ? { ...item, description: value } : item))
-          : [{ id: createId('project'), name: '', description: value, technologies: [], projectUrl: '', githubUrl: '', startDate: '', endDate: '' }],
+          ? current.projects.map((item, index) => (index === 0 ? { ...item, description: approvedValue } : item))
+          : [{ id: createId('project'), name: '', description: approvedValue, technologies: [], projectUrl: '', githubUrl: '', startDate: '', endDate: '' }],
       };
     }
 
     if (normalized === 'linkedin' || normalized === 'linked in') {
       return {
         ...current,
-        personalInfo: { ...current.personalInfo, linkedin: value },
+        personalInfo: { ...current.personalInfo, linkedin: approvedValue },
       };
     }
 
@@ -982,7 +1007,7 @@ function ProfilePage() {
       return;
     }
 
-    setPendingAiSuggestion({ section, step: target.step, targetId: target.targetId, value });
+    setPendingAiSuggestion({ section, step: target.step, targetId: target.targetId, value: normalizeApprovedAiValue(section, value) });
     setActiveStep(target.step);
     window.setTimeout(() => {
       const field = document.getElementById(target.targetId) as HTMLElement | null;
@@ -1173,7 +1198,7 @@ function ProfilePage() {
         section: suggestedSection,
         step: target.step,
         targetId: target.targetId,
-        value: nextSuggestion.suggestion,
+        value: normalizeApprovedAiValue(suggestedSection, nextSuggestion.suggestion),
       });
       setActiveStep(target.step);
       window.setTimeout(() => {
