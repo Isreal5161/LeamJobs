@@ -1016,7 +1016,8 @@
   line-height: 1.55;
 }
 
-.seeker-ai-success-backdrop {
+.seeker-ai-success-backdrop,
+.seeker-ai-rate-limit-backdrop {
   position: fixed;
   inset: 0;
   z-index: 60;
@@ -1026,7 +1027,8 @@
   background: rgba(15, 23, 42, 0.48);
 }
 
-.seeker-ai-success-modal {
+.seeker-ai-success-modal,
+.seeker-ai-rate-limit-modal {
   width: min(100%, 420px);
   display: grid;
   gap: 1rem;
@@ -1037,34 +1039,51 @@
   box-shadow: 0 18px 50px rgba(15, 23, 42, 0.18);
 }
 
-.seeker-ai-success-modal__icon {
+.seeker-ai-success-modal__icon,
+.seeker-ai-rate-limit-modal__icon {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   width: 2.5rem;
   height: 2.5rem;
   border-radius: 50%;
-  background: rgba(16, 185, 129, 0.12);
-  color: #059669;
   font-size: 1.4rem;
   font-weight: 900;
 }
 
-.seeker-ai-success-modal__content {
+.seeker-ai-success-modal__icon {
+  background: rgba(16, 185, 129, 0.12);
+  color: #059669;
+}
+
+.seeker-ai-rate-limit-modal__icon {
+  background: rgba(239, 80, 54, 0.12);
+  color: #ef5036;
+}
+
+.seeker-ai-success-modal__content,
+.seeker-ai-rate-limit-modal__content {
   display: grid;
   gap: 0.45rem;
 }
 
-.seeker-ai-success-modal__content h2 {
+.seeker-ai-success-modal__content h2,
+.seeker-ai-rate-limit-modal__content h2 {
   margin: 0;
   color: #322f6a;
   font-size: 1.35rem;
 }
 
-.seeker-ai-success-modal__content p {
+.seeker-ai-success-modal__content p,
+.seeker-ai-rate-limit-modal__content p {
   margin: 0;
   color: #475569;
   line-height: 1.55;
+}
+
+.seeker-ai-rate-limit-modal__detail {
+  color: #322f6a;
+  font-weight: 700;
 }
 
 .seeker-ai-success-modal__next {
@@ -1088,7 +1107,8 @@
   font-size: 1.05rem;
 }
 
-.seeker-ai-success-modal__actions {
+.seeker-ai-success-modal__actions,
+.seeker-ai-rate-limit-modal__actions {
   display: flex;
   align-items: center;
   justify-content: flex-end;

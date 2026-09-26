@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type ChangeEvent } from 'react';
+import { useEffect, useMemo, useRef, useState, type ChangeEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   FaArrowLeft,
@@ -28,6 +28,8 @@ import { startSeekerFreeTrial } from '../../services/api';
 import {
   getSeekerProfile,
   getSeekerProfilePicture,
+  getAiRateLimitCopy,
+  isAiRateLimitError,
   request,
   updateSeekerCV,
   updateSeekerProfile,
@@ -342,10 +344,12 @@ function ProfilePage() {
   } | null>(null);
   const [isAiLoading, setIsAiLoading] = useState(false);
   const [aiError, setAiError] = useState('');
+  const [aiRateLimitModal, setAiRateLimitModal] = useState<{ retryAfterSeconds: number | null } | null>(null);
   const [profileStrength, setProfileStrength] = useState<{ score: number; dimensions: { label: string; score: number; complete: boolean }[]; strengths: string[]; recommendations: string[] } | null>(null);
   const [profileStrengthError, setProfileStrengthError] = useState('');
   const { plans, getSubscription, refresh, trialOffer, currentPlan } = useSubscriptions();
   const [isStartingTrial, setIsStartingTrial] = useState(false);
+  const aiRateLimitCloseRef = useRef<HTMLButtonElement | null>(null);
   const navigate = useNavigate();
 
   const subscriptionUserId = user?.id || '';
@@ -385,6 +389,7 @@ function ProfilePage() {
     setIsAiLoading(true); setAiError('');
     const result = await requestProfileAssistant({ professionalTitle: profile.personalInfo.title, bio: profile.personalInfo.summary, skills: profile.skills, experience: profile.experience, education: profile.education, request: aiRequest }, token);
     setIsAiLoading(false);
+    if (handleAiRateLimitResult(result)) return;
     if (result.ok) setAiSuggestions(result.data.data.suggestions);
     else setAiError(result.error.message || 'AI assistance is unavailable.');
   };
@@ -395,6 +400,7 @@ function ProfilePage() {
     const cv = { personalInfo: profile.personalInfo, summary: profile.personalInfo.summary, experience: profile.experience, education: profile.education, skills: profile.skills, certifications: profile.certifications, languages: profile.languages, projects: profile.projects };
     const result = await requestCvOptimizer({ cv, request: 'Suggest concise, achievement-oriented improvements without inventing facts.' }, token);
     setIsAiLoading(false);
+    if (handleAiRateLimitResult(result)) return;
     if (result.ok) setAiCvSuggestions(result.data.data.suggestions);
     else setAiError(result.error.message || 'AI assistance is unavailable.');
   };
@@ -546,8 +552,36 @@ function ProfilePage() {
     return () => window.removeEventListener('keydown', handleEscape);
   }, [isImportConfirmationOpen]);
 
+  useEffect(() => {
+    if (!aiRateLimitModal) return undefined;
+
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setAiRateLimitModal(null);
+    };
+
+    const focusTimer = window.setTimeout(() => {
+      aiRateLimitCloseRef.current?.focus();
+    }, 0);
+
+    window.addEventListener('keydown', handleEscape);
+    return () => {
+      window.clearTimeout(focusTimer);
+      window.removeEventListener('keydown', handleEscape);
+    };
+  }, [aiRateLimitModal]);
+
   const showNotification = (nextNotification: ProfileNotification) => {
     setNotification(nextNotification);
+  };
+
+  const handleAiRateLimitResult = <T,>(result: { ok: boolean; status: number; error?: { retryAfterSeconds?: number | null; code?: string; message?: string } }) => {
+    if (!result.ok && isAiRateLimitError(result.status, result.error)) {
+      setPendingAiSuggestion(null);
+      setAiError('');
+      setAiRateLimitModal({ retryAfterSeconds: result.error?.retryAfterSeconds ?? null });
+      return true;
+    }
+    return false;
   };
 
   const completionScore = useMemo(() => {
@@ -975,6 +1009,7 @@ function ProfilePage() {
       request: requestBySection[section],
     }, token);
 
+    if (handleAiRateLimitResult(response)) return;
     if (!response.ok) {
       setAiError(response.error.message || 'AI assistance is unavailable.');
       return;
@@ -2365,6 +2400,32 @@ function ProfilePage() {
           </section>
         </div>
       )}
+
+      {aiRateLimitModal && (() => {
+        const rateLimitCopy = getAiRateLimitCopy(aiRateLimitModal.retryAfterSeconds);
+        return (
+          <div
+            className="seeker-ai-rate-limit-backdrop"
+            role="presentation"
+            onMouseDown={(event) => {
+              if (event.target === event.currentTarget) setAiRateLimitModal(null);
+            }}
+          >
+            <section className="seeker-ai-rate-limit-modal" role="dialog" aria-modal="true" aria-labelledby="ai-rate-limit-title">
+              <div className="seeker-ai-rate-limit-modal__icon" aria-hidden="true">⏱</div>
+              <div className="seeker-ai-rate-limit-modal__content">
+                <span className="seeker-cv-summary__eyebrow">AI cooldown</span>
+                <h2 id="ai-rate-limit-title">{rateLimitCopy.title}</h2>
+                <p>{rateLimitCopy.description}</p>
+                <p className="seeker-ai-rate-limit-modal__detail">{rateLimitCopy.detail}</p>
+              </div>
+              <div className="seeker-ai-rate-limit-modal__actions">
+                <button type="button" ref={aiRateLimitCloseRef} className="seeker-step-button seeker-step-button--primary" onClick={() => setAiRateLimitModal(null)}>Got it</button>
+              </div>
+            </section>
+          </div>
+        );
+      })()}
 
       <CVTemplateSelector
         isOpen={isTemplateModalOpen}

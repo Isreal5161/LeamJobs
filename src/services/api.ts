@@ -29,7 +29,53 @@ export type ApiFailure = {
     code?: string;
     details?: unknown;
     fieldErrors?: Record<string, string>;
+    retryAfterSeconds?: number | null;
+    retryAfterHeader?: string | null;
   };
+};
+
+export const parseRetryAfterHeader = (retryAfterHeader?: string | null): number | null => {
+  if (!retryAfterHeader) return null;
+
+  const trimmed = retryAfterHeader.trim();
+  if (!trimmed) return null;
+
+  const seconds = Number(trimmed);
+  if (Number.isFinite(seconds) && seconds >= 0) {
+    return Math.round(seconds);
+  }
+
+  const parsedDate = Date.parse(trimmed);
+  if (Number.isNaN(parsedDate)) {
+    return null;
+  }
+
+  const remainingSeconds = Math.max(0, Math.round((parsedDate - Date.now()) / 1000));
+  return remainingSeconds;
+};
+
+export const getAiRateLimitCopy = (retryAfterSeconds?: number | null) => {
+  const normalized = typeof retryAfterSeconds === 'number' && Number.isFinite(retryAfterSeconds) && retryAfterSeconds >= 0
+    ? retryAfterSeconds
+    : 900;
+
+  const seconds = Math.max(1, Math.ceil(normalized));
+  const minutes = Math.max(1, Math.ceil(seconds / 60));
+
+  return {
+    title: 'AI assistance temporarily unavailable',
+    description: 'You\'ve reached the maximum number of AI assistance requests for this 15-minute period.',
+    detail: retryAfterSeconds !== null && retryAfterSeconds !== undefined && retryAfterSeconds >= 0
+      ? `Please try again in about ${minutes} minute${minutes === 1 ? '' : 's'}.`
+      : 'Please try again in about 15 minutes.',
+  };
+};
+
+export const isAiRateLimitError = (status: number, error?: { code?: string; message?: string; retryAfterSeconds?: number | null }) => {
+  if (status !== 429) return false;
+  const code = String(error?.code ?? '').toUpperCase();
+  const message = String(error?.message ?? '').toLowerCase();
+  return code === 'RATE_LIMITED' || code === 'AI_RATE_LIMITED' || /rate limit|too many requests/i.test(message);
 };
 
 export type ApiResponse<T> = ApiSuccess<T> | ApiFailure;
@@ -941,10 +987,12 @@ export async function request<T>({
         ? data as { message?: string; errors?: unknown; error?: { message?: string; code?: string } }
         : undefined;
 
+      const retryAfterHeader = response.headers.get('Retry-After');
+      const retryAfterSeconds = parseRetryAfterHeader(retryAfterHeader);
       const normalizedError = normalizeApiError({
         status: response.status,
         message: errorData?.message ?? errorData?.error?.message,
-        code: errorData?.error?.code,
+        code: response.status === 429 ? 'RATE_LIMITED' : errorData?.error?.code,
         details: errorData?.errors,
         context: errorContext ?? errorContextForEndpoint(endpoint),
       });
@@ -955,7 +1003,12 @@ export async function request<T>({
       return {
         ok: false,
         status: response.status,
-        error: { ...normalizedError, details: safeDetails },
+        error: {
+          ...normalizedError,
+          details: safeDetails,
+          retryAfterSeconds,
+          retryAfterHeader,
+        },
       };
     }
 
