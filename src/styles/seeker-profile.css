@@ -1107,8 +1107,60 @@
   font-size: 1.05rem;
 }
 
+.seeker-ai-manual-only-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  background: rgba(15, 23, 42, 0.48);
+}
+
+.seeker-ai-manual-only-modal {
+  width: min(100%, 420px);
+  display: grid;
+  gap: 1rem;
+  padding: 1.4rem;
+  border: 1px solid rgba(50, 47, 106, 0.14);
+  border-radius: 20px;
+  background: #fff;
+  box-shadow: 0 18px 50px rgba(15, 23, 42, 0.18);
+}
+
+.seeker-ai-manual-only-modal__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 50%;
+  background: rgba(245, 158, 11, 0.12);
+  color: #b45309;
+  font-size: 1.4rem;
+  font-weight: 900;
+}
+
+.seeker-ai-manual-only-modal__content {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.seeker-ai-manual-only-modal__content h2 {
+  margin: 0;
+  color: #322f6a;
+  font-size: 1.35rem;
+}
+
+.seeker-ai-manual-only-modal__content p {
+  margin: 0;
+  color: #475569;
+  line-height: 1.55;
+}
+
 .seeker-ai-success-modal__actions,
-.seeker-ai-rate-limit-modal__actions {
+.seeker-ai-rate-limit-modal__actions,
+.seeker-ai-manual-only-modal__actions {
   display: flex;
   align-items: center;
   justify-content: flex-end;

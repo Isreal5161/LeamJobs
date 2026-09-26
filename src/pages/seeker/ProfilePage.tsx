@@ -345,11 +345,13 @@ function ProfilePage() {
   const [isAiLoading, setIsAiLoading] = useState(false);
   const [aiError, setAiError] = useState('');
   const [aiRateLimitModal, setAiRateLimitModal] = useState<{ retryAfterSeconds: number | null } | null>(null);
+  const [aiManualOnlyModal, setAiManualOnlyModal] = useState<{ targetId: string; fieldLabel: string } | null>(null);
   const [profileStrength, setProfileStrength] = useState<{ score: number; dimensions: { label: string; score: number; complete: boolean }[]; strengths: string[]; recommendations: string[] } | null>(null);
   const [profileStrengthError, setProfileStrengthError] = useState('');
   const { plans, getSubscription, refresh, trialOffer, currentPlan } = useSubscriptions();
   const [isStartingTrial, setIsStartingTrial] = useState(false);
   const aiRateLimitCloseRef = useRef<HTMLButtonElement | null>(null);
+  const aiManualOnlyCloseRef = useRef<HTMLButtonElement | null>(null);
   const navigate = useNavigate();
 
   const subscriptionUserId = user?.id || '';
@@ -570,6 +572,24 @@ function ProfilePage() {
     };
   }, [aiRateLimitModal]);
 
+  useEffect(() => {
+    if (!aiManualOnlyModal) return undefined;
+
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setAiManualOnlyModal(null);
+    };
+
+    const focusTimer = window.setTimeout(() => {
+      aiManualOnlyCloseRef.current?.focus();
+    }, 0);
+
+    window.addEventListener('keydown', handleEscape);
+    return () => {
+      window.clearTimeout(focusTimer);
+      window.removeEventListener('keydown', handleEscape);
+    };
+  }, [aiManualOnlyModal]);
+
   const showNotification = (nextNotification: ProfileNotification) => {
     setNotification(nextNotification);
   };
@@ -582,6 +602,49 @@ function ProfilePage() {
       return true;
     }
     return false;
+  };
+
+  const getManualOnlyAiTarget = (section: string): { step: StepKey; targetId: string; fieldLabel: string } | null => {
+    const normalized = section.trim().toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+    if (!normalized) return null;
+
+    const manualOnlyTargetMap: Record<string, { step: StepKey; targetId: string; fieldLabel: string }> = {
+      'full name': { step: 'personal', targetId: 'profile-full-name-field', fieldLabel: 'Full Name' },
+      'email': { step: 'personal', targetId: 'profile-email-field', fieldLabel: 'Email' },
+      'phone': { step: 'personal', targetId: 'profile-phone-field', fieldLabel: 'Phone' },
+      'location': { step: 'personal', targetId: 'profile-location-field', fieldLabel: 'Location' },
+      'linkedin': { step: 'linkedin', targetId: 'linkedin-field', fieldLabel: 'LinkedIn profile URL' },
+      'linked in': { step: 'linkedin', targetId: 'linkedin-field', fieldLabel: 'LinkedIn profile URL' },
+      education: { step: 'education', targetId: primaryEducationId, fieldLabel: 'Education details' },
+      'certification': { step: 'certifications', targetId: primaryCertificationId, fieldLabel: 'Qualification or certificate' },
+      'certifications': { step: 'certifications', targetId: primaryCertificationId, fieldLabel: 'Qualification or certificate' },
+      qualification: { step: 'certifications', targetId: primaryCertificationId, fieldLabel: 'Qualification or certificate' },
+      qualifications: { step: 'certifications', targetId: primaryCertificationId, fieldLabel: 'Qualification or certificate' },
+      language: { step: 'languages', targetId: primaryLanguageId, fieldLabel: 'Language' },
+      languages: { step: 'languages', targetId: primaryLanguageId, fieldLabel: 'Language' },
+    };
+
+    return manualOnlyTargetMap[normalized] ?? null;
+  };
+
+  const focusTargetField = (targetId: string) => {
+    window.setTimeout(() => {
+      const target = document.getElementById(targetId) as HTMLElement | null;
+      target?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      target?.focus();
+      if (target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement) {
+        const end = target.value.length;
+        target.setSelectionRange(end, end);
+      }
+    }, 60);
+  };
+
+  const openManualOnlyAiModal = (section: string) => {
+    const target = getManualOnlyAiTarget(section);
+    if (!target) return;
+    setPendingAiSuggestion(null);
+    setAiManualOnlyModal({ targetId: target.targetId, fieldLabel: target.fieldLabel });
+    setActiveStep(target.step);
   };
 
   const completionScore = useMemo(() => {
@@ -893,6 +956,11 @@ function ProfilePage() {
   };
 
   const handleSuggestionUse = (section: string, value: string) => {
+    if (getManualOnlyAiTarget(section)) {
+      openManualOnlyAiModal(section);
+      return;
+    }
+
     const target = resolveAiEditorTarget(section);
     if (!target) {
       applyAiSuggestionToSection(section, value);
@@ -988,6 +1056,11 @@ function ProfilePage() {
   const generateAiSuggestionForSection = async (section: 'summary' | 'title' | 'experience' | 'education' | 'skills' | 'certifications' | 'languages' | 'projects' | 'linkedin') => {
     if (!token || !canUseProfileAssistant) return;
 
+    if (getManualOnlyAiTarget(section)) {
+      openManualOnlyAiModal(section);
+      return;
+    }
+
     const requestBySection: Record<typeof section, string> = {
       summary: 'Improve my profile summary to be clear, professional, and grounded only in my actual experience.',
       title: 'Give me a professional job title that reflects my skills and experience without inventing facts.',
@@ -1038,14 +1111,21 @@ function ProfilePage() {
       return;
     }
 
-    const target = resolveAiEditorTarget(nextSuggestion.section || section);
+    const suggestedSection = nextSuggestion.section || section;
+    const manualOnlyTarget = getManualOnlyAiTarget(suggestedSection);
+    if (manualOnlyTarget) {
+      openManualOnlyAiModal(suggestedSection);
+      return;
+    }
+
+    const target = resolveAiEditorTarget(suggestedSection);
     if (!target) {
       setAiError('This field cannot currently be opened directly from AI suggestions.');
       return;
     }
 
     setPendingAiSuggestion({
-      section: nextSuggestion.section || section,
+      section: suggestedSection,
       step: target.step,
       targetId: target.targetId,
       value: nextSuggestion.suggestion,
@@ -2039,7 +2119,7 @@ function ProfilePage() {
                       </div>
                       <label>
                         <span>Full Name</span>
-                        <input type="text" value={profile.personalInfo.fullName} onChange={(event) => updatePersonalInfo('fullName', event.target.value)} />
+                        <input id="profile-full-name-field" type="text" value={profile.personalInfo.fullName} onChange={(event) => updatePersonalInfo('fullName', event.target.value)} />
                       </label>
                       <label htmlFor="profile-title-field">
                         <span className="seeker-field-header">
@@ -2052,21 +2132,21 @@ function ProfilePage() {
                       <div className="seeker-profile-form__split">
                         <label>
                           <span>Email</span>
-                          <input type="email" value={profile.personalInfo.email} onChange={(event) => updatePersonalInfo('email', event.target.value)} />
+                          <input id="profile-email-field" type="email" value={profile.personalInfo.email} onChange={(event) => updatePersonalInfo('email', event.target.value)} />
                         </label>
                         <label>
                           <span>Phone</span>
-                          <input type="tel" value={profile.personalInfo.phone} onChange={(event) => updatePersonalInfo('phone', event.target.value)} />
+                          <input id="profile-phone-field" type="tel" value={profile.personalInfo.phone} onChange={(event) => updatePersonalInfo('phone', event.target.value)} />
                         </label>
                       </div>
                       <div className="seeker-profile-form__split">
                         <label>
                           <span>Location</span>
-                          <input type="text" value={profile.personalInfo.location} onChange={(event) => updatePersonalInfo('location', event.target.value)} />
+                          <input id="profile-location-field" type="text" value={profile.personalInfo.location} onChange={(event) => updatePersonalInfo('location', event.target.value)} />
                         </label>
                         <label>
                           <span>LinkedIn</span>
-                          <input type="url" value={profile.personalInfo.linkedin} onChange={(event) => updatePersonalInfo('linkedin', event.target.value)} />
+                          <input id="linkedin-field" type="url" value={profile.personalInfo.linkedin} onChange={(event) => updatePersonalInfo('linkedin', event.target.value)} />
                         </label>
                       </div>
                     </form>
@@ -2426,6 +2506,39 @@ function ProfilePage() {
           </div>
         );
       })()}
+
+      {aiManualOnlyModal && (
+        <div
+          className="seeker-ai-manual-only-backdrop"
+          role="presentation"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) setAiManualOnlyModal(null);
+          }}
+        >
+          <section className="seeker-ai-manual-only-modal" role="dialog" aria-modal="true" aria-labelledby="ai-manual-only-title">
+            <div className="seeker-ai-manual-only-modal__icon" aria-hidden="true">⚠</div>
+            <div className="seeker-ai-manual-only-modal__content">
+              <span className="seeker-cv-summary__eyebrow">Manual field</span>
+              <h2 id="ai-manual-only-title">This field is best kept manual</h2>
+              <p>{aiManualOnlyModal.fieldLabel} is factual profile information, so AI should not rewrite it for you. Update it yourself to keep the details accurate.</p>
+            </div>
+            <div className="seeker-ai-manual-only-modal__actions">
+              <button type="button" className="seeker-step-button seeker-step-button--secondary" onClick={() => setAiManualOnlyModal(null)}>Close</button>
+              <button
+                type="button"
+                ref={aiManualOnlyCloseRef}
+                className="seeker-step-button seeker-step-button--primary"
+                onClick={() => {
+                  setAiManualOnlyModal(null);
+                  focusTargetField(aiManualOnlyModal.targetId);
+                }}
+              >
+                Edit Manually
+              </button>
+            </div>
+          </section>
+        </div>
+      )}
 
       <CVTemplateSelector
         isOpen={isTemplateModalOpen}
