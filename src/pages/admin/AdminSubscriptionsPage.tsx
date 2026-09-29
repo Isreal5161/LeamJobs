@@ -48,6 +48,8 @@ function AdminSubscriptionsPage() {
   const [plans, setPlans] = useState<AdminSubscriptionPlan[]>([]);
   const [availableEntitlements, setAvailableEntitlements] = useState<AdminSubscriptionPlan['entitlements']>([]);
   const [trialSettings, setTrialSettings] = useState({ trialEnabled: true, trialDurationDays: 7, trialPlanKey: 'PREMIUM' });
+  const [trialDurationInput, setTrialDurationInput] = useState('7');
+  const [trialDurationError, setTrialDurationError] = useState('');
   const [subscriptions, setSubscriptions] = useState<AdminSubscription[]>([]);
   const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [detail, setDetail] = useState<AdminSubscriptionDetail | null>(null);
@@ -101,9 +103,11 @@ function AdminSubscriptionsPage() {
     const result = await getAdminSubscriptionTrialSettings(token);
     if (result.ok) {
       setTrialSettings(result.data.data.settings);
+      setTrialDurationInput(String(result.data.data.settings.trialDurationDays));
+      setTrialDurationError('');
       setPlansError('');
     } else {
-      setPlansError(result.error.message || 'Trial settings could not be loaded.');
+      setTrialDurationError(result.error.message || 'Trial settings could not be loaded.');
     }
     setTrialLoading(false);
   };
@@ -194,13 +198,21 @@ function AdminSubscriptionsPage() {
 
   const saveTrialSettings = async () => {
     if (!token) return;
+    const trialDurationDays = Number(trialDurationInput);
+    if (!trialDurationInput.trim() || !Number.isInteger(trialDurationDays) || trialDurationDays < 1 || trialDurationDays > 365) {
+      setTrialDurationError('Enter a whole number between 1 and 365 days.');
+      return;
+    }
+
     setTrialSaving(true);
-    const result = await updateAdminSubscriptionTrialSettings(trialSettings, token);
+    setTrialDurationError('');
+    const result = await updateAdminSubscriptionTrialSettings({ ...trialSettings, trialDurationDays }, token);
     if (result.ok) {
       setTrialSettings(result.data.data.settings);
+      setTrialDurationInput(String(result.data.data.settings.trialDurationDays));
       setTrialDirty(false);
     }
-    else setPlansError(result.error.message || 'Trial settings could not be saved.');
+    else setTrialDurationError(result.error.message || 'Trial settings could not be saved.');
     setTrialSaving(false);
   };
 
@@ -384,8 +396,9 @@ function AdminSubscriptionsPage() {
             </label>
             <label className="subscription-input">
               <span>Trial duration in days</span>
-              <input type="number" min={1} max={365} value={trialSettings.trialDurationDays} onChange={(event) => { setTrialDirty(true); setTrialSettings((current) => ({ ...current, trialDurationDays: Number(event.target.value) || 1 })); }} />
+              <input type="number" min={1} max={365} step={1} value={trialDurationInput} aria-invalid={Boolean(trialDurationError || (trialDirty && !trialDurationInput.trim()))} aria-describedby={trialDurationError || (trialDirty && !trialDurationInput.trim()) ? 'subscription-trial-duration-error' : undefined} onChange={(event) => { setTrialDirty(true); setTrialDurationError(''); setTrialDurationInput(event.target.value); }} />
             </label>
+            {trialDurationError || (trialDirty && !trialDurationInput.trim()) ? <p id="subscription-trial-duration-error" className="subscription-trial-error" role="alert">{trialDurationError || 'Enter a whole number between 1 and 365 days.'}</p> : null}
             <label className="subscription-input subscription-trial-plan-field">
               <span>Trial plan</span>
               <select className="subscription-trial-plan-select" value={trialSettings.trialPlanKey} onChange={(event) => { setTrialDirty(true); setTrialSettings((current) => ({ ...current, trialPlanKey: event.target.value })); }}>
@@ -395,7 +408,7 @@ function AdminSubscriptionsPage() {
             <p className="subscription-editor-copy">Trial AI allowance follows the selected plan&apos;s configured allowance.</p>
             <div className="subscription-plan__footer">
               <span className="subscription-save-status">{trialDirty ? 'Unsaved changes' : 'Saved'}</span>
-              <button type="button" className="subscription-action-button" onClick={() => void saveTrialSettings()} disabled={trialSaving || !trialDirty}>{trialSaving ? 'Saving…' : 'Save trial settings'}</button>
+              <button type="button" className="subscription-action-button" onClick={() => void saveTrialSettings()} disabled={trialSaving || !trialDirty || !trialDurationInput.trim()}>{trialSaving ? 'Saving…' : 'Save trial settings'}</button>
             </div>
           </>
         )}

@@ -53,6 +53,7 @@
 .subscription-trial-plan-select { min-height: 44px; padding: 0 .8rem; border: 1px solid rgba(50, 47, 106, .22); border-radius: 9px; background: #ffffff; color: #172033; font: inherit; font-weight: 700; cursor: pointer; box-shadow: 0 4px 12px rgba(50, 47, 106, .06); }
 .subscription-trial-plan-select:focus-visible { outline: 3px solid rgba(50, 47, 106, .18); outline-offset: 2px; border-color: var(--brand-secondary); }
 .subscription-input textarea { resize: vertical; min-height: 82px; }
+.subscription-trial-error { margin: -.5rem 0 0; color: #b42318; font-size: .78rem; line-height: 1.4; }
 .subscription-benefits-editor { display: grid; gap: .45rem; color: #475569; font-size: .72rem; font-weight: 600; }
 .subscription-benefits-list { display: grid; gap: .45rem; }
 .subscription-benefit-item { display: grid; grid-template-columns: 1fr auto; gap: .45rem; }
