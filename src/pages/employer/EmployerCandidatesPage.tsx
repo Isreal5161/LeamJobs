@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { FaBolt, FaMapMarkerAlt, FaRedo, FaSearch, FaSpinner, FaStar, FaTag, FaTimes, FaUsers } from 'react-icons/fa';
 import { useAuth } from '../../context/AuthContext';
 import { createEmployerInvitation, getEmployerCandidates, getEmployerJobs, type EmployerCandidate, type EmployerJob } from '../../services/api';
+import AuthenticatedImage from '../../components/common/AuthenticatedImage';
 
 const PAGE_SIZE = 25;
 
@@ -176,7 +177,7 @@ function EmployerCandidatesPage() {
 
           {!isLoading && !error && candidates.length > 0 ? (
             <div className="employer-candidates-grid">
-              {candidates.map((candidate) => <CandidateCard candidate={candidate} key={candidate.id} onInvite={openInvitation} />)}
+              {candidates.map((candidate) => <CandidateCard candidate={candidate} token={token ?? ''} key={candidate.id} onInvite={openInvitation} />)}
             </div>
           ) : null}
 
@@ -199,12 +200,12 @@ function EmployerCandidatesPage() {
   );
 }
 
-function CandidateCard({ candidate, onInvite }: { candidate: EmployerCandidate; onInvite: (candidate: EmployerCandidate) => void }) {
+function CandidateCard({ candidate, token, onInvite }: { candidate: EmployerCandidate; token: string; onInvite: (candidate: EmployerCandidate) => void }) {
   const { profile } = candidate;
   return (
     <article className="employer-candidate-card">
       <div className="employer-candidate-card__top">
-        {profile.profilePictureUrl ? <img src={profile.profilePictureUrl} alt="" /> : <span className="employer-candidate-card__avatar" aria-hidden="true">{`${candidate.firstName[0] ?? ''}${candidate.lastName[0] ?? ''}`.toUpperCase()}</span>}
+        {profile.profilePictureUrl ? <AuthenticatedImage endpoint={`/employer/candidates/${encodeURIComponent(candidate.id)}/profile-picture`} token={token} alt={`${candidate.firstName} ${candidate.lastName} profile picture`} fallback={<span className="employer-candidate-card__avatar" aria-hidden="true">{`${candidate.firstName[0] ?? ''}${candidate.lastName[0] ?? ''}`.toUpperCase()}</span>} /> : <span className="employer-candidate-card__avatar" aria-hidden="true">{`${candidate.firstName[0] ?? ''}${candidate.lastName[0] ?? ''}`.toUpperCase()}</span>}
         <div className="employer-candidate-card__identity"><h3>{candidate.firstName} {candidate.lastName}</h3><p>{profile.professionalTitle || 'Professional title not provided'}</p></div>
       </div>
       {candidate.featured || candidate.visibilityBoosted ? <div className="employer-candidate-card__badges">{candidate.featured ? <span><FaStar aria-hidden="true" /> Featured</span> : null}{candidate.visibilityBoosted ? <span><FaBolt aria-hidden="true" /> Visibility Boost</span> : null}</div> : null}
