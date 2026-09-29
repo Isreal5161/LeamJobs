@@ -2328,9 +2328,21 @@ export function getSalaryInsights(token: string, params?: { title?: string; loca
 }
 
 export type InterviewPreparation = { questions: { question: string; type: 'technical' | 'behavioral' | 'role'; guidance: string }[]; preparationAreas: string[]; answerFramework: string; remaining: number };
+export type InterviewQuestion = { id: string; type: 'technical' | 'behavioral' | 'role' | 'situational'; question: string; answerType: 'multiple_choice' | 'text'; options: string[] };
+export type InterviewStartResponse = { sessionId: string; sessionToken: string; questions: InterviewQuestion[]; remaining: number | null };
+export type InterviewEvaluation = {
+  readinessScore: number;
+  categories: { technicalKnowledge: number; communication: number; problemSolving: number; roleUnderstanding: number; behavioralResponses: number };
+  strengths: string[];
+  improvementAreas: string[];
+  recommendation: string;
+};
+export type InterviewAnswer = { questionId: string; answer: string };
 export type SkillsGapResult = { matchedSkills: string[]; missingSkills: string[]; relatedSkills: string[]; priorities: string[]; recommendations: string[]; remaining: number };
 export type CareerAssistantResult = { answer: string; nextSteps: string[]; referencedProfileData: string[]; remaining: number };
 export function requestInterviewPreparation(body: { jobId: string }, token: string) { return request<{ success: true; data: InterviewPreparation }>({ method: 'POST', endpoint: '/seeker/ai/interview-preparation', body, token }); }
+export function requestInterviewStart(body: { jobId: string }, token: string) { return request<{ success: true; data: InterviewStartResponse }>({ method: 'POST', endpoint: '/seeker/ai/interview/start', body, token }); }
+export function requestInterviewEvaluation(body: { sessionToken: string; answers: InterviewAnswer[] }, token: string) { return request<{ success: true; data: InterviewEvaluation }>({ method: 'POST', endpoint: '/seeker/ai/interview/evaluate', body, token }); }
 export function requestCareerAssistant(body: { question: string }, token: string) { return request<{ success: true; data: CareerAssistantResult }>({ method: 'POST', endpoint: '/seeker/ai/career-assistant', body, token }); }
 export function requestSkillsGap(body: { jobId: string }, token: string) { return request<{ success: true; data: SkillsGapResult }>({ method: 'POST', endpoint: '/seeker/ai/skills-gap', body, token }); }
 export function requestPersonalizedJobMatches(token: string) { return request<{ success: true; data: { matches: { jobId: string; score: number; rationale: string; job: SeekerJobListItem }[]; remaining: number } }>({ method: 'POST', endpoint: '/seeker/ai/job-matching', token }); }

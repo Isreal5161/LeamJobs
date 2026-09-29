@@ -349,7 +349,7 @@ function JobDetailsPage() {
           </div>
         </aside>
       </div>
-      {isInterviewModalOpen ? <InterviewPracticeModal job={job} onClose={() => setIsInterviewModalOpen(false)} /> : null}
+      {isInterviewModalOpen && token ? <InterviewPracticeModal job={job} token={token} onClose={() => setIsInterviewModalOpen(false)} /> : null}
       {skillsGap ? <section className="job-detail-ai-result" aria-live="polite"><h2>Skills-gap analysis</h2><p><strong>Matched:</strong> {skillsGap.matchedSkills.join(', ') || 'No direct matches found.'}</p><p><strong>Missing:</strong> {skillsGap.missingSkills.join(', ') || 'No missing target skills identified.'}</p><p><strong>Priority areas:</strong> {skillsGap.priorities.join(', ') || 'No priority areas identified.'}</p></section> : null}
 
       {aiServiceModal && (

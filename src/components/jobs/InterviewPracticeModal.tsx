@@ -1,103 +1,51 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { FaArrowLeft, FaArrowRight, FaBriefcase, FaCheck, FaTimes } from 'react-icons/fa';
-import type { SeekerDashboardJob } from '../../services/api';
+import { getAiRateLimitCopy, isAiRateLimitError, requestInterviewEvaluation, requestInterviewStart, type InterviewAnswer, type InterviewEvaluation, type InterviewQuestion, type SeekerDashboardJob } from '../../services/api';
 import '../../styles/interview-practice-modal.css';
 
-export type InterviewQuestion = {
-  id: string;
-  type: 'technical' | 'behavioral' | 'role' | 'situational';
-  question: string;
-  answerType: 'multiple_choice' | 'text';
-  options?: string[];
-};
-
 type InterviewPracticeModalProps = {
-  job: Pick<SeekerDashboardJob, 'title' | 'skills' | 'company'>;
+  job: Pick<SeekerDashboardJob, 'id' | 'title' | 'company'>;
+  token: string;
   onClose: () => void;
 };
 
-type InterviewPhase = 'intro' | 'questions' | 'analyzing' | 'results';
+type InterviewPhase = 'intro' | 'starting' | 'questions' | 'analyzing' | 'evaluationError' | 'results';
 
-const makePreviewQuestions = (job: InterviewPracticeModalProps['job']): InterviewQuestion[] => {
-  const primarySkill = job.skills[0] || 'a core skill for this role';
-
-  return [
-    { id: 'q1', type: 'role', question: `Which responsibility in the ${job.title} role most closely matches your experience, and why?`, answerType: 'text' },
-    { id: 'q2', type: 'behavioral', question: 'Tell us about a time you adapted your communication style to resolve a work challenge.', answerType: 'text' },
-    {
-      id: 'q3',
-      type: 'technical',
-      question: `When approaching an unfamiliar task involving ${primarySkill}, what would you do first?`,
-      answerType: 'multiple_choice',
-      options: [
-        'Clarify the goal, constraints, and expected outcome',
-        'Choose the first approach that comes to mind',
-        'Wait for someone else to define every step',
-        'Start work before checking the requirements',
-      ],
-    },
-    {
-      id: 'q4',
-      type: 'situational',
-      question: 'A priority changes shortly before a deadline. How would you respond?',
-      answerType: 'multiple_choice',
-      options: [
-        'Confirm the new priority and agree on the most important outcome',
-        'Continue with the original plan without telling anyone',
-        'Drop all current work and make no effort to clarify impact',
-        'Wait until the deadline passes before raising the change',
-      ],
-    },
-    { id: 'q5', type: 'technical', question: `Walk us through how you would apply ${primarySkill} to a real task in this role.`, answerType: 'text' },
-    {
-      id: 'q6',
-      type: 'behavioral',
-      question: 'A teammate disagrees with your approach. What is the most constructive next step?',
-      answerType: 'multiple_choice',
-      options: [
-        'Listen to their reasoning and compare both approaches against the goal',
-        'Insist on your approach because you suggested it first',
-        'Avoid discussing the disagreement and proceed alone',
-        'Escalate immediately without trying to understand the concern',
-      ],
-    },
-    { id: 'q7', type: 'role', question: `What would you focus on learning first to contribute effectively as a ${job.title}?`, answerType: 'text' },
-    { id: 'q8', type: 'situational', question: 'Describe how you would handle an assignment when key details are unclear and the work is time-sensitive.', answerType: 'text' },
-  ];
+const getInterviewErrorMessage = (result: { status: number; error: { code?: string; message: string; retryAfterSeconds?: number | null } }) => {
+  if (isAiRateLimitError(result.status, result.error)) {
+    const copy = getAiRateLimitCopy(result.error.retryAfterSeconds);
+    return `${copy.description} ${copy.detail}`;
+  }
+  if (result.status === 401) return 'Your session has expired. Please sign in again.';
+  if (result.status === 403) return result.error.message;
+  if (result.status === 0) return "We couldn't connect to LeamJobs. Check your connection and try again.";
+  if (result.error.code === 'AI_INTERVIEW_SESSION_USED') return 'This interview session has already been evaluated. Start a new interview to practice again.';
+  if (result.error.code === 'AI_INTERVIEW_SESSION_INVALID') return 'Your interview session expired. Start a new interview to continue practicing.';
+  if ([502, 503, 504].includes(result.status)) return 'AI Interview Practice is temporarily unavailable. Please try again in a moment.';
+  return 'We could not complete this interview right now. Please try again.';
 };
 
-// DEVELOPMENT PREVIEW ONLY: Replace these sample results with validated server evaluation before production use.
-const previewResults = {
-  readinessScore: 78,
-  categories: [
-    { label: 'Technical Knowledge', score: 82 },
-    { label: 'Communication', score: 76 },
-    { label: 'Problem Solving', score: 80 },
-    { label: 'Role Understanding', score: 74 },
-    { label: 'Behavioral Responses', score: 79 },
-  ],
-  strengths: [
-    'A clear, structured approach to workplace challenges',
-    'Strong attention to collaboration and communication',
-    'Thoughtful consideration of role priorities',
-  ],
-  improvementAreas: [
-    'Add specific examples and outcomes to written answers',
-    'Connect more answers directly to the role requirements',
-    'Explain the reasoning behind important decisions',
-  ],
-};
+const evaluationCategories: Array<{ key: keyof InterviewEvaluation['categories']; label: string }> = [
+  { key: 'technicalKnowledge', label: 'Technical Knowledge' },
+  { key: 'communication', label: 'Communication' },
+  { key: 'problemSolving', label: 'Problem Solving' },
+  { key: 'roleUnderstanding', label: 'Role Understanding' },
+  { key: 'behavioralResponses', label: 'Behavioral Responses' },
+];
 
-function InterviewPracticeModal({ job, onClose }: InterviewPracticeModalProps) {
+function InterviewPracticeModal({ job, token, onClose }: InterviewPracticeModalProps) {
   const dialogRef = useRef<HTMLDialogElement>(null);
   const headingRef = useRef<HTMLHeadingElement>(null);
   const actionLockRef = useRef(false);
   const actionTimerRef = useRef<number | null>(null);
   const [phase, setPhase] = useState<InterviewPhase>('intro');
   const [questionIndex, setQuestionIndex] = useState(0);
+  const [questions, setQuestions] = useState<InterviewQuestion[]>([]);
   const [answers, setAnswers] = useState<Record<string, string>>({});
+  const [sessionToken, setSessionToken] = useState('');
+  const [evaluation, setEvaluation] = useState<InterviewEvaluation | null>(null);
+  const [requestError, setRequestError] = useState('');
   const [showExitConfirm, setShowExitConfirm] = useState(false);
-  const questions = useMemo(() => makePreviewQuestions(job), [job]);
   const question = questions[questionIndex];
   const currentAnswer = answers[question?.id] ?? '';
   const isAnswered = question?.answerType === 'text' ? currentAnswer.trim().length > 0 : currentAnswer.length > 0;
@@ -122,12 +70,6 @@ function InterviewPracticeModal({ job, onClose }: InterviewPracticeModalProps) {
     return () => window.clearTimeout(focusTimer);
   }, [phase, questionIndex, showExitConfirm]);
 
-  useEffect(() => {
-    if (phase !== 'analyzing' || showExitConfirm) return undefined;
-    const timer = window.setTimeout(() => setPhase('results'), 1800);
-    return () => window.clearTimeout(timer);
-  }, [phase, showExitConfirm]);
-
   const requestClose = () => {
     if (phase === 'intro' || phase === 'results') {
       onClose();
@@ -138,6 +80,55 @@ function InterviewPracticeModal({ job, onClose }: InterviewPracticeModalProps) {
 
   const changeAnswer = (value: string) => {
     setAnswers((current) => ({ ...current, [question.id]: value }));
+  };
+
+  const beginInterview = async () => {
+    if (actionLockRef.current) return;
+    actionLockRef.current = true;
+    setRequestError('');
+    setPhase('starting');
+    try {
+      const result = await requestInterviewStart({ jobId: job.id }, token);
+      if (!result.ok) {
+        setRequestError(getInterviewErrorMessage(result));
+        setPhase('intro');
+        return;
+      }
+      setQuestions(result.data.data.questions);
+      setSessionToken(result.data.data.sessionToken);
+      setQuestionIndex(0);
+      setAnswers({});
+      setEvaluation(null);
+      setPhase('questions');
+    } catch {
+      setRequestError('AI Interview Practice is temporarily unavailable. Please try again in a moment.');
+      setPhase('intro');
+    } finally {
+      actionLockRef.current = false;
+    }
+  };
+
+  const evaluateAnswers = async () => {
+    if (!sessionToken || actionLockRef.current) return;
+    actionLockRef.current = true;
+    setRequestError('');
+    setPhase('analyzing');
+    const submittedAnswers: InterviewAnswer[] = questions.map((item) => ({ questionId: item.id, answer: (answers[item.id] ?? '').trim() }));
+    try {
+      const result = await requestInterviewEvaluation({ sessionToken, answers: submittedAnswers }, token);
+      if (!result.ok) {
+        setRequestError(getInterviewErrorMessage(result));
+        setPhase('evaluationError');
+        return;
+      }
+      setEvaluation(result.data.data);
+      setPhase('results');
+    } catch {
+      setRequestError('AI Interview Practice is temporarily unavailable. Please try again in a moment.');
+      setPhase('evaluationError');
+    } finally {
+      actionLockRef.current = false;
+    }
   };
 
   const moveQuestion = (nextIndex: number) => {
@@ -152,17 +143,16 @@ function InterviewPracticeModal({ job, onClose }: InterviewPracticeModalProps) {
 
   const finishInterview = () => {
     if (!isAnswered || actionLockRef.current) return;
-    actionLockRef.current = true;
-    setPhase('analyzing');
-    actionTimerRef.current = window.setTimeout(() => {
-      actionLockRef.current = false;
-      actionTimerRef.current = null;
-    }, 1800);
+    void evaluateAnswers();
   };
 
   const restartInterview = () => {
     setAnswers({});
     setQuestionIndex(0);
+    setQuestions([]);
+    setSessionToken('');
+    setEvaluation(null);
+    setRequestError('');
     setShowExitConfirm(false);
     actionLockRef.current = false;
     setPhase('intro');
@@ -174,7 +164,7 @@ function InterviewPracticeModal({ job, onClose }: InterviewPracticeModalProps) {
       className="interview-practice-modal"
       role="dialog"
       aria-modal="true"
-      aria-labelledby="interview-practice-title"
+      aria-labelledby="interview-practice-dialog-title"
       onCancel={(event) => {
         event.preventDefault();
         requestClose();
@@ -188,7 +178,7 @@ function InterviewPracticeModal({ job, onClose }: InterviewPracticeModalProps) {
           <div className="interview-practice-brand">
             <span className="interview-practice-brand__name">LeamJobs</span>
             <span className="interview-practice-brand__divider" aria-hidden="true" />
-            <span className="interview-practice-brand__label">AI Interview Practice</span>
+            <span id="interview-practice-dialog-title" className="interview-practice-brand__label">AI Interview Practice</span>
           </div>
           <button type="button" className="interview-practice-close" aria-label="Close interview practice" onClick={requestClose}>
             <FaTimes aria-hidden="true" />
@@ -210,7 +200,6 @@ function InterviewPracticeModal({ job, onClose }: InterviewPracticeModalProps) {
         {!showExitConfirm && phase === 'intro' ? (
           <>
             <main className="interview-practice-main interview-practice-intro">
-              <span className="interview-practice-preview-tag">UI preview · sample questions</span>
               <h1 id="interview-practice-title" ref={headingRef} tabIndex={-1}>AI Interview Practice</h1>
               <p className="interview-practice-intro__lead">Prepare for this role with a short AI-powered mock interview.</p>
 
@@ -220,9 +209,9 @@ function InterviewPracticeModal({ job, onClose }: InterviewPracticeModalProps) {
                   <h2>{job.title}</h2>
                   {job.company?.name ? <p>{job.company.name}</p> : null}
                   <div className="interview-practice-role__facts">
-                    <span>{questions.length} questions</span>
+                    <span>8–10 questions</span>
                     <span aria-hidden="true">·</span>
-                    <span>~{questions.length} minutes</span>
+                    <span>~10 minutes</span>
                   </div>
                 </div>
               </section>
@@ -236,13 +225,22 @@ function InterviewPracticeModal({ job, onClose }: InterviewPracticeModalProps) {
                   <li><FaCheck aria-hidden="true" /> Situational decision making</li>
                 </ul>
               </section>
-              <p className="interview-practice-preview-note">Sample questions are being used to preview the experience. No AI evaluation runs in this demo.</p>
+              {requestError ? <p className="interview-practice-request-error" role="alert">{requestError}</p> : null}
             </main>
             <footer className="interview-practice-footer interview-practice-footer--intro">
               <button type="button" className="interview-practice-button interview-practice-button--secondary" onClick={onClose}>Cancel</button>
-              <button type="button" className="interview-practice-button interview-practice-button--primary" onClick={() => setPhase('questions')}>Start Interview <FaArrowRight aria-hidden="true" /></button>
+              <button type="button" className="interview-practice-button interview-practice-button--primary" onClick={() => void beginInterview()} disabled={actionLockRef.current}>Start Interview <FaArrowRight aria-hidden="true" /></button>
             </footer>
           </>
+        ) : null}
+
+        {!showExitConfirm && phase === 'starting' ? (
+          <main className="interview-practice-main interview-practice-analyzing" aria-live="polite" aria-busy="true">
+            <span className="interview-practice-spinner" aria-hidden="true" />
+            <span className="interview-practice-kicker">Preparing your session</span>
+            <h1 id="interview-practice-title" ref={headingRef} tabIndex={-1}>Building questions for {job.title}...</h1>
+            <p>Your interview questions are being tailored to the approved job details.</p>
+          </main>
         ) : null}
 
         {!showExitConfirm && phase === 'questions' && question ? (
@@ -259,7 +257,6 @@ function InterviewPracticeModal({ job, onClose }: InterviewPracticeModalProps) {
               </div>
 
               <section key={question.id} className="interview-practice-question" aria-labelledby="interview-practice-question-title">
-                <span className="interview-practice-question__preview">SAMPLE INTERVIEW</span>
                 <span className={`interview-practice-question__type interview-practice-question__type--${question.type}`}>{question.type}</span>
                 <h1 id="interview-practice-title" className="interview-practice-question__count" ref={headingRef} tabIndex={-1}>AI Interview Practice</h1>
                 <h2 id="interview-practice-question-title" className="interview-practice-question__text">{question.question}</h2>
@@ -267,7 +264,7 @@ function InterviewPracticeModal({ job, onClose }: InterviewPracticeModalProps) {
                 {question.answerType === 'multiple_choice' ? (
                   <fieldset className="interview-practice-options">
                     <legend className="interview-practice-options__legend">Choose one answer</legend>
-                    {question.options?.map((option, index) => (
+                    {question.options.map((option, index) => (
                       <label key={option} className={`interview-practice-option${currentAnswer === option ? ' interview-practice-option--selected' : ''}`}>
                         <input type="radio" name={`answer-${question.id}`} value={option} checked={currentAnswer === option} onChange={() => changeAnswer(option)} />
                         <span className="interview-practice-option__key" aria-hidden="true">{String.fromCharCode(65 + index)}</span>
@@ -311,50 +308,62 @@ function InterviewPracticeModal({ job, onClose }: InterviewPracticeModalProps) {
             <span className="interview-practice-kicker">Interview complete</span>
             <h1 id="interview-practice-title" ref={headingRef} tabIndex={-1}>We’re reviewing your responses...</h1>
             <p>Analyzing your responses against the requirements for {job.title}.</p>
-            <span className="interview-practice-preview-tag">UI preview · no AI evaluation request is being made</span>
           </main>
         ) : null}
 
-        {!showExitConfirm && phase === 'results' ? (
+        {!showExitConfirm && phase === 'evaluationError' ? (
+          <>
+            <main className="interview-practice-main interview-practice-analyzing" aria-live="assertive">
+              <span className="interview-practice-kicker">Evaluation unavailable</span>
+              <h1 id="interview-practice-title" ref={headingRef} tabIndex={-1}>We couldn’t finish your assessment</h1>
+              <p className="interview-practice-request-error" role="alert">{requestError}</p>
+            </main>
+            <footer className="interview-practice-footer interview-practice-footer--results">
+              <button type="button" className="interview-practice-button interview-practice-button--secondary" onClick={restartInterview}>Start a New Interview</button>
+              {requestError.includes('already been evaluated') || requestError.includes('session expired') ? null : <button type="button" className="interview-practice-button interview-practice-button--primary" onClick={() => void evaluateAnswers()} disabled={actionLockRef.current}>Retry Evaluation</button>}
+            </footer>
+          </>
+        ) : null}
+
+        {!showExitConfirm && phase === 'results' && evaluation ? (
           <>
             <main className="interview-practice-main interview-practice-results">
               <div className="interview-practice-results__heading">
-                <span className="interview-practice-preview-tag">Development preview · sample values only</span>
                 <span className="interview-practice-kicker">Interview complete</span>
                 <h1 id="interview-practice-title" ref={headingRef} tabIndex={-1}>Job readiness</h1>
-                <p>This sample assessment is for interface review only, not an AI evaluation or hiring prediction.</p>
+                <p>This is an AI practice assessment based on your responses, not a prediction of hiring success.</p>
               </div>
 
-              <section className="interview-practice-score" aria-label={`Sample job readiness score ${previewResults.readinessScore} percent`}>
-                <div className="interview-practice-score__ring" style={{ '--score': `${previewResults.readinessScore}%` } as React.CSSProperties}>
-                  <span>{previewResults.readinessScore}<small>%</small></span>
+              <section className="interview-practice-score" aria-label={`Job readiness score ${evaluation.readinessScore} percent`}>
+                <div className="interview-practice-score__ring" style={{ '--score': `${evaluation.readinessScore}%` } as React.CSSProperties}>
+                  <span>{evaluation.readinessScore}<small>%</small></span>
                 </div>
                 <div>
-                  <strong>Good preparation</strong>
-                  <p>Sample score · not AI-evaluated</p>
+                  <strong>{evaluation.readinessScore >= 80 ? 'Strong preparation' : evaluation.readinessScore >= 60 ? 'Good preparation' : 'Preparation in progress'}</strong>
+                  <p>AI practice assessment</p>
                 </div>
               </section>
 
-              <section className="interview-practice-categories" aria-label="Sample category scores">
-                {previewResults.categories.map((category) => (
+              <section className="interview-practice-categories" aria-label="Readiness category scores">
+                {evaluationCategories.map((category) => (
                   <div className="interview-practice-category" key={category.label}>
-                    <div className="interview-practice-category__label"><span>{category.label}</span><strong>{category.score}%</strong></div>
-                    <div className="interview-practice-category__track" role="progressbar" aria-label={`${category.label}, sample score`} aria-valuemin={0} aria-valuemax={100} aria-valuenow={category.score}><span style={{ width: `${category.score}%` }} /></div>
+                    <div className="interview-practice-category__label"><span>{category.label}</span><strong>{evaluation.categories[category.key]}%</strong></div>
+                    <div className="interview-practice-category__track" role="progressbar" aria-label={`${category.label} score`} aria-valuemin={0} aria-valuemax={100} aria-valuenow={evaluation.categories[category.key]}><span style={{ width: `${evaluation.categories[category.key]}%` }} /></div>
                   </div>
                 ))}
               </section>
 
               <section className="interview-practice-result-section">
                 <h2>What you did well</h2>
-                <ul>{previewResults.strengths.map((item) => <li key={item}><FaCheck aria-hidden="true" />{item}</li>)}</ul>
+                <ul>{evaluation.strengths.map((item) => <li key={item}><FaCheck aria-hidden="true" />{item}</li>)}</ul>
               </section>
               <section className="interview-practice-result-section">
                 <h2>Areas to improve</h2>
-                <ul>{previewResults.improvementAreas.map((item) => <li key={item}><span aria-hidden="true">•</span>{item}</li>)}</ul>
+                <ul>{evaluation.improvementAreas.map((item) => <li key={item}><span aria-hidden="true">•</span>{item}</li>)}</ul>
               </section>
               <section className="interview-practice-recommendation">
-                <h2>AI recommendation <span>Preview</span></h2>
-                <p>For the {job.title} role, practice connecting your examples to the responsibilities and skills listed in the job description.</p>
+                <h2>AI recommendation</h2>
+                <p>{evaluation.recommendation}</p>
               </section>
             </main>
             <footer className="interview-practice-footer interview-practice-footer--results">
