@@ -2,9 +2,10 @@ import { useEffect, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { FaArrowLeft, FaBuilding, FaCheck, FaChevronRight, FaClock, FaMagic, FaMapMarkerAlt } from 'react-icons/fa';
 import { useAuth } from '../../context/AuthContext';
-import { getAiRateLimitCopy, getPublicJob, getSeekerJob, isAiRateLimitError, requestInterviewPreparation, requestSkillsGap, type InterviewPreparation, type SeekerDashboardJob, type SkillsGapResult } from '../../services/api';
+import { getAiRateLimitCopy, getPublicJob, getSeekerJob, isAiRateLimitError, requestSkillsGap, type SeekerDashboardJob, type SkillsGapResult } from '../../services/api';
 import { useSubscriptions } from '../../context/SubscriptionContext';
 import CompanyLogo from '../../components/jobs/CompanyLogo';
+import InterviewPracticeModal from '../../components/jobs/InterviewPracticeModal';
 
 const skillClasses = ['job-detail-skill--pink', 'job-detail-skill--purple', 'job-detail-skill--green', 'job-detail-skill--yellow', 'job-detail-skill--blue'];
 
@@ -36,8 +37,8 @@ function JobDetailsPage() {
   const [alreadyApplied, setAlreadyApplied] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
-  const [interviewPreparation, setInterviewPreparation] = useState<InterviewPreparation | null>(null);
   const [skillsGap, setSkillsGap] = useState<SkillsGapResult | null>(null);
+  const [isInterviewModalOpen, setIsInterviewModalOpen] = useState(false);
   const [aiLoading, setAiLoading] = useState<'interview' | 'skills' | null>(null);
   const [aiError, setAiError] = useState('');
   const [aiServiceModal, setAiServiceModal] = useState<null | {
@@ -158,23 +159,13 @@ function JobDetailsPage() {
     setAiServiceModal(null);
     setAiLoading(tool); setAiError('');
 
-    if (tool === 'interview') {
-      const result = await requestInterviewPreparation({ jobId }, token);
-      setAiLoading(null);
-      if (!result.ok) {
-        if (handlePremiumToolFailure(tool, result)) return;
-        return;
-      }
-      setInterviewPreparation(result.data.data);
-    } else {
-      const result = await requestSkillsGap({ jobId }, token);
-      setAiLoading(null);
-      if (!result.ok) {
-        if (handlePremiumToolFailure(tool, result)) return;
-        return;
-      }
-      setSkillsGap(result.data.data);
+    const result = await requestSkillsGap({ jobId }, token);
+    setAiLoading(null);
+    if (!result.ok) {
+      if (handlePremiumToolFailure('skills', result)) return;
+      return;
     }
+    setSkillsGap(result.data.data);
   };
 
   if (isLoading) {
@@ -239,7 +230,7 @@ function JobDetailsPage() {
   const premiumPreparationTools = isSeekerRoute && currentPlan?.entitlements?.includes('AI_INTERVIEW_PREPARATION') ? (
     <div className="job-detail-premium-tools">
       <strong><FaMagic aria-hidden="true" /> Premium preparation</strong>
-      <button type="button" onClick={() => void runPremiumTool('interview')} disabled={aiLoading !== null}>{aiLoading === 'interview' ? 'Preparing...' : 'Prepare for interview'}</button>
+      <button type="button" onClick={() => setIsInterviewModalOpen(true)} disabled={aiLoading !== null}>Prepare for Interview by AI</button>
       <button type="button" onClick={() => void runPremiumTool('skills')} disabled={aiLoading !== null}>{aiLoading === 'skills' ? 'Analysing...' : 'Analyse skills gap'}</button>
       {aiError ? <p role="alert">{aiError}</p> : null}
     </div>
@@ -358,7 +349,7 @@ function JobDetailsPage() {
           </div>
         </aside>
       </div>
-      {interviewPreparation ? <section className="job-detail-ai-result" aria-live="polite"><h2>Interview preparation</h2><p>{interviewPreparation.answerFramework}</p><ul>{interviewPreparation.questions.map((item) => <li key={item.question}><strong>{item.type}</strong><span>{item.question}</span><small>{item.guidance}</small></li>)}</ul></section> : null}
+      {isInterviewModalOpen ? <InterviewPracticeModal job={job} onClose={() => setIsInterviewModalOpen(false)} /> : null}
       {skillsGap ? <section className="job-detail-ai-result" aria-live="polite"><h2>Skills-gap analysis</h2><p><strong>Matched:</strong> {skillsGap.matchedSkills.join(', ') || 'No direct matches found.'}</p><p><strong>Missing:</strong> {skillsGap.missingSkills.join(', ') || 'No missing target skills identified.'}</p><p><strong>Priority areas:</strong> {skillsGap.priorities.join(', ') || 'No priority areas identified.'}</p></section> : null}
 
       {aiServiceModal && (
