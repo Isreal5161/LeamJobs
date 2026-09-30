@@ -41,6 +41,7 @@ import {
   type CertificationItem as ApiCertificationItem,
   type EducationItem as ApiEducationItem,
   type ExperienceItem as ApiExperienceItem,
+  type SeekerAvailability,
   requestProfileAssistant,
   requestCvOptimizer,
   getAdvancedProfileStrength,
@@ -100,6 +101,7 @@ type ProfileState = {
     linkedin: string;
     summary: string;
   };
+  availability: SeekerAvailability;
   experience: ExperienceItem[];
   education: EducationItem[];
   skills: string[];
@@ -285,6 +287,7 @@ const createEmptyProfileState = (): ProfileState => ({
     linkedin: '',
     summary: '',
   },
+  availability: 'NOT_AVAILABLE',
   experience: [],
   education: [],
   skills: [],
@@ -471,6 +474,7 @@ function ProfilePage() {
           linkedin: apiProfile.linkedinUrl ?? '',
           summary: apiProfile.bio ?? '',
         },
+        availability: apiProfile.availability ?? 'NOT_AVAILABLE',
         experience: apiProfile.experience ?? [],
         education: apiProfile.education ?? [],
         skills,
@@ -1572,15 +1576,19 @@ function ProfilePage() {
       profile.skills.length === 0 ? 'at least one skill' : '',
     ].filter(Boolean);
     const profileFieldsAreReady = incompleteProfileFields.length === 0;
+    const availabilityChanged = profile.availability !== loadedProfileSnapshot?.availability;
 
-    if (profileFieldsAreReady) {
+    if (profileFieldsAreReady || availabilityChanged) {
       const profileResult = await updateSeekerProfile({
-        fullName: profile.personalInfo.fullName.trim(),
-        country: onboardingLocation.country.trim(),
-        state: onboardingLocation.state.trim(),
-        city: onboardingLocation.city.trim(),
-        professionalTitle: profile.personalInfo.title.trim(),
-        skills: profile.skills.map((skill) => skill.trim()).filter(Boolean),
+        availability: profile.availability,
+        ...(profileFieldsAreReady ? {
+          fullName: profile.personalInfo.fullName.trim(),
+          country: onboardingLocation.country.trim(),
+          state: onboardingLocation.state.trim(),
+          city: onboardingLocation.city.trim(),
+          professionalTitle: profile.personalInfo.title.trim(),
+          skills: profile.skills.map((skill) => skill.trim()).filter(Boolean),
+        } : {}),
       }, token);
 
       if (!profileResult.ok) {
@@ -1606,6 +1614,15 @@ function ProfilePage() {
 
     if (!profileFieldsAreReady) {
       setIsSaving(false);
+      if (availabilityChanged) {
+        setLoadedProfileSnapshot((current) => current ? { ...current, availability: profile.availability } : current);
+        showNotification({
+          title: 'Availability updated',
+          message: 'Your availability has been saved. Complete your profile details to update your full profile.',
+          tone: 'success',
+        });
+        return;
+      }
       showNotification({
         title: 'CV updated, profile incomplete',
         message: `Complete your ${incompleteProfileFields.join(', ')} to update your full profile.`,
@@ -2222,6 +2239,12 @@ function ProfilePage() {
                           <input id="linkedin-field" type="url" value={profile.personalInfo.linkedin} onChange={(event) => updatePersonalInfo('linkedin', event.target.value)} />
                         </label>
                       </div>
+                      <fieldset className="seeker-availability-control">
+                        <legend>Availability</legend>
+                        <label><input type="radio" name="seeker-availability" value="AVAILABLE_NOW" checked={profile.availability === 'AVAILABLE_NOW'} onChange={() => setProfile((current) => ({ ...current, availability: 'AVAILABLE_NOW' }))} /><span>Available now</span></label>
+                        <label><input type="radio" name="seeker-availability" value="AVAILABLE_SOON" checked={profile.availability === 'AVAILABLE_SOON'} onChange={() => setProfile((current) => ({ ...current, availability: 'AVAILABLE_SOON' }))} /><span>Available soon</span></label>
+                        <label><input type="radio" name="seeker-availability" value="NOT_AVAILABLE" checked={profile.availability === 'NOT_AVAILABLE'} onChange={() => setProfile((current) => ({ ...current, availability: 'NOT_AVAILABLE' }))} /><span>Not currently available</span></label>
+                      </fieldset>
                     </form>
                   </section>
                 )}

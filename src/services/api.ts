@@ -390,6 +390,8 @@ export type EmployerCandidate = {
     skills: string[];
     profilePictureUrl: string | null;
   };
+  subscriptionTier: 'BASIC' | 'PROFESSIONAL' | 'PREMIUM';
+  availability: SeekerAvailability;
   visibilityBoosted: boolean;
   featured: boolean;
 };
@@ -525,6 +527,11 @@ export type EmployerApplicant = {
   city: string | null;
   bio: string | null;
   skills: string[];
+  availability: SeekerAvailability;
+  subscriptionTier?: 'BASIC' | 'PROFESSIONAL' | 'PREMIUM';
+  featured?: boolean;
+  visibilityBoosted?: boolean;
+  jobFitScore?: number | null;
   education: EducationItem[] | null;
   experience: ExperienceItem[] | null;
   certifications: CertificationItem[] | null;
@@ -533,6 +540,8 @@ export type EmployerApplicant = {
   linkedinUrl: string | null;
   cvTemplate: CVTemplateId | null;
 };
+
+export type SeekerAvailability = 'AVAILABLE_NOW' | 'AVAILABLE_SOON' | 'NOT_AVAILABLE';
 
 export type EmployerApplicationListItem = {
   id: string;
@@ -864,6 +873,7 @@ export type GetSeekerProfileResponse = {
       linkedinUrl: string | null;
       resumeUrl: string | null;
       profilePictureUrl: string | null;
+      availability: SeekerAvailability;
     };
     onboardingComplete: boolean;
   };
@@ -871,11 +881,12 @@ export type GetSeekerProfileResponse = {
 
 export type UpdateSeekerProfilePayload = {
   fullName?: string;
-  country: string;
-  state: string;
-  city: string;
-  professionalTitle: string;
-  skills: string[];
+  country?: string;
+  state?: string;
+  city?: string;
+  professionalTitle?: string;
+  skills?: string[];
+  availability?: SeekerAvailability;
 };
 
 export type UpdateSeekerProfileResponse = {
@@ -888,6 +899,7 @@ export type UpdateSeekerProfileResponse = {
     professionalTitle: string | null;
     location: string | null;
     skills: string[];
+    availability: SeekerAvailability;
   };
 };
 

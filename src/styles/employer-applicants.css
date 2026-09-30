@@ -89,6 +89,64 @@
   overflow-wrap: anywhere;
 }
 
+.applicant-list-card .employer-applicant-card__meta .employer-job-fit {
+  display: inline-flex;
+  align-items: center;
+  width: max-content;
+  max-width: 100%;
+  border-radius: 999px;
+  padding: 0.22rem 0.5rem;
+  background: rgba(239, 80, 54, 0.1);
+  color: #b43e2a;
+  font-size: 0.68rem;
+  font-weight: 800;
+  line-height: 1.3;
+}
+
+.employer-availability,
+.employer-tier {
+  display: inline-flex;
+  align-items: center;
+  width: max-content;
+  max-width: 100%;
+  border-radius: 999px;
+  padding: 0.22rem 0.5rem;
+  background: #f1f5f9;
+  color: #475569;
+  font-size: 0.68rem;
+  font-weight: 750;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+
+.employer-availability--available_now,
+.employer-availability__value--available_now {
+  color: #26633d;
+}
+
+.employer-availability--available_soon,
+.employer-availability__value--available_soon {
+  color: #855411;
+}
+
+.employer-tier--professional,
+.employer-tier__value--professional {
+  color: #322f6a;
+}
+
+.employer-tier--premium,
+.employer-tier__value--premium {
+  color: #8a5b00;
+}
+
+.applicant-detail-pane .employer-summary-list .employer-job-fit__value {
+  color: #ef5036;
+}
+
+.applicant-detail-pane .employer-summary-list .employer-availability__value {
+  overflow-wrap: anywhere;
+}
+
 .applicant-list-loading {
   display: grid;
   gap: 0.65rem;

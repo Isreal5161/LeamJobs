@@ -132,6 +132,46 @@
   line-height: 1.5;
 }
 
+.employer-candidate-card__tier {
+  margin-top: 0.55rem;
+}
+
+.employer-candidate-card__tier span {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid rgba(50, 47, 106, 0.16);
+  border-radius: 999px;
+  padding: 0.22rem 0.5rem;
+  background: rgba(50, 47, 106, 0.06);
+  color: #322f6a;
+  font-size: 0.68rem;
+  font-weight: 750;
+  line-height: 1.3;
+}
+
+.employer-candidate-card__availability {
+  width: fit-content;
+  max-width: 100%;
+  margin: 0.7rem 0 0;
+  border-radius: 999px;
+  padding: 0.24rem 0.55rem;
+  background: #f1f5f9;
+  color: #475569;
+  font-size: 0.7rem;
+  font-weight: 750;
+  overflow-wrap: anywhere;
+}
+
+.employer-candidate-card__availability--available_now {
+  background: #eaf6ee;
+  color: #26633d;
+}
+
+.employer-candidate-card__availability--available_soon {
+  background: #fff5e7;
+  color: #855411;
+}
+
 .employer-candidate-card__badges,
 .employer-candidate-card__skills {
   display: flex;

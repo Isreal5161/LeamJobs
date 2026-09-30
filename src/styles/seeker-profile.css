@@ -1248,6 +1248,46 @@
   color: #0f172a;
 }
 
+.seeker-profile-form .seeker-availability-control {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 180px), 1fr));
+  gap: 0.55rem;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.seeker-availability-control legend {
+  margin-bottom: 0.55rem;
+  color: #0f172a;
+  font-weight: 800;
+}
+
+.seeker-profile-form .seeker-availability-control label {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  min-width: 0;
+  min-height: 44px;
+  padding: 0.55rem 0.7rem;
+  border: 1px solid rgba(50, 47, 106, 0.16);
+  border-radius: 8px;
+  background: #ffffff;
+  color: #322f6a;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.seeker-profile-form .seeker-availability-control input {
+  flex: 0 0 auto;
+  width: 1rem;
+  min-height: 1rem;
+  margin: 0;
+  padding: 0;
+  accent-color: #ef5036;
+}
+
 .seeker-profile-form input:focus,
 .seeker-profile-form select:focus,
 .seeker-combobox input:focus,
