@@ -20,6 +20,7 @@ import JobsPage from './pages/seeker/JobsPage';
 import ApplicationsPage from './pages/seeker/ApplicationsPage';
 import ProfilePage from './pages/seeker/ProfilePage';
 import SubscriptionPage from './pages/seeker/SubscriptionPage';
+import SubscriptionPaymentResultPage from './pages/seeker/SubscriptionPaymentResultPage';
 import PremiumOverviewPage from './pages/seeker/PremiumOverviewPage';
 import SavedJobsPage from './pages/seeker/SavedJobsPage';
 import JobAlertsPage from './pages/seeker/JobAlertsPage';
@@ -104,6 +105,7 @@ function App() {
             <Route path="messages" element={<MessagesPage role="seeker" />} />
             <Route path="profile" element={<ProfilePage />} />
             <Route path="subscription" element={<SubscriptionPage />} />
+            <Route path="subscription/payment-result" element={<SubscriptionPaymentResultPage />} />
             <Route path="premium" element={<PremiumOverviewPage />} />
             <Route path="saved-jobs" element={<SavedJobsPage />} />
             <Route path="job-alerts" element={<JobAlertsPage />} />

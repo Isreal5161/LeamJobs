@@ -1847,6 +1847,29 @@ export type SeekerTrialOffer = {
   trialPlanKey: string;
 };
 
+export type SeekerSubscriptionCheckoutRecord = {
+  id: string;
+  userId: string;
+  planId: string;
+  status: string;
+  plan: { id: string; key: string; displayName: string } | null;
+};
+
+export type SeekerSubscriptionPaymentRecord = {
+  id: string;
+  subscriptionId: string | null;
+  providerReference: string;
+  transactionId: string | null;
+  amount: string | null;
+  currency: string;
+  status: string;
+  paymentType: string;
+  provider: string;
+  verifiedAt: string | null;
+  createdAt: string;
+  checkoutUrl: string | null;
+};
+
 export function getSeekerSubscriptionPlans(token: string) {
   return request<{ success: true; data: { plans: SeekerSubscriptionPlan[] } }>({ method: 'GET', endpoint: '/seeker/subscription-plans', token });
 }
@@ -1885,7 +1908,7 @@ export function generateApplicationCoverLetter(body: { applicationId?: string; j
 }
 
 export function createSeekerSubscriptionCheckout(planId: string, token: string, idempotencyKey?: string) {
-  return request<{ success: true; data: { alreadyInitialized: boolean; checkoutUrl: string | null; payment: Record<string, unknown>; subscription: Record<string, unknown> | null } }>({
+  return request<{ success: true; data: { alreadyInitialized: boolean; initializing?: boolean; checkoutUrl: string | null; payment: SeekerSubscriptionPaymentRecord; subscription: SeekerSubscriptionCheckoutRecord | null } }>({
     method: 'POST',
     endpoint: '/seeker/subscriptions/checkout',
     body: { planId, ...(idempotencyKey ? { idempotencyKey } : {}) },
@@ -1893,11 +1916,11 @@ export function createSeekerSubscriptionCheckout(planId: string, token: string, 
   });
 }
 
-export function verifySeekerSubscriptionPayment(providerReference: string | undefined, transactionId: string | undefined, token: string) {
-  return request<{ success: true; data: { payment: Record<string, unknown>; subscription: Record<string, unknown> | null; alreadyVerified: boolean } }>({
+export function verifySeekerSubscriptionPayment(providerReference: string | undefined, transactionId: string | undefined, token: string, returnFailureState = false) {
+  return request<{ success: true; data: { payment: SeekerSubscriptionPaymentRecord; subscription: SeekerSubscriptionCheckoutRecord | null; alreadyVerified: boolean; pending?: boolean; failed?: boolean; failureType?: 'failed' | 'cancelled' } }>({
     method: 'POST',
     endpoint: '/seeker/subscriptions/verify',
-    body: { ...(providerReference ? { providerReference } : {}), ...(transactionId ? { transactionId } : {}) },
+    body: { ...(providerReference ? { providerReference } : {}), ...(transactionId ? { transactionId } : {}), ...(returnFailureState ? { returnFailureState: true } : {}) },
     token,
   });
 }

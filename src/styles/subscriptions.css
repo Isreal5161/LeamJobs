@@ -17,7 +17,10 @@
 .subscription-heading h2 { margin-top: .3rem; color: #172033; font-size: 1.1rem; font-weight: 700; }
 .subscription-editor-copy { margin: 0; color: #64748b; }
 .subscription-action-button { border: 0; border-radius: 8px; background: linear-gradient(135deg, var(--brand-primary), var(--brand-primary-active)); color: #fff; padding: .7rem 1rem; font-size: .78rem; font-weight: 700; cursor: pointer; box-shadow: 0 8px 18px rgba(191,56,38,.18); }
+.subscription-action-button:disabled { opacity: .65; cursor: wait; }
 .subscription-action-button--secondary { background: #e8f7ee; color: #16803c; box-shadow: none; }
+.subscription-spin { animation: subscription-spin 900ms linear infinite; }
+@keyframes subscription-spin { to { transform: rotate(360deg); } }
 .subscription-save-row { display: flex; justify-content: space-between; align-items: center; gap: 1rem; padding-top: .25rem; }
 .subscription-save-status { color: #0f766e; font-size: .78rem; font-weight: 600; }
 .subscription-list { display: grid; gap: .65rem; }
@@ -52,6 +55,32 @@
 .subscription-trial-plan-field > span { color: #322f6a; font-size: .75rem; font-weight: 800; }
 .subscription-trial-plan-select { min-height: 44px; padding: 0 .8rem; border: 1px solid rgba(50, 47, 106, .22); border-radius: 9px; background: #ffffff; color: #172033; font: inherit; font-weight: 700; cursor: pointer; box-shadow: 0 4px 12px rgba(50, 47, 106, .06); }
 .subscription-trial-plan-select:focus-visible { outline: 3px solid rgba(50, 47, 106, .18); outline-offset: 2px; border-color: var(--brand-secondary); }
+.subscription-checkout-backdrop { position: fixed; inset: 0; z-index: 1000; display: grid; place-items: center; overflow-y: auto; padding: 1rem; background: rgba(15, 23, 42, .58); }
+.subscription-checkout-dialog { display: grid; gap: 1rem; width: min(100%, 520px); max-height: min(90vh, 760px); overflow-y: auto; padding: 1.35rem; border: 1px solid #dbe3ee; border-radius: 12px; background: #fff; box-shadow: 0 24px 70px rgba(15, 23, 42, .24); }
+.subscription-checkout-dialog__heading { display: grid; gap: .45rem; }
+.subscription-checkout-dialog__heading h2, .subscription-checkout-dialog__heading p { margin: 0; }
+.subscription-checkout-dialog__heading h2 { color: #172033; font-size: 1.25rem; }
+.subscription-checkout-dialog__heading p { color: #64748b; font-size: .84rem; line-height: 1.5; }
+.subscription-checkout-summary { display: grid; gap: .6rem; padding: .9rem; border: 1px solid #e1e8f1; border-radius: 8px; background: #f8fafc; }
+.subscription-checkout-summary div { display: flex; align-items: start; justify-content: space-between; gap: .8rem; }
+.subscription-checkout-summary span { color: #64748b; font-size: .78rem; }
+.subscription-checkout-summary strong { color: #172033; font-size: .84rem; text-align: right; overflow-wrap: anywhere; }
+.subscription-checkout-benefits { display: grid; gap: .45rem; margin: 0; padding: 0; list-style: none; }
+.subscription-checkout-benefits li { display: flex; align-items: start; gap: .55rem; color: #475569; font-size: .8rem; line-height: 1.4; }
+.subscription-checkout-benefits svg { flex: 0 0 auto; margin-top: .12rem; color: #16803c; }
+.subscription-checkout-actions { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: .65rem; }
+.subscription-checkout-actions .subscription-action-button { display: inline-flex; align-items: center; justify-content: center; gap: .45rem; min-height: 42px; }
+.subscription-result-page { min-height: 55vh; align-content: center; }
+.subscription-result-panel { display: grid; justify-items: center; gap: .8rem; width: min(100%, 640px); margin: 0 auto; padding: clamp(1.2rem, 4vw, 2.2rem); border: 1px solid #dbe3ee; border-radius: 12px; background: #fff; box-shadow: 0 10px 28px rgba(15, 23, 42, .06); text-align: center; }
+.subscription-result-icon { display: grid; place-items: center; width: 58px; height: 58px; border-radius: 50%; background: rgba(50, 47, 106, .08); color: #322f6a; font-size: 1.5rem; }
+.subscription-result-panel--success .subscription-result-icon { background: #e8f7ee; color: #16803c; }
+.subscription-result-panel--failed .subscription-result-icon, .subscription-result-panel--missing .subscription-result-icon { background: #fff1f2; color: #b42318; }
+.subscription-result-panel h1, .subscription-result-panel p { max-width: 48ch; margin: 0; }
+.subscription-result-panel h1 { color: #172033; font-size: clamp(1.35rem, 4vw, 1.8rem); }
+.subscription-result-panel p { color: #64748b; font-size: .9rem; line-height: 1.55; overflow-wrap: anywhere; }
+.subscription-result-panel > .subscription-action-button, .subscription-result-actions .subscription-action-button { display: inline-flex; align-items: center; justify-content: center; min-height: 42px; text-decoration: none; }
+.subscription-result-progress { display: inline-flex; align-items: center; gap: .5rem; color: #322f6a; font-size: .82rem; font-weight: 650; }
+.subscription-result-actions { display: flex; justify-content: center; flex-wrap: wrap; gap: .65rem; margin-top: .35rem; }
 .subscription-input textarea { resize: vertical; min-height: 82px; }
 .subscription-trial-error { margin: -.5rem 0 0; color: #b42318; font-size: .78rem; line-height: 1.4; }
 .subscription-benefits-editor { display: grid; gap: .45rem; color: #475569; font-size: .72rem; font-weight: 600; }
@@ -100,4 +129,16 @@
 	.subscription-plan__footer { align-items: stretch; flex-direction: column; }
 	.subscription-plan__footer .subscription-action-button { width: 100%; }
 	.subscription-feature-option { min-height: 42px; }
+}
+.subscription-action-button:focus-visible, .subscription-checkout-dialog button:focus-visible { outline: 3px solid rgba(50, 47, 106, .32); outline-offset: 3px; }
+.subscription-pending-notice { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 1rem; border: 1px solid rgba(50, 47, 106, .2); border-left: 4px solid #322F6A; border-radius: 9px; background: #f7f6ff; }
+.subscription-pending-notice strong { color: #322F6A; font-size: .9rem; }
+.subscription-pending-notice p { margin: .25rem 0 0; line-height: 1.45; }
+.subscription-pending-notice .subscription-action-button { flex: 0 0 auto; min-height: 42px; }
+@media (max-width: 520px) {
+	.subscription-pending-notice { align-items: stretch; flex-direction: column; }
+	.subscription-pending-notice .subscription-action-button { width: 100%; }
+	.subscription-checkout-dialog { padding: 1rem; }
+	.subscription-checkout-actions { flex-direction: column-reverse; }
+	.subscription-checkout-actions .subscription-action-button { width: 100%; }
 }

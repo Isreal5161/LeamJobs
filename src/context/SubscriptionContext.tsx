@@ -40,6 +40,8 @@ export type SubscriptionPlan = {
   key?: string;
   name: string;
   price: number;
+  currency: string | null;
+  billingInterval: 'MONTHLY';
   visibilityBoost: number;
   description: string;
   benefits: string[];
@@ -64,6 +66,12 @@ export type SeekerSubscription = {
   aiEntitlements: string[];
   aiAllowance?: number | null;
   aiUnlimited?: boolean;
+  pendingPayment?: {
+    providerReference: string;
+    transactionId: string | null;
+    checkoutUrl: string | null;
+    status: string;
+  } | null;
 };
 
 export const subscriptionPlans: SubscriptionPlan[] = [
@@ -71,6 +79,8 @@ export const subscriptionPlans: SubscriptionPlan[] = [
     id: 'free',
     name: 'Free',
     price: 0,
+    currency: null,
+    billingInterval: 'MONTHLY',
     visibilityBoost: 0,
     description: 'Standard profile visibility and job matching.',
     benefits: ['Standard recommendations', 'Public profile', 'Application tracking'],
@@ -135,6 +145,8 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
         id: plan.id,
         name: getAccountTypeLabel(plan.key, plan.displayName || 'Basic'),
         price: Number(plan.price ?? 0),
+        currency: plan.currency,
+        billingInterval: plan.billingInterval,
         visibilityBoost: 0,
         description: plan.description ?? 'Subscription plan',
         benefits: plan.benefits ?? [],
@@ -152,6 +164,8 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
         key: 'BASIC',
         name: 'Basic',
         price: 0,
+        currency: null,
+        billingInterval: 'MONTHLY' as const,
         visibilityBoost: 0,
         description: 'Standard profile visibility and job matching.',
         benefits: ['Standard recommendations', 'Public profile', 'Application tracking'],
@@ -178,6 +192,8 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
         key: state.currentPlan.key,
         name: getAccountTypeLabel(state.currentPlan.key, state.currentPlan.displayName),
         price: Number(state.currentPlan.price ?? 0),
+        currency: state.currentPlan.currency,
+        billingInterval: state.currentPlan.billingInterval,
         visibilityBoost: 0,
         description: state.currentPlan.description ?? 'Subscription plan',
         benefits: state.currentPlan.benefits ?? [],
@@ -213,11 +229,14 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
           advancedCvEligible: item.plan?.entitlements?.includes('AI_CV_IMPROVEMENT') ?? false,
           aiEntitlements,
           aiAllowance: item.plan?.aiAllowance ?? null,
+          pendingPayment: item.payments?.find((payment) => ['PENDING', 'PROCESSING'].includes(payment.status)) ?? null,
         };
       });
       setSubscriptions(nextSubscriptions);
     } else {
       setSubscriptions([]);
+      setCurrentPlan(subscriptionPlans[0]);
+      setAiUsage({ userId: user.id, planKey: 'BASIC', source: 'FREE', limit: 5, used: 0, remaining: 5, allowed: true, unlimited: false });
       setTrial(null);
       setTrialOffer({ available: false, durationDays: 7, trialPlanKey: 'PREMIUM' });
     }
