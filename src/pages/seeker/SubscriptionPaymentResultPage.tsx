@@ -114,9 +114,17 @@ function SubscriptionPaymentResultPage() {
         {resultState === 'pending' ? <>
           <h1>Payment is being confirmed</h1>
           <p>We have not received final confirmation yet. No subscription access is granted until LeamJobs verifies a successful payment.</p>
+          {providerReference && !transactionId ? <div className="subscription-result-not-completed" role="status">
+            <h2>Payment not completed</h2>
+            <p>If you left the payment page before your subscription was confirmed, your subscription has not been activated.</p>
+            <div className="subscription-result-actions">
+              <Link className="subscription-action-button" to="/seeker/subscription">Return to Subscription</Link>
+              <Link className="subscription-action-button subscription-action-button--secondary" to="/seeker/subscription">Try Again</Link>
+            </div>
+          </div> : null}
           <div className="subscription-result-actions">
             <button type="button" className="subscription-action-button" onClick={() => setRetryCount((count) => count + 1)}>Check payment status</button>
-            <Link className="subscription-action-button subscription-action-button--secondary" to="/seeker/subscription">Return to plans</Link>
+            {!providerReference || transactionId ? <Link className="subscription-action-button subscription-action-button--secondary" to="/seeker/subscription">Return to Subscription</Link> : null}
           </div>
         </> : null}
         {resultState === 'failed' ? <>

@@ -81,6 +81,10 @@
 .subscription-result-panel > .subscription-action-button, .subscription-result-actions .subscription-action-button { display: inline-flex; align-items: center; justify-content: center; min-height: 42px; text-decoration: none; }
 .subscription-result-progress { display: inline-flex; align-items: center; gap: .5rem; color: #322f6a; font-size: .82rem; font-weight: 650; }
 .subscription-result-actions { display: flex; justify-content: center; flex-wrap: wrap; gap: .65rem; margin-top: .35rem; }
+.subscription-result-not-completed { display: grid; justify-items: center; gap: .65rem; width: 100%; padding: 1rem; border: 1px solid rgba(239, 80, 54, .22); border-left: 4px solid var(--brand-primary-active, #EF5036); border-radius: 9px; background: rgba(239, 80, 54, .045); }
+.subscription-result-not-completed h2 { margin: 0; color: var(--brand-secondary, #322F6A); font-size: 1rem; }
+.subscription-result-not-completed p { margin: 0; }
+.subscription-result-not-completed .subscription-result-actions { width: 100%; }
 .subscription-input textarea { resize: vertical; min-height: 82px; }
 .subscription-trial-error { margin: -.5rem 0 0; color: #b42318; font-size: .78rem; line-height: 1.4; }
 .subscription-benefits-editor { display: grid; gap: .45rem; color: #475569; font-size: .72rem; font-weight: 600; }
@@ -136,6 +140,8 @@
 .subscription-pending-notice p { margin: .25rem 0 0; line-height: 1.45; }
 .subscription-pending-notice .subscription-action-button { flex: 0 0 auto; min-height: 42px; }
 @media (max-width: 520px) {
+	.subscription-result-not-completed .subscription-result-actions { align-items: stretch; flex-direction: column; }
+	.subscription-result-not-completed .subscription-action-button { width: 100%; }
 	.subscription-pending-notice { align-items: stretch; flex-direction: column; }
 	.subscription-pending-notice .subscription-action-button { width: 100%; }
 	.subscription-checkout-dialog { padding: 1rem; }
