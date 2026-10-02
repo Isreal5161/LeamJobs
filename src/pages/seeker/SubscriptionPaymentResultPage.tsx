@@ -3,19 +3,23 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { FaCheckCircle, FaClock, FaExclamationCircle, FaLock, FaSpinner } from 'react-icons/fa';
 import { useAuth } from '../../context/AuthContext';
 import { getAccountTypeLabel, useSubscriptions } from '../../context/SubscriptionContext';
-import { verifySeekerSubscriptionPayment } from '../../services/api';
+import { cancelSeekerSubscriptionPayment, verifySeekerSubscriptionPayment } from '../../services/api';
 
-type PaymentResultState = 'verifying' | 'success' | 'pending' | 'failed' | 'cancelled' | 'missing';
+type PaymentResultState = 'verifying' | 'success' | 'pending' | 'failed' | 'cancelled' | 'cancelledByUser' | 'missing';
 
 const idempotencyStorageKey = (userId: string, planId: string) => `leamjobs:subscription-checkout:${userId}:${planId}`;
 
 function SubscriptionPaymentResultPage() {
   const { token, user } = useAuth();
-  const { plans, refresh } = useSubscriptions();
+  const { plans, subscriptions, refresh } = useSubscriptions();
   const [searchParams] = useSearchParams();
   const [resultState, setResultState] = useState<PaymentResultState>('verifying');
   const [confirmedPlanName, setConfirmedPlanName] = useState<string | null>(null);
   const [retryCount, setRetryCount] = useState(0);
+  const [canCancel, setCanCancel] = useState(false);
+  const [isCancelling, setIsCancelling] = useState(false);
+  const [cancelError, setCancelError] = useState('');
+  const cancelRequestInFlight = useRef(false);
   const verificationRequestRef = useRef<{ requestKey: string; request: ReturnType<typeof verifySeekerSubscriptionPayment> } | null>(null);
   const plansRef = useRef(plans);
   plansRef.current = plans;
@@ -38,6 +42,7 @@ function SubscriptionPaymentResultPage() {
     let isCurrent = true;
     const requestKey = `${providerReference ?? ''}:${transactionId}:${retryCount}`;
     setResultState('verifying');
+    setCanCancel(false);
     if (verificationRequestRef.current?.requestKey !== requestKey) {
       verificationRequestRef.current = {
         requestKey,
@@ -63,6 +68,7 @@ function SubscriptionPaymentResultPage() {
 
       if (pending || ['PENDING', 'PROCESSING'].includes(String(payment.status))) {
         setResultState('pending');
+        setCanCancel(payment.status === 'PENDING' && subscription?.status === 'PENDING');
         return;
       }
 
@@ -94,6 +100,67 @@ function SubscriptionPaymentResultPage() {
     try { sessionStorage.removeItem(idempotencyStorageKey(user.id, planId)); } catch { /* Session storage is optional after the payment attempt. */ }
   };
 
+  const handleCancelPayment = async () => {
+    if (cancelRequestInFlight.current || !canCancel || !providerReference || !token) return;
+    cancelRequestInFlight.current = true;
+    setIsCancelling(true);
+    setCancelError('');
+
+    try {
+      const result = await cancelSeekerSubscriptionPayment(providerReference, token);
+      if (result.ok && result.data.data.status === 'CANCELLED') {
+        const cancelledSubscription = subscriptions.find((subscription) => (
+          subscription.pendingPayment?.providerReference === providerReference
+        ));
+        clearAttemptKey(cancelledSubscription?.planId);
+        setCanCancel(false);
+        setResultState('cancelledByUser');
+        try {
+          await refresh();
+        } catch {
+          // The server confirmed cancellation; the result remains valid if refresh is temporarily unavailable.
+        }
+        return;
+      }
+
+      if (!result.ok && result.status === 409) {
+        try { await refresh(); } catch { /* Verification below decides whether activation won the race. */ }
+        const verification = await verifySeekerSubscriptionPayment(providerReference, transactionId, token, true);
+        if (verification.ok) {
+          const { payment, subscription, pending, failed, failureType } = verification.data.data;
+          if (payment.status === 'SUCCESSFUL' && subscription?.status === 'ACTIVE') {
+            setCanCancel(false);
+            setConfirmedPlanName(subscription.plan?.displayName ?? getAccountTypeLabel(planKey));
+            clearAttemptKey(subscription.plan?.id);
+            setResultState('success');
+            try {
+              await refresh();
+            } catch {
+              // The server-confirmed activation remains authoritative if refresh is temporarily unavailable.
+            }
+            return;
+          }
+          if (failed) {
+            setCanCancel(false);
+            setResultState(failureType === 'cancelled' ? 'cancelled' : 'failed');
+            clearAttemptKey(subscription?.plan?.id);
+            return;
+          }
+          if (pending || ['PENDING', 'PROCESSING'].includes(String(payment.status))) {
+            setCanCancel(payment.status === 'PENDING' && subscription?.status === 'PENDING');
+          }
+        }
+      }
+
+      setCancelError("We couldn't cancel this payment attempt. Please try again.");
+    } catch {
+      setCancelError("We couldn't cancel this payment attempt. Please try again.");
+    } finally {
+      cancelRequestInFlight.current = false;
+      setIsCancelling(false);
+    }
+  };
+
   return (
     <main className="seeker-layout__main subscription-page subscription-result-page">
       <section className={`subscription-result-panel subscription-result-panel--${resultState}`} aria-live="polite">
@@ -112,19 +179,24 @@ function SubscriptionPaymentResultPage() {
           <Link className="subscription-action-button" to="/seeker/dashboard">Continue to LeamJobs</Link>
         </> : null}
         {resultState === 'pending' ? <>
-          <h1>Payment is being confirmed</h1>
-          <p>We have not received final confirmation yet. No subscription access is granted until LeamJobs verifies a successful payment.</p>
-          {providerReference && !transactionId ? <div className="subscription-result-not-completed" role="status">
-            <h2>Payment not completed</h2>
-            <p>If you left the payment page before your subscription was confirmed, your subscription has not been activated.</p>
+          <h1>{canCancel ? 'Payment not completed' : 'Payment is being confirmed'}</h1>
+          <p>{canCancel
+            ? "Your payment hasn't been completed yet. Your subscription has not been activated."
+            : 'We have not received final confirmation yet. No subscription access is granted until LeamJobs verifies a successful payment.'}</p>
+          {canCancel ? <div className="subscription-result-not-completed" role="status">
+            <p>You can cancel this pending attempt and start a new subscription whenever you're ready.</p>
+            {cancelError ? <p className="subscription-result-cancel-error" role="alert">{cancelError}</p> : null}
             <div className="subscription-result-actions">
-              <Link className="subscription-action-button" to="/seeker/subscription">Return to Subscription</Link>
+              <button type="button" className="subscription-action-button" onClick={() => void handleCancelPayment()} disabled={isCancelling} aria-busy={isCancelling}>
+                {isCancelling ? <><FaSpinner className="subscription-spin" aria-hidden="true" /> Canceling payment...</> : 'Cancel Payment'}
+              </button>
               <Link className="subscription-action-button subscription-action-button--secondary" to="/seeker/subscription">Try Again</Link>
+              <Link className="subscription-action-button subscription-action-button--secondary" to="/seeker/subscription">Return to Subscription</Link>
             </div>
           </div> : null}
           <div className="subscription-result-actions">
             <button type="button" className="subscription-action-button" onClick={() => setRetryCount((count) => count + 1)}>Check payment status</button>
-            {!providerReference || transactionId ? <Link className="subscription-action-button subscription-action-button--secondary" to="/seeker/subscription">Return to Subscription</Link> : null}
+            {!canCancel ? <Link className="subscription-action-button subscription-action-button--secondary" to="/seeker/subscription">Return to Subscription</Link> : null}
           </div>
         </> : null}
         {resultState === 'failed' ? <>
@@ -136,6 +208,11 @@ function SubscriptionPaymentResultPage() {
           <h1>Payment cancelled</h1>
           <p>Your payment was cancelled and your subscription has not been activated. You can return to plans and try again when you are ready.</p>
           <Link className="subscription-action-button" to="/seeker/subscription">Return to plans</Link>
+        </> : null}
+        {resultState === 'cancelledByUser' ? <>
+          <h1>Payment cancelled</h1>
+          <p>Your subscription payment attempt has been cancelled. You can start a new subscription whenever you're ready.</p>
+          <Link className="subscription-action-button" to="/seeker/subscription">Return to Subscription</Link>
         </> : null}
         {resultState === 'missing' ? <>
           <h1>We couldn’t identify this payment</h1>

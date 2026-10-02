@@ -1925,6 +1925,15 @@ export function verifySeekerSubscriptionPayment(providerReference: string | unde
   });
 }
 
+export function cancelSeekerSubscriptionPayment(providerReference: string, token: string) {
+  return request<{ success: true; data: { status: 'CANCELLED' } }>({
+    method: 'POST',
+    endpoint: '/seeker/subscriptions/payment/cancel',
+    body: { providerReference },
+    token,
+  });
+}
+
 export type SiteContentResponse = { success: true; data: { content: Record<string, unknown> } };
 
 export function getSiteContent() {
