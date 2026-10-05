@@ -512,6 +512,74 @@ export type AdminUsersResponse = {
 
 export type EmployerApplicationStatus = 'APPLIED' | 'REVIEWING' | 'SHORTLISTED' | 'INTERVIEW' | 'REJECTED' | 'ACCEPTED' | 'PAYMENT_PENDING' | 'WITHDRAWN';
 
+export type InterviewMethod = 'LEAMJOBS' | 'WHATSAPP' | 'VIDEO' | 'PHONE' | 'IN_PERSON' | 'OTHER';
+export type InterviewStatus = 'SCHEDULED' | 'CANCELLED';
+
+export type InterviewApplicationContext = {
+  id: string;
+  jobId: string;
+  jobTitle: string;
+  companyName?: string | null;
+  applicant?: { id?: string; firstName: string; lastName: string; fullName?: string };
+  seeker?: { firstName: string; lastName: string; fullName?: string };
+  employer?: { firstName?: string; lastName?: string; companyName?: string | null };
+};
+
+export type InterviewRecord = {
+  id: string;
+  applicationId: string;
+  jobId?: string;
+  method: InterviewMethod;
+  scheduledAt: string;
+  timezone: string;
+  durationMinutes: number | null;
+  whatsappNumber?: string | null;
+  phoneNumber?: string | null;
+  otherContactNumber?: string | null;
+  meetingUrl: string | null;
+  location: string | null;
+  message: string | null;
+  status: InterviewStatus;
+  cancelledAt: string | null;
+  cancellationReason: string | null;
+  createdAt: string;
+  updatedAt: string;
+  job?: { id: string; title: string; location?: string; jobType?: string } | null;
+  companyName?: string | null;
+  applicant?: { id?: string; firstName: string; lastName: string; fullName?: string; professionalTitle?: string | null } | null;
+  seeker?: { firstName: string; lastName: string; fullName?: string } | null;
+  employer?: { id?: string; firstName?: string; lastName?: string; companyName?: string | null } | null;
+  application?: InterviewApplicationContext;
+  messageUrl?: string | null;
+  whatsappUrl?: string | null;
+  events?: Array<{ eventType: string; createdAt: string; previousScheduledAt?: string | null; scheduledAt?: string | null; reason?: string }>;
+};
+
+export type InterviewSchedulePayload = {
+  localDate: string;
+  localTime: string;
+  timezone: string;
+  method: InterviewMethod;
+  durationMinutes?: number;
+  phoneNumber?: string;
+  meetingUrl?: string;
+  location?: string;
+  message?: string;
+};
+
+export type InterviewListResponse = {
+  success: true;
+  data: {
+    interviews: InterviewRecord[];
+    pagination?: PagePagination;
+  };
+};
+
+export type InterviewResponse = {
+  success: true;
+  data: { interview: InterviewRecord };
+};
+
 export type EmployerApplicant = {
   id?: string;
   firstName: string;
@@ -2043,6 +2111,49 @@ export function closeEmployerJob(jobId: string, token: string) {
 
 export function getEmployerApplications(jobId: string, token: string, page = 1, limit = 20) {
   return request<EmployerApplicationsResponse>({ method: 'GET', endpoint: `/employer/jobs/${encodeURIComponent(jobId)}/applications?page=${page}&limit=${limit}`, token });
+}
+
+export function createEmployerInterview(jobId: string, applicationId: string, payload: InterviewSchedulePayload, token: string) {
+  return request<InterviewResponse>({
+    method: 'POST',
+    endpoint: `/employer/jobs/${encodeURIComponent(jobId)}/applications/${encodeURIComponent(applicationId)}/interviews`,
+    body: payload,
+    token,
+  });
+}
+
+export function getEmployerInterviews(token: string, page = 1, limit = 20) {
+  return request<InterviewListResponse>({ method: 'GET', endpoint: `/employer/interviews?page=${page}&limit=${limit}`, token });
+}
+
+export function getEmployerInterview(interviewId: string, token: string) {
+  return request<InterviewResponse>({ method: 'GET', endpoint: `/employer/interviews/${encodeURIComponent(interviewId)}`, token });
+}
+
+export function rescheduleEmployerInterview(interviewId: string, payload: InterviewSchedulePayload, token: string) {
+  return request<InterviewResponse>({
+    method: 'PATCH',
+    endpoint: `/employer/interviews/${encodeURIComponent(interviewId)}`,
+    body: payload,
+    token,
+  });
+}
+
+export function cancelEmployerInterview(interviewId: string, reason: string, token: string) {
+  return request<InterviewResponse>({
+    method: 'POST',
+    endpoint: `/employer/interviews/${encodeURIComponent(interviewId)}/cancel`,
+    body: { reason },
+    token,
+  });
+}
+
+export function getSeekerInterviews(token: string, page = 1, limit = 20) {
+  return request<InterviewListResponse>({ method: 'GET', endpoint: `/seeker/interviews?page=${page}&limit=${limit}`, token });
+}
+
+export function getSeekerInterview(interviewId: string, token: string) {
+  return request<InterviewResponse>({ method: 'GET', endpoint: `/seeker/interviews/${encodeURIComponent(interviewId)}`, token });
 }
 
 export function getAdminJobApplications(jobId: string, token: string) {

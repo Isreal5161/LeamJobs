@@ -22,7 +22,9 @@ import {
   getSeekerProfile,
   generateApplicationCoverLetter,
   requestApplicationAssistance,
+  getSeekerInterviews,
   type SeekerApplication,
+  type InterviewRecord,
   type SeekerDashboardJob,
 } from '../../services/api';
 
@@ -45,6 +47,8 @@ function ApplicationsPage() {
   const { aiUsage } = useSubscriptions();
 
   const [applications, setApplications] = useState<SeekerApplication[]>([]);
+  const [interviews, setInterviews] = useState<InterviewRecord[]>([]);
+  const [interviewsError, setInterviewsError] = useState('');
   const [summary, setSummary] = useState({ total: 0, interviews: 0 });
   const [selectedJob, setSelectedJob] = useState<SeekerDashboardJob | null>(null);
   const [proposal, setProposal] = useState('');
@@ -104,6 +108,24 @@ function ApplicationsPage() {
 
   useEffect(() => {
     void loadApplications();
+  }, [token]);
+
+  useEffect(() => {
+    if (!token) {
+      setInterviews([]);
+      return undefined;
+    }
+    let active = true;
+    void getSeekerInterviews(token, 1, 50).then((result) => {
+      if (!active) return;
+      if (result.ok) {
+        setInterviews(result.data.data.interviews);
+        setInterviewsError('');
+      } else {
+        setInterviewsError(result.error.message || 'Interview details could not be loaded.');
+      }
+    });
+    return () => { active = false; };
   }, [token]);
 
   useEffect(() => {
@@ -295,6 +317,16 @@ function ApplicationsPage() {
           <span><FaCalendarAlt /> Applied {formatDate(application.appliedAt)}</span>
           <span><FaBriefcase /> Updated {formatDate(application.updatedAt)}</span>
         </div>
+        {interviews.filter((interview) => interview.applicationId === application.id && interview.status === 'SCHEDULED' && new Date(interview.scheduledAt).getTime() >= Date.now()).map((interview) => (
+          <div className="seeker-application-interview" key={interview.id}>
+            <div>
+              <strong>Interview scheduled</strong>
+              <span>{new Intl.DateTimeFormat(undefined, { dateStyle: 'full', timeStyle: 'short', timeZone: interview.timezone }).format(new Date(interview.scheduledAt))}</span>
+              <small>{interview.method.replaceAll('_', ' ').toLowerCase().replace(/\b\w/g, (letter) => letter.toUpperCase())} · {interview.timezone}</small>
+            </div>
+            <Link to={`/seeker/interviews/${interview.id}`} className="seeker-application-card__link">View interview</Link>
+          </div>
+        ))}
       </div>
       {application.contractId ? (
         <Link
@@ -402,6 +434,7 @@ function ApplicationsPage() {
             </div>
             <div className="seeker-application-list" aria-busy={isLoading}>
               {insightsError ? <p role="alert">{insightsError}</p> : null}
+              {interviewsError ? <p className="seeker-interview-list-error" role="alert">{interviewsError}</p> : null}
               {error ? <p role="alert">{error}</p> : null}
               {isLoading ? (
                 <>

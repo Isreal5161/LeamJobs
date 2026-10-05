@@ -55,7 +55,12 @@ function NotificationsPage({ role }: NotificationsPageProps) {
       }
     }
 
-    if (notification.link) {
+    const interviewId = notification.eventKey.startsWith('interview:')
+      ? notification.metadata?.interviewId
+      : null;
+    if (typeof interviewId === 'string' && role === 'seeker') {
+      navigate(`/seeker/interviews/${encodeURIComponent(interviewId)}`);
+    } else if (notification.link) {
       const target = notification.link.startsWith('/') ? notification.link : `/${notification.link}`;
       navigate(target);
     }

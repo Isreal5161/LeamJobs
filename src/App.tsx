@@ -18,6 +18,7 @@ import CompanyProfilePage from './pages/public/CompanyProfilePage';
 import Homepage from './pages/seeker/Homepage';
 import JobsPage from './pages/seeker/JobsPage';
 import ApplicationsPage from './pages/seeker/ApplicationsPage';
+import InterviewsPage from './pages/interviews/InterviewsPage';
 import ProfilePage from './pages/seeker/ProfilePage';
 import SubscriptionPage from './pages/seeker/SubscriptionPage';
 import SubscriptionPaymentResultPage from './pages/seeker/SubscriptionPaymentResultPage';
@@ -102,6 +103,8 @@ function App() {
             <Route path="jobs/:jobId" element={<JobDetailsPage />} />
             <Route path="companies/:employerId" element={<CompanyProfilePage />} />
             <Route path="applications" element={<ApplicationsPage />} />
+            <Route path="interviews" element={<InterviewsPage role="seeker" />} />
+            <Route path="interviews/:interviewId" element={<InterviewsPage role="seeker" />} />
             <Route path="contracts/:contractId" element={<ContractPage role="SEEKER" />} />
             <Route path="messages" element={<MessagesPage role="seeker" />} />
             <Route path="profile" element={<ProfilePage />} />
@@ -122,6 +125,8 @@ function App() {
             <Route path="jobs" element={<EmployerJobsPage />} />
             <Route path="candidates" element={<EmployerCandidatesPage />} />
             <Route path="applicants" element={<EmployerApplicantsPage />} />
+            <Route path="interviews" element={<InterviewsPage role="employer" />} />
+            <Route path="interviews/:interviewId" element={<InterviewsPage role="employer" />} />
             <Route path="contracts" element={<EmployerContractsPage />} />
             <Route path="contracts/:contractId" element={<ContractPage role="EMPLOYER" />} />
             <Route path="messages" element={<MessagesPage role="employer" />} />

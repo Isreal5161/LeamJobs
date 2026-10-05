@@ -33,6 +33,7 @@ import './styles/job-alerts.css';
 import './styles/premium-insights.css';
 import './styles/contracts.css';
 import './styles/employer-contracts.css';
+import './styles/interviews.css';
 import './styles/admin-release.css';
 import './styles/dashboard-theme.css';
 import './styles/email-preferences.css';

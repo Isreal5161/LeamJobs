@@ -6,6 +6,7 @@ import {
 } from 'react-icons/fa';
 import ApplicantAvatar from '../../components/employer/ApplicantAvatar';
 import CVTemplateRenderer, { type CVData, type CVTemplateId } from '../../components/cv-templates/CVTemplateRenderer';
+import InterviewScheduleModal from '../../components/interviews/InterviewScheduleModal';
 import { useAuth } from '../../context/AuthContext';
 import {
   createEmployerApplicationConversation,
@@ -57,6 +58,7 @@ function EmployerApplicantsPage() {
   const [cvModalOpen, setCvModalOpen] = useState(false);
   const [cvModalState, setCvModalState] = useState<'loading' | 'pdf' | 'template' | 'unavailable' | 'error'>('loading');
   const [cvDocumentUrl, setCvDocumentUrl] = useState<string | null>(null);
+  const [interviewScheduleOpen, setInterviewScheduleOpen] = useState(false);
   const cvModalCloseRef = useRef<HTMLButtonElement>(null);
   const lastFocusedElementRef = useRef<HTMLElement | null>(null);
   const [error, setError] = useState('');
@@ -189,6 +191,7 @@ function EmployerApplicantsPage() {
     : null;
   const anotherCandidateSelected = Boolean(selectedContractApplication && selectedContractApplication.id !== selectedListItem?.id);
   const canSelectContract = Boolean(isContractApplication && selectedListItem && !selectedListItem.contractId && !anotherCandidateSelected && !['ACCEPTED', 'PAYMENT_PENDING'].includes(selectedListItem.status));
+  const canScheduleInterview = Boolean(selectedListItem && ['APPLIED', 'REVIEWING', 'SHORTLISTED', 'INTERVIEW'].includes(selectedListItem.status));
   const applicationStatusOptions: EmployerApplicationStatus[] = isContractApplication
     ? normalApplicationStatuses.filter((status) => status !== 'ACCEPTED' || Boolean(selectedApplication?.contractId))
       .concat(selectedApplication?.status === 'PAYMENT_PENDING' ? ['PAYMENT_PENDING'] : [])
@@ -600,10 +603,20 @@ function EmployerApplicantsPage() {
                   </div>
                   <label className="employer-status-field">
                     <span>Application status</span>
-                    <select className="employer-status-select" value={selectedApplication.status} onChange={(event) => void updateStatus(event.target.value as EmployerApplicationStatus)} disabled={isMutating} aria-label="Application status">
-                      {applicationStatusOptions.map((status) => <option value={status} key={status}>{statusLabels[status]}</option>)}
+                    <select className="employer-status-select" value={selectedApplication.status} onChange={(event) => {
+                      const nextStatus = event.target.value as EmployerApplicationStatus;
+                      if (nextStatus === 'INTERVIEW') {
+                        setInterviewScheduleOpen(true);
+                        return;
+                      }
+                      void updateStatus(nextStatus);
+                    }} disabled={isMutating} aria-label="Application status">
+                      {applicationStatusOptions.map((status) => <option value={status} key={status} disabled={status === 'INTERVIEW' && !canScheduleInterview}>{statusLabels[status]}</option>)}
                     </select>
                   </label>
+                  {canScheduleInterview ? <button className="employer-button employer-button--primary" type="button" onClick={() => setInterviewScheduleOpen(true)} disabled={isMutating || isLoadingDetail}>
+                    <FaCalendarCheck aria-hidden="true" /> Schedule interview
+                  </button> : null}
                   {anotherCandidateSelected ? <p className="employer-action-error" role="alert">Another candidate has already been selected for this job. Payment must be completed for that candidate before the engagement can continue.</p> : null}
                   {canSelectContract ? <button className="employer-button employer-button--primary" type="button" onClick={() => void updateStatus('ACCEPTED')} disabled={isMutating}>Select &amp; fund contract</button> : null}
                   {selectedApplication.contractId ? <button className="employer-button employer-button--primary" type="button" onClick={() => navigate(`/employer/contracts/${selectedApplication.contractId}`)}>Open contract workspace</button> : null}
@@ -675,6 +688,18 @@ function EmployerApplicantsPage() {
           </section>
         </div>
       ) : null}
+      {interviewScheduleOpen && selectedApplication ? <InterviewScheduleModal
+        token={token ?? ''}
+        application={selectedApplication}
+        onClose={() => setInterviewScheduleOpen(false)}
+        onComplete={() => {
+          setActionError('');
+          setActionMessage('Interview invitation sent. The applicant has been notified.');
+          applicationCache.current = {};
+          setApplicationsRetryKey((value) => value + 1);
+          setDetailRetryKey((value) => value + 1);
+        }}
+      /> : null}
     </div>
   );
 }
