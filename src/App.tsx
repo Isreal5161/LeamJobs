@@ -32,6 +32,7 @@ import EmployerApplicantsPage from './pages/employer/EmployerApplicantsPage';
 import EmployerCandidatesPage from './pages/employer/EmployerCandidatesPage';
 import EmployerProfilePage from './pages/employer/EmployerProfilePage';
 import EmployerVerificationPage from './pages/employer/EmployerVerificationPage';
+import EmployerContractsPage from './pages/employer/EmployerContractsPage';
 import MessagesPage from './pages/messages/MessagesPage';
 import AdminDashboardPage from './pages/admin/AdminDashboardPage';
 import AdminOverviewPage from './pages/admin/AdminOverviewPage';
@@ -121,6 +122,7 @@ function App() {
             <Route path="jobs" element={<EmployerJobsPage />} />
             <Route path="candidates" element={<EmployerCandidatesPage />} />
             <Route path="applicants" element={<EmployerApplicantsPage />} />
+            <Route path="contracts" element={<EmployerContractsPage />} />
             <Route path="contracts/:contractId" element={<ContractPage role="EMPLOYER" />} />
             <Route path="messages" element={<MessagesPage role="employer" />} />
             <Route path="profile" element={<EmployerProfilePage />} />

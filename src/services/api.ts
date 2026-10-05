@@ -2097,12 +2097,17 @@ export type ContractPayment = {
   currency: string;
   status: string;
   paymentType: string;
+  provider?: string | null;
+  providerReference?: string | null;
   verifiedAt: string | null;
   createdAt: string;
 };
 
+export type EmployerContractStatus = 'PENDING' | 'ACTIVE' | 'IN_PROGRESS' | 'COMPLETED' | 'ENDED' | 'DISPUTED' | 'CANCELLED';
+
 export type ContractData = {
   id: string;
+  contractId?: string;
   applicationId: string;
   jobId: string;
   employerId: string;
@@ -2111,11 +2116,36 @@ export type ContractData = {
   status: string;
   startDate: string | null;
   expectedEndDate: string | null;
-  job: { id: string; title: string };
+  completedAt?: string | null;
+  endedAt?: string | null;
+  cancelledAt?: string | null;
+  job: { id: string; title: string; description?: string; jobType?: string; engagementType?: string };
+  application?: { id: string; status: string; createdAt: string } | null;
   employer: { id: string; firstName: string; lastName: string };
-  seeker: { id: string; firstName: string; lastName: string };
+  seeker: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    professionalTitle?: string | null;
+    profilePictureUrl?: string | null;
+  };
   createdAt: string;
   updatedAt: string;
+  funding?: {
+    projectAmount: string | null;
+    percentage: string | null;
+    feeAmount: string | null;
+    totalEmployerPayment: string | null;
+    seekerEntitlement: string | null;
+    currency: string;
+    fundedAmount: string | null;
+    escrowStatus: string | null;
+    paymentStatus: string | null;
+  } | null;
+  availableActions?: {
+    fund: boolean;
+    confirmCompletion: boolean;
+  };
   freelance: {
     id: string;
     agreedAmount: string;
@@ -2131,6 +2161,7 @@ export type ContractData = {
     completionSubmittedAt: string | null;
     completionNote: string | null;
     workStatus: string;
+    expectedCompletionDate?: string | null;
     escrow: {
       id: string;
       grossAmount: string;
@@ -2143,12 +2174,26 @@ export type ContractData = {
       status: string;
       fundedAt: string | null;
       releaseEligibleAt: string | null;
+      releasedAt?: string | null;
+      cancelledAt?: string | null;
       payments: ContractPayment[];
     } | null;
   } | null;
 };
 
 export type ContractResponse = { success: true; data: { contract: ContractData } };
+export type EmployerContractListResponse = {
+  success: true;
+  data: {
+    contracts: ContractData[];
+    pagination: {
+      page: number;
+      limit: number;
+      total: number;
+      totalPages: number;
+    };
+  };
+};
 export type ContractPaymentResponse = {
   success: true;
   data: {
@@ -2160,6 +2205,22 @@ export type ContractPaymentResponse = {
 
 export function getEmployerContract(contractId: string, token: string) {
   return request<ContractResponse>({ method: 'GET', endpoint: `/employer/contracts/${encodeURIComponent(contractId)}`, token });
+}
+
+export function getEmployerContracts(
+  token: string,
+  options: { page?: number; limit?: number; status?: EmployerContractStatus } = {},
+) {
+  const query = new URLSearchParams();
+  if (options.page !== undefined) query.set('page', String(options.page));
+  if (options.limit !== undefined) query.set('limit', String(options.limit));
+  if (options.status) query.set('status', options.status);
+  const search = query.toString();
+  return request<EmployerContractListResponse>({
+    method: 'GET',
+    endpoint: `/employer/contracts${search ? `?${search}` : ''}`,
+    token,
+  });
 }
 
 export function getAdminContract(contractId: string, token: string) {
