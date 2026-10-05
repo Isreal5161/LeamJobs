@@ -27,6 +27,7 @@ const primaryNav: Record<'seeker' | 'employer' | 'admin', { label: string; to: s
     { label: 'Jobs', to: '/employer/jobs' },
     { label: 'Candidates', to: '/employer/candidates' },
     { label: 'Applicants', to: '/employer/applicants' },
+    { label: 'Contracts', to: '/employer/contracts' },
     { label: 'Messages', to: '/employer/messages' },
   ],
   admin: [
@@ -50,6 +51,7 @@ const accountNav: Record<'seeker' | 'employer' | 'admin', { label: string; to: s
     { label: 'Career insights', to: '/seeker/premium-insights' },
   ],
   employer: [
+    { label: 'Contracts', to: '/employer/contracts' },
     { label: 'Company Profile', to: '/employer/profile' },
     { label: 'Verification', to: '/employer/verification' },
   ],
