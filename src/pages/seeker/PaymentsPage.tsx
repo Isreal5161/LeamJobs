@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react';
-import { FaArrowDown, FaCheckCircle, FaClock, FaMoneyBillWave, FaReceipt } from 'react-icons/fa';
+import { FaArrowDown, FaCheckCircle, FaClock, FaMoneyBillWave, FaReceipt, FaSearch } from 'react-icons/fa';
 import { useAuth } from '../../context/AuthContext';
 import {
   getSeekerPaymentSummary,
@@ -50,6 +50,11 @@ const formatPayoutCurrency = (capability: SeekerPayoutCapability) => {
     currencyName = undefined;
   }
   return `${flag ? `${flag} ` : ''}${capability.currency}${currencyName ? ` — ${currencyName}` : ''}`;
+};
+
+const normalizeCurrencyCode = (value: string | null | undefined) => {
+  const normalized = typeof value === 'string' ? value.trim().toUpperCase() : '';
+  return /^[A-Z]{3}$/.test(normalized) ? normalized : null;
 };
 
 const isCurrentCapabilityAccount = (
@@ -105,6 +110,7 @@ function PaymentsPage() {
   const [payoutBanks, setPayoutBanks] = useState<SeekerPayoutBank[]>([]);
   const [isLoadingPayoutBanks, setIsLoadingPayoutBanks] = useState(false);
   const [payoutBankError, setPayoutBankError] = useState('');
+  const [payoutBankSearch, setPayoutBankSearch] = useState('');
   const [payoutCapabilityError, setPayoutCapabilityError] = useState('');
   const [selectedPayoutAccountId, setSelectedPayoutAccountId] = useState('');
   const [profileCountry, setProfileCountry] = useState<string | null>(null);
@@ -134,7 +140,10 @@ function PaymentsPage() {
   const [isSavingPayout, setIsSavingPayout] = useState(false);
   const [payoutNotice, setPayoutNotice] = useState('');
   const payoutSettingsTriggerRef = useRef<HTMLButtonElement>(null);
-  const currency = summary?.currency ?? null;
+  const currency = normalizeCurrencyCode(summary?.currency);
+  const withdrawalCapability = currency
+    ? payoutCapabilities.find((capability) => normalizeCurrencyCode(capability.currency) === currency) ?? null
+    : null;
 
   const loadPaymentData = async () => {
     if (!token) {
@@ -156,7 +165,7 @@ function PaymentsPage() {
     if (accountsResult.ok) {
       const accounts = accountsResult.data.data.payoutAccounts;
       setPayoutAccounts(accounts);
-      const walletCurrency = summaryResult.ok ? summaryResult.data.data.currency : null;
+      const walletCurrency = summaryResult.ok ? normalizeCurrencyCode(summaryResult.data.data.currency) : null;
       const supportedCapabilities = capabilitiesResult.ok ? capabilitiesResult.data.data.capabilities : [];
       const eligibleAccounts = accounts.filter((account) => isAvailablePayoutAccount(account, supportedCapabilities)
         && account.currency === walletCurrency);
@@ -184,7 +193,7 @@ function PaymentsPage() {
   useEffect(() => { void loadPaymentData(); }, [token, retryKey]);
   useEffect(() => {
     const amountCents = decimalToCents(amount);
-    if (!token || !currency || !selectedPayoutAccountId || amountCents === null || amountCents <= 0n) {
+    if (!token || !currency || !withdrawalCapability || !selectedPayoutAccountId || amountCents === null || amountCents <= 0n) {
       setWithdrawalQuote(null);
       setIsLoadingWithdrawalQuote(false);
       setWithdrawalQuoteError('');
@@ -211,7 +220,7 @@ function PaymentsPage() {
       active = false;
       window.clearTimeout(timeout);
     };
-  }, [amount, currency, selectedPayoutAccountId, token, withdrawalQuoteRefreshKey]);
+  }, [amount, currency, selectedPayoutAccountId, token, withdrawalCapability, withdrawalQuoteRefreshKey]);
   useEffect(() => {
     if (!showConfirmation && !showPayoutSettings) return undefined;
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -254,8 +263,11 @@ function PaymentsPage() {
   const eligiblePayoutAccounts = availablePayoutAccounts.filter((account) => account.currency === currency);
   const selectedPayoutAccount = eligiblePayoutAccounts.find((account) => account.id === selectedPayoutAccountId) ?? null;
   const displayCurrency = currency;
-  const withdrawalCapability = payoutCapabilities.find((capability) => capability.currency === currency)
-    ?? (payoutCapabilities.length === 1 ? payoutCapabilities[0] : null);
+  const sortedPayoutBanks = [...payoutBanks].sort((left, right) => left.name.localeCompare(right.name, undefined, { sensitivity: 'base' }));
+  const normalizedBankSearch = payoutBankSearch.trim().toLocaleLowerCase();
+  const filteredPayoutBanks = sortedPayoutBanks.filter((bank) => !normalizedBankSearch
+    || bank.name.toLocaleLowerCase().includes(normalizedBankSearch)
+    || bank.code.toLocaleLowerCase().includes(normalizedBankSearch));
   const editingPayoutAccount = editingPayoutAccountId ? payoutAccounts.find((account) => account.id === editingPayoutAccountId) ?? null : null;
   const payoutCountry = editingPayoutAccount?.country ?? selectedPayoutCountry;
   const payoutCapability = payoutCapabilities.find((capability) => capability.country === payoutCountry) ?? null;
@@ -270,9 +282,20 @@ function PaymentsPage() {
     if (!amountCents || amountCents <= 0n) return 'Enter an amount greater than zero with no more than 2 decimal places.';
     if (!availableCents || amountCents > availableCents) return 'Your available balance is not sufficient for this withdrawal.';
     if (!currency) return 'Wallet currency is unavailable.';
+    if (!withdrawalCapability) return 'Withdrawals are not supported for this wallet currency.';
     return '';
   };
-  const withdrawalButtonReason = !currency ? 'Wallet currency is unavailable.' : !selectedPayoutAccount ? 'A payout account supported for your wallet currency is required.' : !amount.trim() ? 'Enter an amount to continue.' : !hasValidAmount ? 'Enter a valid amount within your available balance.' : '';
+  const withdrawalButtonReason = !currency
+    ? 'Wallet currency is unavailable.'
+    : !withdrawalCapability
+      ? 'Withdrawals are not supported for this wallet currency.'
+      : !selectedPayoutAccount
+        ? 'A payout account supported for your wallet currency is required.'
+        : !amount.trim()
+          ? 'Enter an amount to continue.'
+          : !hasValidAmount
+            ? 'Enter a valid amount within your available balance.'
+            : '';
   const openConfirmation = () => {
     const nextError = validateAmount();
     if (nextError) { setFormError(nextError); return; }
@@ -289,6 +312,7 @@ function PaymentsPage() {
     setEditingPayoutAccountId(account?.id ?? null);
     if (account) setSelectedPayoutCountry(account.country);
     setPayoutForm(emptyPayoutForm);
+    setPayoutBankSearch('');
     setPayoutFormError('');
     setPayoutNotice('');
     setShowPayoutSettings(true);
@@ -297,6 +321,7 @@ function PaymentsPage() {
     setShowPayoutSettings(false);
     setEditingPayoutAccountId(null);
     setPayoutForm(emptyPayoutForm);
+    setPayoutBankSearch('');
     setPayoutFormError('');
     setPayoutNotice('');
     window.setTimeout(() => payoutSettingsTriggerRef.current?.focus(), 0);
@@ -324,7 +349,7 @@ function PaymentsPage() {
     }
     const payload = {
       country: payoutCapability.country,
-      bankCode: payoutForm.bankCode.trim(),
+      bankCode: payoutForm.bankCode,
       accountNumber: payoutForm.accountNumber.trim(),
     };
     const result = editingPayoutAccountId
@@ -369,7 +394,7 @@ function PaymentsPage() {
     setPayoutNotice('Default payout account updated.');
   };
   const submitWithdrawal = async () => {
-    if (!token || !selectedPayoutAccount || !hasValidAmount || !currency || !withdrawalQuote || isSubmitting) return;
+    if (!token || !selectedPayoutAccount || !hasValidAmount || !currency || !withdrawalCapability || !withdrawalQuote || isSubmitting) return;
     const idempotencyKey = globalThis.crypto?.randomUUID?.();
     if (!idempotencyKey) { setFormError('This browser cannot securely create a withdrawal request key.'); return; }
     setIsSubmitting(true); setFormError(''); setNotice('');
@@ -444,13 +469,13 @@ function PaymentsPage() {
     {notice && <p className="payment-notice" role="status">{notice}</p>}
     <main className="payment-content-grid">
       <section className="payment-panel payment-panel--withdrawal" aria-labelledby="withdrawal-heading">
-        <div className="payment-heading"><div><span><FaArrowDown aria-hidden="true" /> Withdraw balance</span><h2 id="withdrawal-heading">Request a payout</h2></div><button type="button" className="payment-heading-action" onClick={openConfirmation} disabled={!hasValidAmount || !selectedPayoutAccount || isSubmitting}>Withdraw</button></div>
+        <div className="payment-heading"><div><span><FaArrowDown aria-hidden="true" /> Withdraw balance</span><h2 id="withdrawal-heading">Request a payout</h2></div><button type="button" className="payment-heading-action" onClick={openConfirmation} disabled={!currency || !withdrawalCapability || !hasValidAmount || !selectedPayoutAccount || isSubmitting}>Withdraw</button></div>
         <div className="payment-withdraw-box">
           <div className="payment-withdrawal-currency">
             <span>Withdrawal currency</span>
-            <strong>{withdrawalCapability ? formatPayoutCurrency(withdrawalCapability) : payoutCapabilityError ? 'Currency unavailable' : 'No supported withdrawal currency'}</strong>
+            <strong>{!currency || payoutCapabilityError ? 'Currency unavailable' : withdrawalCapability ? formatPayoutCurrency(withdrawalCapability) : 'Withdrawals unavailable for this wallet currency'}</strong>
             {!currency ? <small>Wallet currency unavailable. Withdrawals cannot be requested until it is available.</small>
-              : withdrawalCapability && withdrawalCapability.currency !== currency ? <small>Your wallet currency does not match the supported payout currency.</small> : null}
+              : !withdrawalCapability ? <small>There is no enabled payout capability for this wallet currency.</small> : null}
           </div>
           <div className="payment-balance-line"><span>Available to withdraw</span><strong>{formatMoney(summary?.availableBalance, displayCurrency)}</strong></div>
           <label htmlFor="withdrawal-amount">Amount<input id="withdrawal-amount" type="text" inputMode="decimal" value={amount} onChange={(event) => { setAmount(event.target.value); setFormError(''); }} placeholder="0.00" aria-invalid={Boolean(formError)} aria-describedby="withdrawal-help withdrawal-error" disabled={isSubmitting} /></label>
@@ -468,7 +493,7 @@ function PaymentsPage() {
           {!sectionErrors.accounts && eligiblePayoutAccounts.length === 0 && <p className="payment-copy">No payout account matching your wallet currency is ready. Add one of the supported payout destinations below.</p>}
           {formError && <p id="withdrawal-error" className="payment-copy payment-copy--error" role="alert">{formError}</p>}
           {!formError && withdrawalButtonReason && <p className="payment-copy">{withdrawalButtonReason}</p>}
-          <button type="button" onClick={openConfirmation} disabled={!hasValidAmount || !selectedPayoutAccount || !withdrawalQuote || isLoadingWithdrawalQuote || isSubmitting}>{isSubmitting ? 'Submitting withdrawal...' : 'Review withdrawal'}</button>
+          <button type="button" onClick={openConfirmation} disabled={!currency || !withdrawalCapability || !hasValidAmount || !selectedPayoutAccount || !withdrawalQuote || isLoadingWithdrawalQuote || isSubmitting}>{isSubmitting ? 'Submitting withdrawal...' : 'Review withdrawal'}</button>
         </div>
       </section>
       <section className="payment-panel" aria-labelledby="account-heading">
@@ -557,14 +582,58 @@ function PaymentsPage() {
           ) : (
             <form className="payment-payout-form" onSubmit={handleSavePayoutDetails} aria-busy={isSavingPayout}>
               <div className="payment-withdraw-box">
-                <label htmlFor="payout-country">Destination country<select id="payout-country" value={payoutCountry ?? ''} onChange={(event) => { setSelectedPayoutCountry(event.target.value); setPayoutForm(emptyPayoutForm); setPayoutFormError(''); }} disabled={isSavingPayout || Boolean(editingPayoutAccountId)}><option value="">Select a supported destination</option>{payoutCapabilities.map((capability) => <option key={capability.countryCode} value={capability.country}>{capability.country}</option>)}</select></label>
+                <label htmlFor="payout-country">Destination country<select id="payout-country" value={payoutCountry ?? ''} onChange={(event) => { setSelectedPayoutCountry(event.target.value); setPayoutForm(emptyPayoutForm); setPayoutBankSearch(''); setPayoutFormError(''); }} disabled={isSavingPayout || Boolean(editingPayoutAccountId)}><option value="">Select a supported destination</option>{payoutCapabilities.map((capability) => <option key={capability.countryCode} value={capability.country}>{capability.country}</option>)}</select></label>
                 <div className="payment-balance-line"><span>Country</span><strong>{payoutCountry}</strong></div>
                 <div className="payment-balance-line"><span>Payout method</span><strong>{payoutCapability.provider} bank account</strong></div>
                 <div className="payment-balance-line"><span>Currency</span><strong>{payoutCapability.currency}</strong></div>
                 {supportsBankAccount ? (
                   <>
-                <label htmlFor="payout-bank-code">Bank<select id="payout-bank-code" value={payoutForm.bankCode} onChange={(event) => { setPayoutForm((current) => ({ ...current, bankCode: event.target.value })); setPayoutFormError(''); }} disabled={isSavingPayout || isLoadingPayoutBanks || payoutBanks.length === 0}><option value="">{isLoadingPayoutBanks ? 'Loading banks…' : 'Select your bank'}</option>{payoutBanks.map((bank) => <option value={bank.code} key={bank.code}>{bank.name}</option>)}</select></label>
-                {payoutBankError ? <p className="payment-copy payment-copy--error" role="alert">{payoutBankError}</p> : null}
+                <div className="payment-bank-selector">
+                  <label htmlFor="payout-bank-search">Bank</label>
+                  <div className="payment-bank-search">
+                    <FaSearch aria-hidden="true" />
+                    <input
+                      id="payout-bank-search"
+                      type="search"
+                      value={payoutBankSearch}
+                      onChange={(event) => {
+                        setPayoutBankSearch(event.target.value);
+                        setPayoutForm((current) => ({ ...current, bankCode: '' }));
+                        setPayoutFormError('');
+                      }}
+                      placeholder="Search Nigerian banks..."
+                      autoComplete="off"
+                      disabled={isSavingPayout || isLoadingPayoutBanks || Boolean(payoutBankError) || payoutBanks.length === 0}
+                    />
+                  </div>
+                  <label htmlFor="payout-bank-code">Select bank</label>
+                  <select
+                    id="payout-bank-code"
+                    value={payoutForm.bankCode}
+                    onChange={(event) => {
+                      setPayoutForm((current) => ({ ...current, bankCode: event.target.value }));
+                      setPayoutFormError('');
+                    }}
+                    disabled={isSavingPayout || isLoadingPayoutBanks || Boolean(payoutBankError) || filteredPayoutBanks.length === 0}
+                  >
+                    <option value="">
+                      {isLoadingPayoutBanks
+                        ? 'Loading banks…'
+                        : payoutBankError
+                          ? 'Bank list unavailable'
+                          : payoutBanks.length === 0
+                            ? 'No banks are currently available'
+                            : normalizedBankSearch && filteredPayoutBanks.length === 0
+                              ? 'No banks found'
+                              : 'Select your bank'}
+                    </option>
+                    {filteredPayoutBanks.map((bank) => <option value={bank.code} key={bank.code}>{bank.name}</option>)}
+                  </select>
+                  {isLoadingPayoutBanks ? <p className="payment-copy" role="status">Loading supported banks…</p> : null}
+                  {payoutBankError ? <p className="payment-copy payment-copy--error" role="alert">{payoutBankError}</p> : null}
+                  {!isLoadingPayoutBanks && !payoutBankError && payoutBanks.length === 0 ? <p className="payment-copy" role="status">No banks are currently available.</p> : null}
+                  {!isLoadingPayoutBanks && !payoutBankError && payoutBanks.length > 0 && normalizedBankSearch && filteredPayoutBanks.length === 0 ? <p className="payment-copy" role="status">No banks found</p> : null}
+                </div>
                 <p className="payment-copy">Flutterwave will verify the account details and use the verified account name.</p>
                     <label htmlFor="payout-account-number">Account number{editingPayoutAccountId ? <small>Re-enter to replace the masked account ending {editingPayoutAccount?.accountNumberLast4}</small> : null}<input id="payout-account-number" inputMode="numeric" value={payoutForm.accountNumber} onChange={(event) => { setPayoutForm((current) => ({ ...current, accountNumber: event.target.value })); setPayoutFormError(''); }} disabled={isSavingPayout} /></label>
                   </>
