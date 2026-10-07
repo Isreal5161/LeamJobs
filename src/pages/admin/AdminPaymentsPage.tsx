@@ -1,11 +1,13 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { FaCheckCircle, FaChevronDown, FaCoins, FaEye, FaFilter, FaLock, FaSearch, FaTimes } from 'react-icons/fa';
 import { useAuth } from '../../context/AuthContext';
 import {
   getAdminAnalytics,
   getAdminPayments,
+  getAdminPlatformFee,
   getAdminReleaseCandidates,
   releaseAdminContract,
+  updateAdminPlatformFee,
   type AdminAnalytics,
   type AdminPayment,
   type AdminPaymentProvider,
@@ -57,6 +59,35 @@ function AdminPaymentsPage() {
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
   const [released, setReleased] = useState<{ candidate: AdminReleaseCandidate; result: { releasedAmount: string; currency: string; status: string; releasedAt: string } } | null>(null);
+  const [feeSettings, setFeeSettings] = useState({ percentage: '', withdrawalPercentage: '' });
+  const [feeSettingsLoading, setFeeSettingsLoading] = useState(true);
+  const [feeSettingsSaving, setFeeSettingsSaving] = useState(false);
+  const [feeSettingsError, setFeeSettingsError] = useState('');
+  const [feeSettingsNotice, setFeeSettingsNotice] = useState('');
+
+  useEffect(() => {
+    if (!token) {
+      setFeeSettingsLoading(false);
+      setFeeSettingsError('Your session could not be loaded. Please sign in again.');
+      return undefined;
+    }
+    let active = true;
+    setFeeSettingsLoading(true);
+    void getAdminPlatformFee(token).then((result) => {
+      if (!active) return;
+      if (result.ok) {
+        setFeeSettings({
+          percentage: result.data.data.configuration.percentage,
+          withdrawalPercentage: result.data.data.configuration.withdrawalPercentage,
+        });
+        setFeeSettingsError('');
+      } else {
+        setFeeSettingsError(result.error.message || 'Fee settings could not be loaded.');
+      }
+      setFeeSettingsLoading(false);
+    });
+    return () => { active = false; };
+  }, [token]);
 
   useEffect(() => {
     if (!token) return;
@@ -110,6 +141,33 @@ function AdminPaymentsPage() {
   const clearFilters = () => {
     setDraftFilters(emptyFilters);
     setPaymentFilters(emptyFilters);
+  };
+
+  const saveFeeSettings = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!token || feeSettingsSaving) return;
+    const percentagePattern = /^(?:100(?:\.0{1,2})?|(?:\d|[1-9]\d)(?:\.\d{1,2})?)$/;
+    if (!percentagePattern.test(feeSettings.percentage.trim()) || !percentagePattern.test(feeSettings.withdrawalPercentage.trim())) {
+      setFeeSettingsError('Enter percentages from 0 to 100 with no more than 2 decimal places.');
+      return;
+    }
+    setFeeSettingsSaving(true);
+    setFeeSettingsError('');
+    setFeeSettingsNotice('');
+    const result = await updateAdminPlatformFee({
+      percentage: feeSettings.percentage.trim(),
+      withdrawalPercentage: feeSettings.withdrawalPercentage.trim(),
+    }, token);
+    if (!result.ok) {
+      setFeeSettingsError(result.error.message || 'Fee settings could not be saved.');
+    } else {
+      setFeeSettings({
+        percentage: result.data.data.configuration.percentage,
+        withdrawalPercentage: result.data.data.configuration.withdrawalPercentage,
+      });
+      setFeeSettingsNotice('Fee settings saved. Existing contract funding terms remain unchanged.');
+    }
+    setFeeSettingsSaving(false);
   };
 
   const closePaymentDetails = () => {
@@ -204,6 +262,18 @@ function AdminPaymentsPage() {
         {!analyticsLoading && !analyticsError ? <div className="payment-stat-grid">
           {overviewCards.map((card) => <article className={`payment-stat-card payment-stat-card--${card.tone}`} key={card.title}><span className="payment-stat-card__icon" aria-hidden="true"><FaCoins /></span><div><span>{card.title}</span><strong>{metricValue(card.value)}</strong><small>Selected analytics period · currency-separated</small></div></article>)}
         </div> : null}
+      </section>
+
+      <section className="payment-panel" aria-labelledby="platform-fees-title" aria-busy={feeSettingsLoading || feeSettingsSaving}>
+        <div className="payment-heading"><div><span><FaCoins /> Fee configuration</span><h2 id="platform-fees-title">Platform charges</h2></div></div>
+        <p className="payment-copy">These percentages are authoritative for new operations. Previously created contract funding snapshots are not repriced.</p>
+        {feeSettingsLoading ? <div className="payment-fee-settings-skeleton" role="status">Loading fee settings…</div> : null}
+        {!feeSettingsLoading && feeSettingsError && !feeSettings.percentage ? <p className="payment-copy payment-copy--error" role="alert">{feeSettingsError} <button type="button" className="payment-filter-clear" onClick={() => { if (!token) return; setFeeSettingsError(''); setFeeSettingsLoading(true); void getAdminPlatformFee(token).then((result) => { if (result.ok) setFeeSettings({ percentage: result.data.data.configuration.percentage, withdrawalPercentage: result.data.data.configuration.withdrawalPercentage }); else setFeeSettingsError(result.error.message || 'Fee settings could not be loaded.'); setFeeSettingsLoading(false); }); }}>Retry</button></p> : null}
+        {!feeSettingsLoading && feeSettings.percentage ? <form className="admin-fee-settings" onSubmit={(event) => void saveFeeSettings(event)}>
+          <label><span>Employer project funding charge</span><div><input type="number" min="0" max="100" step="0.01" inputMode="decimal" value={feeSettings.percentage} onChange={(event) => setFeeSettings((current) => ({ ...current, percentage: event.target.value }))} disabled={feeSettingsSaving} required /><span>%</span></div><small>Additive charge on top of the project amount.</small></label>
+          <label><span>Seeker withdrawal charge</span><div><input type="number" min="0" max="100" step="0.01" inputMode="decimal" value={feeSettings.withdrawalPercentage} onChange={(event) => setFeeSettings((current) => ({ ...current, withdrawalPercentage: event.target.value }))} disabled={feeSettingsSaving} required /><span>%</span></div><small>Deducted from the requested withdrawal; the net amount is paid to the seeker.</small></label>
+          <div className="admin-fee-settings__actions"><button type="submit" className="payment-heading-action" disabled={feeSettingsSaving}>{feeSettingsSaving ? 'Saving…' : 'Save fee settings'}</button>{feeSettingsError ? <p className="payment-copy payment-copy--error" role="alert">{feeSettingsError}</p> : null}{feeSettingsNotice ? <p className="payment-notice" role="status">{feeSettingsNotice}</p> : null}</div>
+        </form> : null}
       </section>
 
       <section className="payment-panel payment-history-panel" aria-labelledby="payment-history-title">

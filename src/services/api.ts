@@ -1712,6 +1712,27 @@ export type AdminPaymentsQuery = {
 
 export type AdminPaymentsResponse = { success: true; data: { items: AdminPayment[]; nextCursor: string | null } };
 
+export type AdminPlatformFeeConfiguration = {
+  key: string;
+  percentage: string;
+  withdrawalPercentage: string;
+  isActive: boolean;
+  updatedAt: string;
+};
+
+export type AdminPlatformFeeResponse = {
+  success: true;
+  data: { configuration: AdminPlatformFeeConfiguration };
+};
+
+export function getAdminPlatformFee(token: string) {
+  return request<AdminPlatformFeeResponse>({ method: 'GET', endpoint: '/admin/platform-fee', token });
+}
+
+export function updateAdminPlatformFee(payload: { percentage?: string; withdrawalPercentage?: string }, token: string) {
+  return request<AdminPlatformFeeResponse>({ method: 'PATCH', endpoint: '/admin/platform-fee', body: payload, token });
+}
+
 export function getAdminPayments(token: string, query: AdminPaymentsQuery = {}) {
   const params = new URLSearchParams();
   if (query.limit !== undefined) params.set('limit', String(query.limit));
@@ -2758,6 +2779,9 @@ export type SeekerTransactionItem = {
 export type SeekerWithdrawalItem = {
   id: string;
   amount: string;
+  withdrawalFeePercentage: string;
+  withdrawalFeeAmount: string;
+  payoutAmount: string;
   currency: string;
   status: string;
   requestedAt: string;
@@ -2803,7 +2827,8 @@ export type SeekerPayoutAccount = {
   isDefault: boolean;
   verifiedAt: string | null;
   verified: boolean;
-  status: 'ACTIVE' | 'PENDING_VERIFICATION' | 'DISABLED' | string;
+  withdrawalSupported: boolean;
+  status: 'ACTIVE' | 'SUPPORTED_FOR_PAYOUT' | 'PENDING_VERIFICATION' | 'DISABLED' | string;
 };
 
 export type SeekerPayoutAccountsResponse = {
@@ -2811,14 +2836,43 @@ export type SeekerPayoutAccountsResponse = {
   data: { payoutAccounts: SeekerPayoutAccount[] };
 };
 
+export type SeekerPayoutBank = {
+  code: string;
+  name: string;
+};
+
+export type SeekerPayoutCapability = {
+  country: string;
+  countryCode: string;
+  currency: string;
+  provider: string;
+  payoutMethod: string;
+  verificationMethod: string;
+  verifiedBeforeWithdrawal: boolean;
+  bankListAvailable: boolean;
+  requiredFields: string[];
+};
+
+export function getSeekerPayoutCapabilities(token: string) {
+  return request<{ success: true; data: { capabilities: SeekerPayoutCapability[] } }>({
+    method: 'GET',
+    endpoint: '/seeker/payout-accounts/capabilities',
+    token,
+  });
+}
+
+export function getSeekerPayoutBanks(countryCode: string, token: string) {
+  return request<{ success: true; data: { banks: SeekerPayoutBank[] } }>({
+    method: 'GET',
+    endpoint: `/seeker/payout-accounts/banks?country=${encodeURIComponent(countryCode)}`,
+    token,
+  });
+}
+
 export type CreateSeekerPayoutAccountPayload = {
   country: string;
-  accountHolderName: string;
-  bankName?: string;
   bankCode?: string;
   accountNumber?: string;
-  payoutIdentifier?: string;
-  currency?: string;
   isDefault?: boolean;
 };
 
@@ -2830,14 +2884,34 @@ export type SeekerPayoutAccountResponse = {
 };
 
 export type SeekerWithdrawalRequest = {
-  amount: string;
-  currency: string;
-  payoutAccountId: string;
+  quoteReference: string;
 };
+
+export type SeekerWithdrawalQuote = {
+  amount: string;
+  withdrawalFeePercentage: string;
+  withdrawalFeeAmount: string;
+  payoutAmount: string;
+  currency: string;
+  quoteReference: string;
+  expiresAt: string;
+};
+
+export function getSeekerWithdrawalQuote(amount: string, currency: string, payoutAccountId: string, token: string) {
+  const params = new URLSearchParams({ amount, currency, payoutAccountId });
+  return request<{ success: true; data: { withdrawalQuote: SeekerWithdrawalQuote } }>({
+    method: 'GET',
+    endpoint: `/seeker/payments/withdrawal-quote?${params.toString()}`,
+    token,
+  });
+}
 
 export type SeekerWithdrawal = {
   id: string;
   amount: string;
+  withdrawalFeePercentage: string;
+  withdrawalFeeAmount: string;
+  payoutAmount: string;
   currency: string;
   status: 'PENDING' | 'PROCESSING' | 'SUCCESSFUL' | 'FAILED' | 'CANCELLED' | string;
   requestedAt: string;
