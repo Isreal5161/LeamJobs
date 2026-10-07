@@ -39,6 +39,9 @@
 .payment-withdraw-box p { margin: 0; color: #64748b; font-size: .8rem; }
 .payment-balance-line { display: flex; justify-content: space-between; gap: .75rem; padding-bottom: .65rem; border-bottom: 1px solid #dbe3ee; color: #64748b; font-size: .8rem; }
 .payment-balance-line strong { color: #172033; font-size: 1.1rem; }
+.payment-withdrawal-currency { display: grid; gap: .25rem; padding: .8rem .9rem; border: 1px solid rgba(50,47,106,.16); border-left: 3px solid #EF5036; border-radius: 8px; background: #fff8f5; color: #64748b; font-size: .8rem; }
+.payment-withdrawal-currency strong { color: #322F6A; font-size: 1rem; }
+.payment-withdrawal-currency small { color: #64748b; line-height: 1.45; }
 .payment-actions { display: flex; gap: .45rem; flex-wrap: wrap; }
 .payment-button-secondary { background: #eef2f7 !important; color: #334155 !important; }
 .payment-modal-backdrop { position: fixed; inset: 0; z-index: 50; display: grid; place-items: center; padding: 1rem; background: rgba(15,23,42,.35); }
@@ -62,7 +65,15 @@
 .payment-status--pending, .payment-status--processing { background: #fff2d8; color: #b76b00; }
 .payment-status--failed, .payment-status--cancelled { background: #fff1f2; color: #b91c1c; }
 .payment-account-list { display: grid; gap: .65rem; }
+.payment-account-groups { display: grid; gap: 1rem; }
+.payment-account-group { display: grid; gap: .65rem; }
+.payment-account-group__heading { display: grid; gap: .2rem; }
+.payment-account-group__heading h3 { margin: 0; color: #322F6A; font-size: .95rem; }
+.payment-account-group__heading p { margin: 0; color: #64748b; font-size: .8rem; line-height: 1.45; }
 .payment-account { display: flex; justify-content: space-between; align-items: center; gap: .75rem; padding: .85rem; border: 1px solid #e1e8f1; border-radius: 8px; }
+.payment-account--available { border-color: rgba(50,47,106,.2); background: #fff; }
+.payment-account--historical { background: #f8fafc; }
+.payment-account-group--historical { padding-top: .9rem; border-top: 1px solid #e1e8f1; }
 .payment-account strong { color: #334155; font-size: .88rem; }
 .payment-account p { margin: .2rem 0 0; color: #64748b; font-size: .8rem; }
 .payment-account__actions { display: grid; justify-items: end; gap: .45rem; }

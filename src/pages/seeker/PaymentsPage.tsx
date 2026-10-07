@@ -26,15 +26,49 @@ import {
 } from '../../services/api';
 
 const formatMoney = (amount: string | null | undefined, currency: string | null | undefined) => {
-  if (!currency) return '-';
+  if (!currency) return 'Currency unavailable';
   const numericAmount = Number(amount ?? 0);
-  if (!Number.isFinite(numericAmount)) return '-';
+  if (!Number.isFinite(numericAmount)) return 'Amount unavailable';
   try {
     return new Intl.NumberFormat(undefined, { style: 'currency', currency }).format(numericAmount);
   } catch {
     return `${currency} ${numericAmount.toFixed(2)}`;
   }
 };
+
+const formatPayoutCurrency = (capability: SeekerPayoutCapability) => {
+  const countryCode = capability.countryCode.toUpperCase();
+  const flag = /^[A-Z]{2}$/.test(countryCode)
+    ? String.fromCodePoint(...Array.from(countryCode, (letter) => letter.charCodeAt(0) + 127397))
+    : '';
+  let currencyName: string | undefined;
+  try {
+    currencyName = new Intl.DisplayNames(undefined, { type: 'currency' })
+      .of(capability.currency)
+      ?.replace(/\b\w/g, (letter) => letter.toUpperCase());
+  } catch {
+    currencyName = undefined;
+  }
+  return `${flag ? `${flag} ` : ''}${capability.currency}${currencyName ? ` — ${currencyName}` : ''}`;
+};
+
+const isCurrentCapabilityAccount = (
+  account: SeekerPayoutAccount,
+  capabilities: SeekerPayoutCapability[],
+) => capabilities.some((capability) => (
+  capability.country === account.country
+  && capability.currency === account.currency
+  && capability.provider === account.provider
+  && capability.payoutMethod === account.payoutMethod
+));
+
+const isAvailablePayoutAccount = (
+  account: SeekerPayoutAccount,
+  capabilities: SeekerPayoutCapability[],
+) => account.withdrawalSupported
+  && account.verified
+  && account.status !== 'DISABLED'
+  && isCurrentCapabilityAccount(account, capabilities);
 
 const formatDate = (value: string | null | undefined) => {
   if (!value) return 'Not available';
@@ -123,9 +157,9 @@ function PaymentsPage() {
       const accounts = accountsResult.data.data.payoutAccounts;
       setPayoutAccounts(accounts);
       const walletCurrency = summaryResult.ok ? summaryResult.data.data.currency : null;
-      const eligibleAccounts = accounts.filter((account) => account.withdrawalSupported
-        && account.currency === walletCurrency
-        && account.status !== 'DISABLED');
+      const supportedCapabilities = capabilitiesResult.ok ? capabilitiesResult.data.data.capabilities : [];
+      const eligibleAccounts = accounts.filter((account) => isAvailablePayoutAccount(account, supportedCapabilities)
+        && account.currency === walletCurrency);
       setSelectedPayoutAccountId((current) => current && eligibleAccounts.some((account) => account.id === current)
         ? current
         : eligibleAccounts.find((account) => account.isDefault)?.id ?? eligibleAccounts[0]?.id ?? '');
@@ -214,11 +248,14 @@ function PaymentsPage() {
     return () => { active = false; };
   }, [editingPayoutAccountId, payoutAccounts, payoutCapabilities, selectedPayoutCountry, showPayoutSettings, token]);
 
-  const eligiblePayoutAccounts = payoutAccounts.filter((account) => account.withdrawalSupported
-    && account.currency === currency
-    && account.status !== 'DISABLED');
+  const availablePayoutAccounts = payoutAccounts.filter((account) => isAvailablePayoutAccount(account, payoutCapabilities));
+  const availablePayoutAccountIds = new Set(availablePayoutAccounts.map((account) => account.id));
+  const historicalPayoutAccounts = payoutAccounts.filter((account) => !availablePayoutAccountIds.has(account.id));
+  const eligiblePayoutAccounts = availablePayoutAccounts.filter((account) => account.currency === currency);
   const selectedPayoutAccount = eligiblePayoutAccounts.find((account) => account.id === selectedPayoutAccountId) ?? null;
   const displayCurrency = currency;
+  const withdrawalCapability = payoutCapabilities.find((capability) => capability.currency === currency)
+    ?? (payoutCapabilities.length === 1 ? payoutCapabilities[0] : null);
   const editingPayoutAccount = editingPayoutAccountId ? payoutAccounts.find((account) => account.id === editingPayoutAccountId) ?? null : null;
   const payoutCountry = editingPayoutAccount?.country ?? selectedPayoutCountry;
   const payoutCapability = payoutCapabilities.find((capability) => capability.country === payoutCountry) ?? null;
@@ -409,10 +446,16 @@ function PaymentsPage() {
       <section className="payment-panel payment-panel--withdrawal" aria-labelledby="withdrawal-heading">
         <div className="payment-heading"><div><span><FaArrowDown aria-hidden="true" /> Withdraw balance</span><h2 id="withdrawal-heading">Request a payout</h2></div><button type="button" className="payment-heading-action" onClick={openConfirmation} disabled={!hasValidAmount || !selectedPayoutAccount || isSubmitting}>Withdraw</button></div>
         <div className="payment-withdraw-box">
+          <div className="payment-withdrawal-currency">
+            <span>Withdrawal currency</span>
+            <strong>{withdrawalCapability ? formatPayoutCurrency(withdrawalCapability) : payoutCapabilityError ? 'Currency unavailable' : 'No supported withdrawal currency'}</strong>
+            {!currency ? <small>Wallet currency unavailable. Withdrawals cannot be requested until it is available.</small>
+              : withdrawalCapability && withdrawalCapability.currency !== currency ? <small>Your wallet currency does not match the supported payout currency.</small> : null}
+          </div>
           <div className="payment-balance-line"><span>Available to withdraw</span><strong>{formatMoney(summary?.availableBalance, displayCurrency)}</strong></div>
           <label htmlFor="withdrawal-amount">Amount<input id="withdrawal-amount" type="text" inputMode="decimal" value={amount} onChange={(event) => { setAmount(event.target.value); setFormError(''); }} placeholder="0.00" aria-invalid={Boolean(formError)} aria-describedby="withdrawal-help withdrawal-error" disabled={isSubmitting} /></label>
-          <label htmlFor="payout-account">Payout account<select id="payout-account" value={selectedPayoutAccountId} onChange={(event) => setSelectedPayoutAccountId(event.target.value)} disabled={isSubmitting || eligiblePayoutAccounts.length === 0}><option value="">Select an eligible account</option>{eligiblePayoutAccounts.map((account) => <option value={account.id} key={account.id}>{account.country} · {account.currency} · {account.accountName} •••• {account.accountNumberLast4}{account.isDefault ? ' (Default)' : ''}</option>)}</select></label>
-          <p id="withdrawal-help">Currency: {currency ?? 'Unavailable'}. The amount will be reserved and remain pending processing.</p>
+          <label htmlFor="payout-account">Payout account<select id="payout-account" value={selectedPayoutAccountId} onChange={(event) => setSelectedPayoutAccountId(event.target.value)} disabled={isSubmitting || eligiblePayoutAccounts.length === 0}><option value="">Select a verified payout account</option>{eligiblePayoutAccounts.map((account) => <option value={account.id} key={account.id}>{account.bankName || 'Bank name unavailable'} · {account.maskedAccountNumber || `••••${account.accountNumberLast4}`} · Verified{account.isDefault ? ' (Default)' : ''}</option>)}</select></label>
+          <p id="withdrawal-help">{currency ? `Wallet currency: ${currency}. The amount will be reserved and remain pending processing.` : 'Wallet currency unavailable. The amount cannot be submitted for withdrawal.'}</p>
           {isLoadingWithdrawalQuote ? <p className="payment-copy" role="status">Calculating withdrawal charge…</p> : null}
           {withdrawalQuoteError ? <p className="payment-copy payment-copy--error" role="alert">{withdrawalQuoteError}</p> : null}
           {withdrawalQuote ? <div className="payment-withdrawal-quote" aria-live="polite">
@@ -430,20 +473,68 @@ function PaymentsPage() {
       </section>
       <section className="payment-panel" aria-labelledby="account-heading">
         <div className="payment-heading"><div><span><FaCheckCircle aria-hidden="true" /> Payout account</span><h2 id="account-heading">Where withdrawals go</h2></div><button ref={payoutSettingsTriggerRef} type="button" className="payment-heading-action" onClick={() => openPayoutSettings()}>Payout Settings</button></div>
-        <SectionState error={sectionErrors.accounts} empty="No payout accounts have been added."><div className="payment-account-list">{payoutAccounts.length > 0 ? payoutAccounts.map((account) => {
-          const isLegacyPaystackAccount = account.provider === 'PAYSTACK';
-          const statusText = isLegacyPaystackAccount
-            ? 'Legacy Paystack · update to reverify'
-            : account.verified && account.withdrawalSupported
-              ? 'Verified and ready for withdrawals'
-              : account.status === 'SUPPORTED_FOR_PAYOUT'
-                ? 'Supported for Flutterwave payout · validation during transfer'
-                : account.status === 'DISABLED'
-                  ? 'Disabled'
-                  : 'Not supported for withdrawals';
-          const statusModifier = account.withdrawalSupported && !isLegacyPaystackAccount ? 'verified' : account.status === 'DISABLED' ? 'disabled' : 'pending';
-          return <article className="payment-account" key={account.id}><div><strong>{account.accountName}</strong><p>{account.country} · {account.currency} · {account.maskedAccountNumber}</p><p>{account.bankName || 'Bank account'}</p></div><div className="payment-account__actions"><span className={`payment-status payment-status--${statusModifier}`}>{statusText}{account.isDefault ? ' · Default' : ''}</span><div className="payment-account__buttons">{canEditPayoutAccount(account) ? <button type="button" className="payment-account__action" onClick={() => openPayoutSettings(account)}>Edit</button> : null}{account.withdrawalSupported && !account.isDefault && account.status !== 'DISABLED' ? <button type="button" className="payment-account__action" onClick={() => setDefaultPayoutAccount(account.id)} disabled={isSavingPayout}>Make default</button> : null}</div></div></article>;
-        }) : <p className="payment-copy">Add payout details to receive eligible withdrawals.</p>}</div></SectionState>
+        <SectionState error={sectionErrors.accounts} empty="No payout accounts have been added.">
+          <div className="payment-account-groups">
+            <section className="payment-account-group" aria-labelledby="available-payout-accounts-heading">
+              <div className="payment-account-group__heading">
+                <h3 id="available-payout-accounts-heading">Available payout accounts</h3>
+                <p>Verified accounts supported for current withdrawals.</p>
+              </div>
+              <div className="payment-account-list">
+                {availablePayoutAccounts.length > 0 ? availablePayoutAccounts.map((account) => (
+                  <article className="payment-account payment-account--available" key={account.id}>
+                    <div>
+                      <strong>{account.bankName || 'Bank name unavailable'}</strong>
+                      <p>{account.maskedAccountNumber || `••••${account.accountNumberLast4}`}</p>
+                      <p>{account.accountName} · {account.provider} · {account.country || 'Country unavailable'} · {account.currency || 'Currency unavailable'}</p>
+                    </div>
+                    <div className="payment-account__actions">
+                      <span className="payment-status payment-status--verified">Verified · Ready for withdrawal{account.isDefault ? ' · Default' : ''}</span>
+                      <div className="payment-account__buttons">
+                        <button type="button" className="payment-account__action" onClick={() => openPayoutSettings(account)}>Edit</button>
+                        {!account.isDefault ? <button type="button" className="payment-account__action" onClick={() => setDefaultPayoutAccount(account.id)} disabled={isSavingPayout}>Make default</button> : null}
+                      </div>
+                    </div>
+                  </article>
+                )) : <p className="payment-copy">No verified payout accounts are available for the current withdrawal capability.</p>}
+              </div>
+            </section>
+            {historicalPayoutAccounts.length > 0 ? (
+              <section className="payment-account-group payment-account-group--historical" aria-labelledby="historical-payout-accounts-heading">
+                <div className="payment-account-group__heading">
+                  <h3 id="historical-payout-accounts-heading">Historical / unsupported accounts</h3>
+                  <p>Preserved for your records; these accounts are not available for withdrawals.</p>
+                </div>
+                <div className="payment-account-list">
+                  {historicalPayoutAccounts.map((account) => {
+                    const verificationRequired = account.status === 'PENDING_VERIFICATION' || !account.verified;
+                    const statusText = verificationRequired
+                      ? 'Verification required · Not available for withdrawals'
+                      : account.status === 'DISABLED'
+                        ? 'Disabled · Not available for withdrawals'
+                        : 'Not available for withdrawals';
+                    const isLegacyPaystackAccount = account.provider === 'PAYSTACK';
+                    return (
+                      <article className="payment-account payment-account--historical" key={account.id}>
+                        <div>
+                          <strong>{account.bankName || 'Bank name unavailable'}</strong>
+                          <p>{account.maskedAccountNumber || `••••${account.accountNumberLast4}`}</p>
+                          <p>{account.accountName} · {account.country || 'Country unavailable'} · {account.currency || 'Currency unavailable'}{isLegacyPaystackAccount ? ' · Legacy Paystack' : ''}</p>
+                        </div>
+                        <div className="payment-account__actions">
+                          <span className={`payment-status ${verificationRequired ? 'payment-status--pending' : 'payment-status--disabled'}`}>{statusText}</span>
+                          <div className="payment-account__buttons">
+                            {canEditPayoutAccount(account) ? <button type="button" className="payment-account__action" onClick={() => openPayoutSettings(account)}>Edit</button> : null}
+                          </div>
+                        </div>
+                      </article>
+                    );
+                  })}
+                </div>
+              </section>
+            ) : null}
+          </div>
+        </SectionState>
       </section>
     </main>
     <section className="payment-panel" aria-labelledby="payments-heading"><div className="payment-heading"><div><span><FaReceipt aria-hidden="true" /> Earnings</span><h2 id="payments-heading">Job payment history</h2></div></div><SectionState error={sectionErrors.payments} empty="No payment activity yet."><div className="payment-list">{payments.length > 0 ? payments.map((payment) => <article className="payment-row payment-row--payment" key={payment.id}><div><strong>{payment.jobTitle || 'Payment activity'}</strong><p>{payment.employerName || 'Employer unavailable'} · {formatDate(payment.date)}</p></div><div><span className={`payment-status payment-status--${statusClass(payment.status)}`}>{statusLabel(payment.status)}</span><p>Payment status</p></div><div><strong>{formatMoney(payment.amount, payment.currency)}</strong><p>Gross amount</p></div><div><strong>{formatMoney(payment.platformFee, payment.currency)}</strong><p>Platform fee</p></div><div><strong>{formatMoney(payment.netAmount, payment.currency)}</strong><p>Net amount</p></div></article>) : <p className="payment-copy">No payment activity yet.</p>}</div></SectionState></section>
