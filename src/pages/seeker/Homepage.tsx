@@ -21,6 +21,7 @@ import {
   type SeekerDashboardResponse,
   type GetSeekerProfileResponse,
 } from '../../services/api';
+import { getUserScopedImageUrl, type UserScopedImage } from '../../utils/profileImageState';
 
 const formatDate = (value: string) => new Intl.DateTimeFormat(undefined, {
   dateStyle: 'medium',
@@ -42,7 +43,8 @@ function Homepage() {
   const { user, token } = useAuth();
   const [dashboard, setDashboard] = useState<SeekerDashboardData | null>(null);
   const [profileState, setProfileState] = useState<GetSeekerProfileResponse['data']['profile'] | null>(null);
-  const [profileImageUrl, setProfileImageUrl] = useState<string | null>(null);
+  const [profileImage, setProfileImage] = useState<UserScopedImage | null>(null);
+  const profileImageUrl = getUserScopedImageUrl(profileImage, user?.id);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
   const [retryKey, setRetryKey] = useState(0);
@@ -97,7 +99,7 @@ function Homepage() {
 
   useEffect(() => {
     if (!token) {
-      setProfileImageUrl(null);
+      setProfileImage(null);
       return undefined;
     }
 
@@ -105,8 +107,8 @@ function Homepage() {
     let objectUrl: string | null = null;
 
     const loadProfileImage = async () => {
+      setProfileImage(null);
       if (!profileState?.profilePictureUrl) {
-        if (active) setProfileImageUrl(null);
         return;
       }
 
@@ -114,9 +116,9 @@ function Homepage() {
       if (!active) return;
       if (result.ok) {
         objectUrl = URL.createObjectURL(result.data);
-        setProfileImageUrl(objectUrl);
+        if (user?.id) setProfileImage({ ownerId: user.id, url: objectUrl });
       } else {
-        setProfileImageUrl(null);
+        setProfileImage(null);
       }
     };
 
@@ -132,7 +134,7 @@ function Homepage() {
       window.removeEventListener(PROFILE_IMAGE_UPDATED_EVENT, handleProfileImageUpdate);
       if (objectUrl) URL.revokeObjectURL(objectUrl);
     };
-  }, [profileState?.profilePictureUrl, token]);
+  }, [profileState?.profilePictureUrl, token, user?.id]);
 
   const handleSearchSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();

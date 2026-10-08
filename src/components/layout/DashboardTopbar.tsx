@@ -6,6 +6,7 @@ import Logo from './Logo';
 import { getEmployerProfile, getEmployerProfileLogo, getNotifications, getSeekerProfile, getSeekerProfilePicture, markAllNotificationsRead, markNotificationRead, PROFILE_IMAGE_UPDATED_EVENT, type AppNotification } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import { resolveAccountTypeForPlan, useSubscriptions } from '../../context/SubscriptionContext';
+import { getUserScopedImageUrl, type UserScopedImage } from '../../utils/profileImageState';
 
 type DashboardTopbarProps = {
   isOpen?: boolean;
@@ -76,13 +77,14 @@ function DashboardTopbar({
   const navigate = useNavigate();
   const { plans, currentPlan } = useSubscriptions();
   const [accountName, setAccountName] = useState(userName || '');
-  const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const [profileImage, setProfileImage] = useState<UserScopedImage | null>(null);
   const [isImageLoading, setIsImageLoading] = useState(false);
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [isRefreshingNotifications, setIsRefreshingNotifications] = useState(false);
 
   const unreadCount = useMemo(() => notifications.filter((item) => !item.isRead).length, [notifications]);
+  const imageUrl = getUserScopedImageUrl(profileImage, user?.id);
   const seekerAccountLabel = useMemo(() => {
     if (role !== 'seeker') return null;
     const resolvedPlanKey = currentPlan?.key ?? 'BASIC';
@@ -116,18 +118,23 @@ function DashboardTopbar({
   }, [role, token]);
 
   useEffect(() => {
-    if (!role || !token) return undefined;
+    if (!role || !token || !user?.id) {
+      setProfileImage(null);
+      setIsImageLoading(false);
+      return undefined;
+    }
     let active = true;
     let objectUrl: string | null = null;
 
     const loadAccountProfile = async () => {
+      setProfileImage(null);
       setIsImageLoading(true);
 
       if (role === 'admin') {
         const nextName = [user?.firstName, user?.lastName].filter(Boolean).join(' ').trim() || userName || 'Admin';
         if (active) {
           setAccountName(nextName);
-          setImageUrl(null);
+          setProfileImage(null);
           setIsImageLoading(false);
         }
         return;
@@ -151,7 +158,7 @@ function DashboardTopbar({
         }
       }
       if (!imageReference) {
-        setImageUrl(null);
+        setProfileImage(null);
         setIsImageLoading(false);
         return;
       }
@@ -160,9 +167,9 @@ function DashboardTopbar({
       if (!active) return;
       if (imageResult.ok) {
         objectUrl = URL.createObjectURL(imageResult.data);
-        setImageUrl(objectUrl);
+        setProfileImage({ ownerId: user.id, url: objectUrl });
       } else {
-        setImageUrl(null);
+        setProfileImage(null);
       }
       setIsImageLoading(false);
     };

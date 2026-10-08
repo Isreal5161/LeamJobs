@@ -13,6 +13,7 @@ import {
   type EmployerProfile,
   type EmployerProfilePayload,
 } from '../../services/api';
+import { getUserScopedImageUrl, type UserScopedImage } from '../../utils/profileImageState';
 
 type ProfileForm = {
   companyName: string;
@@ -67,10 +68,11 @@ const formFromProfile = (profile: EmployerProfile): ProfileForm => ({
 const initialsFor = (companyName: string) => companyName.trim().split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part[0]?.toUpperCase()).join('');
 
 function EmployerProfilePage() {
-  const { token } = useAuth();
+  const { token, user } = useAuth();
   const [form, setForm] = useState<ProfileForm>(emptyForm);
   const [email, setEmail] = useState('');
-  const [logoUrl, setLogoUrl] = useState<string | null>(null);
+  const [logoImage, setLogoImage] = useState<UserScopedImage | null>(null);
+  const logoUrl = getUserScopedImageUrl(logoImage, user?.id);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [isLogoUploading, setIsLogoUploading] = useState(false);
@@ -83,11 +85,12 @@ function EmployerProfilePage() {
   const replaceLogoUrl = (nextUrl: string | null) => {
     if (logoObjectUrlRef.current) URL.revokeObjectURL(logoObjectUrlRef.current);
     logoObjectUrlRef.current = nextUrl?.startsWith('blob:') ? nextUrl : null;
-    setLogoUrl(nextUrl);
+    setLogoImage(nextUrl && user?.id ? { ownerId: user.id, url: nextUrl } : null);
   };
 
   useEffect(() => {
-    if (!token) return;
+    replaceLogoUrl(null);
+    if (!token || !user?.id) return;
     let active = true;
     setIsLoading(true);
     setError('');
@@ -107,7 +110,7 @@ function EmployerProfilePage() {
       setIsLoading(false);
     });
     return () => { active = false; };
-  }, [reloadKey, token]);
+  }, [reloadKey, token, user?.id]);
 
   useEffect(() => () => {
     if (logoObjectUrlRef.current) URL.revokeObjectURL(logoObjectUrlRef.current);

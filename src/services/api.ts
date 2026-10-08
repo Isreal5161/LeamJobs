@@ -1161,6 +1161,7 @@ export async function getProtectedBlob(endpoint: string, token: string, fallback
   try {
     const response = await fetch(`${API_BASE_URL}${endpoint}`, {
       method: 'GET',
+      cache: 'no-store',
       headers: { Authorization: `Bearer ${token}` },
     });
     if (!response.ok) {

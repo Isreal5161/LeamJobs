@@ -48,6 +48,7 @@ import {
 } from '../../services/api';
 import { downloadCVAsPDF } from '../../utils/cvDownloadUtils';
 import { getLanguageSuggestions } from '../../data/languageSuggestions';
+import { getUserScopedImageUrl, type UserScopedImage } from '../../utils/profileImageState';
 
 type StepKey = 'personal' | 'summary' | 'experience' | 'education' | 'skills' | 'certifications' | 'languages' | 'projects' | 'linkedin' | 'review';
 
@@ -317,10 +318,11 @@ function ProfilePage() {
   const [isLoadingProfile, setIsLoadingProfile] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [isUploadingFile, setIsUploadingFile] = useState(false);
-  const [profilePictureUrl, setProfilePictureUrl] = useState<string | null>(null);
-  const [profilePictureBlobUrl, setProfilePictureBlobUrl] = useState<string | null>(null);
+  const [profilePictureReference, setProfilePictureReference] = useState<UserScopedImage | null>(null);
+  const profilePictureUrl = getUserScopedImageUrl(profilePictureReference, user?.id);
+  const [profilePictureBlob, setProfilePictureBlob] = useState<UserScopedImage | null>(null);
   const [profilePictureReloadKey, setProfilePictureReloadKey] = useState(0);
-  const [localProfilePictureUrl, setLocalProfilePictureUrl] = useState<string | null>(null);
+  const [localProfilePicture, setLocalProfilePicture] = useState<UserScopedImage | null>(null);
   const [resumeUrl, setResumeUrl] = useState<string | null>(null);
   const [profilePictureFile, setProfilePictureFile] = useState<File | null>(null);
   const [languageQueries, setLanguageQueries] = useState<Record<string, string>>({});
@@ -486,7 +488,9 @@ function ProfilePage() {
       setLoadedProfileSnapshot(loadedProfile);
       setSelectedTemplate(apiProfile.cvTemplate ?? 'modern');
       setTemplateSelectionChanged(false);
-      setProfilePictureUrl(apiProfile.profilePictureUrl ?? null);
+      setProfilePictureReference(apiProfile.profilePictureUrl && user?.id
+        ? { ownerId: user.id, url: apiProfile.profilePictureUrl }
+        : null);
       setResumeUrl(apiProfile.resumeUrl ?? null);
       if (apiProfile.resumeUrl) {
         setUploadedCvName('Uploaded resume');
@@ -507,22 +511,22 @@ function ProfilePage() {
     return () => {
       isMounted = false;
     };
-  }, [token]);
+  }, [token, user?.id]);
 
   useEffect(() => {
     if (!token || !profilePictureUrl) {
-      setProfilePictureBlobUrl(null);
+      setProfilePictureBlob(null);
       return undefined;
     }
 
     let objectUrl: string | null = null;
     let isMounted = true;
-    setProfilePictureBlobUrl(null);
+    setProfilePictureBlob(null);
     const loadPicture = async () => {
       const response = await getSeekerProfilePicture(token);
-      if (!response.ok || !isMounted) return;
+      if (!response.ok || !isMounted || !user?.id) return;
       objectUrl = URL.createObjectURL(response.data);
-      setProfilePictureBlobUrl(objectUrl);
+      setProfilePictureBlob({ ownerId: user.id, url: objectUrl });
     };
 
     void loadPicture();
@@ -530,15 +534,15 @@ function ProfilePage() {
       isMounted = false;
       if (objectUrl) URL.revokeObjectURL(objectUrl);
     };
-  }, [profilePictureReloadKey, profilePictureUrl, token]);
+  }, [profilePictureReloadKey, profilePictureUrl, token, user?.id]);
 
   useEffect(() => {
     return () => {
-      if (localProfilePictureUrl && localProfilePictureUrl.startsWith('blob:')) {
-        URL.revokeObjectURL(localProfilePictureUrl);
+      if (localProfilePicture?.url.startsWith('blob:')) {
+        URL.revokeObjectURL(localProfilePicture.url);
       }
     };
-  }, [localProfilePictureUrl]);
+  }, [localProfilePicture]);
 
   useEffect(() => {
     if (!notification) return undefined;
@@ -1787,28 +1791,30 @@ function ProfilePage() {
       return;
     }
 
-    if (localProfilePictureUrl && localProfilePictureUrl.startsWith('blob:')) {
-      URL.revokeObjectURL(localProfilePictureUrl);
+    if (localProfilePicture?.url.startsWith('blob:')) {
+      URL.revokeObjectURL(localProfilePicture.url);
     }
 
     const previewUrl = URL.createObjectURL(file);
     setProfilePictureFile(file);
-    setLocalProfilePictureUrl(previewUrl);
+    if (user?.id) setLocalProfilePicture({ ownerId: user.id, url: previewUrl });
 
     if (token) {
       setIsUploadingFile(true);
       const result = await uploadSeekerProfilePicture(file, token);
       setIsUploadingFile(false);
       if (result.ok) {
-        setProfilePictureUrl(result.data.data.profilePictureUrl ?? null);
-        setProfilePictureBlobUrl(null);
+        setProfilePictureReference(result.data.data.profilePictureUrl && user?.id
+          ? { ownerId: user.id, url: result.data.data.profilePictureUrl }
+          : null);
+        setProfilePictureBlob(null);
         setProfilePictureReloadKey((current) => current + 1);
         setProfilePictureFile(null);
-        setLocalProfilePictureUrl(null);
+        setLocalProfilePicture(null);
         window.dispatchEvent(new Event(PROFILE_IMAGE_UPDATED_EVENT));
         showNotification({ title: 'Profile picture updated', message: 'Your profile picture has been uploaded.', tone: 'success' });
       } else {
-        setLocalProfilePictureUrl(null);
+        setLocalProfilePicture(null);
         showNotification({ title: 'Upload failed', message: result.error.message, tone: 'error' });
       }
     }
@@ -1821,16 +1827,20 @@ function ProfilePage() {
     const result = await deleteSeekerProfilePicture(token);
     setIsUploadingFile(false);
     if (result.ok) {
-      setProfilePictureUrl(null);
-      setProfilePictureBlobUrl(null);
+      setProfilePictureReference(null);
+      setProfilePictureBlob(null);
       setProfilePictureFile(null);
-      setLocalProfilePictureUrl(null);
+      setLocalProfilePicture(null);
       window.dispatchEvent(new Event(PROFILE_IMAGE_UPDATED_EVENT));
       showNotification({ title: 'Profile picture removed', message: 'Your profile picture has been removed.', tone: 'success' });
     } else showNotification({ title: 'Remove failed', message: result.error.message, tone: 'error' });
   };
-  const displayProfilePictureUrl = localProfilePictureUrl ?? profilePictureBlobUrl;
-  const hasProfilePicture = Boolean(localProfilePictureUrl || profilePictureUrl);
+  const displayProfilePictureUrl = getUserScopedImageUrl(localProfilePicture, user?.id)
+    ?? getUserScopedImageUrl(profilePictureBlob, user?.id);
+  const hasProfilePicture = Boolean(
+    getUserScopedImageUrl(localProfilePicture, user?.id)
+    || profilePictureUrl,
+  );
 
   const handleUploadResume = async () => {
     if (!token || !uploadedCvFile || isUploadingFile) return;

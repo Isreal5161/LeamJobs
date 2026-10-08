@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
 import { API_BASE_URL, getProtectedBlob } from '../../services/api';
+import { getUserScopedImageUrl, type UserScopedImage } from '../../utils/profileImageState';
 
 type AuthenticatedImageProps = {
   endpoint: string;
@@ -17,30 +18,32 @@ const toApiUrl = (endpoint: string) => {
 };
 
 function AuthenticatedImage({ endpoint, token, alt, className, fallback }: AuthenticatedImageProps) {
-  const [objectUrl, setObjectUrl] = useState<string | null>(null);
-  const [failed, setFailed] = useState(false);
+  const [image, setImage] = useState<UserScopedImage | null>(null);
+  const [failedFor, setFailedFor] = useState<string | null>(null);
+  const requestOwner = `${token}\u0000${endpoint}`;
 
   useEffect(() => {
     let active = true;
     let nextObjectUrl: string | null = null;
-    setObjectUrl(null);
-    setFailed(false);
+    setImage(null);
+    setFailedFor(null);
 
     void getProtectedBlob(endpoint, token, 'Image could not be loaded.').then((result) => {
       if (!active || !result.ok) return;
       nextObjectUrl = URL.createObjectURL(result.data);
-      setObjectUrl(nextObjectUrl);
+      setImage({ ownerId: requestOwner, url: nextObjectUrl });
     });
 
     return () => {
       active = false;
       if (nextObjectUrl) URL.revokeObjectURL(nextObjectUrl);
     };
-  }, [endpoint, token]);
+  }, [endpoint, requestOwner, token]);
 
-  if (!objectUrl || failed) return <>{fallback}</>;
+  const objectUrl = getUserScopedImageUrl(image, requestOwner);
+  if (!objectUrl || failedFor === requestOwner) return <>{fallback}</>;
 
-  return <img className={className} src={toApiUrl(objectUrl)} alt={alt} onError={() => setFailed(true)} />;
+  return <img className={className} src={toApiUrl(objectUrl)} alt={alt} onError={() => setFailedFor(requestOwner)} />;
 }
 
 export default AuthenticatedImage;
