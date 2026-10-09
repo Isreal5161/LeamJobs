@@ -9,6 +9,27 @@ export type ContractFundingEligibilityInput = {
   ownsContract: boolean;
 };
 
+export type ContractConfirmationRole = 'EMPLOYER' | 'SEEKER' | 'ADMIN';
+
+export function getPendingFreelanceConfirmationAction({
+  role,
+  contractType,
+  contractStatus,
+  employerConfirmedAt,
+  seekerConfirmedAt,
+}: {
+  role: ContractConfirmationRole;
+  contractType: string;
+  contractStatus: string;
+  employerConfirmedAt?: string | null;
+  seekerConfirmedAt?: string | null;
+}): 'EMPLOYER' | 'SEEKER' | null {
+  if (contractType !== 'FREELANCE_PROJECT' || contractStatus !== 'PENDING') return null;
+  if (role === 'EMPLOYER' && !employerConfirmedAt) return 'EMPLOYER';
+  if (role === 'SEEKER' && !seekerConfirmedAt) return 'SEEKER';
+  return null;
+}
+
 type FundingTermsValidationInput = {
   projectAmount?: string | number | null;
   currency?: string | null;
@@ -132,5 +153,5 @@ export function canShowContractFundingAction({
 
   if (role === 'SEEKER') return false;
   if (isContractJob) return contractStatus === 'PENDING';
-  return contractStatus === 'ACTIVE';
+  return ['PENDING', 'ACTIVE'].includes(contractStatus);
 }

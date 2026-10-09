@@ -5,7 +5,9 @@ import { useAuth } from '../../context/AuthContext';
 import AuthenticatedImage from '../../components/common/AuthenticatedImage';
 import {
   confirmAdminCompletion,
+  confirmEmployerContractTerms,
   confirmEmployerCompletion,
+  confirmSeekerContractTerms,
   getAdminContract,
   getEmployerContract,
   getSeekerContract,
@@ -19,6 +21,7 @@ import {
 import {
   areContractFundingTermsValid,
   canShowContractFundingAction,
+  getPendingFreelanceConfirmationAction,
   hasSuccessfulContractFundingPayment,
 } from '../../utils/contractFundingEligibility';
 
@@ -112,6 +115,7 @@ const statusLabel = (contract: ContractData) => {
   if (workStatus === 'COMPLETION_SUBMITTED') return 'Work submitted';
   if (contract.type === 'CONTRACT_PROJECT' && escrowStatus === 'FUNDED') return 'Payment secured';
   if (escrowStatus === 'FUNDED') return 'Funded';
+  if (contract.type === 'FREELANCE_PROJECT' && contract.status === 'PENDING' && escrowStatus === 'UNFUNDED') return 'Payment required';
   if (contract.status === 'ACTIVE') return 'Payment required';
   if (contract.status === 'PENDING') return 'Awaiting confirmation';
   return contract.status.replaceAll('_', ' ');
@@ -269,6 +273,32 @@ function ContractPage({ role }: ContractPageProps) {
     await fundContract();
   };
 
+  const confirmFreelanceTerms = async () => {
+    if (!token || !contractId || isMutating) return;
+    setIsMutating(true);
+    setError('');
+    setMessage('');
+    try {
+      const result = role === 'EMPLOYER'
+        ? await confirmEmployerContractTerms(contractId, token)
+        : await confirmSeekerContractTerms(contractId, token);
+      if (!result.ok) {
+        setError(result.error.message || 'Contract confirmation could not be saved.');
+        return;
+      }
+      const updatedContract = result.data.data.contract;
+      setContract(updatedContract);
+      setAlreadyFunded(['FUNDED', 'RELEASE_ELIGIBLE', 'RELEASED'].includes(updatedContract.freelance?.escrow?.status ?? ''));
+      setMessage(updatedContract.status === 'ACTIVE'
+        ? 'Both parties confirmed. The contract is active and eligible funding is now available to the employer.'
+        : 'Your confirmation was saved. The contract will activate after the other party confirms.');
+    } catch {
+      setError('Contract confirmation could not be saved. Please try again.');
+    } finally {
+      setIsMutating(false);
+    }
+  };
+
   const submitCompletion = async (event: FormEvent) => {
     event.preventDefault();
     if (!token || !contractId || isMutating) return;
@@ -319,6 +349,13 @@ function ContractPage({ role }: ContractPageProps) {
   const isReleased = escrow?.status === 'RELEASED';
   const hasSubmitted = Boolean(freelance.completionSubmittedAt);
   const isContractJob = contract.type === 'CONTRACT_PROJECT';
+  const confirmationAction = getPendingFreelanceConfirmationAction({
+    role,
+    contractType: contract.type,
+    contractStatus: contract.status,
+    employerConfirmedAt: freelance.employerConfirmedAt,
+    seekerConfirmedAt: freelance.seekerConfirmedAt,
+  });
   const fundingSummary = getFundingSummary(freelance, contract.funding, escrow);
   const hasSuccessfulFundingPayment = hasSuccessfulContractFundingPayment(escrow?.payments);
   const hasCompletedFunding = alreadyFunded || hasSuccessfulFundingPayment;
@@ -379,6 +416,27 @@ function ContractPage({ role }: ContractPageProps) {
     <main className="contract-page">
       <button type="button" className="contract-back" onClick={() => navigate(role === 'EMPLOYER' ? '/employer/contracts' : role === 'ADMIN' ? `/admin/jobs/${contract?.job.id ?? ''}/applicants` : '/seeker/applications')}><FaArrowLeft /> {role === 'EMPLOYER' ? 'Back to My Contracts' : 'Back to applications'}</button>
       <header className="contract-header"><div><span className="contract-eyebrow">{isContractJob ? 'Contract Job' : 'Freelance Project'}</span><h1>{contract.job.title}</h1><p>{role === 'EMPLOYER' ? `${isContractJob ? 'Securing this contract' : 'Funding this project'} for ${displayName(contract.seeker)}` : role === 'ADMIN' ? `${isContractJob ? 'Managing this contract' : 'Managing this project'} for ${displayName(contract.seeker)}` : `${isContractJob ? 'Contract Job with' : 'Project with'} ${displayName(contract.employer)}`}</p></div><span className={`contract-status contract-status--${(escrow?.status ?? contract.status).toLowerCase()}`}>{statusLabel(contract)}</span></header>
+      {contract.type === 'FREELANCE_PROJECT' && contract.status === 'PENDING' ? (
+        <section className="contract-panel" aria-live="polite">
+          <div className="contract-panel-heading"><FaCheckCircle /><div><h2>Confirm project terms</h2><p>Either party may confirm these terms. The employer can fund the project now; funding does not require the other party to confirm first.</p></div></div>
+          {confirmationAction ? (
+            <button type="button" className="button button--primary contract-action" onClick={() => void confirmFreelanceTerms()} disabled={isMutating}>
+              {isMutating ? 'Saving confirmation...' : 'Confirm project terms'}
+            </button>
+          ) : (
+            <p className="contract-muted">
+              {role === 'EMPLOYER' && freelance.employerConfirmedAt
+                ? 'Your confirmation is recorded. The project can be funded before the seeker confirms.'
+                : role === 'SEEKER' && freelance.seekerConfirmedAt
+                  ? 'Your confirmation is recorded. The employer can fund the project before you confirm.'
+                  : 'Contract confirmation is available to the employer and selected seeker.'}
+            </p>
+          )}
+          <button type="button" className="button button--secondary contract-action contract-action--secondary" onClick={() => void loadContract()} disabled={isLoading || isMutating}>
+            {isLoading ? 'Refreshing contract...' : 'Refresh contract status'}
+          </button>
+        </section>
+      ) : null}
       {role === 'EMPLOYER' ? (
         <>
           <div className="employer-contract-detail-badges">

@@ -2344,6 +2344,10 @@ export function getEmployerContract(contractId: string, token: string) {
   return request<ContractResponse>({ method: 'GET', endpoint: `/employer/contracts/${encodeURIComponent(contractId)}`, token });
 }
 
+export function confirmEmployerContractTerms(contractId: string, token: string) {
+  return request<ContractResponse>({ method: 'POST', endpoint: `/employer/contracts/${encodeURIComponent(contractId)}/confirm`, token });
+}
+
 export function getEmployerContracts(
   token: string,
   options: { page?: number; limit?: number; status?: EmployerContractStatus } = {},
@@ -2390,6 +2394,10 @@ export function confirmAdminCompletion(contractId: string, token: string) {
 
 export function getSeekerContract(contractId: string, token: string) {
   return request<ContractResponse>({ method: 'GET', endpoint: `/seeker/contracts/${encodeURIComponent(contractId)}`, token });
+}
+
+export function confirmSeekerContractTerms(contractId: string, token: string) {
+  return request<ContractResponse>({ method: 'POST', endpoint: `/seeker/contracts/${encodeURIComponent(contractId)}/confirm`, token });
 }
 
 export function submitSeekerCompletion(contractId: string, completionNote: string, token: string) {

@@ -3,6 +3,7 @@ import test from 'node:test';
 import {
   areContractFundingTermsValid,
   canShowContractFundingAction,
+  getPendingFreelanceConfirmationAction,
   hasSuccessfulContractFundingPayment,
 } from '../src/utils/contractFundingEligibility.ts';
 
@@ -47,6 +48,119 @@ test('eligible active freelance project can show secure funding when action meta
   }), true);
 });
 
+test('pending freelance API response can be funded before either party confirms', () => {
+  const pendingBackendResponse = {
+    type: 'FREELANCE_PROJECT',
+    status: 'PENDING',
+    employerId: 'employer-current-user',
+    availableActions: { fund: true },
+    funding: validFundingTerms.funding,
+    freelance: {
+      agreedAmount: '100.00',
+      currency: 'USD',
+      platformFeePercentage: '10.00',
+      platformFeeAmount: '10.00',
+      seekerNetAmount: '100.00',
+      employerConfirmedAt: null,
+      seekerConfirmedAt: null,
+      escrow: {
+        ...validFundingTerms.escrow,
+        status: 'UNFUNDED',
+        payments: [],
+      },
+    },
+  };
+  assert.equal(getPendingFreelanceConfirmationAction({
+    role: 'EMPLOYER',
+    contractType: pendingBackendResponse.type,
+    contractStatus: pendingBackendResponse.status,
+    employerConfirmedAt: pendingBackendResponse.freelance.employerConfirmedAt,
+    seekerConfirmedAt: pendingBackendResponse.freelance.seekerConfirmedAt,
+  }), 'EMPLOYER');
+  assert.equal(getPendingFreelanceConfirmationAction({
+    role: 'SEEKER',
+    contractType: pendingBackendResponse.type,
+    contractStatus: pendingBackendResponse.status,
+    employerConfirmedAt: pendingBackendResponse.freelance.employerConfirmedAt,
+    seekerConfirmedAt: pendingBackendResponse.freelance.seekerConfirmedAt,
+  }), 'SEEKER');
+  const fundingTermsValid = areContractFundingTermsValid({
+    projectAmount: pendingBackendResponse.freelance.agreedAmount,
+    currency: pendingBackendResponse.freelance.currency,
+    platformFeePercentage: pendingBackendResponse.freelance.platformFeePercentage,
+    platformFeeAmount: pendingBackendResponse.freelance.platformFeeAmount,
+    seekerEntitlement: pendingBackendResponse.freelance.seekerNetAmount,
+    escrow: pendingBackendResponse.freelance.escrow,
+    funding: pendingBackendResponse.funding,
+  });
+  assert.equal(canShowContractFundingAction({
+    ...base,
+    contractStatus: pendingBackendResponse.status,
+    availableActions: pendingBackendResponse.availableActions,
+    escrowStatus: pendingBackendResponse.freelance.escrow.status,
+    fundingTermsValid,
+    ownsContract: pendingBackendResponse.employerId === 'employer-current-user',
+  }), true);
+  assert.equal(canShowContractFundingAction({
+    ...base,
+    contractStatus: 'PENDING',
+    availableActions: { fund: true },
+    escrowStatus: null,
+    fundingTermsValid: false,
+  }), false);
+  assert.equal(getPendingFreelanceConfirmationAction({
+    role: 'EMPLOYER',
+    contractType: pendingBackendResponse.type,
+    contractStatus: 'ACTIVE',
+    employerConfirmedAt: 'confirmed',
+    seekerConfirmedAt: 'confirmed',
+  }), null);
+});
+
+test('active freelance contract API response with backend-approved funding terms is eligible', () => {
+  const activeContractResponse = {
+    type: 'FREELANCE_PROJECT',
+    status: 'ACTIVE',
+    employerId: 'employer-current-user',
+    availableActions: { fund: true, confirmCompletion: false },
+    funding: validFundingTerms.funding,
+    freelance: {
+      agreedAmount: '100.00',
+      currency: 'USD',
+      platformFeePercentage: '10.00',
+      platformFeeAmount: '10.00',
+      seekerNetAmount: '100.00',
+      employerConfirmedAt: '2026-10-09T04:00:00.000Z',
+      seekerConfirmedAt: '2026-10-09T04:01:00.000Z',
+      escrow: {
+        ...validFundingTerms.escrow,
+        status: 'UNFUNDED',
+        payments: [],
+      },
+    },
+  };
+  const fundingTermsValid = areContractFundingTermsValid({
+    projectAmount: activeContractResponse.freelance.agreedAmount,
+    currency: activeContractResponse.freelance.currency,
+    platformFeePercentage: activeContractResponse.freelance.platformFeePercentage,
+    platformFeeAmount: activeContractResponse.freelance.platformFeeAmount,
+    seekerEntitlement: activeContractResponse.freelance.seekerNetAmount,
+    escrow: activeContractResponse.freelance.escrow,
+    funding: activeContractResponse.funding,
+    existingPayment: activeContractResponse.freelance.escrow.payments[0],
+  });
+  assert.equal(fundingTermsValid, true);
+  assert.equal(canShowContractFundingAction({
+    ...base,
+    contractType: activeContractResponse.type,
+    contractStatus: activeContractResponse.status,
+    availableActions: activeContractResponse.availableActions,
+    escrowStatus: activeContractResponse.freelance.escrow.status,
+    fundingTermsValid,
+    ownsContract: activeContractResponse.employerId === 'employer-current-user',
+  }), true);
+});
+
 test('eligible regular contract job retains its pending funding action', () => {
   assert.equal(canShowContractFundingAction({
     ...base,
@@ -70,8 +184,7 @@ test('explicit backend ineligibility suppresses funding for employers and admins
   }), false);
   assert.equal(canShowContractFundingAction({
     ...base,
-    availableActions: { fund: true },
-    contractStatus: 'PENDING',
+    availableActions: { fund: false },
   }), false);
   assert.equal(canShowContractFundingAction({
     ...base,
@@ -86,7 +199,7 @@ test('funded, missing escrow, invalid status, and unsupported types suppress fun
   assert.equal(canShowContractFundingAction({ ...base, alreadyFunded: true }), false);
   assert.equal(canShowContractFundingAction({ ...base, fundingTermsValid: false }), false);
   assert.equal(canShowContractFundingAction({ ...base, ownsContract: false }), false);
-  assert.equal(canShowContractFundingAction({ ...base, contractStatus: 'PENDING' }), false);
+  assert.equal(canShowContractFundingAction({ ...base, contractStatus: 'CANCELLED' }), false);
   assert.equal(canShowContractFundingAction({ ...base, contractType: 'UNKNOWN' }), false);
 });
 
