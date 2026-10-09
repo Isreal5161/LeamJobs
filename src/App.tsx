@@ -107,7 +107,8 @@ function App() {
             <Route path="interviews/:interviewId" element={<InterviewsPage role="seeker" />} />
             <Route path="contracts/:contractId" element={<ContractPage role="SEEKER" />} />
             <Route path="messages" element={<MessagesPage role="seeker" />} />
-            <Route path="profile" element={<ProfilePage />} />
+            <Route path="cv" element={<ProfilePage key="cv" mode="cv" />} />
+            <Route path="profile" element={<ProfilePage key="settings" mode="settings" />} />
             <Route path="subscription" element={<SubscriptionPage />} />
             <Route path="subscription/payment-result" element={<SubscriptionPaymentResultPage />} />
             <Route path="premium" element={<PremiumOverviewPage />} />

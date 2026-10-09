@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type ChangeEvent } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
   FaArrowLeft,
   FaBriefcase,
@@ -297,10 +297,15 @@ const createEmptyProfileState = (): ProfileState => ({
   projects: [],
 });
 
-function ProfilePage() {
+type ProfilePageProps = {
+  mode: 'cv' | 'settings';
+};
+
+function ProfilePage({ mode }: ProfilePageProps) {
   const { user, token } = useAuth();
+  const location = useLocation();
   const [selectedTemplate, setSelectedTemplate] = useState<CVTemplateId>('modern');
-  const [templateSelectionChanged, setTemplateSelectionChanged] = useState(false);
+  const [savedTemplate, setSavedTemplate] = useState<CVTemplateId>('modern');
   const [isTemplateModalOpen, setIsTemplateModalOpen] = useState(false);
   const [activeStep, setActiveStep] = useState<StepKey>('personal');
   const [notification, setNotification] = useState<ProfileNotification | null>(null);
@@ -353,8 +358,10 @@ function ProfilePage() {
   const [aiManualOnlyModal, setAiManualOnlyModal] = useState<{ targetId: string; fieldLabel: string } | null>(null);
   const [profileStrength, setProfileStrength] = useState<{ score: number; dimensions: { label: string; score: number; complete: boolean }[]; strengths: string[]; recommendations: string[] } | null>(null);
   const [profileStrengthError, setProfileStrengthError] = useState('');
-  const { plans, getSubscription, refresh, trialOffer, currentPlan } = useSubscriptions();
+  const { plans, getSubscription, refresh, trial, trialOffer, currentPlan } = useSubscriptions();
   const [isStartingTrial, setIsStartingTrial] = useState(false);
+  const [isSettingsSaving, setIsSettingsSaving] = useState(false);
+  const [pendingNavigation, setPendingNavigation] = useState<string | null>(null);
   const aiRateLimitCloseRef = useRef<HTMLButtonElement | null>(null);
   const aiManualOnlyCloseRef = useRef<HTMLButtonElement | null>(null);
   const navigate = useNavigate();
@@ -370,6 +377,7 @@ function ProfilePage() {
   const canUseProfileAssistant = canonicalEntitlements.includes('AI_CV_REVIEW');
   const canUseCvOptimizer = canonicalEntitlements.includes('AI_CV_IMPROVEMENT');
   const canUseProfileStrength = currentPlan?.key?.toUpperCase() === 'PREMIUM' && canonicalEntitlements.includes('PROFILE_STRENGTH');
+  const templateSelectionChanged = selectedTemplate !== savedTemplate;
   const selectedTemplateIsAdvanced = TEMPLATES.find((template) => template.style === selectedTemplate)?.advanced ?? false;
   const renderedTemplate: CVTemplateId = selectedTemplateIsAdvanced && !canUseAdvancedCv ? 'modern' : selectedTemplate;
 
@@ -388,7 +396,6 @@ function ProfilePage() {
 
   const handleTemplateSelection = (template: CVTemplateId) => {
     setSelectedTemplate(template);
-    setTemplateSelectionChanged(true);
   };
 
   const runProfileAssistant = async () => {
@@ -487,7 +494,7 @@ function ProfilePage() {
       setProfile(loadedProfile);
       setLoadedProfileSnapshot(loadedProfile);
       setSelectedTemplate(apiProfile.cvTemplate ?? 'modern');
-      setTemplateSelectionChanged(false);
+      setSavedTemplate(apiProfile.cvTemplate ?? 'modern');
       setProfilePictureReference(apiProfile.profilePictureUrl && user?.id
         ? { ownerId: user.id, url: apiProfile.profilePictureUrl }
         : null);
@@ -688,6 +695,17 @@ function ProfilePage() {
     if (completionScore >= 50) return 'Your basic profile is complete. Complete your CV to reach 100%.';
     return 'Start with your basics and build your CV step by step.';
   }, [completionScore]);
+  const settingsCompletionFields = [
+    profile.personalInfo.fullName.trim().split(/\s+/).filter(Boolean).length >= 2,
+    Boolean(profile.personalInfo.title.trim()),
+    Boolean(onboardingLocation.country.trim()),
+    Boolean(onboardingLocation.state.trim()),
+    Boolean(onboardingLocation.city.trim()),
+    profile.skills.length > 0,
+  ];
+  const settingsCompletion = Math.round(
+    (settingsCompletionFields.filter(Boolean).length / settingsCompletionFields.length) * 100,
+  );
 
   const primaryExperienceId = profile.experience[0]?.id ? `experience-description-${profile.experience[0].id}` : 'experience-root';
   const primaryEducationId = profile.education[0]?.id ? `education-degree-${profile.education[0].id}` : 'education-root';
@@ -1517,8 +1535,8 @@ function ProfilePage() {
     );
   };
 
-  const handleUpdateProfile = async () => {
-    if (!token || isSaving) return;
+  const handleUpdateProfile = async (): Promise<boolean> => {
+    if (!token || isSaving) return false;
 
     setValidationIssues([]);
 
@@ -1529,7 +1547,24 @@ function ProfilePage() {
         message: 'Enter your first and last name before saving your profile.',
         tone: 'error',
       });
-      return;
+      return false;
+    }
+
+    if (uploadedCvFile) {
+      setIsUploadingFile(true);
+      const uploadResult = await uploadSeekerResume(uploadedCvFile, token);
+      setIsUploadingFile(false);
+      if (!uploadResult.ok) {
+        showNotification({
+          title: 'CV upload failed',
+          message: uploadResult.error.message || 'We could not upload your selected CV. Your CV details were not saved.',
+          tone: 'error',
+        });
+        return false;
+      }
+      setResumeUrl(uploadResult.data.data.resumeUrl ?? null);
+      setUploadedCvFile(null);
+      setCvWorkflowMode('uploaded');
     }
 
     const shouldPersistTemplate = canUseAdvancedCv || !selectedTemplateIsAdvanced || templateSelectionChanged;
@@ -1567,10 +1602,10 @@ function ProfilePage() {
             ? 'You do not have permission to update this profile.'
             : 'We could not save your CV right now. Please try again.';
       showNotification({ title: issues.length > 0 ? 'Please fix the following before saving' : 'Save failed', message, tone: 'error' });
-      return;
+      return false;
     }
 
-    setTemplateSelectionChanged(false);
+    setSavedTemplate(selectedTemplate);
 
     const incompleteProfileFields = [
       !onboardingLocation.country.trim() ? 'country' : '',
@@ -1612,7 +1647,7 @@ function ProfilePage() {
               ? 'You do not have permission to update this profile.'
               : 'Your CV was saved, but personal details could not be updated.';
         showNotification({ title: issues.length > 0 ? 'Please fix the following before saving' : 'Partial save', message, tone: 'error' });
-        return;
+        return false;
       }
     }
 
@@ -1625,14 +1660,14 @@ function ProfilePage() {
           message: 'Your availability has been saved. Complete your profile details to update your full profile.',
           tone: 'success',
         });
-        return;
+        return false;
       }
       showNotification({
         title: 'CV updated, profile incomplete',
         message: `Complete your ${incompleteProfileFields.join(', ')} to update your full profile.`,
         tone: 'info',
       });
-      return;
+      return false;
     }
 
     setIsSaving(false);
@@ -1642,10 +1677,140 @@ function ProfilePage() {
       tone: 'success',
     });
     setLoadedProfileSnapshot(profile);
+    return true;
   };
 
-  const hasUnsavedProfileEdits = loadedProfileSnapshot !== null
-    && JSON.stringify(profile) !== JSON.stringify(loadedProfileSnapshot);
+  const handleSaveSettings = async () => {
+    if (!token || isSettingsSaving || isSaving) return;
+
+    const fullName = profile.personalInfo.fullName.trim();
+    if (fullName.split(/\s+/).filter(Boolean).length < 2) {
+      showNotification({
+        title: 'Name required',
+        message: 'Enter your first and last name before saving your profile settings.',
+        tone: 'error',
+      });
+      return;
+    }
+
+    const incompleteFields = [
+      !onboardingLocation.country.trim() ? 'country' : '',
+      !onboardingLocation.state.trim() ? 'state or region' : '',
+      !onboardingLocation.city.trim() ? 'city' : '',
+      !profile.personalInfo.title.trim() ? 'professional title' : '',
+      profile.skills.length === 0 ? 'at least one skill in My CV' : '',
+    ].filter(Boolean);
+    const availabilityChanged = profile.availability !== loadedProfileSnapshot?.availability;
+
+    if (incompleteFields.length > 0 && !availabilityChanged) {
+      showNotification({
+        title: 'Profile settings not saved',
+        message: `Complete your ${incompleteFields.join(', ')} before saving these profile settings.`,
+        tone: 'info',
+      });
+      return;
+    }
+
+    setIsSettingsSaving(true);
+    const result = await updateSeekerProfile({
+      ...(availabilityChanged ? { availability: profile.availability } : {}),
+      ...(incompleteFields.length === 0 ? {
+        fullName,
+        country: onboardingLocation.country.trim(),
+        state: onboardingLocation.state.trim(),
+        city: onboardingLocation.city.trim(),
+        professionalTitle: profile.personalInfo.title.trim(),
+        skills: profile.skills.map((skill) => skill.trim()).filter(Boolean),
+      } : {}),
+    }, token);
+    setIsSettingsSaving(false);
+
+    if (!result.ok) {
+      const issues = result.status === 400 ? formatProfileValidationIssues(result.error.details) : [];
+      if (issues.length > 0) setValidationIssues(issues);
+      showNotification({
+        title: issues.length > 0 ? 'Please fix the following before saving' : 'Save failed',
+        message: issues.length > 0
+          ? 'Review the highlighted fields and correct them before saving.'
+          : result.error.message || 'We could not save your profile settings. Please try again.',
+        tone: 'error',
+      });
+      return;
+    }
+
+    if (incompleteFields.length > 0) {
+      setLoadedProfileSnapshot((current) => current
+        ? { ...current, availability: profile.availability }
+        : current);
+      showNotification({
+        title: 'Availability updated',
+        message: `Availability is saved. Complete your ${incompleteFields.join(', ')} to update the full profile.`,
+        tone: 'success',
+      });
+      return;
+    }
+
+    setLoadedProfileSnapshot(profile);
+    showNotification({
+      title: 'Profile settings saved',
+      message: 'Your personal and professional profile settings have been updated.',
+      tone: 'success',
+    });
+  };
+
+  const hasUnsavedCvChanges = mode === 'cv' && loadedProfileSnapshot !== null && (
+    JSON.stringify(profile) !== JSON.stringify(loadedProfileSnapshot)
+    || templateSelectionChanged
+    || Boolean(uploadedCvFile)
+    || cvImportStatus === 'review'
+    || cvImportStatus === 'editing-imported'
+  );
+  const hasUnsavedProfileEdits = hasUnsavedCvChanges;
+
+  useEffect(() => {
+    if (mode !== 'cv' || !hasUnsavedCvChanges) return undefined;
+
+    const handleNavigationClick = (event: MouseEvent) => {
+      if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+      const target = event.target;
+      if (!(target instanceof Element)) return;
+      const anchor = target.closest('a[href]');
+      if (!(anchor instanceof HTMLAnchorElement) || anchor.target === '_blank' || anchor.hasAttribute('download')) return;
+      const destination = new URL(anchor.href, window.location.href);
+      if (destination.origin !== window.location.origin || destination.pathname === location.pathname) return;
+
+      event.preventDefault();
+      event.stopPropagation();
+      setPendingNavigation(`${destination.pathname}${destination.search}${destination.hash}`);
+    };
+    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+      event.returnValue = '';
+    };
+
+    document.addEventListener('click', handleNavigationClick, true);
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => {
+      document.removeEventListener('click', handleNavigationClick, true);
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, [hasUnsavedCvChanges, location.pathname, mode]);
+
+  const handleLeaveWithoutSaving = () => {
+    if (!pendingNavigation) return;
+    const destination = pendingNavigation;
+    setPendingNavigation(null);
+    navigate(destination);
+  };
+
+  const handleSaveBeforeLeaving = async () => {
+    if (!pendingNavigation) return;
+    const destination = pendingNavigation;
+    const saved = await handleUpdateProfile();
+    if (!saved) return;
+    setPendingNavigation(null);
+    navigate(destination);
+  };
 
   const startCvImport = async () => {
     if (!token || !resumeUrl || cvImportStatus === 'processing') return;
@@ -1696,8 +1861,6 @@ function ProfilePage() {
         ...current.personalInfo,
         fullName: imported.fullName?.trim() || current.personalInfo.fullName,
         title: imported.professionalTitle?.trim() || current.personalInfo.title,
-        email: imported.email?.trim() || current.personalInfo.email,
-        phone: imported.phone?.trim() || current.personalInfo.phone,
         location: importedLocation || current.personalInfo.location,
         summary: imported.bio?.trim() || current.personalInfo.summary,
         linkedin: imported.linkedinUrl?.trim() || current.personalInfo.linkedin,
@@ -1910,20 +2073,25 @@ function ProfilePage() {
   };
 
   return (
-    <div className="seeker-profile-page">
+    <div className={`seeker-profile-page seeker-profile-page--${mode}`}>
       <section className="seeker-profile-hero">
         <div className="seeker-profile-hero__top">
-          <button type="button" className="seeker-profile-icon-button" aria-label="Go back">
-            <FaArrowLeft />
-          </button>
           <div>
-            <h1>My CV</h1>
-            <p>Create a polished resume for applications</p>
+            <span className="seeker-cv-summary__eyebrow">LeamJobs career workspace</span>
+            <h1>{mode === 'cv' ? 'My CV' : 'Profile Settings'}</h1>
+            <p>{mode === 'cv'
+              ? 'Build, review, and export a CV using your saved profile information.'
+              : 'Manage the personal and professional information employers see on your profile.'}</p>
           </div>
-          <button type="button" className="seeker-profile-icon-button" aria-label="CV settings">
-            <FaMagic />
-          </button>
         </div>
+        <nav className="seeker-profile-tabs" aria-label="Profile workspace">
+          <Link to="/seeker/cv" aria-current={mode === 'cv' ? 'page' : undefined} className={mode === 'cv' ? 'seeker-profile-tabs__link seeker-profile-tabs__link--active' : 'seeker-profile-tabs__link'}>
+            My CV
+          </Link>
+          <Link to="/seeker/profile" aria-current={mode === 'settings' ? 'page' : undefined} className={mode === 'settings' ? 'seeker-profile-tabs__link seeker-profile-tabs__link--active' : 'seeker-profile-tabs__link'}>
+            Profile Settings
+          </Link>
+        </nav>
       </section>
 
       <main className="seeker-profile-content">
@@ -1953,6 +2121,148 @@ function ProfilePage() {
               <p style={{ marginTop: '0.5rem', color: '#666' }}>{profileError}</p>
             </div>
           </section>
+        ) : mode === 'settings' ? (
+          <div className="seeker-settings-layout">
+            <section className="seeker-card seeker-settings-summary" aria-labelledby="seeker-settings-summary-title">
+              <div className="seeker-settings-summary__identity">
+                <div className="seeker-settings-summary__avatar">
+                  {displayProfilePictureUrl
+                    ? <img src={displayProfilePictureUrl} alt="" />
+                    : <span aria-hidden="true">{profile.personalInfo.fullName.split(/\s+/).filter(Boolean).map((part) => part[0]).join('').slice(0, 2).toUpperCase() || 'ME'}</span>}
+                </div>
+                <div>
+                  <span className="seeker-cv-summary__eyebrow">Your profile</span>
+                  <h2 id="seeker-settings-summary-title">{profile.personalInfo.fullName || 'Complete your profile'}</h2>
+                  <p>{[profile.personalInfo.title, [onboardingLocation.city, onboardingLocation.state, onboardingLocation.country].filter(Boolean).join(', ')].filter(Boolean).join(' · ') || 'Add a professional title and location to help employers understand your background.'}</p>
+                </div>
+              </div>
+              <div className="seeker-settings-completion">
+                <div>
+                  <strong>{settingsCompletion}% complete</strong>
+                  <span>Based on your name, title, location, and skills</span>
+                </div>
+                <span className="seeker-cv-progress__bar" role="progressbar" aria-label="Profile settings completeness" aria-valuemin={0} aria-valuemax={100} aria-valuenow={settingsCompletion}>
+                  <i style={{ width: `${settingsCompletion}%` }} />
+                </span>
+              </div>
+            </section>
+
+            <section className="seeker-card seeker-settings-card" aria-labelledby="seeker-personal-info-title">
+              <div className="seeker-editor-card__heading">
+                <div>
+                  <span className="seeker-cv-summary__eyebrow">Profile</span>
+                  <h2 id="seeker-personal-info-title">Personal information</h2>
+                  <p>Your name, professional title, and location also appear in your CV and employer-facing profile.</p>
+                </div>
+              </div>
+              <form className="seeker-profile-form" onSubmit={(event) => event.preventDefault()}>
+                <div className="seeker-profile-picture-control">
+                  <span className="seeker-profile-picture-control__label">Profile photo</span>
+                  <div className="seeker-profile-picture-preview">
+                    {displayProfilePictureUrl
+                      ? <img src={displayProfilePictureUrl} alt="Your profile" />
+                      : <span aria-hidden="true">{profile.personalInfo.fullName.split(/\s+/).filter(Boolean).map((part) => part[0]).join('').slice(0, 2).toUpperCase() || 'ME'}</span>}
+                  </div>
+                  <div className="seeker-profile-picture-actions">
+                    <label className="seeker-profile-upload-button" aria-busy={isUploadingFile}>
+                      {isUploadingFile ? <span className="leamjobs-spinner leamjobs-spinner--accent" aria-hidden="true" /> : null}
+                      {isUploadingFile ? 'Uploading...' : 'Upload photo'}
+                      <input type="file" accept="image/jpeg,image/png,image/webp" onChange={handleProfilePictureSelect} disabled={isUploadingFile} />
+                    </label>
+                    {hasProfilePicture && <button type="button" className="seeker-profile-remove-button" onClick={handleRemoveProfilePicture} disabled={isUploadingFile}>Remove picture</button>}
+                  </div>
+                </div>
+                <label htmlFor="profile-full-name-field">
+                  <span>Full name</span>
+                  <input id="profile-full-name-field" type="text" autoComplete="name" value={profile.personalInfo.fullName} onChange={(event) => updatePersonalInfo('fullName', event.target.value)} />
+                </label>
+                <label htmlFor="profile-title-field">
+                  <span>Professional title</span>
+                  <input id="profile-title-field" type="text" value={profile.personalInfo.title} onChange={(event) => updatePersonalInfo('title', event.target.value)} />
+                </label>
+                <div className="seeker-profile-form__split">
+                  <label htmlFor="settings-country-field">
+                    <span>Country</span>
+                    <input id="settings-country-field" type="text" autoComplete="country-name" value={onboardingLocation.country} onChange={(event) => {
+                      const country = event.target.value;
+                      setOnboardingLocation((current) => ({ ...current, country }));
+                      updatePersonalInfo('location', [onboardingLocation.city, onboardingLocation.state, country].filter(Boolean).join(', '));
+                    }} />
+                  </label>
+                  <label htmlFor="settings-state-field">
+                    <span>State or region</span>
+                    <input id="settings-state-field" type="text" autoComplete="address-level1" value={onboardingLocation.state} onChange={(event) => {
+                      const state = event.target.value;
+                      setOnboardingLocation((current) => ({ ...current, state }));
+                      updatePersonalInfo('location', [onboardingLocation.city, state, onboardingLocation.country].filter(Boolean).join(', '));
+                    }} />
+                  </label>
+                </div>
+                <label htmlFor="settings-city-field">
+                  <span>City</span>
+                  <input id="settings-city-field" type="text" autoComplete="address-level2" value={onboardingLocation.city} onChange={(event) => {
+                    const city = event.target.value;
+                    setOnboardingLocation((current) => ({ ...current, city }));
+                    updatePersonalInfo('location', [city, onboardingLocation.state, onboardingLocation.country].filter(Boolean).join(', '));
+                  }} />
+                </label>
+                <fieldset className="seeker-availability-control">
+                  <legend>Availability</legend>
+                  <label><input type="radio" name="seeker-availability" value="AVAILABLE_NOW" checked={profile.availability === 'AVAILABLE_NOW'} onChange={() => setProfile((current) => ({ ...current, availability: 'AVAILABLE_NOW' }))} /><span>Available now</span></label>
+                  <label><input type="radio" name="seeker-availability" value="AVAILABLE_SOON" checked={profile.availability === 'AVAILABLE_SOON'} onChange={() => setProfile((current) => ({ ...current, availability: 'AVAILABLE_SOON' }))} /><span>Available soon</span></label>
+                  <label><input type="radio" name="seeker-availability" value="NOT_AVAILABLE" checked={profile.availability === 'NOT_AVAILABLE'} onChange={() => setProfile((current) => ({ ...current, availability: 'NOT_AVAILABLE' }))} /><span>Not currently available</span></label>
+                </fieldset>
+              </form>
+            </section>
+
+            <section className="seeker-card seeker-settings-card" aria-labelledby="seeker-account-info-title">
+              <div className="seeker-editor-card__heading">
+                <div>
+                  <span className="seeker-cv-summary__eyebrow">Account</span>
+                  <h2 id="seeker-account-info-title">Account information</h2>
+                  <p>Email and phone are read from your account. This profile editor does not support changing them.</p>
+                </div>
+              </div>
+              <dl className="seeker-settings-account-fields">
+                <div><dt>Email address</dt><dd>{profile.personalInfo.email || 'Not available'}</dd></div>
+                <div><dt>Phone number</dt><dd>{profile.personalInfo.phone || 'Not available'}</dd></div>
+              </dl>
+            </section>
+
+            <section className="seeker-card seeker-settings-card" aria-labelledby="seeker-professional-info-title">
+              <div className="seeker-editor-card__heading">
+                <div>
+                  <span className="seeker-cv-summary__eyebrow">Professional profile</span>
+                  <h2 id="seeker-professional-info-title">Skills</h2>
+                  <p>Skills are shared with your CV and are edited in the My CV workspace.</p>
+                </div>
+                <Link className="seeker-profile-account-card__action" to="/seeker/cv">Edit skills in My CV</Link>
+              </div>
+              {profile.skills.length > 0
+                ? <div className="seeker-profile-tags">{profile.skills.map((skill, index) => <span key={`${skill}-${index}`}>{skill}</span>)}</div>
+                : <p className="seeker-settings-empty">No skills added yet. Add skills in My CV to complete your profile.</p>}
+            </section>
+
+            <section className="seeker-card seeker-settings-card" aria-labelledby="seeker-subscription-title">
+              <div className="seeker-editor-card__heading">
+                <div>
+                  <span className="seeker-cv-summary__eyebrow">Subscription</span>
+                  <h2 id="seeker-subscription-title">{currentPlan.name}</h2>
+                  <p>{currentPlan.description}</p>
+                  {trial ? <p className="seeker-settings-subscription__status">Trial active{trial.endAt ? ` until ${new Date(trial.endAt).toLocaleDateString()}` : ''}.</p> : null}
+                </div>
+                {trialOffer.available ? (
+                  <button type="button" className="seeker-profile-account-card__action" onClick={() => void handleStartTrial()} disabled={isStartingTrial} aria-busy={isStartingTrial}>
+                    {isStartingTrial ? 'Starting trial...' : `Start ${trialOffer.durationDays}-day free trial`}
+                  </button>
+                ) : (
+                  <Link className="seeker-profile-account-card__action" to="/seeker/subscription">
+                    {getAccountTypeLabel(currentPlan.key ?? subscription.planId, 'Basic') === 'Basic' ? 'Upgrade plan' : 'Manage subscription'}
+                  </Link>
+                )}
+              </div>
+            </section>
+          </div>
         ) : (
           <>
             <section className="seeker-cv-summary seeker-card">
@@ -2149,25 +2459,6 @@ function ProfilePage() {
               {aiCvSuggestions.length > 0 ? <div className="seeker-ai-panel__results"><h3>CV suggestions</h3>{aiCvSuggestions.map((item, index) => <article key={`${item.section}-${index}`}><strong>{item.section}</strong><p>{item.suggested}</p><small>{item.reason}</small><button type="button" onClick={() => handleSuggestionUse(item.section, item.suggested)}>Use in editor</button></article>)}</div> : null}
             </section>
 
-            <section className="seeker-card seeker-profile-account-card" aria-labelledby="profile-account-heading">
-              <div className="seeker-profile-account-card__content">
-                <div>
-                  <span className="seeker-cv-summary__eyebrow">Account</span>
-                  <h2 id="profile-account-heading">{getAccountTypeLabel(currentPlan?.key ?? subscription.planId ?? 'free', 'Basic') === 'Basic' ? 'Upgrade Account' : 'Manage Subscription'}</h2>
-                  <p>Review your account plan and manage your LeamJobs subscription from one place.</p>
-                </div>
-                {trialOffer.available ? (
-                  <button type="button" className="seeker-profile-account-card__action seeker-profile-account-card__action--trial" onClick={() => void handleStartTrial()} disabled={isStartingTrial}>
-                    {isStartingTrial ? 'Starting trial…' : `Start ${trialOffer.durationDays}-day free trial`}
-                  </button>
-                ) : (
-                  <button type="button" className="seeker-profile-account-card__action" onClick={() => navigate('/seeker/subscription')}>
-                    {getAccountTypeLabel(currentPlan?.key ?? subscription.planId ?? 'free', 'Basic') === 'Basic' ? 'Upgrade Account' : 'Manage Subscription'}
-                  </button>
-                )}
-              </div>
-            </section>
-
             <nav id="seeker-profile-editor" className="seeker-cv-steps" aria-label="CV sections">
               {steps.map((step) => (
                 <button
@@ -2194,68 +2485,25 @@ function ProfilePage() {
             <section className="seeker-profile-grid">
               <div className="seeker-profile-main">
                 {activeStep === 'personal' && (
-                  <section className="seeker-card seeker-editor-card">
+                  <section className="seeker-card seeker-editor-card seeker-cv-personal-summary">
                     <div className="seeker-editor-card__heading">
                       <div>
-                        <h2>Personal details</h2>
-                        <p>Keep your public candidate information accurate.</p>
+                        <h2>Personal details used in your CV</h2>
+                        <p>These details come from your profile settings and are included in your CV preview.</p>
                       </div>
+                      <Link className="seeker-profile-account-card__action" to="/seeker/profile">Edit profile settings</Link>
                     </div>
-
-                    <form className="seeker-profile-form">
-                      <div className="seeker-profile-picture-control">
-                        <span className="seeker-profile-picture-control__label">Profile Photo</span>
-                        <div className="seeker-profile-picture-preview">
-                          {displayProfilePictureUrl ? <img src={displayProfilePictureUrl} alt="Profile" /> : <span aria-hidden="true">{profile.personalInfo.fullName.split(/\s+/).filter(Boolean).map((part) => part[0]).join('').slice(0, 2).toUpperCase() || 'ME'}</span>}
-                        </div>
-                        <div className="seeker-profile-picture-actions">
-                          <label className="seeker-profile-upload-button" aria-busy={isUploadingFile}>
-                            {isUploadingFile ? <span className="leamjobs-spinner leamjobs-spinner--accent" aria-hidden="true" /> : null}
-                            {isUploadingFile ? 'Uploading...' : 'Upload Photo'}
-                            <input type="file" accept="image/jpeg,image/png,image/webp" onChange={handleProfilePictureSelect} disabled={isUploadingFile} />
-                          </label>
-                          {hasProfilePicture && <button type="button" className="seeker-profile-remove-button" onClick={handleRemoveProfilePicture} disabled={isUploadingFile}>Remove picture</button>}
-                        </div>
-                      </div>
-                      <label>
-                        <span>Full Name</span>
-                        <input id="profile-full-name-field" type="text" value={profile.personalInfo.fullName} onChange={(event) => updatePersonalInfo('fullName', event.target.value)} />
-                      </label>
-                      <label htmlFor="profile-title-field">
-                        <span className="seeker-field-header">
-                          <span>Professional Title</span>
-                          {renderInlineAiButton('title', 'Use AI')}
-                        </span>
-                        <input id="profile-title-field" type="text" value={profile.personalInfo.title} onChange={(event) => updatePersonalInfo('title', event.target.value)} />
-                      </label>
+                    <dl className="seeker-settings-account-fields">
+                      <div><dt>Name</dt><dd>{profile.personalInfo.fullName || 'Add your name in Profile Settings'}</dd></div>
+                      <div><dt>Professional title</dt><dd id="profile-title-field">{profile.personalInfo.title || 'Add a professional title in Profile Settings'}</dd></div>
+                      <div><dt>Email</dt><dd>{profile.personalInfo.email || 'Not available'}</dd></div>
+                      <div><dt>Phone</dt><dd>{profile.personalInfo.phone || 'Not available'}</dd></div>
+                      <div><dt>Location</dt><dd>{profile.personalInfo.location || 'Add a location in Profile Settings'}</dd></div>
+                    </dl>
+                    <div className="seeker-cv-personal-summary__ai">
+                      {renderInlineAiButton('title', 'Suggest a professional title')}
                       {renderAiPreview('profile-title-field', 'personal')}
-                      <div className="seeker-profile-form__split">
-                        <label>
-                          <span>Email</span>
-                          <input id="profile-email-field" type="email" value={profile.personalInfo.email} onChange={(event) => updatePersonalInfo('email', event.target.value)} />
-                        </label>
-                        <label>
-                          <span>Phone</span>
-                          <input id="profile-phone-field" type="tel" value={profile.personalInfo.phone} onChange={(event) => updatePersonalInfo('phone', event.target.value)} />
-                        </label>
-                      </div>
-                      <div className="seeker-profile-form__split">
-                        <label>
-                          <span>Location</span>
-                          <input id="profile-location-field" type="text" value={profile.personalInfo.location} onChange={(event) => updatePersonalInfo('location', event.target.value)} />
-                        </label>
-                        <label>
-                          <span>LinkedIn</span>
-                          <input id="linkedin-field" type="url" value={profile.personalInfo.linkedin} onChange={(event) => updatePersonalInfo('linkedin', event.target.value)} />
-                        </label>
-                      </div>
-                      <fieldset className="seeker-availability-control">
-                        <legend>Availability</legend>
-                        <label><input type="radio" name="seeker-availability" value="AVAILABLE_NOW" checked={profile.availability === 'AVAILABLE_NOW'} onChange={() => setProfile((current) => ({ ...current, availability: 'AVAILABLE_NOW' }))} /><span>Available now</span></label>
-                        <label><input type="radio" name="seeker-availability" value="AVAILABLE_SOON" checked={profile.availability === 'AVAILABLE_SOON'} onChange={() => setProfile((current) => ({ ...current, availability: 'AVAILABLE_SOON' }))} /><span>Available soon</span></label>
-                        <label><input type="radio" name="seeker-availability" value="NOT_AVAILABLE" checked={profile.availability === 'NOT_AVAILABLE'} onChange={() => setProfile((current) => ({ ...current, availability: 'NOT_AVAILABLE' }))} /><span>Not currently available</span></label>
-                      </fieldset>
-                    </form>
+                    </div>
                   </section>
                 )}
 
@@ -2499,10 +2747,35 @@ function ProfilePage() {
       </main>
 
       <div className="seeker-profile-actions">
-        <button type="button" onClick={handleUpdateProfile} disabled={isSaving} aria-busy={isSaving}>
-          {isSaving ? <span className="leamjobs-spinner" aria-hidden="true" /> : <FaRegSave />} {isSaving ? 'Updating...' : 'Update Profile'}
-        </button>
+        {mode === 'cv' ? (
+          <button type="button" onClick={() => void handleUpdateProfile()} disabled={isSaving || isUploadingFile} aria-busy={isSaving || isUploadingFile}>
+            {isSaving || isUploadingFile ? <span className="leamjobs-spinner" aria-hidden="true" /> : <FaRegSave />} {isUploadingFile ? 'Uploading...' : isSaving ? 'Saving...' : 'Save CV'}
+          </button>
+        ) : (
+          <button type="button" onClick={() => void handleSaveSettings()} disabled={isSettingsSaving || isSaving} aria-busy={isSettingsSaving}>
+            {isSettingsSaving ? <span className="leamjobs-spinner" aria-hidden="true" /> : <FaRegSave />} {isSettingsSaving ? 'Saving settings...' : 'Save Profile Settings'}
+          </button>
+        )}
       </div>
+
+      {pendingNavigation && (
+        <div className="seeker-profile-confirmation-backdrop" role="presentation">
+          <section className="seeker-profile-confirmation" role="dialog" aria-modal="true" aria-labelledby="unsaved-cv-title" aria-describedby="unsaved-cv-description">
+            <div>
+              <span className="seeker-cv-summary__eyebrow">Unsaved changes</span>
+              <h2 id="unsaved-cv-title">Save your CV changes?</h2>
+              <p id="unsaved-cv-description">Your CV edits, template selection, or imported information have not been saved.</p>
+            </div>
+            <div className="seeker-profile-confirmation__actions">
+              <button type="button" className="seeker-step-button seeker-step-button--secondary" onClick={() => setPendingNavigation(null)}>Stay</button>
+              <button type="button" className="seeker-step-button seeker-step-button--secondary" onClick={handleLeaveWithoutSaving}>Discard changes</button>
+              <button type="button" className="seeker-step-button seeker-step-button--primary" onClick={() => void handleSaveBeforeLeaving()} disabled={isSaving || isUploadingFile}>
+                {isSaving ? 'Saving...' : 'Save and continue'}
+              </button>
+            </div>
+          </section>
+        </div>
+      )}
 
       {notification && (
         <div

@@ -32,6 +32,7 @@ function MobileBottomNav() {
   const seekerMode = pathname.startsWith('/seeker');
   const employerMode = pathname.startsWith('/employer');
   const adminMode = pathname.startsWith('/admin');
+  const seekerCvMode = seekerMode && pathname === '/seeker/cv';
 
   if (adminMode) {
     return (
@@ -58,9 +59,10 @@ function MobileBottomNav() {
   const candidatesPath = employerMode ? '/employer/candidates' : '';
   const applicationsPath = seekerMode ? '/seeker/applications' : employerMode ? '/employer/applicants' : '/applications';
   const messagesPath = seekerMode ? '/seeker/messages' : employerMode ? '/employer/messages' : '/messages';
-  const profilePath = seekerMode ? '/seeker/profile' : employerMode ? '/employer/profile' : '/profile';
+  const profilePath = seekerMode ? (seekerCvMode ? '/seeker/cv' : '/seeker/profile') : employerMode ? '/employer/profile' : '/profile';
   const paymentsPath = seekerMode ? '/seeker/payments' : '/payments';
   const applicationsLabel = employerMode ? 'Applicants' : 'Applications';
+  const profileLabel = seekerCvMode ? 'My CV' : seekerMode ? 'Profile Settings' : 'Profile';
 
   return (
     <nav className="mobile-bottom-nav" aria-label="Mobile navigation">
@@ -88,9 +90,14 @@ function MobileBottomNav() {
         <FaMoneyBillWave />
         <span>Payments</span>
       </Link> : null}
-      <Link to={profilePath} className={`mobile-bottom-nav__item ${pathname.startsWith(profilePath) ? 'mobile-bottom-nav__item--active' : ''}`}>
-        <FaUser />
-        <span>Profile</span>
+      <Link
+        to={profilePath}
+        aria-current={pathname.startsWith(profilePath) ? 'page' : undefined}
+        aria-label={profileLabel}
+        className={`mobile-bottom-nav__item ${pathname.startsWith(profilePath) ? 'mobile-bottom-nav__item--active' : ''}`}
+      >
+        {seekerCvMode ? <FaEdit /> : <FaUser />}
+        <span>{profileLabel}</span>
       </Link>
     </nav>
   );

@@ -9,7 +9,7 @@ type PremiumFeature = { key: string; title: string; description: string; icon: t
 
 const sections: Array<{ title: string; features: PremiumFeature[] }> = [
   { title: 'AI Career Tools', features: [
-    { key: 'AI_CV_IMPROVEMENT', title: 'AI CV improvement', description: 'Improve CV content with structured, editable suggestions.', icon: FaMagic, action: 'Open profile', to: '/seeker/profile' },
+    { key: 'AI_CV_IMPROVEMENT', title: 'AI CV improvement', description: 'Improve CV content with structured, editable suggestions.', icon: FaMagic, action: 'Open My CV', to: '/seeker/cv' },
     { key: 'AI_COVER_LETTER', title: 'AI cover letters', description: 'Draft job-specific cover letters from real job and profile data.', icon: FaFileAlt, action: 'View applications', to: '/seeker/applications' },
     { key: 'AI_INTERVIEW_PREPARATION', title: 'Interview preparation', description: 'Generate role-specific questions and preparation guidance.', icon: FaBriefcase },
     { key: 'AI_CAREER_ASSISTANT', title: 'Career assistant', description: 'Get scoped career guidance grounded in your profile.', icon: FaMagic },

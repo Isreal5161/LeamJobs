@@ -44,7 +44,8 @@ const primaryNav: Record<'seeker' | 'employer' | 'admin', { label: string; to: s
 const accountNav: Record<'seeker' | 'employer' | 'admin', { label: string; to: string }[]> = {
   seeker: [
     { label: 'Payments', to: '/seeker/payments' },
-    { label: 'Profile', to: '/seeker/profile' },
+    { label: 'My CV', to: '/seeker/cv' },
+    { label: 'Profile Settings', to: '/seeker/profile' },
     { label: 'Subscription', to: '/seeker/subscription' },
     { label: 'Premium tools', to: '/seeker/premium' },
     { label: 'Saved jobs', to: '/seeker/saved-jobs' },

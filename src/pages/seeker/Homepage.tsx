@@ -250,7 +250,7 @@ function Homepage() {
               </div>
 
               <div className="seeker-cv__actions">
-                <Link className="seeker-button seeker-button--primary" to="/seeker/profile#seeker-profile-editor">
+                <Link className="seeker-button seeker-button--primary" to="/seeker/cv#seeker-profile-editor">
                   <FaEdit />
                   Edit CV
                 </Link>
