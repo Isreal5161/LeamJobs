@@ -695,18 +695,6 @@ function ProfilePage({ mode }: ProfilePageProps) {
     if (completionScore >= 50) return 'Your basic profile is complete. Complete your CV to reach 100%.';
     return 'Start with your basics and build your CV step by step.';
   }, [completionScore]);
-  const settingsCompletionFields = [
-    profile.personalInfo.fullName.trim().split(/\s+/).filter(Boolean).length >= 2,
-    Boolean(profile.personalInfo.title.trim()),
-    Boolean(onboardingLocation.country.trim()),
-    Boolean(onboardingLocation.state.trim()),
-    Boolean(onboardingLocation.city.trim()),
-    profile.skills.length > 0,
-  ];
-  const settingsCompletion = Math.round(
-    (settingsCompletionFields.filter(Boolean).length / settingsCompletionFields.length) * 100,
-  );
-
   const primaryExperienceId = profile.experience[0]?.id ? `experience-description-${profile.experience[0].id}` : 'experience-root';
   const primaryEducationId = profile.education[0]?.id ? `education-degree-${profile.education[0].id}` : 'education-root';
   const primarySkillId = profile.skills.length > 0 ? 'skill-input-0' : 'skills-root';
@@ -2076,12 +2064,25 @@ function ProfilePage({ mode }: ProfilePageProps) {
     <div className={`seeker-profile-page seeker-profile-page--${mode}`}>
       <section className="seeker-profile-hero">
         <div className="seeker-profile-hero__top">
-          <div>
+          <div className="seeker-profile-hero__copy">
             <span className="seeker-cv-summary__eyebrow">LeamJobs career workspace</span>
             <h1>{mode === 'cv' ? 'My CV' : 'Profile Settings'}</h1>
             <p>{mode === 'cv'
               ? 'Build, review, and export a CV using your saved profile information.'
               : 'Manage the personal and professional information employers see on your profile.'}</p>
+          </div>
+          <div className="seeker-profile-hero__actions">
+            {mode === 'cv' ? (
+              <button type="button" className="seeker-profile-save-button" onClick={() => void handleUpdateProfile()} disabled={isSaving || isUploadingFile} aria-busy={isSaving || isUploadingFile}>
+                {isSaving || isUploadingFile ? <span className="leamjobs-spinner" aria-hidden="true" /> : <FaRegSave />}
+                {isUploadingFile ? 'Uploading...' : isSaving ? 'Saving...' : 'Save CV'}
+              </button>
+            ) : (
+              <button type="button" className="seeker-profile-save-button" onClick={() => void handleSaveSettings()} disabled={isSettingsSaving || isSaving} aria-busy={isSettingsSaving}>
+                {isSettingsSaving ? <span className="leamjobs-spinner" aria-hidden="true" /> : <FaRegSave />}
+                {isSettingsSaving ? 'Saving settings...' : 'Save settings'}
+              </button>
+            )}
           </div>
         </div>
         <nav className="seeker-profile-tabs" aria-label="Profile workspace">
@@ -2136,14 +2137,14 @@ function ProfilePage({ mode }: ProfilePageProps) {
                   <p>{[profile.personalInfo.title, [onboardingLocation.city, onboardingLocation.state, onboardingLocation.country].filter(Boolean).join(', ')].filter(Boolean).join(' · ') || 'Add a professional title and location to help employers understand your background.'}</p>
                 </div>
               </div>
-              <div className="seeker-settings-completion">
-                <div>
-                  <strong>{settingsCompletion}% complete</strong>
-                  <span>Based on your name, title, location, and skills</span>
-                </div>
-                <span className="seeker-cv-progress__bar" role="progressbar" aria-label="Profile settings completeness" aria-valuemin={0} aria-valuemax={100} aria-valuenow={settingsCompletion}>
-                  <i style={{ width: `${settingsCompletion}%` }} />
-                </span>
+              <div className="seeker-settings-photo-actions">
+                <span className="seeker-settings-photo-actions__label">Profile photo</span>
+                <label className="seeker-profile-upload-button" aria-busy={isUploadingFile}>
+                  {isUploadingFile ? <span className="leamjobs-spinner leamjobs-spinner--accent" aria-hidden="true" /> : null}
+                  {isUploadingFile ? 'Uploading...' : 'Upload photo'}
+                  <input type="file" accept="image/jpeg,image/png,image/webp" onChange={handleProfilePictureSelect} disabled={isUploadingFile} />
+                </label>
+                {hasProfilePicture && <button type="button" className="seeker-profile-remove-button" onClick={handleRemoveProfilePicture} disabled={isUploadingFile}>Remove picture</button>}
               </div>
             </section>
 
@@ -2156,22 +2157,6 @@ function ProfilePage({ mode }: ProfilePageProps) {
                 </div>
               </div>
               <form className="seeker-profile-form" onSubmit={(event) => event.preventDefault()}>
-                <div className="seeker-profile-picture-control">
-                  <span className="seeker-profile-picture-control__label">Profile photo</span>
-                  <div className="seeker-profile-picture-preview">
-                    {displayProfilePictureUrl
-                      ? <img src={displayProfilePictureUrl} alt="Your profile" />
-                      : <span aria-hidden="true">{profile.personalInfo.fullName.split(/\s+/).filter(Boolean).map((part) => part[0]).join('').slice(0, 2).toUpperCase() || 'ME'}</span>}
-                  </div>
-                  <div className="seeker-profile-picture-actions">
-                    <label className="seeker-profile-upload-button" aria-busy={isUploadingFile}>
-                      {isUploadingFile ? <span className="leamjobs-spinner leamjobs-spinner--accent" aria-hidden="true" /> : null}
-                      {isUploadingFile ? 'Uploading...' : 'Upload photo'}
-                      <input type="file" accept="image/jpeg,image/png,image/webp" onChange={handleProfilePictureSelect} disabled={isUploadingFile} />
-                    </label>
-                    {hasProfilePicture && <button type="button" className="seeker-profile-remove-button" onClick={handleRemoveProfilePicture} disabled={isUploadingFile}>Remove picture</button>}
-                  </div>
-                </div>
                 <label htmlFor="profile-full-name-field">
                   <span>Full name</span>
                   <input id="profile-full-name-field" type="text" autoComplete="name" value={profile.personalInfo.fullName} onChange={(event) => updatePersonalInfo('fullName', event.target.value)} />
@@ -2267,7 +2252,7 @@ function ProfilePage({ mode }: ProfilePageProps) {
           <>
             <section className="seeker-cv-summary seeker-card">
               <div className="seeker-cv-summary__content">
-                <span className="seeker-cv-summary__eyebrow">Modern template</span>
+                <span className="seeker-cv-summary__eyebrow">{TEMPLATES.find((template) => template.style === renderedTemplate)?.name ?? 'CV overview'}</span>
                 <h2>{profile.personalInfo.fullName || 'Your Profile'}</h2>
                 <p>{profile.personalInfo.summary || 'Add a professional summary to your profile.'}</p>
                 <div className="seeker-cv-progress">
