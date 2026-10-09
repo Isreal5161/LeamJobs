@@ -21,7 +21,7 @@ import {
   FaUser,
 } from 'react-icons/fa';
 import CVTemplateSelector, { TEMPLATES } from '../../components/cv-templates/CVTemplateSelector';
-import CVTemplateRenderer, { CVData, sampleCVData, type CVTemplateId } from '../../components/cv-templates/CVTemplateRenderer';
+import CVTemplateRenderer, { sampleCVData, type CVTemplateId } from '../../components/cv-templates/CVTemplateRenderer';
 import { useAuth } from '../../context/AuthContext';
 import { getAccountTypeLabel, useSubscriptions } from '../../context/SubscriptionContext';
 import { startSeekerFreeTrial } from '../../services/api';
@@ -41,6 +41,7 @@ import {
   type CertificationItem as ApiCertificationItem,
   type EducationItem as ApiEducationItem,
   type ExperienceItem as ApiExperienceItem,
+  type LanguageItem as ApiLanguageItem,
   type SeekerAvailability,
   requestProfileAssistant,
   requestCvOptimizer,
@@ -58,7 +59,7 @@ type ExperienceItem = {
   company: string;
   startDate: string;
   endDate: string;
-  currentlyWorking: boolean;
+  currentlyWorking: boolean | null;
   description: string;
 };
 
@@ -67,6 +68,7 @@ type EducationItem = {
   degree: string;
   school: string;
   year: string;
+  details?: string;
 };
 
 type CertificationItem = {
@@ -78,7 +80,7 @@ type CertificationItem = {
 type LanguageItem = {
   id: string;
   name: string;
-  proficiency: 'Basic' | 'Conversational' | 'Professional' | 'Fluent' | 'Native';
+  proficiency: string;
 };
 
 type ProjectItem = {
@@ -100,6 +102,7 @@ type ProfileState = {
     phone: string;
     location: string;
     linkedin: string;
+    website: string;
     summary: string;
   };
   availability: SeekerAvailability;
@@ -124,13 +127,23 @@ type ImportedCvData = {
   state: string | null;
   city: string | null;
   website: string | null;
-  experience: ExperienceItem[] | null;
+  experience: Array<Omit<ExperienceItem, 'currentlyWorking'> & { currentlyWorking: boolean | null }> | null;
   education: EducationItem[] | null;
   skills: string[] | null;
   certifications: CertificationItem[] | null;
-  languages: LanguageItem[] | null;
+  languages: Array<Omit<LanguageItem, 'proficiency'> & { proficiency: string }> | null;
   projects: ProjectItem[] | null;
   linkedinUrl: string | null;
+};
+type ImportListKey = 'experience' | 'education' | 'skills' | 'certifications' | 'languages' | 'projects';
+type ImportListSelections = Record<ImportListKey, string[]>;
+type ImportListReplacement = Record<ImportListKey, boolean>;
+type ImportedEntryByKey = {
+  experience: ExperienceItem;
+  education: EducationItem;
+  certifications: CertificationItem;
+  languages: LanguageItem;
+  projects: ProjectItem;
 };
 type ResumeImportResponse = {
   success: true;
@@ -138,6 +151,7 @@ type ResumeImportResponse = {
     source: { format: string; filename: string | null };
     requiresReview: boolean;
     extraction: { method: string; aiUsed: boolean };
+    confidence: { overall: number; fields: Record<string, number> };
     warnings: string[];
     cv: ImportedCvData;
   };
@@ -173,6 +187,7 @@ const validationFieldLabels: Record<string, string> = {
   githubUrl: 'GitHub URL',
   bio: 'Profile summary',
   linkedinUrl: 'LinkedIn URL',
+  website: 'Website URL',
   fullName: 'Full name',
   professionalTitle: 'Professional title',
   country: 'Country',
@@ -189,6 +204,7 @@ const validationSectionLabels: Record<string, { label: string; step: StepKey }> 
   projects: { label: 'Project', step: 'projects' },
   bio: { label: 'Profile summary', step: 'summary' },
   linkedinUrl: { label: 'LinkedIn', step: 'linkedin' },
+  website: { label: 'Website', step: 'linkedin' },
   fullName: { label: 'Personal details', step: 'personal' },
   professionalTitle: { label: 'Personal details', step: 'personal' },
   country: { label: 'Personal details', step: 'personal' },
@@ -277,6 +293,14 @@ const qualificationSuggestions = [
 ];
 
 const createId = (prefix: string) => `${prefix}-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+const isValidHttpUrl = (value: string) => {
+  try {
+    const parsed = new URL(value);
+    return (parsed.protocol === 'http:' || parsed.protocol === 'https:') && Boolean(parsed.hostname);
+  } catch {
+    return false;
+  }
+};
 
 const createEmptyProfileState = (): ProfileState => ({
   personalInfo: {
@@ -286,6 +310,7 @@ const createEmptyProfileState = (): ProfileState => ({
     phone: '',
     location: '',
     linkedin: '',
+    website: '',
     summary: '',
   },
   availability: 'NOT_AVAILABLE',
@@ -312,10 +337,20 @@ function ProfilePage({ mode }: ProfilePageProps) {
   const [uploadedCvName, setUploadedCvName] = useState('');
   const [uploadedCvFile, setUploadedCvFile] = useState<File | null>(null);
   const [cvWorkflowMode, setCvWorkflowMode] = useState<CvWorkflowMode>('template');
+  const [workflowBeforeImport, setWorkflowBeforeImport] = useState<CvWorkflowMode>('uploaded');
   const [cvImportStatus, setCvImportStatus] = useState<CvImportStatus>('idle');
   const [importedCvData, setImportedCvData] = useState<ImportedCvData | null>(null);
   const [cvImportWarnings, setCvImportWarnings] = useState<string[]>([]);
   const [cvImportSourceFormat, setCvImportSourceFormat] = useState<string | null>(null);
+  const [cvImportExtraction, setCvImportExtraction] = useState<{ method: string; aiUsed: boolean } | null>(null);
+  const [cvImportConfidence, setCvImportConfidence] = useState<{ overall: number; fields: Record<string, number> } | null>(null);
+  const [selectedImportEntries, setSelectedImportEntries] = useState<ImportListSelections>({
+    experience: [], education: [], skills: [], certifications: [], languages: [], projects: [],
+  });
+  const [replaceImportSections, setReplaceImportSections] = useState<ImportListReplacement>({
+    experience: false, education: false, skills: false, certifications: false, languages: false, projects: false,
+  });
+  const [useImportedScalar, setUseImportedScalar] = useState<Record<string, boolean>>({});
   const [validationIssues, setValidationIssues] = useState<ProfileValidationIssue[]>([]);
   const [isImportConfirmationOpen, setIsImportConfirmationOpen] = useState(false);
   const [profile, setProfile] = useState<ProfileState>(createEmptyProfileState());
@@ -481,6 +516,7 @@ function ProfilePage({ mode }: ProfilePageProps) {
           phone,
           location,
           linkedin: apiProfile.linkedinUrl ?? '',
+          website: apiProfile.website ?? '',
           summary: apiProfile.bio ?? '',
         },
         availability: apiProfile.availability ?? 'NOT_AVAILABLE',
@@ -1528,6 +1564,101 @@ function ProfilePage({ mode }: ProfilePageProps) {
 
     setValidationIssues([]);
 
+    const incompleteCvItems: ProfileValidationIssue[] = [];
+    profile.experience.forEach((item, index) => {
+      const fields: Array<[keyof ExperienceItem, string]> = [
+        ['jobTitle', 'Enter a job title or remove this experience entry.'],
+        ['company', 'Enter the company or remove this experience entry.'],
+        ['startDate', 'Enter a start date or remove this experience entry.'],
+      ];
+      fields.forEach(([field, guidance]) => {
+        if (!String(item[field] ?? '').trim()) incompleteCvItems.push({
+          path: `experience.${index}.${field}`,
+          message: `${field === 'jobTitle' ? 'Job title' : field === 'company' ? 'Company' : 'Start date'} is required`,
+          displayMessage: guidance,
+          guidance,
+          step: 'experience',
+        });
+      });
+      if (!item.currentlyWorking && !item.endDate.trim()) incompleteCvItems.push({
+        path: `experience.${index}.endDate`,
+        message: 'End date is required',
+        displayMessage: 'Enter an end date, or confirm that you currently work here.',
+        guidance: 'Enter an end date, or select “Currently working here” if you still work there.',
+        step: 'experience',
+      });
+    });
+    profile.education.forEach((item, index) => {
+      ([
+        ['degree', 'Degree'],
+        ['school', 'School'],
+        ['year', 'Year'],
+      ] as const).forEach(([field, label]) => {
+        if (!item[field].trim()) incompleteCvItems.push({
+          path: `education.${index}.${field}`,
+          message: `${label} is required`,
+          displayMessage: `Add the ${label.toLowerCase()} or remove this education entry.`,
+          guidance: `Add the ${label.toLowerCase()} or remove this education entry.`,
+          step: 'education',
+        });
+      });
+    });
+    profile.certifications.forEach((item, index) => {
+      ([
+        ['name', 'Qualification name'],
+        ['issuer', 'Issuer'],
+      ] as const).forEach(([field, label]) => {
+        if (!item[field].trim()) incompleteCvItems.push({
+          path: `certifications.${index}.${field}`,
+          message: `${label} is required`,
+          displayMessage: `Add the ${label.toLowerCase()} or remove this qualification.`,
+          guidance: `Add the ${label.toLowerCase()} or remove this qualification.`,
+          step: 'certifications',
+        });
+      });
+    });
+    profile.projects.forEach((item, index) => {
+      if (!item.name.trim()) incompleteCvItems.push({
+        path: `projects.${index}.name`,
+        message: 'Project name is required',
+        displayMessage: 'Add a project name or remove this project.',
+        guidance: 'Add a project name or remove this project.',
+        step: 'projects',
+      });
+    });
+    profile.languages.forEach((item, index) => {
+      if (!item.proficiency) incompleteCvItems.push({
+        path: `languages.${index}.proficiency`,
+        message: 'Proficiency is required',
+        displayMessage: 'Choose a proficiency level you can confirm, or remove this language entry.',
+        guidance: 'Choose a proficiency level you can confirm, or remove this language entry.',
+        step: 'languages',
+      });
+    });
+    [
+      ['linkedinUrl', profile.personalInfo.linkedin],
+      ['website', profile.personalInfo.website],
+    ].forEach(([field, value]) => {
+      const url = String(value).trim();
+      if (url && !isValidHttpUrl(url)) incompleteCvItems.push({
+        path: field,
+        message: 'Enter a valid URL',
+        displayMessage: `Enter a valid ${field === 'website' ? 'website' : 'LinkedIn'} URL including https://.`,
+        guidance: 'Enter the complete URL including https://.',
+        step: 'linkedin',
+      });
+    });
+    if (incompleteCvItems.length > 0) {
+      setValidationIssues(incompleteCvItems);
+      setActiveStep(incompleteCvItems[0].step);
+      showNotification({
+        title: 'Complete or remove incomplete CV entries',
+        message: `${incompleteCvItems.length} field(s) need attention before saving.`,
+        tone: 'error',
+      });
+      return false;
+    }
+
     const fullNameParts = profile.personalInfo.fullName.trim().split(/\s+/).filter(Boolean);
     if (fullNameParts.length < 2) {
       showNotification({
@@ -1564,9 +1695,10 @@ function ProfilePage({ mode }: ProfilePageProps) {
         endDate: item.currentlyWorking && !item.endDate.trim() ? 'Present' : item.endDate,
       })) as ApiExperienceItem[],
       certifications: profile.certifications as ApiCertificationItem[],
-      languages: profile.languages,
+      languages: profile.languages as ApiLanguageItem[],
       projects: profile.projects,
       linkedinUrl: profile.personalInfo.linkedin.trim(),
+      website: profile.personalInfo.website.trim(),
       ...(shouldPersistTemplate ? { cvTemplate: selectedTemplate } : {}),
     };
 
@@ -1832,10 +1964,6 @@ function ProfilePage({ mode }: ProfilePageProps) {
     }
 
     const imported = result.data.data.cv;
-    const importedLocation = [imported.city, imported.state, imported.country]
-      .map((part) => part?.trim() || '')
-      .filter(Boolean)
-      .join(', ');
     const importedExperience = Array.isArray(imported.experience) ? imported.experience.filter(Boolean).map((item) => ({ ...item, id: item.id || createId('experience') })) : [];
     const importedEducation = Array.isArray(imported.education) ? imported.education.filter(Boolean).map((item) => ({ ...item, id: item.id || createId('education') })) : [];
     const importedCertifications = Array.isArray(imported.certifications) ? imported.certifications.filter(Boolean).map((item) => ({ ...item, id: item.id || createId('certification') })) : [];
@@ -1843,49 +1971,107 @@ function ProfilePage({ mode }: ProfilePageProps) {
     const importedProjects = Array.isArray(imported.projects) ? imported.projects.filter(Boolean).map((item) => ({ ...item, id: item.id || createId('project') })) : [];
     const importedSkills = Array.isArray(imported.skills) ? [...new Set(imported.skills.map((skill) => skill.trim()).filter(Boolean))] : [];
 
-    setProfile((current) => ({
-      ...current,
-      personalInfo: {
-        ...current.personalInfo,
-        fullName: imported.fullName?.trim() || current.personalInfo.fullName,
-        title: imported.professionalTitle?.trim() || current.personalInfo.title,
-        location: importedLocation || current.personalInfo.location,
-        summary: imported.bio?.trim() || current.personalInfo.summary,
-        linkedin: imported.linkedinUrl?.trim() || current.personalInfo.linkedin,
-      },
-      experience: importedExperience.length > 0 ? importedExperience : current.experience,
-      education: importedEducation.length > 0 ? importedEducation : current.education,
-      skills: importedSkills.length > 0 ? importedSkills : current.skills,
-      certifications: importedCertifications.length > 0 ? importedCertifications : current.certifications,
-      languages: importedLanguages.length > 0 ? importedLanguages : current.languages,
-      projects: importedProjects.length > 0 ? importedProjects : current.projects,
-    }));
-    setOnboardingLocation((current) => ({
-      country: imported.country?.trim() || current.country,
-      state: imported.state?.trim() || current.state,
-      city: imported.city?.trim() || current.city,
-    }));
     setImportedCvData(imported);
+    setSelectedImportEntries({
+      experience: importedExperience.map((item) => item.id),
+      education: importedEducation.map((item) => item.id),
+      skills: importedSkills,
+      certifications: importedCertifications.map((item) => item.id),
+      languages: importedLanguages.map((item) => item.id),
+      projects: importedProjects.map((item) => item.id),
+    });
+    setReplaceImportSections({
+      experience: false, education: false, skills: false, certifications: false, languages: false, projects: false,
+    });
+    setUseImportedScalar({
+      fullName: !profile.personalInfo.fullName.trim(),
+      professionalTitle: !profile.personalInfo.title.trim(),
+      location: !profile.personalInfo.location.trim() && !imported.city?.includes(','),
+      bio: !profile.personalInfo.summary.trim(),
+      linkedinUrl: !profile.personalInfo.linkedin.trim(),
+      website: !profile.personalInfo.website.trim(),
+      country: !onboardingLocation.country.trim(),
+      state: !onboardingLocation.state.trim(),
+      city: !onboardingLocation.city.trim() && !imported.city?.includes(','),
+    });
     setCvImportWarnings(result.data.data.warnings ?? []);
     setCvImportSourceFormat(result.data.data.source.format ?? null);
+    setCvImportExtraction(result.data.data.extraction);
+    setCvImportConfidence(result.data.data.confidence);
     setCvImportStatus('review');
     setCvWorkflowMode('import-review');
-    showNotification({
-      title: 'CV information imported',
-      message: result.data.data.extraction.aiUsed
-        ? 'AI-assisted extraction completed. Review the imported information before updating your profile.'
-        : 'Review the imported information in the guided editor before updating your profile.',
-      tone: 'success',
-    });
   };
 
   const handleImportCv = () => {
     if (!token || !resumeUrl || cvImportStatus === 'processing') return;
+    setWorkflowBeforeImport(cvWorkflowMode);
     if (hasUnsavedProfileEdits) {
       setIsImportConfirmationOpen(true);
       return;
     }
     void startCvImport();
+  };
+
+  const cancelCvImportReview = () => {
+    setImportedCvData(null);
+    setCvImportWarnings([]);
+    setCvImportSourceFormat(null);
+    setCvImportExtraction(null);
+    setCvImportConfidence(null);
+    setCvImportStatus('idle');
+    setCvWorkflowMode(workflowBeforeImport);
+  };
+
+  const applyReviewedCvImport = () => {
+    if (!importedCvData) return;
+    const importedLocation = [importedCvData.city, importedCvData.state, importedCvData.country]
+      .map((part) => part?.trim() || '')
+      .filter(Boolean)
+      .join(', ');
+    const chooseImported = (key: string, existing: string, imported: string | null) => {
+      const requiresExplicitChoice = (key === 'city' || key === 'location') && Boolean(imported?.includes(','));
+      return imported?.trim() && (useImportedScalar[key] || (!existing.trim() && !requiresExplicitChoice))
+        ? imported.trim()
+        : existing;
+    };
+    const selected = <T extends { id: string }>(key: Exclude<ImportListKey, 'skills'>, imported: T[], existing: T[]) => {
+      const choices = imported.filter((item) => selectedImportEntries[key].includes(item.id));
+      return replaceImportSections[key] ? choices : [...existing, ...choices];
+    };
+
+    setProfile((current) => ({
+      ...current,
+      personalInfo: {
+        ...current.personalInfo,
+        fullName: chooseImported('fullName', current.personalInfo.fullName, importedCvData.fullName),
+        title: chooseImported('professionalTitle', current.personalInfo.title, importedCvData.professionalTitle),
+        location: chooseImported('location', current.personalInfo.location, importedLocation),
+        summary: chooseImported('bio', current.personalInfo.summary, importedCvData.bio),
+        linkedin: chooseImported('linkedinUrl', current.personalInfo.linkedin, importedCvData.linkedinUrl),
+        website: chooseImported('website', current.personalInfo.website, importedCvData.website),
+      },
+      experience: selected('experience', importedCvData.experience ?? [], current.experience),
+      education: selected('education', importedCvData.education ?? [], current.education),
+      skills: replaceImportSections.skills
+        ? importedCvData.skills?.filter((skill) => selectedImportEntries.skills.includes(skill)) ?? []
+        : [...new Set([...current.skills, ...(importedCvData.skills ?? []).filter((skill) => selectedImportEntries.skills.includes(skill))])],
+      certifications: selected('certifications', importedCvData.certifications ?? [], current.certifications),
+      languages: selected('languages', importedCvData.languages ?? [], current.languages),
+      projects: selected('projects', importedCvData.projects ?? [], current.projects),
+    }));
+    setOnboardingLocation((current) => ({
+      country: chooseImported('country', current.country, importedCvData.country),
+      state: chooseImported('state', current.state, importedCvData.state),
+      city: chooseImported('city', current.city, importedCvData.city),
+    }));
+    setCvImportStatus('editing-imported');
+    setCvWorkflowMode('imported');
+    setActiveStep('personal');
+    showNotification({
+      title: 'Reviewed information added to your CV draft',
+      message: 'Nothing has been saved yet. Review and edit the builder fields, then use Save to persist your changes.',
+      tone: 'success',
+    });
   };
 
   const handleEditCvContent = () => {
@@ -1920,16 +2106,12 @@ function ProfilePage({ mode }: ProfilePageProps) {
     setImportedCvData(null);
     setCvImportWarnings([]);
     setCvImportSourceFormat(null);
+    setCvImportExtraction(null);
+    setCvImportConfidence(null);
     showNotification({
       title: 'CV file selected',
       message: `${file.name} is ready to upload with your profile.`,
       tone: 'success',
-    });
-    console.log('CV_FILE_READY_FOR_BACKEND', {
-      name: file.name,
-      type: file.type,
-      size: file.size,
-      file,
     });
   };
 
@@ -2006,6 +2188,8 @@ function ProfilePage({ mode }: ProfilePageProps) {
       setImportedCvData(null);
       setCvImportWarnings([]);
       setCvImportSourceFormat(null);
+      setCvImportExtraction(null);
+      setCvImportConfidence(null);
       showNotification({ title: 'Resume uploaded', message: 'Your resume is now attached to your profile.', tone: 'success' });
     } else showNotification({ title: 'Upload failed', message: result.error.message, tone: 'error' });
   };
@@ -2023,41 +2207,157 @@ function ProfilePage({ mode }: ProfilePageProps) {
       setImportedCvData(null);
       setCvImportWarnings([]);
       setCvImportSourceFormat(null);
+      setCvImportExtraction(null);
+      setCvImportConfidence(null);
       showNotification({ title: 'Resume removed', message: 'Your uploaded resume has been removed.', tone: 'success' });
     } else showNotification({ title: 'Remove failed', message: result.error.message, tone: 'error' });
   };
 
   const handleDownloadPDF = async () => {
     try {
-      const previewData: CVData = {
-        personalInfo: profile.personalInfo,
-        summary: profile.personalInfo.summary,
-        experience: profile.experience.map((item) => ({
-          jobTitle: item.jobTitle,
-          company: item.company,
-          startDate: item.startDate,
-          endDate: item.endDate,
-          currentlyWorking: item.currentlyWorking,
-          description: item.description,
-        })),
-        education: profile.education.map((item) => ({
-          degree: item.degree,
-          school: item.school,
-          year: item.year,
-        })),
-        skills: profile.skills,
-        certifications: profile.certifications.map((item) => ({
-          name: item.name,
-          issuer: item.issuer,
-        })),
-      };
-
       const safeName = profile.personalInfo.fullName || 'profile';
       await downloadCVAsPDF('cv-preview-container', `${safeName}-CV.pdf`);
-      console.log('CV_PREVIEW_DATA', previewData);
     } catch (error) {
       console.error('Failed to download CV:', error);
+      showNotification({ title: 'PDF export failed', message: 'We could not export this CV. Please try again.', tone: 'error' });
     }
+  };
+
+  const importReviewLists: Array<{
+    key: ImportListKey;
+    title: string;
+    incoming: Array<{ id: string; label: string }>;
+    existing: string[];
+  }> = importedCvData ? [
+    {
+      key: 'experience',
+      title: 'Experience',
+      incoming: (importedCvData.experience ?? []).map((item) => ({ id: item.id, label: [[item.jobTitle, item.company].filter(Boolean).join(' at '), [item.startDate, item.endDate].filter(Boolean).join(' - ')].filter(Boolean).join(' — ') + (!item.jobTitle || !item.company || !item.startDate || (!item.endDate && item.currentlyWorking !== true) ? ' — Needs review: incomplete or uncertain dates/details' : '') || 'Incomplete experience entry' })),
+      existing: profile.experience.map((item) => [item.jobTitle, item.company, item.startDate, item.endDate].filter(Boolean).join(' — ') || 'Incomplete experience entry'),
+    },
+    {
+      key: 'education',
+      title: 'Education',
+      incoming: (importedCvData.education ?? []).map((item) => ({ id: item.id, label: [item.degree, item.school, item.year, item.details].filter(Boolean).join(' — ') + (!item.degree || !item.school || !item.year ? ' — Needs review: incomplete details' : '') || 'Incomplete education entry' })),
+      existing: profile.education.map((item) => [item.degree, item.school, item.year, item.details].filter(Boolean).join(' — ') || 'Incomplete education entry'),
+    },
+    {
+      key: 'skills',
+      title: 'Skills',
+      incoming: (importedCvData.skills ?? []).map((item) => ({ id: item, label: item })),
+      existing: profile.skills,
+    },
+    {
+      key: 'certifications',
+      title: 'Qualifications',
+      incoming: (importedCvData.certifications ?? []).map((item) => ({ id: item.id, label: [item.name, item.issuer].filter(Boolean).join(' — ') + (!item.name || !item.issuer ? ' — Needs review: incomplete details' : '') || 'Incomplete qualification entry' })),
+      existing: profile.certifications.map((item) => [item.name, item.issuer].filter(Boolean).join(' — ') || 'Incomplete qualification entry'),
+    },
+    {
+      key: 'languages',
+      title: 'Languages',
+      incoming: (importedCvData.languages ?? []).map((item) => ({ id: item.id, label: [item.name, item.proficiency].filter(Boolean).join(' — ') + (!item.proficiency ? ' — Needs review: proficiency not extracted' : '') || 'Incomplete language entry' })),
+      existing: profile.languages.map((item) => [item.name, item.proficiency].filter(Boolean).join(' — ') || 'Incomplete language entry'),
+    },
+    {
+      key: 'projects',
+      title: 'Projects',
+      incoming: (importedCvData.projects ?? []).map((item) => ({ id: item.id, label: [item.name, item.description, item.technologies.join(', ')].filter(Boolean).join(' — ') + (!item.name ? ' — Needs review: project name missing' : '') || 'Incomplete project entry' })),
+      existing: profile.projects.map((item) => [item.name, item.description, item.technologies.join(', ')].filter(Boolean).join(' — ') || 'Incomplete project entry'),
+    },
+  ] : [];
+
+  const renderImportScalar = (
+    key: string,
+    label: string,
+    existing: string,
+    value: string | null,
+    onChange: (value: string) => void,
+    multiline = false,
+  ) => (
+    <div className="seeker-cv-import-review__scalar" key={key}>
+      <label htmlFor={`import-review-${key}`}>{label}</label>
+      <small>Existing: {existing.trim() || 'No saved value'}</small>
+      {multiline
+        ? <textarea id={`import-review-${key}`} value={value ?? ''} onChange={(event) => onChange(event.target.value)} rows={3} />
+        : <input id={`import-review-${key}`} type={key === 'website' || key === 'linkedinUrl' ? 'url' : 'text'} value={value ?? ''} onChange={(event) => onChange(event.target.value)} />}
+      {Boolean(value?.trim() && (existing.trim() || key === 'city' || key === 'location')) && (
+        <label className="seeker-profile-check">
+          <input
+            type="checkbox"
+            checked={Boolean(useImportedScalar[key])}
+            onChange={(event) => setUseImportedScalar((current) => ({ ...current, [key]: event.target.checked }))}
+          />
+          <span>{existing.trim() ? 'Use imported value instead of existing value' : key === 'city' ? 'Use this extracted value (confirm it is a city)' : 'Use this unstructured extracted location'}</span>
+        </label>
+      )}
+    </div>
+  );
+
+  const updateImportedEntry = <K extends keyof ImportedEntryByKey>(
+    key: K,
+    id: string,
+    patch: Partial<ImportedEntryByKey[K]>,
+  ) => {
+    setImportedCvData((current) => {
+      if (!current) return current;
+      const entries = current[key] ?? [];
+      const updated = entries.map((entry) => entry.id === id ? { ...entry, ...patch } : entry);
+      return { ...current, [key]: updated } as ImportedCvData;
+    });
+  };
+
+  const renderImportEntryEditor = (key: Exclude<ImportListKey, 'skills'>, id: string) => {
+    if (!importedCvData) return null;
+    if (key === 'experience') {
+      const item = importedCvData.experience?.find((entry) => entry.id === id);
+      if (!item) return null;
+      return <details className="seeker-cv-import-review__entry-editor"><summary>Edit extracted fields</summary>
+        <label>Job title<input value={item.jobTitle} onChange={(event) => updateImportedEntry('experience', id, { jobTitle: event.target.value })} /></label>
+        <label>Company<input value={item.company} onChange={(event) => updateImportedEntry('experience', id, { company: event.target.value })} /></label>
+        <label>Start date<input value={item.startDate} onChange={(event) => updateImportedEntry('experience', id, { startDate: event.target.value })} /></label>
+        <label>End date<input value={item.endDate} onChange={(event) => updateImportedEntry('experience', id, { endDate: event.target.value })} /></label>
+        <label>Currently working<select value={item.currentlyWorking === null ? '' : String(item.currentlyWorking)} onChange={(event) => updateImportedEntry('experience', id, { currentlyWorking: event.target.value === '' ? null : event.target.value === 'true' })}><option value="">Unconfirmed</option><option value="true">Yes</option><option value="false">No</option></select></label>
+        <label>Description<textarea value={item.description} onChange={(event) => updateImportedEntry('experience', id, { description: event.target.value })} /></label>
+      </details>;
+    }
+    if (key === 'education') {
+      const item = importedCvData.education?.find((entry) => entry.id === id);
+      if (!item) return null;
+      return <details className="seeker-cv-import-review__entry-editor"><summary>Edit extracted fields</summary>
+        <label>Degree<input value={item.degree} onChange={(event) => updateImportedEntry('education', id, { degree: event.target.value })} /></label>
+        <label>School<input value={item.school} onChange={(event) => updateImportedEntry('education', id, { school: event.target.value })} /></label>
+        <label>Year<input value={item.year} onChange={(event) => updateImportedEntry('education', id, { year: event.target.value })} /></label>
+        <label>Details<textarea value={item.details ?? ''} onChange={(event) => updateImportedEntry('education', id, { details: event.target.value })} /></label>
+      </details>;
+    }
+    if (key === 'certifications') {
+      const item = importedCvData.certifications?.find((entry) => entry.id === id);
+      if (!item) return null;
+      return <details className="seeker-cv-import-review__entry-editor"><summary>Edit extracted fields</summary>
+        <label>Name<input value={item.name} onChange={(event) => updateImportedEntry('certifications', id, { name: event.target.value })} /></label>
+        <label>Issuer<input value={item.issuer} onChange={(event) => updateImportedEntry('certifications', id, { issuer: event.target.value })} /></label>
+      </details>;
+    }
+    if (key === 'languages') {
+      const item = importedCvData.languages?.find((entry) => entry.id === id);
+      if (!item) return null;
+      return <details className="seeker-cv-import-review__entry-editor"><summary>Edit extracted fields</summary>
+        <label>Language<input value={item.name} onChange={(event) => updateImportedEntry('languages', id, { name: event.target.value })} /></label>
+        <label>Proficiency<select value={item.proficiency} onChange={(event) => updateImportedEntry('languages', id, { proficiency: event.target.value })}><option value="">Unconfirmed</option>{['Basic', 'Conversational', 'Professional', 'Fluent', 'Native'].map((level) => <option key={level}>{level}</option>)}{item.proficiency && !['Basic', 'Conversational', 'Professional', 'Fluent', 'Native'].includes(item.proficiency) && <option value={item.proficiency}>{item.proficiency} (unrecognized)</option>}</select></label>
+      </details>;
+    }
+    const item = importedCvData.projects?.find((entry) => entry.id === id);
+    if (!item) return null;
+    return <details className="seeker-cv-import-review__entry-editor"><summary>Edit extracted fields</summary>
+      <label>Project name<input value={item.name} onChange={(event) => updateImportedEntry('projects', id, { name: event.target.value })} /></label>
+      <label>Description<textarea value={item.description} onChange={(event) => updateImportedEntry('projects', id, { description: event.target.value })} /></label>
+      <label>Technologies<input value={item.technologies.join(', ')} onChange={(event) => updateImportedEntry('projects', id, { technologies: event.target.value.split(',').map((value) => value.trim()).filter(Boolean) })} /></label>
+      <label>Project URL<input value={item.projectUrl} onChange={(event) => updateImportedEntry('projects', id, { projectUrl: event.target.value })} /></label>
+      <label>GitHub URL<input value={item.githubUrl} onChange={(event) => updateImportedEntry('projects', id, { githubUrl: event.target.value })} /></label>
+      <label>Start date<input value={item.startDate} onChange={(event) => updateImportedEntry('projects', id, { startDate: event.target.value })} /></label>
+      <label>End date<input value={item.endDate} onChange={(event) => updateImportedEntry('projects', id, { endDate: event.target.value })} /></label>
+    </details>;
   };
 
   return (
@@ -2295,23 +2595,23 @@ function ProfilePage({ mode }: ProfilePageProps) {
                 </div>
               </div>
 
-              <div className="seeker-cv-mode-grid" role="tablist" aria-label="Choose how to create your CV">
-                <button type="button" role="tab" aria-selected={cvWorkflowMode === 'uploaded'} className={cvWorkflowMode === 'uploaded' ? 'seeker-cv-mode-card seeker-cv-mode-card--active' : 'seeker-cv-mode-card'} onClick={() => setCvWorkflowMode('uploaded')}>
+              <div className="seeker-cv-mode-grid" role="tablist" aria-label="Choose a CV starting point">
+                <button type="button" role="tab" aria-selected={cvWorkflowMode === 'uploaded'} disabled={cvImportStatus === 'processing' || cvWorkflowMode === 'import-review'} className={cvWorkflowMode === 'uploaded' ? 'seeker-cv-mode-card seeker-cv-mode-card--active' : 'seeker-cv-mode-card'} onClick={() => setCvWorkflowMode('uploaded')}>
                   <FaUpload />
-                  <strong>Use an existing CV</strong>
-                  <span>Upload your existing CV and use it directly, or import its information into a LeamJobs template later.</span>
+                  <strong>Import an existing CV</strong>
+                  <span>Upload a CV or import the existing upload. Review extracted details before adding them to your builder draft.</span>
                 </button>
-                <button type="button" role="tab" aria-selected={cvWorkflowMode === 'template' || cvWorkflowMode === 'imported' || cvWorkflowMode === 'import-review'} className={cvWorkflowMode === 'template' || cvWorkflowMode === 'imported' || cvWorkflowMode === 'import-review' ? 'seeker-cv-mode-card seeker-cv-mode-card--active' : 'seeker-cv-mode-card'} onClick={() => setCvWorkflowMode(importedCvData ? 'imported' : 'template')}>
+                <button type="button" role="tab" aria-selected={cvWorkflowMode === 'template' || cvWorkflowMode === 'imported' || cvWorkflowMode === 'import-review'} disabled={cvImportStatus === 'processing' || cvWorkflowMode === 'import-review'} className={cvWorkflowMode === 'template' || cvWorkflowMode === 'imported' || cvWorkflowMode === 'import-review' ? 'seeker-cv-mode-card seeker-cv-mode-card--active' : 'seeker-cv-mode-card'} onClick={() => setCvWorkflowMode(importedCvData ? 'imported' : 'template')}>
                   <FaEdit />
-                  <strong>Build with LeamJobs</strong>
-                  <span>Create a professional CV using the guided editor and templates.</span>
+                  <strong>Create or edit with the LeamJobs builder</strong>
+                  <span>Open the guided editor with your existing profile information and choose a template.</span>
                 </button>
               </div>
 
               {(cvWorkflowMode === 'uploaded' || uploadedCvFile) && <div className="seeker-cv-upload-box">
               <FaUpload />
-              <strong>Already have a CV?</strong>
-              <span>Upload your existing CV here. You can use it directly or use its information with the LeamJobs CV template later.</span>
+              <strong>Your original uploaded CV</strong>
+              <span>Keep your source document separate from your structured LeamJobs CV. Importing never replaces or removes this file.</span>
               <div className="seeker-cv-file-controls">
                 <div className="seeker-cv-file-actions">
                   <label className="seeker-cv-upload-control">
@@ -2339,15 +2639,125 @@ function ProfilePage({ mode }: ProfilePageProps) {
                       <span>Keep using your uploaded CV without converting it.</span>
                     </button>
                     <button type="button" className="seeker-cv-workflow-option" onClick={handleImportCv} disabled={!resumeUrl || cvImportStatus === 'processing'}>
-                      <strong>{cvImportStatus === 'processing' ? 'Importing CV...' : 'Import into LeamJobs template'}</strong>
-                      <span>Review extracted information before adding it to your LeamJobs CV.</span>
+                      <strong>{cvImportStatus === 'processing' ? 'Extracting CV information...' : 'Review and import into builder'}</strong>
+                      <span>Extraction will open a review. Your current draft changes only after you confirm.</span>
                       {cvImportStatus === 'processing' && <small>Reading your uploaded CV...</small>}
                     </button>
                   </div>
                 )}
               </div></div>}
 
-              {(cvWorkflowMode === 'template' || cvWorkflowMode === 'imported' || cvWorkflowMode === 'import-review') && (
+              {cvWorkflowMode === 'import-review' && importedCvData && (
+                <section className="seeker-card seeker-cv-import-review" aria-labelledby="cv-import-review-title">
+                  <div className="seeker-editor-card__heading">
+                    <div>
+                      <span className="seeker-cv-summary__eyebrow">Review before applying</span>
+                      <h2 id="cv-import-review-title">Review imported CV information</h2>
+                      <p>Nothing has changed in your editor draft or saved profile. Edit imported scalar values, choose which entries to add, then confirm.</p>
+                    </div>
+                  </div>
+                  <div className="seeker-cv-import-review__meta">
+                    <span>Source: {cvImportSourceFormat?.toUpperCase() || 'uploaded document'}</span>
+                    <span>{cvImportExtraction?.aiUsed ? 'AI-assisted extraction contributed data' : cvImportExtraction?.method === 'deterministic-fallback' ? 'Deterministic extraction used after AI fallback' : 'Deterministic extraction used'}</span>
+                    <span>Overall extraction confidence: {cvImportConfidence === null ? 'Not provided' : `${Math.round(cvImportConfidence.overall * 100)}%`}</span>
+                  </div>
+                  {cvImportWarnings.length > 0 && (
+                    <div className="seeker-cv-import-review__warnings" role="status">
+                      <strong>Review these extraction notes</strong>
+                      <ul>{cvImportWarnings.map((warning, index) => <li key={`${warning}-${index}`}>{warning}</li>)}</ul>
+                    </div>
+                  )}
+                  {importedCvData.city?.includes(',') && (
+                    <p className="seeker-cv-import-review__canonical" role="note">The source contains an unstructured location. It is not assumed to be a city; confirm or edit it before using it as a profile location.</p>
+                  )}
+                  <p className="seeker-cv-import-review__canonical">Account email and phone are read-only and will not be replaced. Imported contact values are not applied.</p>
+                  <dl className="seeker-cv-import-review__contact">
+                    <div><dt>Existing account email</dt><dd>{profile.personalInfo.email || 'Not available'}</dd><dt>Imported email (not applied)</dt><dd>{importedCvData.email || 'No email extracted'}</dd></div>
+                    <div><dt>Existing account phone</dt><dd>{profile.personalInfo.phone || 'Not available'}</dd><dt>Imported phone (not applied)</dt><dd>{importedCvData.phone || 'No phone extracted'}</dd></div>
+                  </dl>
+                  <div className="seeker-cv-import-review__scalars">
+                    {renderImportScalar('fullName', 'Name', profile.personalInfo.fullName, importedCvData.fullName, (value) => setImportedCvData((current) => current ? { ...current, fullName: value } : current))}
+                    {renderImportScalar('professionalTitle', 'Professional title', profile.personalInfo.title, importedCvData.professionalTitle, (value) => setImportedCvData((current) => current ? { ...current, professionalTitle: value } : current))}
+                    {renderImportScalar('bio', 'Summary', profile.personalInfo.summary, importedCvData.bio, (value) => setImportedCvData((current) => current ? { ...current, bio: value } : current), true)}
+                    {renderImportScalar('linkedinUrl', 'LinkedIn URL', profile.personalInfo.linkedin, importedCvData.linkedinUrl, (value) => setImportedCvData((current) => current ? { ...current, linkedinUrl: value } : current))}
+                    {renderImportScalar('website', 'Website', profile.personalInfo.website, importedCvData.website, (value) => setImportedCvData((current) => current ? { ...current, website: value } : current))}
+                    {renderImportScalar('country', 'Country', onboardingLocation.country, importedCvData.country, (value) => setImportedCvData((current) => current ? { ...current, country: value } : current))}
+                    {renderImportScalar('state', 'State or region', onboardingLocation.state, importedCvData.state, (value) => setImportedCvData((current) => current ? { ...current, state: value } : current))}
+                    {renderImportScalar('city', 'City', onboardingLocation.city, importedCvData.city, (value) => setImportedCvData((current) => current ? { ...current, city: value } : current))}
+                  </div>
+                  <div className="seeker-cv-import-review__sections">
+                    {importReviewLists.map((group) => (
+                      <fieldset className="seeker-cv-import-review__section" key={group.key}>
+                        <legend>{group.title}{cvImportConfidence?.fields[group.key] !== undefined ? ` · ${Math.round(cvImportConfidence.fields[group.key] * 100)}% confidence` : ''}</legend>
+                        {group.incoming.length === 0
+                          ? <p>No imported {group.title.toLowerCase()} were identified. Existing entries will be preserved.</p>
+                          : group.incoming.map((entry) => (
+                            <div className="seeker-cv-import-review__entry-row" key={entry.id}>
+                              <label className="seeker-cv-import-review__entry">
+                                <input
+                                  type="checkbox"
+                                  checked={selectedImportEntries[group.key].includes(entry.id)}
+                                  onChange={(event) => setSelectedImportEntries((current) => ({
+                                    ...current,
+                                    [group.key]: event.target.checked
+                                      ? [...current[group.key], entry.id]
+                                      : current[group.key].filter((id) => id !== entry.id),
+                                  }))}
+                                />
+                                <span>{entry.label}</span>
+                              </label>
+                              {group.key !== 'skills' && renderImportEntryEditor(group.key, entry.id)}
+                              {group.key === 'skills' && (
+                                <label className="seeker-cv-import-review__skill-edit">
+                                  <span>Edit imported skill</span>
+                                  <input
+                                    value={entry.id}
+                                    onChange={(event) => {
+                                      const edited = event.target.value;
+                                      setImportedCvData((current) => current ? {
+                                        ...current,
+                                        skills: (current.skills ?? []).map((skill) => skill === entry.id ? edited : skill),
+                                      } : current);
+                                      setSelectedImportEntries((current) => ({
+                                        ...current,
+                                        skills: current.skills.map((skill) => skill === entry.id ? edited : skill),
+                                      }));
+                                    }}
+                                  />
+                                </label>
+                              )}
+                            </div>
+                          ))}
+                        <label className="seeker-profile-check">
+                          <input
+                            type="checkbox"
+                            checked={replaceImportSections[group.key]}
+                            disabled={group.incoming.length === 0}
+                            onChange={(event) => setReplaceImportSections((current) => ({ ...current, [group.key]: event.target.checked }))}
+                          />
+                          <span>Replace all {group.title.toLowerCase()} in the draft</span>
+                        </label>
+                        {replaceImportSections[group.key] && (
+                          <div className="seeker-cv-import-review__removals" role="status">
+                            <strong>Confirming this will remove {group.existing.length} existing {group.title.toLowerCase()} entry/entries:</strong>
+                            {group.existing.length
+                              ? <ul>{group.existing.map((entry, index) => <li key={`${group.key}-existing-${index}`}>{entry}</li>)}</ul>
+                              : <p>There are no existing entries in this section.</p>}
+                            <span>{selectedImportEntries[group.key].length} selected imported entry/entries will remain.</span>
+                          </div>
+                        )}
+                      </fieldset>
+                    ))}
+                  </div>
+                  <div className="seeker-cv-import-review__actions">
+                    <button type="button" className="seeker-step-button seeker-step-button--secondary" onClick={cancelCvImportReview}>Cancel import</button>
+                    <button type="button" className="seeker-step-button seeker-step-button--primary" onClick={applyReviewedCvImport}>Apply reviewed changes to draft</button>
+                  </div>
+                  <p className="seeker-cv-import-review__save-note">This only updates the in-page draft. You can edit the applied entries in the builder; use Save to persist them.</p>
+                </section>
+              )}
+
+              {(cvWorkflowMode === 'template' || cvWorkflowMode === 'imported') && (
                 <>
                   <div className="seeker-cv-template-choices" aria-label="CV templates">
                     {TEMPLATES.filter((template) => !template.advanced).map((template) => (
@@ -2393,7 +2803,7 @@ function ProfilePage({ mode }: ProfilePageProps) {
                     <CVTemplateRenderer data={{
                       personalInfo: profile.personalInfo,
                       summary: profile.personalInfo.summary,
-                      experience: profile.experience,
+                      experience: profile.experience.map((item) => ({ ...item, currentlyWorking: item.currentlyWorking === true })),
                       education: profile.education,
                       skills: profile.skills.filter(Boolean),
                       certifications: profile.certifications,
@@ -2484,6 +2894,7 @@ function ProfilePage({ mode }: ProfilePageProps) {
                       <div><dt>Email</dt><dd>{profile.personalInfo.email || 'Not available'}</dd></div>
                       <div><dt>Phone</dt><dd>{profile.personalInfo.phone || 'Not available'}</dd></div>
                       <div><dt>Location</dt><dd>{profile.personalInfo.location || 'Add a location in Profile Settings'}</dd></div>
+                      <div><dt>Website</dt><dd>{profile.personalInfo.website || 'Optional — add a website in the links section'}</dd></div>
                     </dl>
                     <div className="seeker-cv-personal-summary__ai">
                       {renderInlineAiButton('title', 'Suggest a professional title')}
@@ -2574,14 +2985,14 @@ function ProfilePage({ mode }: ProfilePageProps) {
                                 <label className={getValidationIssue(`experience.${profile.experience.indexOf(item)}.endDate`) ? 'seeker-field--invalid' : ''}>
                                   <span>End Date</span>
                                   <div className="seeker-date-input">
-                                    <input type="text" value={item.endDate} aria-invalid={Boolean(getValidationIssue(`experience.${profile.experience.indexOf(item)}.endDate`))} aria-describedby={getValidationIssue(`experience.${profile.experience.indexOf(item)}.endDate`) ? `experience-${profile.experience.indexOf(item)}-endDate-error` : undefined} onChange={(event) => updateExperience(item.id, 'endDate', event.target.value)} disabled={item.currentlyWorking} />
+                                    <input type="text" value={item.endDate} aria-invalid={Boolean(getValidationIssue(`experience.${profile.experience.indexOf(item)}.endDate`))} aria-describedby={getValidationIssue(`experience.${profile.experience.indexOf(item)}.endDate`) ? `experience-${profile.experience.indexOf(item)}-endDate-error` : undefined} onChange={(event) => updateExperience(item.id, 'endDate', event.target.value)} disabled={item.currentlyWorking === true} />
                                     <FaCalendarAlt />
                                   </div>
                                   {renderValidationMessage(`experience.${profile.experience.indexOf(item)}.endDate`)}
                                 </label>
                               </div>
                               <label className="seeker-profile-check">
-                                <input type="checkbox" checked={item.currentlyWorking} onChange={(event) => updateExperience(item.id, 'currentlyWorking', event.target.checked)} />
+                                <input type="checkbox" checked={item.currentlyWorking === true} onChange={(event) => updateExperience(item.id, 'currentlyWorking', event.target.checked)} />
                                 <span>I currently work here</span>
                               </label>
                               <label>
@@ -2627,6 +3038,7 @@ function ProfilePage({ mode }: ProfilePageProps) {
                             <label className={getValidationIssue(`education.${profile.education.indexOf(item)}.degree`) ? 'seeker-field--invalid' : ''}><span>Degree</span><input id={`education-degree-${item.id}`} type="text" value={item.degree} aria-invalid={Boolean(getValidationIssue(`education.${profile.education.indexOf(item)}.degree`))} onChange={(event) => updateEducation(item.id, 'degree', event.target.value)} />{renderValidationMessage(`education.${profile.education.indexOf(item)}.degree`)}</label>
                             <label className={getValidationIssue(`education.${profile.education.indexOf(item)}.school`) ? 'seeker-field--invalid' : ''}><span>School</span><input type="text" value={item.school} aria-invalid={Boolean(getValidationIssue(`education.${profile.education.indexOf(item)}.school`))} onChange={(event) => updateEducation(item.id, 'school', event.target.value)} />{renderValidationMessage(`education.${profile.education.indexOf(item)}.school`)}</label>
                             <label className={getValidationIssue(`education.${profile.education.indexOf(item)}.year`) ? 'seeker-field--invalid' : ''}><span>Year</span><input type="text" value={item.year} aria-invalid={Boolean(getValidationIssue(`education.${profile.education.indexOf(item)}.year`))} onChange={(event) => updateEducation(item.id, 'year', event.target.value)} />{renderValidationMessage(`education.${profile.education.indexOf(item)}.year`)}</label>
+                            <label><span>Education details (optional)</span><textarea value={item.details ?? ''} maxLength={2000} onChange={(event) => updateEducation(item.id, 'details', event.target.value)} /></label>
                           </form>
                           {renderAiPreview(profile.education[0]?.id ? `education-degree-${profile.education[0].id}` : 'education-root', 'education')}
                         </div>
@@ -2672,7 +3084,25 @@ function ProfilePage({ mode }: ProfilePageProps) {
                 )}
 
                 {activeStep === 'linkedin' && (
-                  <section className="seeker-card seeker-editor-card"><div className="seeker-editor-card__heading"><div><h2>LinkedIn</h2><p>Add your LinkedIn profile so employers can verify your background.</p></div>{renderInlineAiButton('linkedin', 'Improve with AI')}</div><form className="seeker-profile-form"><label htmlFor="linkedin-field"><span>LinkedIn profile URL</span><input id="linkedin-field" type="url" value={profile.personalInfo.linkedin} placeholder="https://linkedin.com/in/yourname" onChange={(event) => updatePersonalInfo('linkedin', event.target.value)} /></label>{renderAiPreview('linkedin-field', 'linkedin')}</form></section>
+                  <section className="seeker-card seeker-editor-card">
+                    <div className="seeker-editor-card__heading">
+                      <div><h2>Professional links</h2><p>Add optional public links to include in your CV.</p></div>
+                      {renderInlineAiButton('linkedin', 'Improve with AI')}
+                    </div>
+                    <form className="seeker-profile-form">
+                      <label className={getValidationIssue('linkedinUrl') ? 'seeker-field--invalid' : ''} htmlFor="linkedin-field">
+                        <span>LinkedIn profile URL</span>
+                        <input id="linkedin-field" type="url" value={profile.personalInfo.linkedin} aria-invalid={Boolean(getValidationIssue('linkedinUrl'))} onChange={(event) => updatePersonalInfo('linkedin', event.target.value)} />
+                        {renderValidationMessage('linkedinUrl')}
+                      </label>
+                      <label className={getValidationIssue('website') ? 'seeker-field--invalid' : ''} htmlFor="website-field">
+                        <span>Website URL</span>
+                        <input id="website-field" type="url" value={profile.personalInfo.website} aria-invalid={Boolean(getValidationIssue('website'))} onChange={(event) => updatePersonalInfo('website', event.target.value)} />
+                        {renderValidationMessage('website')}
+                      </label>
+                      {renderAiPreview('linkedin-field', 'linkedin')}
+                    </form>
+                  </section>
                 )}
 
                 {activeStep === 'review' && (
@@ -2792,12 +3222,12 @@ function ProfilePage({ mode }: ProfilePageProps) {
           <section className="seeker-profile-confirmation" role="dialog" aria-modal="true" aria-labelledby="import-confirmation-title" aria-describedby="import-confirmation-message">
             <div>
               <span className="seeker-cv-summary__eyebrow">CV import</span>
-              <h2 id="import-confirmation-title">Replace your current CV information?</h2>
-              <p id="import-confirmation-message">Importing this CV will replace the CV information currently being edited. Your previously saved profile will not be affected.</p>
+              <h2 id="import-confirmation-title">Continue to CV import review?</h2>
+              <p id="import-confirmation-message">Your existing editor draft and saved profile will remain unchanged while the CV is extracted. You can cancel the review or explicitly apply the changes afterward.</p>
             </div>
             <div className="seeker-profile-confirmation__actions">
               <button type="button" className="seeker-step-button seeker-step-button--secondary" onClick={() => setIsImportConfirmationOpen(false)}>Cancel</button>
-              <button type="button" className="seeker-step-button seeker-step-button--primary" onClick={() => void startCvImport()} disabled={cvImportStatus === 'processing'}>Import CV</button>
+              <button type="button" className="seeker-step-button seeker-step-button--primary" onClick={() => void startCvImport()} disabled={cvImportStatus === 'processing'}>Continue to review</button>
             </div>
           </section>
         </div>

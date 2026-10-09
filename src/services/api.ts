@@ -939,6 +939,7 @@ export type GetSeekerProfileResponse = {
       projects: ProjectItem[] | null;
       cvTemplate: CVTemplateId | null;
       linkedinUrl: string | null;
+      website: string | null;
       resumeUrl: string | null;
       profilePictureUrl: string | null;
       availability: SeekerAvailability;
@@ -976,6 +977,7 @@ export type EducationItem = {
   degree: string;
   school: string;
   year: string;
+  details?: string;
 };
 
 export type ExperienceItem = {
@@ -1015,6 +1017,7 @@ export type UpdateSeekerCVPayload = {
   experience?: ExperienceItem[];
   certifications?: CertificationItem[];
   linkedinUrl?: string | null;
+  website?: string | null;
   cvTemplate?: CVTemplateId | null;
   languages?: LanguageItem[] | null;
   projects?: ProjectItem[] | null;
@@ -1031,6 +1034,7 @@ export type UpdateSeekerCVResponse = {
     languages: LanguageItem[] | null;
     projects: ProjectItem[] | null;
     linkedinUrl: string | null;
+    website: string | null;
     cvTemplate: CVTemplateId | null;
   };
 };

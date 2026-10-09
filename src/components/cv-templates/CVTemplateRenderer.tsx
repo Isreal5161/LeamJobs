@@ -9,6 +9,7 @@ export interface CVData {
     phone?: string;
     location?: string;
     linkedin?: string;
+    website?: string;
   };
   summary?: string;
   experience: Array<{
@@ -23,6 +24,7 @@ export interface CVData {
     degree: string;
     school: string;
     year: string;
+    details?: string;
   }>;
   skills: string[];
   certifications: Array<{
@@ -61,6 +63,7 @@ interface CVTemplateRendererProps {
 
 function AdditionalSections({ data, className }: { data: CVData; className: string }) {
   return <>
+    {data.personalInfo.website && <section className={className}><h3>Website</h3><p>{data.personalInfo.website}</p></section>}
     {(data.languages ?? []).length > 0 && <section className={className}><h3>Languages</h3>{data.languages?.map((language) => <p key={`${language.name}-${language.proficiency}`}><strong>{language.name}</strong> - {language.proficiency}</p>)}</section>}
     {(data.projects ?? []).length > 0 && <section className={className}><h3>Projects</h3>{data.projects?.map((project) => <div key={project.name} className="cv-entry"><div className="cv-entry__header"><strong>{project.name}</strong><span>{project.startDate}{project.endDate ? ` - ${project.endDate}` : ''}</span></div>{project.description && <p>{project.description}</p>}{project.technologies.length > 0 && <p><strong>Technologies:</strong> {project.technologies.join(', ')}</p>}{project.projectUrl && <p>{project.projectUrl}</p>}{project.githubUrl && <p>{project.githubUrl}</p>}</div>)}</section>}
   </>;
@@ -153,6 +156,7 @@ function ModernTemplate({ data }: { data: CVData }) {
                   <span>{edu.year}</span>
                 </div>
                 <p>{edu.school}</p>
+                {edu.details && <p>{edu.details}</p>}
               </div>
             ))}
           </section>
@@ -207,6 +211,7 @@ function ProfessionalTemplate({ data }: { data: CVData }) {
             <div key={idx}>
               <strong>{edu.degree}</strong>
               <p>{edu.school} - {edu.year}</p>
+              {edu.details && <p>{edu.details}</p>}
             </div>
           ))}
         </section>
@@ -294,6 +299,7 @@ function CreativeTemplate({ data }: { data: CVData }) {
                   <strong>{edu.degree}</strong>
                   <p>{edu.school}</p>
                   <span>{edu.year}</span>
+                  {edu.details && <p>{edu.details}</p>}
                 </div>
               ))}
             </section>
@@ -358,9 +364,13 @@ function MinimalistTemplate({ data }: { data: CVData }) {
         <section className="cv-minimalist__section">
           <h3>Education</h3>
           {data.education.map((edu, idx) => (
-            <div key={idx} className="cv-minimalist__entry-header">
+            <div key={idx}>
+              <div className="cv-minimalist__entry-header">
               <strong>{edu.degree}</strong>
               <span>{edu.year}</span>
+              </div>
+              <p>{edu.school}</p>
+              {edu.details && <p>{edu.details}</p>}
             </div>
           ))}
         </section>
@@ -391,7 +401,7 @@ function ExecutiveTemplate({ data }: { data: CVData }) {
       <main>
         {data.summary && <section><h2>Profile</h2><p>{data.summary}</p></section>}
         {data.experience.length > 0 && <section><h2>Experience</h2>{data.experience.map((item) => <div className="cv-executive__entry" key={`${item.jobTitle}-${item.company}`}><div><strong>{item.jobTitle}</strong><span>{item.company}</span></div><time>{item.startDate} - {item.currentlyWorking ? 'Present' : item.endDate}</time><p>{item.description}</p></div>)}</section>}
-        {data.education.length > 0 && <section><h2>Education</h2>{data.education.map((item) => <div className="cv-executive__entry" key={`${item.degree}-${item.school}`}><div><strong>{item.degree}</strong><span>{item.school}</span></div><time>{item.year}</time></div>)}</section>}
+        {data.education.length > 0 && <section><h2>Education</h2>{data.education.map((item) => <div className="cv-executive__entry" key={`${item.degree}-${item.school}`}><div><strong>{item.degree}</strong><span>{item.school}</span></div><time>{item.year}</time>{item.details && <p>{item.details}</p>}</div>)}</section>}
       </main>
       <aside>
         {data.skills.length > 0 && <section><h2>Expertise</h2><ul>{data.skills.map((skill) => <li key={skill}>{skill}</li>)}</ul></section>}
@@ -407,7 +417,7 @@ function AtsTemplate({ data }: { data: CVData }) {
     <header><h1>{data.personalInfo.fullName}</h1><p>{data.personalInfo.title}</p><div>{[data.personalInfo.email, data.personalInfo.phone, data.personalInfo.location].filter(Boolean).join(' | ')}</div></header>
     {data.summary && <section><h2>Professional Summary</h2><p>{data.summary}</p></section>}
     {data.experience.length > 0 && <section><h2>Experience</h2>{data.experience.map((item) => <article key={`${item.jobTitle}-${item.company}`}><div><strong>{item.jobTitle}</strong><span>{item.company}</span><time>{item.startDate} - {item.currentlyWorking ? 'Present' : item.endDate}</time></div><p>{item.description}</p></article>)}</section>}
-    {data.education.length > 0 && <section><h2>Education</h2>{data.education.map((item) => <article key={`${item.degree}-${item.school}`}><strong>{item.degree}</strong><span>{item.school}</span><time>{item.year}</time></article>)}</section>}
+    {data.education.length > 0 && <section><h2>Education</h2>{data.education.map((item) => <article key={`${item.degree}-${item.school}`}><strong>{item.degree}</strong><span>{item.school}</span><time>{item.year}</time>{item.details && <p>{item.details}</p>}</article>)}</section>}
     {data.skills.length > 0 && <section><h2>Skills</h2><p>{data.skills.join(' | ')}</p></section>}
     {data.certifications.length > 0 && <section><h2>Certifications</h2>{data.certifications.map((item) => <p key={`${item.name}-${item.issuer}`}><strong>{item.name}</strong> - {item.issuer}</p>)}</section>}
     <AdditionalSections data={data} className="cv-ats__section" />
@@ -421,7 +431,7 @@ function CompactTemplate({ data }: { data: CVData }) {
       <main>
         {data.summary && <section><h2>Summary</h2><p>{data.summary}</p></section>}
         {data.experience.length > 0 && <section><h2>Experience</h2>{data.experience.map((item) => <article key={`${item.jobTitle}-${item.company}`}><div><strong>{item.jobTitle}</strong><span>{item.company}</span></div><time>{item.startDate} - {item.currentlyWorking ? 'Present' : item.endDate}</time><p>{item.description}</p></article>)}</section>}
-        {data.education.length > 0 && <section><h2>Education</h2>{data.education.map((item) => <article key={`${item.degree}-${item.school}`}><strong>{item.degree}</strong><span>{item.school}</span><time>{item.year}</time></article>)}</section>}
+        {data.education.length > 0 && <section><h2>Education</h2>{data.education.map((item) => <article key={`${item.degree}-${item.school}`}><strong>{item.degree}</strong><span>{item.school}</span><time>{item.year}</time>{item.details && <p>{item.details}</p>}</article>)}</section>}
       </main>
       <aside>
         {data.skills.length > 0 && <section><h2>Skills</h2><ul>{data.skills.map((skill) => <li key={skill}>{skill}</li>)}</ul></section>}

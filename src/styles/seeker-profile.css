@@ -33,10 +33,20 @@
   transition: transform 0.18s ease, box-shadow 0.18s ease;
 }
 
+.seeker-profile-page .seeker-profile-account-card__action,
+.seeker-profile-page .seeker-profile-account-card__action:hover,
+.seeker-profile-page .seeker-profile-account-card__action:focus,
+.seeker-profile-page .seeker-profile-account-card__action:active,
+.seeker-profile-page .seeker-profile-save-button,
+.seeker-profile-page .seeker-profile-save-button:hover,
+.seeker-profile-page .seeker-profile-save-button:focus,
+.seeker-profile-page .seeker-profile-save-button:active {
+  color: #ffffff !important;
+}
+
 .seeker-profile-account-card__action:hover {
   transform: translateY(-1px);
   box-shadow: 0 11px 22px rgba(191, 56, 38, 0.24);
-  color: #ffffff !important;
 }
 
 .seeker-profile-account-card__action:focus-visible {
@@ -355,6 +365,11 @@
   border-color: var(--brand-secondary);
   background: #f8f8fc;
   box-shadow: inset 0 0 0 1px var(--brand-secondary);
+}
+
+.seeker-profile-page .seeker-cv-mode-card:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
 }
 
 .seeker-profile-page .seeker-cv-template-choices {
@@ -1249,6 +1264,161 @@
 
 .seeker-cv-import-review__action:focus-visible {
   outline: 3px solid rgba(14, 74, 225, 0.14);
+  outline-offset: 2px;
+}
+
+.seeker-cv-import-review {
+  gap: 1rem;
+  background: #fff;
+}
+
+.seeker-cv-import-review__meta,
+.seeker-cv-import-review__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.seeker-cv-import-review__meta span {
+  padding: 0.4rem 0.7rem;
+  border-radius: 999px;
+  background: #f4f3fb;
+  color: #322f6a;
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.seeker-cv-import-review__canonical,
+.seeker-cv-import-review__save-note {
+  margin: 0;
+  color: #475569;
+  line-height: 1.5;
+}
+
+.seeker-cv-import-review__warnings,
+.seeker-cv-import-review__removals {
+  padding: 0.9rem 1rem;
+  border: 1px solid rgba(239, 80, 54, 0.28);
+  border-radius: 8px;
+  background: #fff7f4;
+  color: #7c2d12;
+}
+
+.seeker-cv-import-review__warnings ul,
+.seeker-cv-import-review__removals ul {
+  margin: 0.5rem 0 0;
+  padding-left: 1.2rem;
+}
+
+.seeker-cv-import-review__scalars,
+.seeker-cv-import-review__sections {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.85rem;
+}
+
+.seeker-cv-import-review__scalar,
+.seeker-cv-import-review__section {
+  display: grid;
+  align-content: start;
+  gap: 0.55rem;
+  min-width: 0;
+  padding: 0.9rem;
+  border: 1px solid rgba(50, 47, 106, 0.16);
+  border-radius: 8px;
+  background: #fff;
+}
+
+.seeker-cv-import-review__scalar > label:first-child,
+.seeker-cv-import-review__section legend {
+  color: #322f6a;
+  font-weight: 800;
+}
+
+.seeker-cv-import-review__scalar small {
+  color: #64748b;
+  overflow-wrap: anywhere;
+}
+
+.seeker-cv-import-review__entry {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  padding: 0.55rem;
+  border-radius: 6px;
+  background: #f8fafc;
+  color: #334155;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
+.seeker-cv-import-review__entry input {
+  flex: 0 0 auto;
+  margin-top: 0.15rem;
+}
+
+.seeker-cv-import-review__entry-row,
+.seeker-cv-import-review__entry-editor,
+.seeker-cv-import-review__skill-edit {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.seeker-cv-import-review__entry-editor {
+  padding: 0 0.6rem 0.6rem;
+}
+
+.seeker-cv-import-review__entry-editor summary {
+  width: max-content;
+  color: #322f6a;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.seeker-cv-import-review__entry-editor label,
+.seeker-cv-import-review__skill-edit {
+  display: grid;
+  gap: 0.25rem;
+  color: #475569;
+  font-size: 0.88rem;
+}
+
+.seeker-cv-import-review__contact {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+  margin: 0;
+}
+
+.seeker-cv-import-review__contact > div {
+  padding: 0.8rem;
+  border: 1px solid rgba(50, 47, 106, 0.14);
+  border-radius: 8px;
+  overflow-wrap: anywhere;
+}
+
+.seeker-cv-import-review__contact dt {
+  color: #64748b;
+  font-size: 0.84rem;
+  font-weight: 700;
+}
+
+.seeker-cv-import-review__contact dd {
+  margin: 0.15rem 0 0.6rem;
+  color: #0f172a;
+}
+
+.seeker-cv-import-review__actions {
+  justify-content: flex-end;
+}
+
+.seeker-cv-import-review__actions button:focus-visible,
+.seeker-cv-import-review__scalar input:focus-visible,
+.seeker-cv-import-review__scalar textarea:focus-visible,
+.seeker-cv-import-review__section input:focus-visible {
+  outline: 3px solid rgba(239, 80, 54, 0.22);
   outline-offset: 2px;
 }
 
@@ -2712,6 +2882,21 @@
   }
 
   .seeker-profile-confirmation__actions button {
+    width: 100%;
+  }
+
+  .seeker-cv-import-review__scalars,
+  .seeker-cv-import-review__sections,
+  .seeker-cv-import-review__contact {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .seeker-cv-import-review__actions {
+    flex-direction: column-reverse;
+    align-items: stretch;
+  }
+
+  .seeker-cv-import-review__actions button {
     width: 100%;
   }
 }
