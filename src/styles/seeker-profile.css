@@ -1270,6 +1270,13 @@
 .seeker-cv-import-review {
   gap: 1rem;
   background: #fff;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.seeker-cv-import-review > * {
+  min-width: 0;
+  max-width: 100%;
 }
 
 .seeker-cv-import-review__meta,
@@ -1328,6 +1335,36 @@
   border: 1px solid rgba(50, 47, 106, 0.16);
   border-radius: 8px;
   background: #fff;
+}
+
+.seeker-cv-import-review__scalar > input,
+.seeker-cv-import-review__scalar > textarea,
+.seeker-cv-import-review__entry-editor input,
+.seeker-cv-import-review__entry-editor select,
+.seeker-cv-import-review__entry-editor textarea {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.seeker-cv-import-review .seeker-profile-check {
+  display: flex !important;
+  align-items: flex-start;
+  gap: 0.5rem;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.seeker-cv-import-review .seeker-profile-check input {
+  flex: 0 0 18px;
+  margin-top: 0.15rem;
+}
+
+.seeker-cv-import-review .seeker-profile-check span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  line-height: 1.4;
 }
 
 .seeker-cv-import-review__scalar > label:first-child,
@@ -2889,6 +2926,15 @@
   .seeker-cv-import-review__sections,
   .seeker-cv-import-review__contact {
     grid-template-columns: minmax(0, 1fr);
+  }
+
+  .seeker-cv-import-review {
+    padding: 0.9rem;
+  }
+
+  .seeker-cv-import-review__scalar,
+  .seeker-cv-import-review__section {
+    padding: 0.75rem;
   }
 
   .seeker-cv-import-review__actions {
