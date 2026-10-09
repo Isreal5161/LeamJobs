@@ -36,6 +36,7 @@
 .seeker-profile-account-card__action:hover {
   transform: translateY(-1px);
   box-shadow: 0 11px 22px rgba(191, 56, 38, 0.24);
+  color: #ffffff;
 }
 
 .seeker-profile-account-card__action:focus-visible {
@@ -556,8 +557,8 @@
   color: #ffffff;
 }
 
-.seeker-profile-page .seeker-cv-personal-summary .seeker-profile-account-card__action,
-.seeker-profile-page .seeker-cv-personal-summary .seeker-profile-account-card__action:hover {
+.seeker-layout .seeker-layout__main .seeker-profile-page .seeker-profile-account-card__action,
+.seeker-layout .seeker-layout__main .seeker-profile-page .seeker-profile-account-card__action:hover {
   color: #ffffff;
 }
 
