@@ -547,11 +547,18 @@
 
 .seeker-profile-page .seeker-settings-card .seeker-profile-account-card__action {
   background: var(--brand-secondary);
+  color: #ffffff;
   box-shadow: none;
 }
 
 .seeker-profile-page .seeker-settings-card .seeker-profile-account-card__action:hover {
   background: var(--brand-secondary-hover);
+  color: #ffffff;
+}
+
+.seeker-profile-page .seeker-cv-personal-summary .seeker-profile-account-card__action,
+.seeker-profile-page .seeker-cv-personal-summary .seeker-profile-account-card__action:hover {
+  color: #ffffff;
 }
 
 .seeker-profile-page .seeker-settings-account-fields {
