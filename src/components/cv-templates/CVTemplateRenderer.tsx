@@ -62,8 +62,12 @@ interface CVTemplateRendererProps {
 }
 
 function AdditionalSections({ data, className }: { data: CVData; className: string }) {
+  const hasLinks = data.personalInfo.website || data.personalInfo.linkedin;
   return <>
-    {data.personalInfo.website && <section className={className}><h3>Website</h3><p>{data.personalInfo.website}</p></section>}
+    {hasLinks && <section className={className}><h3>Links</h3>
+      {data.personalInfo.website && <p><strong>Website:</strong> {data.personalInfo.website}</p>}
+      {data.personalInfo.linkedin && <p><strong>LinkedIn:</strong> {data.personalInfo.linkedin}</p>}
+    </section>}
     {(data.languages ?? []).length > 0 && <section className={className}><h3>Languages</h3>{data.languages?.map((language) => <p key={`${language.name}-${language.proficiency}`}><strong>{language.name}</strong> - {language.proficiency}</p>)}</section>}
     {(data.projects ?? []).length > 0 && <section className={className}><h3>Projects</h3>{data.projects?.map((project) => <div key={project.name} className="cv-entry"><div className="cv-entry__header"><strong>{project.name}</strong><span>{project.startDate}{project.endDate ? ` - ${project.endDate}` : ''}</span></div>{project.description && <p>{project.description}</p>}{project.technologies.length > 0 && <p><strong>Technologies:</strong> {project.technologies.join(', ')}</p>}{project.projectUrl && <p>{project.projectUrl}</p>}{project.githubUrl && <p>{project.githubUrl}</p>}</div>)}</section>}
   </>;
@@ -208,10 +212,22 @@ function ProfessionalTemplate({ data }: { data: CVData }) {
         <section className="cv-professional__section">
           <h3>Education</h3>
           {data.education.map((edu, idx) => (
-            <div key={idx}>
+            <div key={`${edu.degree}-${edu.school}-${idx}`} className="cv-pdf-keep-together">
               <strong>{edu.degree}</strong>
               <p>{edu.school} - {edu.year}</p>
               {edu.details && <p>{edu.details}</p>}
+            </div>
+          ))}
+        </section>
+      )}
+
+      {data.certifications.length > 0 && (
+        <section className="cv-professional__section">
+          <h3>Certifications</h3>
+          {data.certifications.map((certification, idx) => (
+            <div key={`${certification.name}-${certification.issuer}-${idx}`} className="cv-pdf-keep-together">
+              <strong>{certification.name}</strong>
+              {certification.issuer && <p>{certification.issuer}</p>}
             </div>
           ))}
         </section>
@@ -295,7 +311,7 @@ function CreativeTemplate({ data }: { data: CVData }) {
             <section className="cv-creative__section">
               <h3>Education</h3>
               {data.education.map((edu, idx) => (
-                <div key={idx}>
+                <div key={`${edu.degree}-${edu.school}-${idx}`} className="cv-pdf-keep-together">
                   <strong>{edu.degree}</strong>
                   <p>{edu.school}</p>
                   <span>{edu.year}</span>
@@ -309,7 +325,7 @@ function CreativeTemplate({ data }: { data: CVData }) {
             <section className="cv-creative__section">
               <h3>Qualifications</h3>
               {data.certifications.map((cert, idx) => (
-                <div key={idx}>
+                <div key={`${cert.name}-${cert.issuer}-${idx}`} className="cv-pdf-keep-together">
                   <strong>{cert.name}</strong>
                   <p>{cert.issuer}</p>
                 </div>
@@ -348,7 +364,7 @@ function MinimalistTemplate({ data }: { data: CVData }) {
         <section className="cv-minimalist__section">
           <h3>Experience</h3>
           {data.experience.map((exp, idx) => (
-            <div key={idx}>
+            <div key={idx} className="cv-pdf-keep-together">
               <div className="cv-minimalist__entry-header">
                 <strong>{exp.jobTitle}</strong>
                 <span>{exp.startDate} – {exp.currentlyWorking ? 'Present' : exp.endDate}</span>
@@ -364,7 +380,7 @@ function MinimalistTemplate({ data }: { data: CVData }) {
         <section className="cv-minimalist__section">
           <h3>Education</h3>
           {data.education.map((edu, idx) => (
-            <div key={idx}>
+            <div key={`${edu.degree}-${edu.school}-${idx}`} className="cv-pdf-keep-together">
               <div className="cv-minimalist__entry-header">
               <strong>{edu.degree}</strong>
               <span>{edu.year}</span>
@@ -380,6 +396,17 @@ function MinimalistTemplate({ data }: { data: CVData }) {
         <section className="cv-minimalist__section">
           <h3>Skills</h3>
           <p>{data.skills.join(' • ')}</p>
+        </section>
+      )}
+      {data.certifications.length > 0 && (
+        <section className="cv-minimalist__section">
+          <h3>Certifications</h3>
+          {data.certifications.map((certification) => (
+            <div key={`${certification.name}-${certification.issuer}`} className="cv-pdf-keep-together">
+              <strong>{certification.name}</strong>
+              {certification.issuer && <p>{certification.issuer}</p>}
+            </div>
+          ))}
         </section>
       )}
       <AdditionalSections data={data} className="cv-minimalist__section" />

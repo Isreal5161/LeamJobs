@@ -59,7 +59,243 @@
     align-items: stretch;
     flex-direction: column;
   }
+}
 
+.seeker-cv-export-holder {
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: -1;
+    visibility: hidden;
+    pointer-events: none;
+  }
+
+.seeker-cv-export-holder .seeker-cv-rendered-preview {
+    width: 726px;
+    max-height: none;
+    overflow: visible;
+  }
+
+.seeker-cv-download-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 1100;
+    display: grid;
+    place-items: center;
+    overflow-y: auto;
+    padding: 1rem;
+    background: rgba(15, 23, 42, 0.56);
+    backdrop-filter: blur(3px);
+  }
+
+.seeker-cv-download-modal {
+    display: grid;
+    gap: 1rem;
+    width: min(100%, 560px);
+    max-height: min(92vh, 820px);
+    overflow-y: auto;
+    padding: clamp(1.1rem, 4vw, 1.75rem);
+    border: 1px solid rgba(50, 47, 106, 0.14);
+    border-radius: 20px;
+    background: #ffffff;
+    box-shadow: 0 24px 72px rgba(15, 23, 42, 0.24);
+    color: #0f172a;
+  }
+
+.seeker-cv-download-modal__header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+  }
+
+.seeker-cv-download-modal__header h2 {
+    margin: 0.2rem 0 0;
+    color: #322f6a;
+    font-size: clamp(1.25rem, 4vw, 1.55rem);
+  }
+
+.seeker-cv-download-modal__close {
+    display: grid;
+    flex: 0 0 40px;
+    place-items: center;
+    width: 40px;
+    height: 40px;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    background: #ffffff;
+    color: #475569;
+    cursor: pointer;
+  }
+
+.seeker-cv-download-modal__intro {
+    margin: 0;
+    color: #64748b;
+    line-height: 1.5;
+  }
+
+.seeker-cv-download-modal form {
+    display: grid;
+    gap: 1rem;
+  }
+
+.seeker-cv-download-modal__choices {
+    display: grid;
+    gap: 0.55rem;
+    min-width: 0;
+    margin: 0;
+    padding: 0;
+    border: 0;
+  }
+
+.seeker-cv-download-modal__choices legend {
+    margin-bottom: 0.55rem;
+    color: #322f6a;
+    font-size: 0.95rem;
+    font-weight: 800;
+  }
+
+.seeker-cv-download-choice {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    min-width: 0;
+    padding: 0.8rem 0.9rem;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    background: #ffffff;
+    cursor: pointer;
+  }
+
+.seeker-cv-download-choice--active {
+    border-color: rgba(50, 47, 106, 0.5);
+    background: #f7f6ff;
+    box-shadow: 0 0 0 2px rgba(50, 47, 106, 0.07);
+  }
+
+.seeker-cv-download-choice input {
+    flex: 0 0 18px;
+    width: 18px;
+    height: 18px;
+    margin: 0.15rem 0 0;
+    accent-color: #ef5036;
+  }
+
+.seeker-cv-download-choice span {
+    display: grid;
+    gap: 0.2rem;
+    min-width: 0;
+  }
+
+.seeker-cv-download-choice strong {
+    color: #322f6a;
+  }
+
+.seeker-cv-download-choice small {
+    color: #64748b;
+    font-size: 0.84rem;
+    line-height: 1.45;
+  }
+
+.seeker-cv-download-modal__filename {
+    display: grid;
+    gap: 0.25rem;
+    margin: 0;
+    padding: 0.75rem 0.9rem;
+    border-radius: 10px;
+    background: #f8fafc;
+    color: #64748b;
+    font-size: 0.82rem;
+    font-weight: 700;
+  }
+
+.seeker-cv-download-modal__filename strong {
+    overflow-wrap: anywhere;
+    color: #1e293b;
+    font-size: 0.92rem;
+  }
+
+.seeker-cv-download-modal__error,
+.seeker-cv-download-modal__progress {
+    margin: 0;
+    padding: 0.75rem 0.9rem;
+    border-radius: 10px;
+    line-height: 1.45;
+  }
+
+.seeker-cv-download-modal__error {
+    border: 1px solid rgba(239, 80, 54, 0.24);
+    background: #fff7f5;
+    color: #9a3412;
+  }
+
+.seeker-cv-download-modal__progress {
+    background: #f0effa;
+    color: #322f6a;
+  }
+
+.seeker-cv-download-modal__actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.65rem;
+    padding-top: 0.25rem;
+  }
+
+.seeker-cv-download-modal__actions button {
+    min-height: 44px;
+    padding: 0 1.1rem;
+    border-radius: 10px;
+    font-weight: 800;
+    cursor: pointer;
+  }
+
+.seeker-cv-download-modal__cancel {
+    border: 1px solid #d8dbe5;
+    background: #ffffff;
+    color: #322f6a;
+  }
+
+.seeker-cv-download-modal__submit {
+    border: 1px solid #ef5036;
+    background: #ef5036;
+    color: #ffffff;
+    box-shadow: 0 6px 16px rgba(239, 80, 54, 0.2);
+  }
+
+.seeker-cv-download-modal button:focus-visible,
+.seeker-cv-download-modal input:focus-visible {
+    outline: 3px solid rgba(239, 80, 54, 0.34);
+    outline-offset: 3px;
+  }
+
+.seeker-cv-download-modal button:disabled {
+    cursor: wait;
+    opacity: 0.65;
+  }
+
+  @media (max-width: 767px) {
+    .seeker-cv-download-backdrop {
+      align-items: end;
+      padding: 0.45rem;
+    }
+
+    .seeker-cv-download-modal {
+      width: 100%;
+      max-height: min(94vh, 820px);
+      border-radius: 18px 18px 14px 14px;
+    }
+
+    .seeker-cv-download-modal__actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+    }
+
+    .seeker-cv-download-modal__actions button {
+      width: 100%;
+    }
+  }
+
+@media (max-width: 767px) {
   .seeker-profile-account-card__action {
     width: 100%;
   }

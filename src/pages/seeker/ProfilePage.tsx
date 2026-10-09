@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type ChangeEvent } from 'react';
+import { useEffect, useMemo, useRef, useState, type ChangeEvent, type MouseEvent as ReactMouseEvent } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
   FaArrowLeft,
@@ -21,7 +21,7 @@ import {
   FaUser,
 } from 'react-icons/fa';
 import CVTemplateSelector, { TEMPLATES } from '../../components/cv-templates/CVTemplateSelector';
-import CVTemplateRenderer, { sampleCVData, type CVTemplateId } from '../../components/cv-templates/CVTemplateRenderer';
+import CVTemplateRenderer, { sampleCVData, type CVData, type CVTemplateId } from '../../components/cv-templates/CVTemplateRenderer';
 import { useAuth } from '../../context/AuthContext';
 import { getAccountTypeLabel, useSubscriptions } from '../../context/SubscriptionContext';
 import { startSeekerFreeTrial } from '../../services/api';
@@ -47,7 +47,14 @@ import {
   requestCvOptimizer,
   getAdvancedProfileStrength,
 } from '../../services/api';
-import { downloadCVAsPDF } from '../../utils/cvDownloadUtils';
+import { createCvFileName, downloadCVAsDOCX, downloadCVAsPDF, downloadCVAsText } from '../../utils/cvDownloadUtils';
+import {
+  cvExportSectionLabels,
+  getAvailableCvExportSections,
+  getFullCvExportData,
+  getSelectedCvExportData,
+  type CvExportSection,
+} from '../../utils/cvExportData';
 import { getLanguageSuggestions } from '../../data/languageSuggestions';
 import { getUserScopedImageUrl, type UserScopedImage } from '../../utils/profileImageState';
 
@@ -115,6 +122,8 @@ type ProfileState = {
 };
 
 type AddPanel = 'skill' | 'qualification' | null;
+type CvExportFormat = 'pdf' | 'docx' | 'txt';
+type CvExportContent = 'selected' | 'full';
 type CvWorkflowMode = 'template' | 'uploaded' | 'imported' | 'import-review';
 type CvImportStatus = 'idle' | 'processing' | 'review' | 'editing-imported';
 type ImportedCvData = {
@@ -358,6 +367,17 @@ function ProfilePage({ mode }: ProfilePageProps) {
   const [isLoadingProfile, setIsLoadingProfile] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [isUploadingFile, setIsUploadingFile] = useState(false);
+  const [isDownloadingCv, setIsDownloadingCv] = useState(false);
+  const [isCvDownloadModalOpen, setIsCvDownloadModalOpen] = useState(false);
+  const [cvExportFormat, setCvExportFormat] = useState<CvExportFormat>('pdf');
+  const [cvExportContent, setCvExportContent] = useState<CvExportContent>('selected');
+  const [cvExportSections, setCvExportSections] = useState<CvExportSection[]>([]);
+  const [cvExportError, setCvExportError] = useState('');
+  const cvDownloadModalRef = useRef<HTMLElement | null>(null);
+  const cvDownloadSubmitRef = useRef<HTMLInputElement | null>(null);
+  const cvDownloadTriggerRef = useRef<HTMLElement | null>(null);
+  const isDownloadingCvRef = useRef(isDownloadingCv);
+  isDownloadingCvRef.current = isDownloadingCv;
   const [profilePictureReference, setProfilePictureReference] = useState<UserScopedImage | null>(null);
   const profilePictureUrl = getUserScopedImageUrl(profilePictureReference, user?.id);
   const [profilePictureBlob, setProfilePictureBlob] = useState<UserScopedImage | null>(null);
@@ -415,6 +435,55 @@ function ProfilePage({ mode }: ProfilePageProps) {
   const templateSelectionChanged = selectedTemplate !== savedTemplate;
   const selectedTemplateIsAdvanced = TEMPLATES.find((template) => template.style === selectedTemplate)?.advanced ?? false;
   const renderedTemplate: CVTemplateId = selectedTemplateIsAdvanced && !canUseAdvancedCv ? 'modern' : selectedTemplate;
+  const cvExportData: CVData = {
+    personalInfo: profile.personalInfo,
+    summary: profile.personalInfo.summary,
+    experience: profile.experience.map((item) => ({ ...item, currentlyWorking: item.currentlyWorking === true })),
+    education: profile.education,
+    skills: profile.skills.filter(Boolean),
+    certifications: profile.certifications,
+    languages: profile.languages,
+    projects: profile.projects,
+  };
+  const fullCvExportData = getFullCvExportData(cvExportData);
+  const availableCvExportSections = getAvailableCvExportSections(fullCvExportData);
+  const selectedCvExportData = getSelectedCvExportData(fullCvExportData, cvExportSections);
+
+  useEffect(() => {
+    if (!isCvDownloadModalOpen) return;
+
+    const previouslyFocused = cvDownloadTriggerRef.current;
+    const focusFrame = window.requestAnimationFrame(() => cvDownloadSubmitRef.current?.focus());
+    const handleModalKeyDown = (event: globalThis.KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        if (!isDownloadingCvRef.current) setIsCvDownloadModalOpen(false);
+        return;
+      }
+      if (event.key !== 'Tab') return;
+
+      const focusable = cvDownloadModalRef.current?.querySelectorAll<HTMLElement>(
+        'button:not([disabled]), input:not([disabled]), [tabindex]:not([tabindex="-1"])',
+      );
+      if (!focusable?.length) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+
+    window.addEventListener('keydown', handleModalKeyDown);
+    return () => {
+      window.cancelAnimationFrame(focusFrame);
+      window.removeEventListener('keydown', handleModalKeyDown);
+      previouslyFocused?.focus();
+    };
+  }, [isCvDownloadModalOpen]);
 
   const handleStartTrial = async () => {
     if (!token || !trialOffer.available || isStartingTrial) return;
@@ -2213,13 +2282,45 @@ function ProfilePage({ mode }: ProfilePageProps) {
     } else showNotification({ title: 'Remove failed', message: result.error.message, tone: 'error' });
   };
 
-  const handleDownloadPDF = async () => {
+  const openCvDownloadModal = (event: ReactMouseEvent<HTMLButtonElement>) => {
+    if (isDownloadingCvRef.current) return;
+    cvDownloadTriggerRef.current = event.currentTarget;
+    setCvExportFormat('pdf');
+    setCvExportContent('selected');
+    setCvExportSections(getAvailableCvExportSections(fullCvExportData));
+    setCvExportError('');
+    setIsCvDownloadModalOpen(true);
+  };
+
+  const closeCvDownloadModal = () => {
+    if (isDownloadingCvRef.current) return;
+    setCvExportError('');
+    setIsCvDownloadModalOpen(false);
+  };
+
+  const handleDownloadCv = async () => {
+    if (isDownloadingCvRef.current) return;
+    isDownloadingCvRef.current = true;
+    setIsDownloadingCv(true);
+    setCvExportError('');
     try {
-      const safeName = profile.personalInfo.fullName || 'profile';
-      await downloadCVAsPDF('cv-preview-container', `${safeName}-CV.pdf`);
+      const fileName = profile.personalInfo.fullName || 'profile';
+      if (cvExportFormat === 'pdf') {
+        await downloadCVAsPDF('cv-download-export-container', fileName);
+      } else {
+        const data = cvExportContent === 'selected' ? selectedCvExportData : fullCvExportData;
+        if (cvExportFormat === 'docx') await downloadCVAsDOCX(data, renderedTemplate, fileName);
+        else downloadCVAsText(data, fileName);
+      }
+      setIsCvDownloadModalOpen(false);
     } catch (error) {
       console.error('Failed to download CV:', error);
-      showNotification({ title: 'PDF export failed', message: 'We could not export this CV. Please try again.', tone: 'error' });
+      setCvExportError(error instanceof Error && error.message
+        ? error.message
+        : 'We could not create your CV file. Please try again.');
+    } finally {
+      isDownloadingCvRef.current = false;
+      setIsDownloadingCv(false);
     }
   };
 
@@ -2564,7 +2665,7 @@ function ProfilePage({ mode }: ProfilePageProps) {
                 </div>
                 <div className="seeker-cv-summary__actions">
                   <button type="button" onClick={() => document.getElementById('cv-preview-container')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}><FaEye /> Preview</button>
-                  <button type="button" onClick={handleDownloadPDF}><FaDownload /> Download PDF</button>
+                  <button type="button" onClick={openCvDownloadModal} disabled={isDownloadingCv} aria-busy={isDownloadingCv}><FaDownload /> Download CV</button>
                 </div>
               </div>
             </section>
@@ -2800,20 +2901,11 @@ function ProfilePage({ mode }: ProfilePageProps) {
                     </div>
                   )}
                   <div id="cv-preview-container" className="seeker-cv-rendered-preview">
-                    <CVTemplateRenderer data={{
-                      personalInfo: profile.personalInfo,
-                      summary: profile.personalInfo.summary,
-                      experience: profile.experience.map((item) => ({ ...item, currentlyWorking: item.currentlyWorking === true })),
-                      education: profile.education,
-                      skills: profile.skills.filter(Boolean),
-                      certifications: profile.certifications,
-                      languages: profile.languages,
-                      projects: profile.projects,
-                    }} template={renderedTemplate} />
+                    <CVTemplateRenderer data={cvExportData} template={renderedTemplate} />
                   </div>
                   <div className="seeker-cv-workspace__actions">
                     <button type="button" onClick={handleEditCvContent}><FaEdit /> Edit CV content</button>
-                    <button type="button" onClick={handleDownloadPDF}><FaDownload /> Download PDF</button>
+                    <button type="button" onClick={openCvDownloadModal} disabled={isDownloadingCv} aria-busy={isDownloadingCv}><FaDownload /> Download CV</button>
                   </div>
                 </>
               )}
@@ -3229,6 +3321,151 @@ function ProfilePage({ mode }: ProfilePageProps) {
               <button type="button" className="seeker-step-button seeker-step-button--secondary" onClick={() => setIsImportConfirmationOpen(false)}>Cancel</button>
               <button type="button" className="seeker-step-button seeker-step-button--primary" onClick={() => void startCvImport()} disabled={cvImportStatus === 'processing'}>Continue to review</button>
             </div>
+          </section>
+        </div>
+      )}
+
+      {isCvDownloadModalOpen && (
+        <div className="seeker-cv-export-holder" aria-hidden="true">
+          <div id="cv-download-export-container" className="seeker-cv-rendered-preview">
+            <CVTemplateRenderer
+              data={cvExportContent === 'selected' ? selectedCvExportData : fullCvExportData}
+              template={renderedTemplate}
+            />
+          </div>
+        </div>
+      )}
+      {isCvDownloadModalOpen && (
+        <div
+          className="seeker-cv-download-backdrop"
+          role="presentation"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) closeCvDownloadModal();
+          }}
+        >
+          <section
+            className="seeker-cv-download-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="seeker-cv-download-title"
+            aria-describedby="seeker-cv-download-description"
+            ref={cvDownloadModalRef}
+          >
+            <header className="seeker-cv-download-modal__header">
+              <div>
+                <span className="seeker-cv-summary__eyebrow">Your LeamJobs CV</span>
+                <h2 id="seeker-cv-download-title">Download CV</h2>
+              </div>
+              <button type="button" className="seeker-cv-download-modal__close" onClick={closeCvDownloadModal} disabled={isDownloadingCv} aria-label="Close download options">
+                <FaTimes aria-hidden="true" />
+              </button>
+            </header>
+            <form
+              onSubmit={(event) => {
+                event.preventDefault();
+                void handleDownloadCv();
+              }}
+            >
+              <p id="seeker-cv-download-description" className="seeker-cv-download-modal__intro">
+                Choose a file format and the content to include. Your current editor data and selected template will be used.
+                Personal and contact details are included whenever available.
+              </p>
+              <fieldset className="seeker-cv-download-modal__choices">
+                <legend>File format</legend>
+                <label className={cvExportFormat === 'pdf' ? 'seeker-cv-download-choice seeker-cv-download-choice--active' : 'seeker-cv-download-choice'}>
+                  <input
+                    ref={cvDownloadSubmitRef}
+                    type="radio"
+                    name="cv-export-format"
+                    value="pdf"
+                    checked={cvExportFormat === 'pdf'}
+                    onChange={() => setCvExportFormat('pdf')}
+                    disabled={isDownloadingCv}
+                  />
+                  <span><strong>PDF</strong><small>Template-faithful A4 pages for sharing or printing.</small></span>
+                </label>
+                <label className={cvExportFormat === 'docx' ? 'seeker-cv-download-choice seeker-cv-download-choice--active' : 'seeker-cv-download-choice'}>
+                  <input
+                    type="radio"
+                    name="cv-export-format"
+                    value="docx"
+                    checked={cvExportFormat === 'docx'}
+                    onChange={() => setCvExportFormat('docx')}
+                    disabled={isDownloadingCv}
+                  />
+                  <span><strong>Word document</strong><small>Editable .docx with template-inspired headings, colors, and section order.</small></span>
+                </label>
+                <label className={cvExportFormat === 'txt' ? 'seeker-cv-download-choice seeker-cv-download-choice--active' : 'seeker-cv-download-choice'}>
+                  <input
+                    type="radio"
+                    name="cv-export-format"
+                    value="txt"
+                    checked={cvExportFormat === 'txt'}
+                    onChange={() => setCvExportFormat('txt')}
+                    disabled={isDownloadingCv}
+                  />
+                  <span><strong>Plain text</strong><small>Lightweight .txt with all populated sections and details.</small></span>
+                </label>
+              </fieldset>
+              <fieldset className="seeker-cv-download-modal__choices">
+                <legend>Content</legend>
+                <label className={cvExportContent === 'selected' ? 'seeker-cv-download-choice seeker-cv-download-choice--active' : 'seeker-cv-download-choice'}>
+                  <input
+                    type="radio"
+                    name="cv-export-content"
+                    value="selected"
+                    checked={cvExportContent === 'selected'}
+                    onChange={() => setCvExportContent('selected')}
+                    disabled={isDownloadingCv}
+                  />
+                  <span><strong>Selected content</strong><small>Choose which populated sections from your current CV to include. Name and contact details are included whenever available.</small></span>
+                </label>
+                <label className={cvExportContent === 'full' ? 'seeker-cv-download-choice seeker-cv-download-choice--active' : 'seeker-cv-download-choice'}>
+                  <input
+                    type="radio"
+                    name="cv-export-content"
+                    value="full"
+                    checked={cvExportContent === 'full'}
+                    onChange={() => setCvExportContent('full')}
+                    disabled={isDownloadingCv}
+                  />
+                  <span><strong>Full CV</strong><small>Include every populated supported field and entry, regardless of the section choices below.</small></span>
+                </label>
+              </fieldset>
+              {cvExportContent === 'selected' && (
+                <fieldset className="seeker-cv-download-modal__choices">
+                  <legend>Included sections</legend>
+                  {availableCvExportSections.length > 0 ? availableCvExportSections.map((section) => (
+                    <label className={cvExportSections.includes(section) ? 'seeker-cv-download-choice seeker-cv-download-choice--active' : 'seeker-cv-download-choice'} key={section}>
+                      <input
+                        type="checkbox"
+                        name="cv-export-section"
+                        value={section}
+                        checked={cvExportSections.includes(section)}
+                        onChange={(event) => setCvExportSections((current) => (
+                          event.target.checked
+                            ? [...current, section]
+                            : current.filter((selectedSection) => selectedSection !== section)
+                        ))}
+                        disabled={isDownloadingCv}
+                      />
+                      <span><strong>{cvExportSectionLabels[section]}</strong></span>
+                    </label>
+                  )) : <p className="seeker-cv-download-modal__intro">There are no populated optional sections to select.</p>}
+                </fieldset>
+              )}
+              <p className="seeker-cv-download-modal__filename">
+                File name <strong>{createCvFileName(profile.personalInfo.fullName || 'profile', cvExportFormat)}</strong>
+              </p>
+              {cvExportError && <p className="seeker-cv-download-modal__error" role="alert">{cvExportError}</p>}
+              {isDownloadingCv && <p className="seeker-cv-download-modal__progress" role="status">Preparing your {cvExportFormat.toUpperCase()} file. Keep this window open…</p>}
+              <footer className="seeker-cv-download-modal__actions">
+                <button type="button" className="seeker-cv-download-modal__cancel" onClick={closeCvDownloadModal} disabled={isDownloadingCv}>Cancel</button>
+                <button type="submit" className="seeker-cv-download-modal__submit" disabled={isDownloadingCv}>
+                  {isDownloadingCv ? 'Preparing…' : 'Download'}
+                </button>
+              </footer>
+            </form>
           </section>
         </div>
       )}

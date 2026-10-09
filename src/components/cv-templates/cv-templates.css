@@ -167,6 +167,23 @@
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   line-height: 1.6;
   color: #333;
+  overflow-wrap: anywhere;
+}
+
+.cv-template-renderer h2,
+.cv-template-renderer h3 {
+  break-after: avoid;
+  page-break-after: avoid;
+}
+
+.cv-entry,
+.cv-creative__entry,
+.cv-executive__entry,
+.cv-ats article,
+.cv-compact article,
+.cv-pdf-keep-together {
+  break-inside: avoid;
+  page-break-inside: avoid;
 }
 
 /* Modern Template */
