@@ -2,6 +2,7 @@ import { FormEvent, useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { FaArrowLeft, FaBriefcase, FaCheckCircle, FaCreditCard, FaFileUpload, FaLock, FaSpinner, FaTimes } from 'react-icons/fa';
 import { useAuth } from '../../context/AuthContext';
+import AuthenticatedImage from '../../components/common/AuthenticatedImage';
 import {
   confirmAdminCompletion,
   confirmEmployerCompletion,
@@ -383,7 +384,12 @@ function ContractPage({ role }: ContractPageProps) {
               <div className="contract-panel-heading"><FaLock /><div><h2>Seeker</h2><p>Project collaborator</p></div></div>
               <div className="employer-contract-seeker">
                 {contract.seeker.profilePictureUrl
-                  ? <img src={contract.seeker.profilePictureUrl} alt="" />
+                  ? <AuthenticatedImage
+                    endpoint={`/employer/jobs/${encodeURIComponent(contract.jobId)}/applications/${encodeURIComponent(contract.applicationId)}/profile-picture`}
+                    token={token ?? ''}
+                    alt=""
+                    fallback={<span aria-hidden="true">{contract.seeker.firstName?.charAt(0) ?? 'S'}</span>}
+                  />
                   : <span aria-hidden="true">{contract.seeker.firstName?.charAt(0) ?? 'S'}</span>}
                 <div><strong>{displayName(contract.seeker)}</strong><p>{contract.seeker.professionalTitle || 'LeamJobs seeker'}</p></div>
               </div>

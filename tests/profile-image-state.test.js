@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { getUserScopedImageUrl } from '../src/utils/profileImageState.ts';
+import { getConversationAvatarEndpoint, getUserScopedImageUrl } from '../src/utils/profileImageState.ts';
 
 test('a cached profile image is visible only to the user it belongs to', () => {
   const image = { ownerId: 'user-a', url: 'blob:user-a-image' };
@@ -24,4 +24,20 @@ test('separate users do not collide in profile image state', () => {
 
   assert.equal(getUserScopedImageUrl(images.get('user-a'), 'user-b'), null);
   assert.equal(getUserScopedImageUrl(images.get('user-b'), 'user-b'), 'blob:user-b-image');
+});
+
+test('conversation profile image endpoints are specific to the actual participant', () => {
+  assert.equal(
+    getConversationAvatarEndpoint('employer', 'seeker-a', true),
+    '/employer/candidates/seeker-a/profile-picture',
+  );
+  assert.equal(
+    getConversationAvatarEndpoint('employer', 'seeker-b', true),
+    '/employer/candidates/seeker-b/profile-picture',
+  );
+  assert.equal(
+    getConversationAvatarEndpoint('seeker', 'employer-a', true),
+    '/public/companies/employer-a/logo',
+  );
+  assert.equal(getConversationAvatarEndpoint('employer', 'seeker-a', false), null);
 });

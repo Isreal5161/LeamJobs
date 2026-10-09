@@ -18,6 +18,7 @@ import {
   type SeekerConversation,
   type SeekerMessage,
 } from '../../services/api';
+import { getConversationAvatarEndpoint } from '../../utils/profileImageState';
 
 type MessageRole = 'seeker' | 'employer';
 type MessageSender = 'me' | 'them';
@@ -35,7 +36,7 @@ type Conversation = {
   role: string;
   subject: string;
   initials?: string;
-  imageUrl?: string;
+  imageEndpoint?: string;
   lastMessage: string;
   time: string;
   unread: number;
@@ -67,13 +68,16 @@ function MessagesPage({ role }: MessagesPageProps) {
   const [messagesRetry, setMessagesRetry] = useState(0);
   const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [isRespondingToInvitation, setIsRespondingToInvitation] = useState(false);
+  const [conversationDataOwner, setConversationDataOwner] = useState<string | null>(null);
+  const currentIdentity = `${role}:${user?.id ?? ''}:${token ?? ''}`;
+  const hasCurrentConversationData = conversationDataOwner === currentIdentity;
   const conversations: Conversation[] = role === 'seeker'
-    ? seekerConversations.map((conversation) => ({
+    ? (hasCurrentConversationData ? seekerConversations : []).map((conversation) => ({
         id: conversation.id,
         name: conversation.employer.companyName || `${conversation.employer.firstName} ${conversation.employer.lastName}`.trim(),
         role: 'Employer',
         subject: conversation.job?.title || 'Application conversation',
-        imageUrl: conversation.employer.companyLogoUrl || undefined,
+        imageEndpoint: getConversationAvatarEndpoint('seeker', conversation.employer.id, Boolean(conversation.employer.companyLogoUrl)) ?? undefined,
         lastMessage: conversation.lastMessage?.body || 'No messages yet',
         time: conversation.lastMessageAt ? new Date(conversation.lastMessageAt).toLocaleString() : '',
         unread: conversation.unreadCount,
@@ -82,12 +86,12 @@ function MessagesPage({ role }: MessagesPageProps) {
           .map((message) => ({ id: message.id, sender: message.senderId === user?.id ? 'me' : 'them', text: message.body, createdAt: message.createdAt })),
         invitation: conversation.invitation,
       }))
-      : employerConversations.map((conversation) => ({
+      : (hasCurrentConversationData ? employerConversations : []).map((conversation) => ({
           id: conversation.id,
           name: `${conversation.seeker.firstName} ${conversation.seeker.lastName}`.trim(),
           role: conversation.seeker.professionalTitle || 'Job seeker',
           subject: conversation.job?.title || 'Application conversation',
-          imageUrl: conversation.seeker.profilePictureUrl || undefined,
+          imageEndpoint: getConversationAvatarEndpoint('employer', conversation.seeker.id, Boolean(conversation.seeker.profilePictureUrl)) ?? undefined,
           lastMessage: conversation.lastMessage?.body || 'No messages yet',
           time: conversation.lastMessageAt ? new Date(conversation.lastMessageAt).toLocaleString() : '',
           unread: conversation.unreadCount,
@@ -108,18 +112,29 @@ function MessagesPage({ role }: MessagesPageProps) {
       if (!result.ok) {
         setConversationError(result.error.message || 'We could not load your conversations.');
         setSeekerConversations([]);
+        setEmployerConversations([]);
+        setSeekerMessages([]);
+        setEmployerMessages([]);
+        setSelectedConversationId('');
       } else {
         if (role === 'seeker') {
           setSeekerConversations(result.data.data.conversations as SeekerConversation[]);
+          setEmployerConversations([]);
         } else {
           setEmployerConversations(result.data.data.conversations as EmployerConversation[]);
+          setSeekerConversations([]);
         }
-        setSelectedConversationId((current) => current || result.data.data.conversations[0]?.id || '');
+        setSeekerMessages([]);
+        setEmployerMessages([]);
+        setSelectedConversationId((current) => result.data.data.conversations.some((conversation) => conversation.id === current)
+          ? current
+          : result.data.data.conversations[0]?.id || '');
       }
+      setConversationDataOwner(currentIdentity);
       setIsLoadingConversations(false);
     });
     return () => { isMounted = false; };
-  }, [role, token, conversationRetry]);
+  }, [role, token, user?.id, currentIdentity, conversationRetry]);
 
   useEffect(() => {
     const requestedConversationId = messageSearchParams.get('conversationId');
@@ -303,7 +318,7 @@ function MessagesPage({ role }: MessagesPageProps) {
                 key={conversation.id}
                 onClick={() => handleSelectConversation(conversation.id)}
               >
-                <ApplicantAvatar name={conversation.name} imageUrl={conversation.imageUrl} />
+                <ApplicantAvatar name={conversation.name} imageEndpoint={conversation.imageEndpoint} token={token} />
                 <span>
                   <strong>{conversation.name}</strong>
                   <small>{conversation.role} / {conversation.subject}</small>
@@ -324,7 +339,7 @@ function MessagesPage({ role }: MessagesPageProps) {
             <div className="messages-empty">Select a conversation to start messaging.</div>
           ) : <>
           <div className="messages-chat-header">
-            <ApplicantAvatar name={selectedConversation.name} imageUrl={selectedConversation.imageUrl} />
+            <ApplicantAvatar name={selectedConversation.name} imageEndpoint={selectedConversation.imageEndpoint} token={token} />
             <div className="messages-chat-header__copy">
               <h2>{selectedConversation.name}</h2>
               <p><FaBriefcase /> {selectedConversation.subject}</p>
