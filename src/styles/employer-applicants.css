@@ -747,6 +747,43 @@
   font-size: 0.76rem;
 }
 
+.applicant-cancel-dialog-backdrop {
+  position: fixed;
+  z-index: 1200;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  background: rgb(20 20 35 / 58%);
+}
+
+.applicant-cancel-dialog {
+  width: min(100%, 30rem);
+  padding: 1.5rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 24px 70px rgb(20 20 35 / 24%);
+}
+
+.applicant-cancel-dialog h2 {
+  margin: 0;
+  color: #322f6a;
+  font-size: 1.2rem;
+}
+
+.applicant-cancel-dialog p {
+  margin: 0.7rem 0 1.2rem;
+  color: #4b5563;
+  line-height: 1.55;
+}
+
+.applicant-cancel-dialog__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.65rem;
+}
+
 .applicant-detail-pane .employer-action-error {
   border: 1px solid #fecaca;
   background: #fff7f7;
@@ -890,6 +927,14 @@
   }
 
   .applicant-confirmation .employer-button {
+    width: 100%;
+  }
+
+  .applicant-cancel-dialog__actions {
+    flex-direction: column-reverse;
+  }
+
+  .applicant-cancel-dialog__actions .employer-button {
     width: 100%;
   }
 

@@ -586,6 +586,34 @@
   margin-top: 1.5rem;
 }
 
+.contract-cancellation-action {
+  display: grid;
+  gap: .7rem;
+  margin-top: 1rem;
+  padding: 1rem;
+  border: 1px solid #f3b6aa;
+  border-radius: 12px;
+  background: #fff8f6;
+}
+
+.contract-cancellation-action p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: .9rem;
+  line-height: 1.5;
+}
+
+.contract-action--cancel {
+  justify-self: start;
+  border-color: #ef5036;
+  color: #b42318;
+}
+
+.contract-cancel-confirm {
+  background: #ef5036;
+  border-color: #ef5036;
+}
+
 @media (max-width: 900px) {
   .employer-contract-financial-summary { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .employer-contract-timeline ol { grid-template-columns: repeat(4, minmax(0, 1fr)); row-gap: 1.2rem; }

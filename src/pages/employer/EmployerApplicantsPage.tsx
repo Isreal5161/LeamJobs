@@ -14,6 +14,7 @@ import {
   getEmployerApplicationResume,
   getEmployerApplications,
   getEmployerJobs,
+  cancelEmployerContract,
   type CertificationItem,
   type EducationItem,
   type EmployerApplicationDetail,
@@ -60,16 +61,32 @@ function EmployerApplicantsPage() {
   const [cvDocumentUrl, setCvDocumentUrl] = useState<string | null>(null);
   const [interviewScheduleOpen, setInterviewScheduleOpen] = useState(false);
   const cvModalCloseRef = useRef<HTMLButtonElement>(null);
+  const cancelDialogCloseRef = useRef<HTMLButtonElement>(null);
   const lastFocusedElementRef = useRef<HTMLElement | null>(null);
   const [error, setError] = useState('');
   const [detailError, setDetailError] = useState('');
   const [actionError, setActionError] = useState('');
   const [actionMessage, setActionMessage] = useState('');
   const [pendingRejection, setPendingRejection] = useState(false);
+  const [showFreelanceCancellation, setShowFreelanceCancellation] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
   const [detailRetryKey, setDetailRetryKey] = useState(0);
   const [applicationsRetryKey, setApplicationsRetryKey] = useState(0);
   const applicationCache = useRef<Record<string, EmployerApplicationListItem[]>>({});
+
+  useEffect(() => {
+    if (!showFreelanceCancellation) return;
+    const previouslyFocused = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    cancelDialogCloseRef.current?.focus();
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && !isMutating) setShowFreelanceCancellation(false);
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+      previouslyFocused?.focus();
+    };
+  }, [isMutating, showFreelanceCancellation]);
 
   useEffect(() => {
     const nextJobId = searchParams.get('jobId') ?? '';
@@ -185,17 +202,44 @@ function EmployerApplicantsPage() {
   const selectedJob = jobs.find((job) => job.id === selectedJobId);
   const selectedJobForApplication = selectedListItem ? jobs.find((job) => job.id === selectedListItem.jobId) : undefined;
   const isContractApplication = selectedJobForApplication?.engagementType === 'CONTRACT';
+  const isFreelanceProject = selectedJobForApplication?.jobType === 'FREELANCE_PROJECT'
+    && selectedJobForApplication?.engagementType === 'FREELANCE';
   const isMonthlyApplication = selectedJobForApplication?.engagementType === 'MONTHLY';
   const selectedContractApplication = selectedListItem
-    ? applications.find((application) => application.jobId === selectedListItem.jobId && Boolean(application.contractId)) ?? null
+    ? applications.find((application) => application.jobId === selectedListItem.jobId
+      && application.id !== selectedListItem.id
+      && (Boolean(application.contractId) || application.status === 'ACCEPTED')) ?? null
     : null;
-  const anotherCandidateSelected = Boolean(selectedContractApplication && selectedContractApplication.id !== selectedListItem?.id);
-  const canSelectContract = Boolean(isContractApplication && selectedListItem && !selectedListItem.contractId && !anotherCandidateSelected && !['ACCEPTED', 'PAYMENT_PENDING'].includes(selectedListItem.status));
+  const anotherCandidateSelected = Boolean(selectedContractApplication);
+  const selectedConflictMessage = selectedContractApplication?.paymentStatuses.some((status) => status === 'PENDING' || status === 'PROCESSING')
+    ? 'Another candidate’s payment is pending or being verified. Resolve that payment state before selecting a replacement.'
+    : selectedContractApplication?.paymentStatuses.length
+      ? 'Another candidate has a payment attempt on record. Resolve its provider state before selecting a replacement.'
+    : selectedContractApplication?.escrowStatus === 'FUNDED'
+      || selectedContractApplication?.escrowStatus === 'RELEASE_ELIGIBLE'
+      || selectedContractApplication?.escrowStatus === 'RELEASED'
+      ? 'Another candidate already has a funded contract. Follow that contract’s financial workflow before making another selection.'
+      : selectedContractApplication?.contractId
+        ? 'Another candidate is already selected for this project. Cancel the existing unfunded contract before selecting a replacement.'
+        : 'Another candidate already has an active selection for this project. Resolve that selection before choosing another candidate.';
+  const canSelectContract = Boolean((isContractApplication || isFreelanceProject)
+    && selectedListItem
+    && !selectedListItem.contractId
+    && !anotherCandidateSelected
+    && !['ACCEPTED', 'PAYMENT_PENDING'].includes(selectedListItem.status));
   const canScheduleInterview = Boolean(selectedListItem && ['APPLIED', 'REVIEWING', 'SHORTLISTED', 'INTERVIEW'].includes(selectedListItem.status));
   const applicationStatusOptions: EmployerApplicationStatus[] = isContractApplication
-    ? normalApplicationStatuses.filter((status) => status !== 'ACCEPTED' || Boolean(selectedApplication?.contractId))
+    ? normalApplicationStatuses.filter((status) => (status !== 'ACCEPTED' || Boolean(selectedApplication?.contractId))
+      && !(isFreelanceProject && Boolean(selectedListItem?.contractId) && ['REJECTED', 'WITHDRAWN'].includes(status)))
       .concat(selectedApplication?.status === 'PAYMENT_PENDING' ? ['PAYMENT_PENDING'] : [])
     : normalApplicationStatuses;
+  const hasPaymentAttempt = Boolean(selectedListItem?.paymentStatuses.length);
+  const canCancelFreelanceSelection = Boolean(isFreelanceProject
+    && selectedListItem?.contractId
+    && ['PENDING', 'ACTIVE'].includes(selectedListItem.contractStatus ?? '')
+    && selectedListItem.escrowStatus === 'UNFUNDED'
+    && !hasPaymentAttempt
+    && selectedListItem.status === 'ACCEPTED');
   const selectJob = (jobId: string) => {
     setSelectedJobId(jobId);
     setSelectedApplicationId('');
@@ -240,7 +284,15 @@ function EmployerApplicantsPage() {
       setIsMutating(true);
       setActionError('');
       const selection = await selectContractApplication(selectedListItem.jobId, selectedListItem.id, token);
-      if (!selection.ok) setActionError(selection.status === 409 ? 'Another candidate has already been selected for this job.' : 'The candidate could not be selected for payment. Please try again.');
+      if (!selection.ok) {
+        setActionError(selection.status === 409
+          ? 'Another candidate was selected first. Refresh the applicant list to see the current contract and payment state.'
+          : 'The candidate could not be selected. Please try again.');
+        if (selection.status === 409) {
+          delete applicationCache.current[selectedListItem.jobId];
+          setApplicationsRetryKey((value) => value + 1);
+        }
+      }
       else navigate(`/employer/contracts/${selection.data.data.selection.contractId}`);
       setIsMutating(false);
       return;
@@ -250,14 +302,58 @@ function EmployerApplicantsPage() {
     setActionError('');
     setActionMessage('');
     const result = await updateEmployerApplicationStatus(selectedListItem.jobId, selectedListItem.id, status, token);
-    if (!result.ok) setActionError('Unable to update the application status. Please try again.');
+    if (!result.ok) {
+      if (result.status === 409 && isFreelanceProject) {
+        setActionError(result.error.code === 'FREELANCE_SELECTION_PAYMENT_PENDING'
+          ? 'Another candidate’s payment is pending or being verified. Resolve that payment state before selecting a replacement.'
+          : result.error.code === 'FREELANCE_SELECTION_PAYMENT_ATTEMPT'
+            ? 'Another candidate has a payment attempt on record. Resolve its provider state before selecting a replacement.'
+          : result.error.code === 'FREELANCE_SELECTION_FUNDED_CONTRACT'
+            ? 'Another candidate already has a funded contract. Follow that contract’s financial workflow before making another selection.'
+            : 'Another candidate is already selected for this project. Cancel the existing unfunded contract before selecting a replacement.');
+        delete applicationCache.current[selectedListItem.jobId];
+        setApplicationsRetryKey((value) => value + 1);
+      } else setActionError('Unable to update the application status. Please try again.');
+    }
     else {
+      const updatedApplication = result.data.data.application;
+      if (status === 'ACCEPTED' && isFreelanceProject && updatedApplication.contractId) {
+        navigate(`/employer/contracts/${updatedApplication.contractId}`);
+        setIsMutating(false);
+        return;
+      }
       setApplications((current) => current.map((application) => application.id === selectedListItem.id ? { ...application, status, updatedAt: result.data.data.application.updatedAt } : application));
-      setSelectedApplication(result.data.data.application);
+      setSelectedApplication(updatedApplication);
       setActionMessage(`Application moved to ${statusLabels[status]}.`);
     }
     setPendingRejection(false);
     setIsMutating(false);
+  };
+
+  const cancelFreelanceSelection = async () => {
+    if (!token || !selectedListItem?.contractId || isMutating) return;
+    setIsMutating(true);
+    setActionError('');
+    setActionMessage('');
+    try {
+      const result = await cancelEmployerContract(selectedListItem.contractId, token);
+      if (!result.ok) {
+        setActionError(result.error.message || 'The contract could not be cancelled. Refresh its payment state and try again.');
+        setIsMutating(false);
+        return;
+      }
+
+      delete applicationCache.current[selectedListItem.jobId];
+      setApplicationsRetryKey((value) => value + 1);
+      setDetailRetryKey((value) => value + 1);
+      setShowFreelanceCancellation(false);
+      setPendingRejection(false);
+      setActionMessage('The unfunded contract was cancelled and the selected application was marked rejected. You can now select another candidate.');
+    } catch {
+      setActionError('The contract could not be cancelled. Refresh its payment state and try again.');
+    } finally {
+      setIsMutating(false);
+    }
   };
 
   const templateDataForApplicant = (applicantData: EmployerApplicationDetail['applicant']): CVData => ({
@@ -538,7 +634,20 @@ function EmployerApplicantsPage() {
             {error ? <div className="employer-empty-state applicant-state" role="alert"><strong>Applicants unavailable</strong><p>We could not load this applicant list right now.</p><button className="employer-button employer-button--ghost" type="button" onClick={() => { setReloadKey((value) => value + 1); setApplicationsRetryKey((value) => value + 1); }}>Try again</button></div> : null}
             {!isLoadingJobs && !isLoadingApplications && !error && !jobs.length ? <div className="employer-empty-state"><strong>Post your first job to start receiving applications.</strong><p>Your applications will appear here once candidates apply.</p></div> : null}
             {!isLoadingApplications && !error && jobs.length > 0 && !filteredApplications.length ? <div className="employer-empty-state"><strong>{applications.length ? 'No applicants match your current filters.' : 'No applications yet for this job.'}</strong><p>Try another job or adjust your search and status filters.</p></div> : null}
-            {!isLoadingApplications && !error ? filteredApplications.map((application) => <article className={`employer-applicant-card applicant-list-card ${selectedApplicationId === application.id ? 'employer-applicant-card--active applicant-list-card--active' : ''}`} key={application.id}><button type="button" onClick={() => selectApplication(application.id)} aria-label={`Review application from ${application.applicant.fullName}`} aria-pressed={selectedApplicationId === application.id}><ApplicantAvatar name={application.applicant.fullName} imageEndpoint={`/employer/jobs/${application.jobId}/applications/${application.id}/profile-picture`} token={token} /><div><h3>{application.applicant.fullName}</h3><p>{application.applicant.professionalTitle || 'Professional title not provided'}</p><div className="employer-applicant-card__meta"><span><FaMapMarkerAlt /> {application.applicant.location || 'Location not provided'}</span><span><FaCalendarCheck /> {formatDate(application.createdAt)}</span>{typeof application.applicant.jobFitScore === 'number' ? <span className="employer-job-fit">{application.applicant.jobFitScore}% Match</span> : null}<span className={`employer-availability employer-availability--${application.applicant.availability.toLowerCase()}`}>{application.applicant.availability === 'AVAILABLE_NOW' ? 'Available now' : application.applicant.availability === 'AVAILABLE_SOON' ? 'Available soon' : 'Not currently available'}</span>{application.applicant.subscriptionTier === 'PROFESSIONAL' ? <span className="employer-tier employer-tier--professional">Professional</span> : null}{application.applicant.featured ? <span className="employer-tier employer-tier--premium">Featured · Visibility Boost</span> : null}<span className={statusClass(application.status)}>{statusLabels[application.status]}</span></div></div></button></article>) : null}
+            {!isLoadingApplications && !error ? filteredApplications.map((application) => {
+              const contractState = application.contractStatus === 'CANCELLED'
+                ? 'Cancelled'
+                : application.escrowStatus === 'FUNDED' || application.escrowStatus === 'RELEASE_ELIGIBLE' || application.escrowStatus === 'RELEASED'
+                  ? 'Funded'
+                  : application.paymentStatuses.some((status) => status === 'PENDING' || status === 'PROCESSING')
+                    ? 'Payment pending'
+                    : application.paymentStatuses.length
+                      ? 'Payment needs resolution'
+                      : application.contractStatus && application.escrowStatus === 'UNFUNDED'
+                        ? 'Selected · Unfunded'
+                        : null;
+              return <article className={`employer-applicant-card applicant-list-card ${selectedApplicationId === application.id ? 'employer-applicant-card--active applicant-list-card--active' : ''}`} key={application.id}><button type="button" onClick={() => selectApplication(application.id)} aria-label={`Review application from ${application.applicant.fullName}`} aria-pressed={selectedApplicationId === application.id}><ApplicantAvatar name={application.applicant.fullName} imageEndpoint={`/employer/jobs/${application.jobId}/applications/${application.id}/profile-picture`} token={token} /><div><h3>{application.applicant.fullName}</h3><p>{application.applicant.professionalTitle || 'Professional title not provided'}</p><div className="employer-applicant-card__meta"><span><FaMapMarkerAlt /> {application.applicant.location || 'Location not provided'}</span><span><FaCalendarCheck /> {formatDate(application.createdAt)}</span>{typeof application.applicant.jobFitScore === 'number' ? <span className="employer-job-fit">{application.applicant.jobFitScore}% Match</span> : null}<span className={`employer-availability employer-availability--${application.applicant.availability.toLowerCase()}`}>{application.applicant.availability === 'AVAILABLE_NOW' ? 'Available now' : application.applicant.availability === 'AVAILABLE_SOON' ? 'Available soon' : 'Not currently available'}</span>{application.applicant.subscriptionTier === 'PROFESSIONAL' ? <span className="employer-tier employer-tier--professional">Professional</span> : null}{application.applicant.featured ? <span className="employer-tier employer-tier--premium">Featured · Visibility Boost</span> : null}<span className={statusClass(application.status)}>{statusLabels[application.status]}</span>{contractState ? <span className="employer-application-status employer-application-status--contract">{contractState}</span> : null}</div></div></button></article>;
+            }) : null}
           </div>
         </section>
         <aside className="employer-panel employer-candidate-detail applicant-detail-pane">
@@ -617,7 +726,13 @@ function EmployerApplicantsPage() {
                   {canScheduleInterview ? <button className="employer-button employer-button--primary" type="button" onClick={() => setInterviewScheduleOpen(true)} disabled={isMutating || isLoadingDetail}>
                     <FaCalendarCheck aria-hidden="true" /> Schedule interview
                   </button> : null}
-                  {anotherCandidateSelected ? <p className="employer-action-error" role="alert">Another candidate has already been selected for this job. Payment must be completed for that candidate before the engagement can continue.</p> : null}
+                  {anotherCandidateSelected ? <p className="employer-action-error" role="alert">{selectedConflictMessage}</p> : null}
+                  {isFreelanceProject && selectedListItem?.contractId && !canCancelFreelanceSelection && selectedListItem.contractStatus !== 'CANCELLED'
+                    ? <p className="employer-action-error" role="status">{hasPaymentAttempt || selectedListItem.escrowStatus !== 'UNFUNDED'
+                      ? 'This selection cannot be cancelled here because a payment attempt or financial activity is recorded. Resolve the existing contract workflow first.'
+                      : 'This contract is not in a cancellable state. Review its contract workspace for the current status.'}</p>
+                    : null}
+                  {canCancelFreelanceSelection ? <button className="employer-button employer-button--danger" type="button" onClick={() => setShowFreelanceCancellation(true)} disabled={isMutating}>Cancel unfunded contract &amp; reject candidate</button> : null}
                   {canSelectContract ? <button className="employer-button employer-button--primary" type="button" onClick={() => void updateStatus('ACCEPTED')} disabled={isMutating}>Select &amp; fund contract</button> : null}
                   {selectedApplication.contractId ? <button className="employer-button employer-button--primary" type="button" onClick={() => navigate(`/employer/contracts/${selectedApplication.contractId}`)}>Open contract workspace</button> : null}
                 </section>
@@ -662,6 +777,20 @@ function EmployerApplicantsPage() {
           {!isLoadingDetail && !detailError && !selectedApplication && !filteredApplications.length ? <div className="employer-empty-state"><strong>Select an applicant to review details.</strong></div> : null}
         </aside>
       </main>
+      {showFreelanceCancellation && selectedApplication && selectedListItem ? (
+        <div className="applicant-cancel-dialog-backdrop" role="presentation" onMouseDown={(event) => {
+          if (event.target === event.currentTarget && !isMutating) setShowFreelanceCancellation(false);
+        }}>
+          <section className="applicant-cancel-dialog" role="alertdialog" aria-modal="true" aria-labelledby="applicant-cancel-dialog-title" aria-describedby="applicant-cancel-dialog-description">
+            <h2 id="applicant-cancel-dialog-title">Cancel this unfunded contract?</h2>
+            <p id="applicant-cancel-dialog-description">This permanently cancels the contract and marks this candidate’s application rejected. No money will be moved. The candidate selection slot will become available only after the cancellation succeeds.</p>
+            <div className="applicant-cancel-dialog__actions">
+              <button ref={cancelDialogCloseRef} className="employer-button employer-button--ghost" type="button" onClick={() => setShowFreelanceCancellation(false)} disabled={isMutating}>Keep contract</button>
+              <button className="employer-button employer-button--danger" type="button" onClick={() => void cancelFreelanceSelection()} disabled={isMutating}>{isMutating ? 'Cancelling...' : 'Cancel contract & reject'}</button>
+            </div>
+          </section>
+        </div>
+      ) : null}
       {cvModalOpen && selectedApplication && applicant ? (
         <div className="employer-cv-modal-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) closeCvModal(); }}>
           <section className="employer-cv-modal" role="dialog" aria-modal="true" aria-labelledby="employer-cv-modal-title">

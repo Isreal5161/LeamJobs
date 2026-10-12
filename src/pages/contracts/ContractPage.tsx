@@ -7,6 +7,7 @@ import {
   confirmAdminCompletion,
   confirmEmployerContractTerms,
   confirmEmployerCompletion,
+  cancelEmployerContract,
   confirmSeekerContractTerms,
   getAdminContract,
   getEmployerContract,
@@ -136,10 +137,26 @@ function ContractPage({ role }: ContractPageProps) {
   const [alreadyFunded, setAlreadyFunded] = useState(false);
   const [showFundingReview, setShowFundingReview] = useState(false);
   const [showCompletionConfirmation, setShowCompletionConfirmation] = useState(false);
+  const [showCancellationConfirmation, setShowCancellationConfirmation] = useState(false);
+  const cancellationCloseRef = useRef<HTMLButtonElement>(null);
   const autoVerificationKey = useRef('');
   const transactionId = searchParams.get('transaction_id');
   const providerReference = searchParams.get('tx_ref');
   const returnStatus = searchParams.get('status');
+
+  useEffect(() => {
+    if (!showCancellationConfirmation) return;
+    const previouslyFocused = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    cancellationCloseRef.current?.focus();
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && !isMutating) setShowCancellationConfirmation(false);
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+      previouslyFocused?.focus();
+    };
+  }, [isMutating, showCancellationConfirmation]);
 
   const loadContract = async () => {
     if (!token || !contractId) return;
@@ -338,6 +355,28 @@ function ContractPage({ role }: ContractPageProps) {
     }
   };
 
+  const cancelContract = async () => {
+    if (!token || !contractId || isMutating) return;
+    setIsMutating(true);
+    setError('');
+    setMessage('');
+    try {
+      const result = await cancelEmployerContract(contractId, token);
+      if (!result.ok) {
+        setError(result.error.message || 'This contract could not be cancelled. Refresh its payment state and try again.');
+        return;
+      }
+      setContract(result.data.data.contract);
+      setShowCancellationConfirmation(false);
+      setShowFundingReview(false);
+      setMessage('The unfunded freelance contract was cancelled. No money was moved.');
+    } catch {
+      setError('This contract could not be cancelled. Refresh its payment state and try again.');
+    } finally {
+      setIsMutating(false);
+    }
+  };
+
   if (isLoading) return <main className="contract-page"><p className="contract-state"><FaSpinner className="contract-spin" /> Loading contract...</p></main>;
   if (error && !contract) return <main className="contract-page"><div className="contract-state contract-state--error" role="alert"><p>{error}</p><button type="button" className="button button--secondary" onClick={() => void loadContract()}>Try again</button></div></main>;
   if (!contract?.freelance) return <main className="contract-page"><p className="contract-state contract-state--error">Freelance contract details are unavailable.</p></main>;
@@ -347,6 +386,11 @@ function ContractPage({ role }: ContractPageProps) {
   const isFunded = escrow?.status === 'FUNDED';
   const isReleaseEligible = escrow?.status === 'RELEASE_ELIGIBLE';
   const isReleased = escrow?.status === 'RELEASED';
+  const canCancelContract = role === 'EMPLOYER'
+    && user?.role === 'EMPLOYER'
+    && user.id === contract.employerId
+    && contract.type === 'FREELANCE_PROJECT'
+    && contract.availableActions?.cancel === true;
   const hasSubmitted = Boolean(freelance.completionSubmittedAt);
   const isContractJob = contract.type === 'CONTRACT_PROJECT';
   const confirmationAction = getPendingFreelanceConfirmationAction({
@@ -536,6 +580,10 @@ function ContractPage({ role }: ContractPageProps) {
         <article className="contract-panel">
           <div className="contract-panel-heading"><FaCreditCard /><div><h2>Protected payment</h2><p>{isReleased ? 'Funds have been released for this project.' : isFunded ? 'Payment is secured and held by LeamJobs until completion and release.' : isReleaseEligible ? 'Funds are ready for admin release.' : 'Payment is held securely by LeamJobs. It is not released to the seeker until the approved completion and release process.'}</p></div></div>
           <div className="contract-escrow-status"><strong>{escrow?.status ?? 'UNFUNDED'}</strong><span>{escrow?.fundedAt ? `Funded ${new Date(escrow.fundedAt).toLocaleDateString()}` : 'Waiting for employer payment'}</span>{isReleased ? <span>Funds released to the seeker wallet.</span> : null}{escrow?.payments?.length ? <span>Payment status: {escrow.payments[0].status}</span> : null}</div>
+          {canCancelContract ? <div className="contract-cancellation-action">
+            <p>This contract has no recorded payment attempt or financial activity. Cancelling it also rejects the selected application and makes the project available for a replacement selection.</p>
+            <button type="button" className="button button--secondary contract-action contract-action--cancel" onClick={() => setShowCancellationConfirmation(true)} disabled={isMutating || isVerifyingReturn}>Cancel unfunded contract</button>
+          </div> : null}
           {canShowFundingAction ? (
             <>
               {!showFundingReview ? null : <div className="contract-funding-review" aria-live="polite">
@@ -571,6 +619,24 @@ function ContractPage({ role }: ContractPageProps) {
               <button type="button" className="button button--secondary" onClick={() => setShowCompletionConfirmation(false)} disabled={isMutating}>Cancel</button>
               <button type="button" className="button button--primary" onClick={() => void confirmCompletion()} disabled={isMutating}>
                 {isMutating ? 'Sending confirmation...' : 'Confirm & Request Review'}
+              </button>
+            </div>
+          </section>
+        </div>
+      ) : null}
+      {role === 'EMPLOYER' && showCancellationConfirmation ? (
+        <div className="employer-contract-dialog-backdrop" role="presentation" onMouseDown={(event) => {
+          if (event.target === event.currentTarget && !isMutating) setShowCancellationConfirmation(false);
+        }}>
+          <section className="employer-contract-dialog" role="alertdialog" aria-modal="true" aria-labelledby="employer-contract-cancel-title" aria-describedby="employer-contract-cancel-description">
+            <button ref={cancellationCloseRef} type="button" className="employer-contract-dialog__close" aria-label="Close cancellation confirmation" onClick={() => setShowCancellationConfirmation(false)} disabled={isMutating}><FaTimes /></button>
+            <span className="employer-contract-dialog__icon"><FaTimes /></span>
+            <h2 id="employer-contract-cancel-title">Cancel this unfunded contract?</h2>
+            <p id="employer-contract-cancel-description">The contract will be marked cancelled and the selected application rejected. This cannot be undone. No payment, refund, wallet credit, or release will be created.</p>
+            <div className="employer-contract-dialog__actions">
+              <button type="button" className="button button--secondary" onClick={() => setShowCancellationConfirmation(false)} disabled={isMutating}>Keep contract</button>
+              <button type="button" className="button button--primary contract-cancel-confirm" onClick={() => void cancelContract()} disabled={isMutating}>
+                {isMutating ? 'Cancelling...' : 'Cancel contract'}
               </button>
             </div>
           </section>

@@ -620,6 +620,9 @@ export type EmployerApplicationListItem = {
   createdAt: string;
   updatedAt: string;
   contractId: string | null;
+  contractStatus: EmployerContractStatus | null;
+  escrowStatus: string | null;
+  paymentStatuses: string[];
 };
 
 export type EmployerApplicationDetail = {
@@ -2281,6 +2284,7 @@ export type ContractData = {
   } | null;
   availableActions?: {
     fund: boolean;
+    cancel: boolean;
     confirmCompletion: boolean;
   };
   freelance: {
@@ -2342,6 +2346,10 @@ export type ContractPaymentResponse = {
 
 export function getEmployerContract(contractId: string, token: string) {
   return request<ContractResponse>({ method: 'GET', endpoint: `/employer/contracts/${encodeURIComponent(contractId)}`, token });
+}
+
+export function cancelEmployerContract(contractId: string, token: string) {
+  return request<ContractResponse>({ method: 'POST', endpoint: `/employer/contracts/${encodeURIComponent(contractId)}/cancel`, token });
 }
 
 export function confirmEmployerContractTerms(contractId: string, token: string) {
