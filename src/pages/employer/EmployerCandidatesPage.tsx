@@ -601,12 +601,16 @@ function CandidateCard({ candidate, token, onInvite, onDetails }: {
         {profile.profilePictureUrl ? <AuthenticatedImage endpoint={`/employer/candidates/${encodeURIComponent(candidate.id)}/profile-picture`} token={token} alt={`${candidate.firstName} ${candidate.lastName} profile picture`} fallback={<span className="employer-candidate-card__avatar" aria-hidden="true">{`${candidate.firstName[0] ?? ''}${candidate.lastName[0] ?? ''}`.toUpperCase()}</span>} /> : <span className="employer-candidate-card__avatar" aria-hidden="true">{`${candidate.firstName[0] ?? ''}${candidate.lastName[0] ?? ''}`.toUpperCase()}</span>}
         <div className="employer-candidate-card__identity"><h3>{candidate.firstName} {candidate.lastName}</h3><p>{profile.professionalTitle || 'Professional title not provided'}</p></div>
       </div>
-      {candidate.subscriptionTier === 'PROFESSIONAL' ? <div className="employer-candidate-card__tier"><span>Professional</span></div> : null}
-      {candidate.featured || candidate.visibilityBoosted ? <div className="employer-candidate-card__badges">{candidate.featured ? <span><FaStar aria-hidden="true" /> Featured</span> : null}{candidate.visibilityBoosted ? <span><FaBolt aria-hidden="true" /> Visibility Boost</span> : null}</div> : null}
-      {profile.location ? <p className="employer-candidate-card__location"><FaMapMarkerAlt aria-hidden="true" /> {profile.location}</p> : null}
+      <div className="employer-candidate-card__meta">
+        {candidate.subscriptionTier === 'PROFESSIONAL' ? <div className="employer-candidate-card__tier"><span>Professional</span></div> : null}
+        {candidate.featured || candidate.visibilityBoosted ? <div className="employer-candidate-card__badges">{candidate.featured ? <span><FaStar aria-hidden="true" /> Featured</span> : null}{candidate.visibilityBoosted ? <span><FaBolt aria-hidden="true" /> Visibility Boost</span> : null}</div> : null}
+      </div>
+      <p className="employer-candidate-card__location"><FaMapMarkerAlt aria-hidden="true" /> {profile.location || 'Location not provided'}</p>
       <p className={`employer-candidate-card__availability employer-candidate-card__availability--${candidate.availability.toLowerCase()}`}>{candidate.availability === 'AVAILABLE_NOW' ? 'Available now' : candidate.availability === 'AVAILABLE_SOON' ? 'Available soon' : 'Not currently available'}</p>
-      {profile.bio ? <p className="employer-candidate-card__bio">{profile.bio}</p> : null}
-      {profile.skills.length ? <div className="employer-candidate-card__skills">{profile.skills.map((skill) => <span key={skill}>{skill}</span>)}</div> : null}
+      <p className={`employer-candidate-card__bio${profile.bio ? '' : ' employer-candidate-card__bio--empty'}`}>{profile.bio || 'No profile summary added yet.'}</p>
+      <div className={`employer-candidate-card__skills${profile.skills.length ? '' : ' employer-candidate-card__skills--empty'}`}>
+        {profile.skills.length ? profile.skills.map((skill) => <span key={skill}>{skill}</span>) : <span>No skills listed</span>}
+      </div>
       <div className="employer-candidate-card__actions">
         <button type="button" className="employer-button employer-button--ghost" onClick={() => onDetails(candidate)}>View profile</button>
         <button type="button" className="employer-button employer-button--primary employer-candidate-card__invite" onClick={() => onInvite(candidate)}>Invite to apply</button>
