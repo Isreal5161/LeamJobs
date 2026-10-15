@@ -623,6 +623,8 @@ export type EmployerApplicationListItem = {
   contractStatus: EmployerContractStatus | null;
   escrowStatus: string | null;
   paymentStatuses: string[];
+  availableActions: { cancel: boolean };
+  blocksSelection: boolean;
 };
 
 export type EmployerApplicationDetail = {

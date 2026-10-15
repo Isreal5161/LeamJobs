@@ -369,7 +369,7 @@ function ContractPage({ role }: ContractPageProps) {
       setContract(result.data.data.contract);
       setShowCancellationConfirmation(false);
       setShowFundingReview(false);
-      setMessage('The unfunded freelance contract was cancelled. No money was moved.');
+      setMessage('The unfunded contract was cancelled. No money was moved.');
     } catch {
       setError('This contract could not be cancelled. Refresh its payment state and try again.');
     } finally {
@@ -379,7 +379,7 @@ function ContractPage({ role }: ContractPageProps) {
 
   if (isLoading) return <main className="contract-page"><p className="contract-state"><FaSpinner className="contract-spin" /> Loading contract...</p></main>;
   if (error && !contract) return <main className="contract-page"><div className="contract-state contract-state--error" role="alert"><p>{error}</p><button type="button" className="button button--secondary" onClick={() => void loadContract()}>Try again</button></div></main>;
-  if (!contract?.freelance) return <main className="contract-page"><p className="contract-state contract-state--error">Freelance contract details are unavailable.</p></main>;
+  if (!contract?.freelance) return <main className="contract-page"><p className="contract-state contract-state--error">Contract details are unavailable.</p></main>;
 
   const freelance = contract.freelance;
   const escrow = freelance.escrow;
@@ -389,7 +389,6 @@ function ContractPage({ role }: ContractPageProps) {
   const canCancelContract = role === 'EMPLOYER'
     && user?.role === 'EMPLOYER'
     && user.id === contract.employerId
-    && contract.type === 'FREELANCE_PROJECT'
     && contract.availableActions?.cancel === true;
   const hasSubmitted = Boolean(freelance.completionSubmittedAt);
   const isContractJob = contract.type === 'CONTRACT_PROJECT';
@@ -581,8 +580,8 @@ function ContractPage({ role }: ContractPageProps) {
           <div className="contract-panel-heading"><FaCreditCard /><div><h2>Protected payment</h2><p>{isReleased ? 'Funds have been released for this project.' : isFunded ? 'Payment is secured and held by LeamJobs until completion and release.' : isReleaseEligible ? 'Funds are ready for admin release.' : 'Payment is held securely by LeamJobs. It is not released to the seeker until the approved completion and release process.'}</p></div></div>
           <div className="contract-escrow-status"><strong>{escrow?.status ?? 'UNFUNDED'}</strong><span>{escrow?.fundedAt ? `Funded ${new Date(escrow.fundedAt).toLocaleDateString()}` : 'Waiting for employer payment'}</span>{isReleased ? <span>Funds released to the seeker wallet.</span> : null}{escrow?.payments?.length ? <span>Payment status: {escrow.payments[0].status}</span> : null}</div>
           {canCancelContract ? <div className="contract-cancellation-action">
-            <p>This contract has no recorded payment attempt or financial activity. Cancelling it also rejects the selected application and makes the project available for a replacement selection.</p>
-            <button type="button" className="button button--secondary contract-action contract-action--cancel" onClick={() => setShowCancellationConfirmation(true)} disabled={isMutating || isVerifyingReturn}>Cancel unfunded contract</button>
+            <p>This contract has no recorded payment attempt or financial activity. Cancelling it also rejects the selected application and makes the selection available for a replacement.</p>
+            <button type="button" className="button button--secondary contract-action contract-action--cancel" onClick={() => setShowCancellationConfirmation(true)} disabled={isMutating || isVerifyingReturn}>Cancel contract</button>
           </div> : null}
           {canShowFundingAction ? (
             <>

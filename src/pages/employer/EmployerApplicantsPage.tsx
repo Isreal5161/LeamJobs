@@ -68,25 +68,25 @@ function EmployerApplicantsPage() {
   const [actionError, setActionError] = useState('');
   const [actionMessage, setActionMessage] = useState('');
   const [pendingRejection, setPendingRejection] = useState(false);
-  const [showFreelanceCancellation, setShowFreelanceCancellation] = useState(false);
+  const [showContractCancellation, setShowContractCancellation] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
   const [detailRetryKey, setDetailRetryKey] = useState(0);
   const [applicationsRetryKey, setApplicationsRetryKey] = useState(0);
   const applicationCache = useRef<Record<string, EmployerApplicationListItem[]>>({});
 
   useEffect(() => {
-    if (!showFreelanceCancellation) return;
+    if (!showContractCancellation) return;
     const previouslyFocused = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     cancelDialogCloseRef.current?.focus();
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape' && !isMutating) setShowFreelanceCancellation(false);
+      if (event.key === 'Escape' && !isMutating) setShowContractCancellation(false);
     };
     document.addEventListener('keydown', handleKeyDown);
     return () => {
       document.removeEventListener('keydown', handleKeyDown);
       previouslyFocused?.focus();
     };
-  }, [isMutating, showFreelanceCancellation]);
+  }, [isMutating, showContractCancellation]);
 
   useEffect(() => {
     const nextJobId = searchParams.get('jobId') ?? '';
@@ -208,7 +208,7 @@ function EmployerApplicantsPage() {
   const selectedContractApplication = selectedListItem
     ? applications.find((application) => application.jobId === selectedListItem.jobId
       && application.id !== selectedListItem.id
-      && (Boolean(application.contractId) || application.status === 'ACCEPTED')) ?? null
+      && application.blocksSelection) ?? null
     : null;
   const anotherCandidateSelected = Boolean(selectedContractApplication);
   const selectedConflictMessage = selectedContractApplication?.paymentStatuses.some((status) => status === 'PENDING' || status === 'PROCESSING')
@@ -230,16 +230,12 @@ function EmployerApplicantsPage() {
   const canScheduleInterview = Boolean(selectedListItem && ['APPLIED', 'REVIEWING', 'SHORTLISTED', 'INTERVIEW'].includes(selectedListItem.status));
   const applicationStatusOptions: EmployerApplicationStatus[] = isContractApplication
     ? normalApplicationStatuses.filter((status) => (status !== 'ACCEPTED' || Boolean(selectedApplication?.contractId))
-      && !(isFreelanceProject && Boolean(selectedListItem?.contractId) && ['REJECTED', 'WITHDRAWN'].includes(status)))
+      && !(Boolean(selectedListItem?.contractId)
+        && !selectedListItem?.availableActions.cancel
+        && ['REJECTED', 'WITHDRAWN'].includes(status)))
       .concat(selectedApplication?.status === 'PAYMENT_PENDING' ? ['PAYMENT_PENDING'] : [])
     : normalApplicationStatuses;
-  const hasPaymentAttempt = Boolean(selectedListItem?.paymentStatuses.length);
-  const canCancelFreelanceSelection = Boolean(isFreelanceProject
-    && selectedListItem?.contractId
-    && ['PENDING', 'ACTIVE'].includes(selectedListItem.contractStatus ?? '')
-    && selectedListItem.escrowStatus === 'UNFUNDED'
-    && !hasPaymentAttempt
-    && selectedListItem.status === 'ACCEPTED');
+  const canCancelSelection = selectedListItem?.availableActions.cancel === true;
   const selectJob = (jobId: string) => {
     setSelectedJobId(jobId);
     setSelectedApplicationId('');
@@ -330,7 +326,7 @@ function EmployerApplicantsPage() {
     setIsMutating(false);
   };
 
-  const cancelFreelanceSelection = async () => {
+  const cancelSelectedContract = async () => {
     if (!token || !selectedListItem?.contractId || isMutating) return;
     setIsMutating(true);
     setActionError('');
@@ -346,7 +342,7 @@ function EmployerApplicantsPage() {
       delete applicationCache.current[selectedListItem.jobId];
       setApplicationsRetryKey((value) => value + 1);
       setDetailRetryKey((value) => value + 1);
-      setShowFreelanceCancellation(false);
+      setShowContractCancellation(false);
       setPendingRejection(false);
       setActionMessage('The unfunded contract was cancelled and the selected application was marked rejected. You can now select another candidate.');
     } catch {
@@ -727,12 +723,10 @@ function EmployerApplicantsPage() {
                     <FaCalendarCheck aria-hidden="true" /> Schedule interview
                   </button> : null}
                   {anotherCandidateSelected ? <p className="employer-action-error" role="alert">{selectedConflictMessage}</p> : null}
-                  {isFreelanceProject && selectedListItem?.contractId && !canCancelFreelanceSelection && selectedListItem.contractStatus !== 'CANCELLED'
-                    ? <p className="employer-action-error" role="status">{hasPaymentAttempt || selectedListItem.escrowStatus !== 'UNFUNDED'
-                      ? 'This selection cannot be cancelled here because a payment attempt or financial activity is recorded. Resolve the existing contract workflow first.'
-                      : 'This contract is not in a cancellable state. Review its contract workspace for the current status.'}</p>
+                  {selectedListItem?.contractId && !canCancelSelection && selectedListItem.contractStatus !== 'CANCELLED'
+                    ? <p className="employer-action-error" role="status">This contract is not currently eligible for cancellation. Review its contract workspace and resolve any payment or financial activity first.</p>
                     : null}
-                  {canCancelFreelanceSelection ? <button className="employer-button employer-button--danger" type="button" onClick={() => setShowFreelanceCancellation(true)} disabled={isMutating}>Cancel unfunded contract &amp; reject candidate</button> : null}
+                  {canCancelSelection ? <button className="employer-button employer-button--danger" type="button" onClick={() => setShowContractCancellation(true)} disabled={isMutating}>Cancel contract &amp; reject candidate</button> : null}
                   {canSelectContract ? <button className="employer-button employer-button--primary" type="button" onClick={() => void updateStatus('ACCEPTED')} disabled={isMutating}>Select &amp; fund contract</button> : null}
                   {selectedApplication.contractId ? <button className="employer-button employer-button--primary" type="button" onClick={() => navigate(`/employer/contracts/${selectedApplication.contractId}`)}>Open contract workspace</button> : null}
                 </section>
@@ -777,16 +771,16 @@ function EmployerApplicantsPage() {
           {!isLoadingDetail && !detailError && !selectedApplication && !filteredApplications.length ? <div className="employer-empty-state"><strong>Select an applicant to review details.</strong></div> : null}
         </aside>
       </main>
-      {showFreelanceCancellation && selectedApplication && selectedListItem ? (
+      {showContractCancellation && selectedApplication && selectedListItem ? (
         <div className="applicant-cancel-dialog-backdrop" role="presentation" onMouseDown={(event) => {
-          if (event.target === event.currentTarget && !isMutating) setShowFreelanceCancellation(false);
+          if (event.target === event.currentTarget && !isMutating) setShowContractCancellation(false);
         }}>
           <section className="applicant-cancel-dialog" role="alertdialog" aria-modal="true" aria-labelledby="applicant-cancel-dialog-title" aria-describedby="applicant-cancel-dialog-description">
-            <h2 id="applicant-cancel-dialog-title">Cancel this unfunded contract?</h2>
+            <h2 id="applicant-cancel-dialog-title">Cancel this contract?</h2>
             <p id="applicant-cancel-dialog-description">This permanently cancels the contract and marks this candidate’s application rejected. No money will be moved. The candidate selection slot will become available only after the cancellation succeeds.</p>
             <div className="applicant-cancel-dialog__actions">
-              <button ref={cancelDialogCloseRef} className="employer-button employer-button--ghost" type="button" onClick={() => setShowFreelanceCancellation(false)} disabled={isMutating}>Keep contract</button>
-              <button className="employer-button employer-button--danger" type="button" onClick={() => void cancelFreelanceSelection()} disabled={isMutating}>{isMutating ? 'Cancelling...' : 'Cancel contract & reject'}</button>
+              <button ref={cancelDialogCloseRef} className="employer-button employer-button--ghost" type="button" onClick={() => setShowContractCancellation(false)} disabled={isMutating}>Keep contract</button>
+              <button className="employer-button employer-button--danger" type="button" onClick={() => void cancelSelectedContract()} disabled={isMutating}>{isMutating ? 'Cancelling...' : 'Cancel contract & reject'}</button>
             </div>
           </section>
         </div>
