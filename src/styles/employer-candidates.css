@@ -199,6 +199,23 @@
   margin-top: 1rem;
 }
 
+.employer-candidate-card__actions {
+  display: flex;
+  gap: .55rem;
+  margin-top: 1rem;
+}
+
+.employer-candidate-card__actions .employer-button {
+  flex: 1;
+  justify-content: center;
+  min-width: 0;
+}
+
+.employer-candidate-card__actions .employer-candidate-card__invite {
+  width: auto;
+  margin-top: 0;
+}
+
 .employer-candidate-card__badges span:first-child {
   background: #fff7d6;
   color: #8a5b00;
@@ -329,6 +346,213 @@
   margin-top: 1.25rem;
 }
 
+.employer-candidate-detail-backdrop {
+  z-index: 19;
+}
+
+.employer-candidate-detail-modal {
+  display: flex;
+  flex-direction: column;
+  width: min(100%, 900px);
+  max-height: min(92vh, 900px);
+  overflow: hidden;
+  border-radius: 10px;
+  background: #f8fafc;
+  box-shadow: 0 24px 70px rgba(15, 23, 42, .24);
+}
+
+.employer-candidate-detail-modal__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid #e2e8f0;
+  background: #fff;
+}
+
+.employer-candidate-detail-modal__header h2 {
+  margin: .2rem 0 0;
+  color: #0f172a;
+  font-size: 1.25rem;
+}
+
+.employer-candidate-detail-content {
+  overflow: auto;
+  padding: 1.1rem 1.25rem;
+}
+
+.employer-candidate-detail-state {
+  padding: 2rem;
+  text-align: center;
+}
+
+.employer-candidate-detail-identity {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  border: 1px solid #e1e8f0;
+  border-radius: 9px;
+  background: #fff;
+}
+
+.employer-candidate-detail-identity__photo,
+.employer-candidate-detail-identity__initials {
+  width: 76px;
+  height: 76px;
+  flex: 0 0 76px;
+  border-radius: 50%;
+}
+
+.employer-candidate-detail-identity__photo {
+  object-fit: cover;
+}
+
+.employer-candidate-detail-identity__initials {
+  display: grid;
+  place-items: center;
+  background: #e8f0ff;
+  color: #1d4ed8;
+  font-size: 1.1rem;
+  font-weight: 800;
+}
+
+.employer-candidate-detail-identity h3 {
+  margin: 0;
+  color: #0f172a;
+}
+
+.employer-candidate-detail-identity p,
+.employer-candidate-detail-section p {
+  margin: .35rem 0 0;
+  color: #475569;
+  line-height: 1.55;
+  overflow-wrap: anywhere;
+}
+
+.employer-candidate-detail-section {
+  margin-top: 1rem;
+  padding: 1rem;
+  border: 1px solid #e1e8f0;
+  border-radius: 9px;
+  background: #fff;
+}
+
+.employer-candidate-detail-section > h3 {
+  margin: 0 0 .7rem;
+  color: #0f172a;
+  font-size: .98rem;
+}
+
+.employer-candidate-detail-entry + .employer-candidate-detail-entry {
+  margin-top: .9rem;
+  padding-top: .9rem;
+  border-top: 1px solid #e9eef5;
+}
+
+.employer-candidate-detail-entry h4 {
+  margin: 0;
+  color: #1e293b;
+}
+
+.employer-candidate-detail-entry a,
+.employer-candidate-detail-links a {
+  display: inline-flex;
+  align-items: center;
+  gap: .35rem;
+  margin: .45rem .7rem 0 0;
+  color: #1d4ed8;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.employer-candidate-detail-skills,
+.employer-candidate-detail-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .45rem;
+}
+
+.employer-candidate-detail-skills span {
+  border-radius: 999px;
+  padding: .3rem .6rem;
+  background: #f1f5f9;
+  color: #334155;
+  font-size: .75rem;
+  font-weight: 700;
+}
+
+.employer-candidate-detail-application-select {
+  display: grid;
+  gap: .4rem;
+  max-width: 600px;
+  color: #475569;
+  font-size: .78rem;
+  font-weight: 750;
+}
+
+.employer-candidate-detail-application-select select {
+  min-height: 42px;
+  border: 1px solid #dbe3ee;
+  border-radius: 8px;
+  padding: .55rem .7rem;
+  color: #0f172a;
+  background: #fff;
+  font: inherit;
+}
+
+.employer-candidate-application-details {
+  margin-top: .9rem;
+}
+
+.employer-candidate-cv-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: .55rem;
+  margin-top: .9rem;
+}
+
+.employer-candidate-cv-actions small {
+  flex-basis: 100%;
+  color: #64748b;
+}
+
+.employer-candidate-cv-template,
+.employer-candidate-cv-document {
+  display: block;
+  width: 100%;
+  margin-top: 1rem;
+  border: 1px solid #dbe3ee;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.employer-candidate-cv-template {
+  max-height: 650px;
+  overflow: auto;
+  padding: 1rem;
+}
+
+.employer-candidate-cv-document {
+  height: min(70vh, 720px);
+}
+
+.employer-candidate-detail-empty {
+  color: #64748b !important;
+  font-style: italic;
+}
+
+.employer-candidate-detail-modal__footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: .6rem;
+  margin-top: 1.1rem;
+  padding-top: 1rem;
+  border-top: 1px solid #e2e8f0;
+}
+
 @media (max-width: 900px) {
   .employer-candidates-toolbar {
     grid-template-columns: 1fr 1fr;
@@ -359,5 +583,26 @@
   .employer-candidates-list-panel,
   .employer-candidates-toolbar {
     padding: .8rem;
+  }
+
+  .employer-candidate-detail-modal__header,
+  .employer-candidate-detail-content {
+    padding: .85rem;
+  }
+
+  .employer-candidate-detail-identity {
+    align-items: flex-start;
+    padding: .75rem;
+  }
+
+  .employer-candidate-detail-identity__photo,
+  .employer-candidate-detail-identity__initials {
+    width: 58px;
+    height: 58px;
+    flex-basis: 58px;
+  }
+
+  .employer-candidate-card__actions {
+    flex-direction: column;
   }
 }

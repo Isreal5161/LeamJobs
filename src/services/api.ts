@@ -396,6 +396,38 @@ export type EmployerCandidate = {
   featured: boolean;
 };
 
+export type EmployerCandidateDetails = {
+  id: string;
+  firstName: string;
+  lastName: string;
+  profile: {
+    professionalTitle: string | null;
+    bio: string | null;
+    location: string | null;
+    country: string | null;
+    state: string | null;
+    city: string | null;
+    skills: string[];
+    education: EducationItem[];
+    experience: ExperienceItem[];
+    certifications: CertificationItem[];
+    languages: LanguageItem[];
+    projects: ProjectItem[];
+    linkedinUrl: string | null;
+    website: string | null;
+    profilePictureUrl: string | null;
+    availability: SeekerAvailability;
+    cvTemplate: CVTemplateId | null;
+  };
+  applications: {
+    id: string;
+    jobId: string;
+    jobTitle: string;
+    status: EmployerApplicationStatus;
+    createdAt: string;
+  }[];
+};
+
 export type EmployerCandidatesResponse = {
   success: true;
   data: {
@@ -606,6 +638,7 @@ export type EmployerApplicant = {
   languages: LanguageItem[] | null;
   projects: ProjectItem[] | null;
   linkedinUrl: string | null;
+  website?: string | null;
   cvTemplate: CVTemplateId | null;
 };
 
@@ -1394,6 +1427,14 @@ export function getEmployerCandidates(query: EmployerCandidatesQuery, token: str
   return request<EmployerCandidatesResponse>({
     method: 'GET',
     endpoint: `/employer/candidates?${params.toString()}`,
+    token,
+  });
+}
+
+export function getEmployerCandidateDetails(candidateId: string, token: string) {
+  return request<{ success: true; data: { candidate: EmployerCandidateDetails } }>({
+    method: 'GET',
+    endpoint: `/employer/candidates/${encodeURIComponent(candidateId)}`,
     token,
   });
 }
