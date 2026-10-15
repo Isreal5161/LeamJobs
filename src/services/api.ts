@@ -2043,6 +2043,17 @@ export function updateAdminSiteContent(token: string, pageKey: string, content: 
   return request<{ success: true; data: { page: { pageKey: string; content: unknown; updatedAt: string } } }>({ method: 'PUT', endpoint: '/admin/content', body: { pageKey, content }, token });
 }
 
+export function uploadAdminAboutTeamImage(token: string, image: File) {
+  const body = new FormData();
+  body.append('image', image);
+  return request<{ success: true; data: { imageUrl: string } }>({
+    method: 'POST',
+    endpoint: '/admin/content/about/team-images',
+    body,
+    token,
+  });
+}
+
 export function getAdminJob(jobId: string, token: string) {
   return request<AdminJobResponse>({ method: 'GET', endpoint: `/admin/jobs/${encodeURIComponent(jobId)}`, token });
 }

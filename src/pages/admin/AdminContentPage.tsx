@@ -15,7 +15,7 @@ import {
   type SiteStat,
 } from '../../context/SiteContentContext';
 import { useAuth } from '../../context/AuthContext';
-import { updateAdminSiteContent } from '../../services/api';
+import { API_BASE_URL, updateAdminSiteContent, uploadAdminAboutTeamImage } from '../../services/api';
 import AdminPageSkeleton from './AdminPageSkeleton';
 
 type StatPageKey = 'welcome' | 'about' | 'how-it-works' | 'companies';
@@ -34,6 +34,8 @@ function AdminContentPage() {
   const [selectedPage, setSelectedPage] = useState<SitePageKey>('welcome');
   const [saveNotice, setSaveNotice] = useState('No content changes saved yet');
   const [isSaving, setIsSaving] = useState(false);
+  const [uploadingTeamImage, setUploadingTeamImage] = useState<number | null>(null);
+  const [teamImageErrors, setTeamImageErrors] = useState<Record<number, string>>({});
 
   const saveChanges = async () => {
     if (!token || isSaving) return;
@@ -62,6 +64,37 @@ function AdminContentPage() {
       ...current,
       stats: current.stats.filter((_, statIndex) => statIndex !== index),
     }));
+  };
+
+  const uploadTeamImage = async (index: number, file?: File) => {
+    if (!token || !file || uploadingTeamImage !== null) return;
+    if (file.size > 10 * 1024 * 1024) {
+      setTeamImageErrors((current) => ({ ...current, [index]: 'Choose an image smaller than 10 MB.' }));
+      return;
+    }
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
+      setTeamImageErrors((current) => ({ ...current, [index]: 'Choose a JPEG, PNG, or WebP image.' }));
+      return;
+    }
+
+    setUploadingTeamImage(index);
+    setTeamImageErrors((current) => ({ ...current, [index]: '' }));
+    try {
+      const result = await uploadAdminAboutTeamImage(token, file);
+      if (!result.ok) {
+        setTeamImageErrors((current) => ({ ...current, [index]: result.error.message || 'Image upload failed. Try again.' }));
+        return;
+      }
+      updatePage('about', (current) => {
+        const teamImages = [...(current.teamImages ?? [])];
+        teamImages[index] = new URL(result.data.data.imageUrl, API_BASE_URL).toString();
+        return { ...current, teamImages };
+      });
+    } catch {
+      setTeamImageErrors((current) => ({ ...current, [index]: 'Image upload failed. Try again.' }));
+    } finally {
+      setUploadingTeamImage(null);
+    }
   };
 
   if (isLoading) {
@@ -129,7 +162,7 @@ function AdminContentPage() {
               <span><FaEdit /> Editor</span>
               <h2>{pageLabels[selectedPage].name}</h2>
             </div>
-            <button className="admin-button admin-button--primary" type="button" onClick={() => void saveChanges()} disabled={isSaving}>
+            <button className="admin-button admin-button--primary" type="button" onClick={() => void saveChanges()} disabled={isSaving || uploadingTeamImage !== null}>
               <FaSave /> {isSaving ? 'Saving...' : 'Save changes'}
             </button>
           </div>
@@ -217,17 +250,63 @@ function AdminContentPage() {
                     <label><span>Team button</span><input value={content.about.teamButton} onChange={(event) => updatePage('about', (current) => ({ ...current, teamButton: event.target.value }))} /></label>
                     <label><span>More avatar label</span><input value={content.about.teamMoreLabel} onChange={(event) => updatePage('about', (current) => ({ ...current, teamMoreLabel: event.target.value }))} /></label>
                   </div>
-                  <ListEditor
-                    title="Team avatar initials"
-                    items={content.about.team}
-                    itemLabel="Initials"
-                    onAdd={() => updatePage('about', (current) => ({ ...current, team: [...current.team, 'NA'] }))}
-                    onRemove={(index) => updatePage('about', (current) => ({ ...current, team: current.team.filter((_, itemIndex) => itemIndex !== index) }))}
-                    onChange={(index, value) => updatePage('about', (current) => ({ ...current, team: current.team.map((item, itemIndex) => itemIndex === index ? value : item) }))}
-                  />
+                  <section className="admin-content-section-card">
+                    <div className="admin-content-section-card__header">
+                      <span>Team members</span>
+                      <button type="button" className="admin-review-action admin-review-action--secondary" onClick={() => updatePage('about', (current) => ({ ...current, team: [...current.team, 'NA'], teamImages: [...(current.teamImages ?? []), ''] }))} disabled={uploadingTeamImage !== null}>
+                        <FaPlus /> Add member
+                      </button>
+                    </div>
+                    <div className="admin-content-token-editor">
+                      {content.about.team.map((member, index) => {
+                        const teamImage = content.about.teamImages?.[index] ?? '';
+                        return (
+                          <div className="admin-content-repeater admin-content-repeater--team" key={`team-member-${index}`}>
+                            <label><span>Initials</span><input value={member} onChange={(event) => updatePage('about', (current) => ({ ...current, team: current.team.map((item, itemIndex) => itemIndex === index ? event.target.value : item) }))} /></label>
+                            <div className="admin-content-team-photo">
+                              <div className="admin-content-team-photo__preview" aria-label={`Photo preview for team member ${index + 1}`}>
+                                <span>{member || 'Team'}</span>
+                                {teamImage ? <img key={teamImage} src={teamImage} alt="" onError={(event) => { event.currentTarget.hidden = true; }} /> : null}
+                              </div>
+                              <label className="admin-content-team-photo__upload">
+                                <span>{uploadingTeamImage === index ? 'Uploading...' : teamImage ? 'Replace photograph' : 'Upload photograph'}</span>
+                                <input
+                                  type="file"
+                                  accept="image/jpeg,image/png,image/webp"
+                                  onChange={(event) => {
+                                    void uploadTeamImage(index, event.currentTarget.files?.[0]);
+                                    event.currentTarget.value = '';
+                                  }}
+                                  disabled={uploadingTeamImage !== null || isSaving}
+                                />
+                              </label>
+                              {teamImageErrors[index] ? <small className="admin-content-team-photo__error" role="alert">{teamImageErrors[index]}</small> : null}
+                              {teamImage && !teamImageErrors[index] ? <small>Upload complete. Save changes to publish.</small> : null}
+                            </div>
+                            <button type="button" className="admin-content-icon-remove" aria-label={`Remove team member ${index + 1}`} onClick={() => updatePage('about', (current) => ({
+                              ...current,
+                              team: current.team.filter((_, itemIndex) => itemIndex !== index),
+                              teamImages: (current.teamImages ?? []).filter((_, itemIndex) => itemIndex !== index),
+                            }))} disabled={uploadingTeamImage !== null}>
+                              <FaTrash />
+                            </button>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </section>
                   <label><span>Partner title</span><input value={content.about.partnerTitle} onChange={(event) => updatePage('about', (current) => ({ ...current, partnerTitle: event.target.value }))} /></label>
                   <label><span>Partner text</span><textarea value={content.about.partnerText} onChange={(event) => updatePage('about', (current) => ({ ...current, partnerText: event.target.value }))} /></label>
                   <label><span>Partner button</span><input value={content.about.partnerButton} onChange={(event) => updatePage('about', (current) => ({ ...current, partnerButton: event.target.value }))} /></label>
+                  <label>
+                    <span>Partner button destination</span>
+                    <input
+                      value={content.about.partnerUrl ?? '/companies'}
+                      onChange={(event) => updatePage('about', (current) => ({ ...current, partnerUrl: event.target.value }))}
+                      placeholder="/companies or https://example.com"
+                    />
+                    <small>Use an internal path or a secure HTTPS URL.</small>
+                  </label>
                 </section>
               </>
             ) : null}

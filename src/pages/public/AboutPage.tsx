@@ -1,3 +1,5 @@
+import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import Button from '../../components/common/Button';
 import {
   FaBriefcase,
@@ -62,6 +64,20 @@ function AboutIllustration() {
 function AboutPage() {
   const { content } = useSiteContent();
   const { eyebrow, title, description, primaryCta, secondaryCta, values, stats, team } = content.about;
+  const teamImages = Array.isArray(content.about.teamImages) ? content.about.teamImages : [];
+  const partnerUrl = typeof content.about.partnerUrl === 'string' && content.about.partnerUrl
+    ? content.about.partnerUrl
+    : '/companies';
+  const isInternalPartnerUrl = partnerUrl.startsWith('/') && !partnerUrl.startsWith('//') && !partnerUrl.includes('\\');
+  let safeExternalPartnerUrl = '';
+  if (!isInternalPartnerUrl) {
+    try {
+      const url = new URL(partnerUrl);
+      if (url.protocol === 'https:' && url.hostname && !url.username && !url.password) safeExternalPartnerUrl = url.toString();
+    } catch {
+      safeExternalPartnerUrl = '';
+    }
+  }
 
   return (
     <div className="about-page">
@@ -120,31 +136,39 @@ function AboutPage() {
 
       <section className="about-bottom-card">
         <article className="about-team-copy">
-          <h2>Built by a passionate team</h2>
-          <p>
-            LeamJobs is crafted by a global team of builders, designers, and problem-solvers who
-            care deeply about making the job search experience better for everyone.
-          </p>
-          <Button variant="outline">Join our team</Button>
+          <h2>{content.about.teamTitle}</h2>
+          <p>{content.about.teamText}</p>
+          <Button variant="outline">{content.about.teamButton}</Button>
         </article>
         <div className="about-team-avatars" aria-label="Team members">
           {team.map((member, index) => (
-            <span className={`about-avatar about-avatar--${index + 1}`} key={member}>
-              {member}
-            </span>
+            <TeamAvatar key={`${member}-${index}-${teamImages[index] ?? ''}`} member={member} index={index} imageUrl={teamImages[index]} />
           ))}
-          <span className="about-avatar about-avatar--more">+12</span>
+          <span className="about-avatar about-avatar--more">{content.about.teamMoreLabel}</span>
         </div>
         <article className="about-partner-copy">
-          <h2>Stronger together</h2>
-          <p>
-            We partner with amazing companies and communities to create more opportunities and drive
-            meaningful careers forward.
-          </p>
-          <Button variant="outline">Partner with us</Button>
+          <h2>{content.about.partnerTitle}</h2>
+          <p>{content.about.partnerText}</p>
+          {isInternalPartnerUrl ? (
+            <Link className="button button--outline" to={partnerUrl}>{content.about.partnerButton}</Link>
+          ) : safeExternalPartnerUrl ? (
+            <a className="button button--outline" href={safeExternalPartnerUrl} target="_blank" rel="noopener noreferrer">{content.about.partnerButton}</a>
+          ) : (
+            <Link className="button button--outline" to="/companies">{content.about.partnerButton}</Link>
+          )}
         </article>
       </section>
     </div>
+  );
+}
+
+function TeamAvatar({ member, index, imageUrl }: { member: string; index: number; imageUrl?: string }) {
+  const [imageFailed, setImageFailed] = useState(false);
+  return (
+    <span className={`about-avatar about-avatar--${index + 1}`}>
+      {member}
+      {imageUrl && !imageFailed ? <img src={imageUrl} alt={`Team member ${member}`} onError={() => setImageFailed(true)} /> : null}
+    </span>
   );
 }
 
