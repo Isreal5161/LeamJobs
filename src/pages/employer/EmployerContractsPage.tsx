@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { FaArrowRight, FaBriefcase, FaCalendarAlt, FaChevronLeft, FaChevronRight, FaFileContract, FaRedoAlt } from 'react-icons/fa';
+import { FaArrowRight, FaBriefcase, FaCalendarAlt, FaChevronLeft, FaChevronRight, FaFileContract, FaRedoAlt, FaTimes } from 'react-icons/fa';
 import { useAuth } from '../../context/AuthContext';
-import { getEmployerContracts, type ContractData, type EmployerContractStatus } from '../../services/api';
+import { cancelEmployerContract, getEmployerContracts, type ContractData, type EmployerContractStatus } from '../../services/api';
 
 const PAGE_SIZE = 10;
 const statusOptions: Array<{ label: string; value: EmployerContractStatus | '' }> = [
@@ -67,6 +67,9 @@ function EmployerContractsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
   const [reloadKey, setReloadKey] = useState(0);
+  const [contractToCancel, setContractToCancel] = useState<ContractData | null>(null);
+  const [isCancelling, setIsCancelling] = useState(false);
+  const [cancellationError, setCancellationError] = useState('');
 
   const loadContracts = useCallback(async () => {
     if (!token) return;
@@ -91,6 +94,25 @@ function EmployerContractsPage() {
   const changeStatus = (nextStatus: EmployerContractStatus | '') => {
     setStatus(nextStatus);
     setPage(1);
+  };
+
+  const cancelContract = async () => {
+    if (!token || !contractToCancel || isCancelling) return;
+    setIsCancelling(true);
+    setCancellationError('');
+    try {
+      const result = await cancelEmployerContract(contractToCancel.id, token);
+      if (!result.ok) {
+        setCancellationError(result.error.message || 'This contract could not be cancelled. Refresh its payment state and try again.');
+        return;
+      }
+      setContractToCancel(null);
+      setReloadKey((value) => value + 1);
+    } catch {
+      setCancellationError('This contract could not be cancelled. Refresh its payment state and try again.');
+    } finally {
+      setIsCancelling(false);
+    }
   };
 
   return (
@@ -168,9 +190,23 @@ function EmployerContractsPage() {
 
                   <div className="employer-contract-card__bottom">
                     <span><FaCalendarAlt /> Updated {formatDate(contract.updatedAt || contract.createdAt)}</span>
-                    <Link className="button button--secondary employer-contract-view" to={`/employer/contracts/${encodeURIComponent(contract.id)}`}>
-                      View contract <FaArrowRight />
-                    </Link>
+                    <div className="employer-contract-card__actions">
+                      {contract.availableActions?.cancel === true ? (
+                        <button
+                          type="button"
+                          className="button button--secondary employer-contract-cancel"
+                          onClick={() => {
+                            setCancellationError('');
+                            setContractToCancel(contract);
+                          }}
+                        >
+                          Cancel
+                        </button>
+                      ) : null}
+                      <Link className="button button--secondary employer-contract-view" to={`/employer/contracts/${encodeURIComponent(contract.id)}`}>
+                        View contract <FaArrowRight />
+                      </Link>
+                    </div>
                   </div>
                 </article>
               );
@@ -189,6 +225,29 @@ function EmployerContractsPage() {
           ) : null}
         </>
       )}
+      {contractToCancel ? (
+        <div className="employer-contract-dialog-backdrop" role="presentation" onMouseDown={(event) => {
+          if (event.target === event.currentTarget && !isCancelling) setContractToCancel(null);
+        }}>
+          <section className="employer-contract-dialog" role="alertdialog" aria-modal="true" aria-labelledby="employer-contract-list-cancel-title" aria-describedby="employer-contract-list-cancel-description">
+            <button type="button" className="employer-contract-dialog__close" aria-label="Close cancellation confirmation" onClick={() => setContractToCancel(null)} disabled={isCancelling}>
+              <FaTimes />
+            </button>
+            <span className="employer-contract-dialog__icon"><FaTimes /></span>
+            <h2 id="employer-contract-list-cancel-title">Cancel this unfunded contract?</h2>
+            <p id="employer-contract-list-cancel-description">
+              “{contractToCancel.job?.title || 'Untitled project'}” will be marked cancelled and the selected application rejected. This cannot be undone. No money will be moved.
+            </p>
+            {cancellationError ? <p className="employer-contract-cancel-error" role="alert">{cancellationError}</p> : null}
+            <div className="employer-contract-dialog__actions">
+              <button type="button" className="button button--secondary" onClick={() => setContractToCancel(null)} disabled={isCancelling}>Keep contract</button>
+              <button type="button" className="button button--primary contract-cancel-confirm" onClick={() => void cancelContract()} disabled={isCancelling}>
+                {isCancelling ? 'Cancelling...' : 'Cancel contract'}
+              </button>
+            </div>
+          </section>
+        </div>
+      ) : null}
     </main>
   );
 }

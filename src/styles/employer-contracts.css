@@ -207,6 +207,25 @@
   font-size: .85rem;
 }
 
+.employer-contract-card__actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: .55rem;
+}
+
+.employer-contract-cancel {
+  min-height: 39px;
+  border-color: #ef5036;
+  color: #b42318;
+  font-size: .85rem;
+}
+
+.employer-contract-cancel-error {
+  margin-top: 1rem !important;
+  color: #b42318 !important;
+}
+
 .employer-contracts-state {
   display: grid;
   justify-items: center;
@@ -633,7 +652,9 @@
   .employer-contract-card__top { align-items: flex-start; }
   .employer-contract-card__facts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .employer-contract-card__bottom { align-items: flex-start; flex-direction: column; }
-  .employer-contract-view { align-self: stretch; justify-content: center; }
+  .employer-contract-card__actions { align-self: stretch; }
+  .employer-contract-view { flex: 1; justify-content: center; }
+  .employer-contract-cancel { flex: 0 0 auto; }
   .employer-contract-pagination { gap: .55rem; }
   .employer-contract-pagination .button { padding-inline: .65rem; }
   .employer-contract-financial-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
