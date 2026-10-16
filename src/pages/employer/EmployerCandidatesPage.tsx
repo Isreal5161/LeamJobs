@@ -498,15 +498,17 @@ function EmployerCandidatesPage() {
                     </>
                   ) : <p className="employer-candidate-detail-empty">This candidate has not applied to any of your jobs. Application CV files are available only through applications submitted to your jobs.</p>}
                 </DetailSection>
-                <footer className="employer-candidate-detail-modal__footer">
-                  <button type="button" className="employer-button employer-button--ghost" onClick={closeCandidateDetails}>Close</button>
-                  <button type="button" className="employer-button employer-button--primary" onClick={() => {
-                    const candidate = candidates.find((item) => item.id === candidateDetail.id);
-                    closeCandidateDetails();
-                    if (candidate) openInvitation(candidate);
-                  }}>Invite to apply</button>
-                </footer>
               </div>
+            ) : null}
+            {candidateDetail ? (
+              <footer className="employer-candidate-detail-modal__footer">
+                <button type="button" className="employer-button employer-button--ghost" onClick={closeCandidateDetails}>Close</button>
+                <button type="button" className="employer-button employer-button--primary" onClick={() => {
+                  const candidate = candidates.find((item) => item.id === candidateDetail.id);
+                  closeCandidateDetails();
+                  if (candidate) openInvitation(candidate);
+                }}>Invite to apply</button>
+              </footer>
             ) : null}
           </section>
         </div>

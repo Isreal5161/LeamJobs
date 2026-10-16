@@ -444,8 +444,12 @@
 }
 
 .employer-candidate-detail-content {
+  flex: 1 1 auto;
+  min-height: 0;
   overflow: auto;
   padding: 1.1rem 1.25rem;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
 }
 
 .employer-candidate-detail-state {
@@ -611,12 +615,14 @@
 }
 
 .employer-candidate-detail-modal__footer {
+  flex: 0 0 auto;
   display: flex;
   justify-content: flex-end;
   gap: .6rem;
-  margin-top: 1.1rem;
-  padding-top: 1rem;
+  margin: 0;
+  padding: .9rem 1.25rem;
   border-top: 1px solid #e2e8f0;
+  background: #fff;
 }
 
 @media (max-width: 900px) {
@@ -634,6 +640,20 @@
 }
 
 @media (max-width: 620px) {
+  .employer-candidate-detail-backdrop {
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    overflow-y: auto;
+    padding: max(.75rem, env(safe-area-inset-top)) .75rem calc(5.5rem + env(safe-area-inset-bottom));
+  }
+
+  .employer-candidate-detail-modal {
+    width: 100%;
+    max-height: calc(100dvh - 7rem - env(safe-area-inset-top));
+    margin: 0 auto;
+  }
+
   .employer-candidates-toolbar {
     grid-template-columns: 1fr;
   }
@@ -654,6 +674,11 @@
   .employer-candidate-detail-modal__header,
   .employer-candidate-detail-content {
     padding: .85rem;
+  }
+
+  .employer-candidate-detail-modal__footer {
+    padding: .75rem .85rem;
+    padding-bottom: max(.75rem, env(safe-area-inset-bottom));
   }
 
   .employer-candidate-detail-identity {
