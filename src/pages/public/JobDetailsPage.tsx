@@ -6,6 +6,13 @@ import { getAiRateLimitCopy, getPublicJob, getSeekerJob, isAiRateLimitError, req
 import { useSubscriptions } from '../../context/SubscriptionContext';
 import CompanyLogo from '../../components/jobs/CompanyLogo';
 import InterviewPracticeModal from '../../components/jobs/InterviewPracticeModal';
+import {
+  applyJobPostingStructuredData,
+  applyPageMetadata,
+  getJobPageMetadata,
+  getPageMetadata,
+  isJobApplicationDeadlineExpired,
+} from '../../utils/seoMetadata';
 
 const skillClasses = ['job-detail-skill--pink', 'job-detail-skill--purple', 'job-detail-skill--green', 'job-detail-skill--yellow', 'job-detail-skill--blue'];
 
@@ -84,6 +91,43 @@ function JobDetailsPage() {
       isMounted = false;
     };
   }, [isSeekerRoute, jobId, token]);
+
+  useEffect(() => {
+    if (isSeekerRoute) {
+      applyJobPostingStructuredData(null, null);
+      return;
+    }
+    if (job && job.id === jobId) {
+      const canonicalUrl = getPageMetadata(pathname).canonicalUrl;
+      const isExpired = isJobApplicationDeadlineExpired(job);
+      applyPageMetadata({
+        ...(isExpired
+          ? {
+              title: `${job.title} (Closed) | LeamJobs`,
+              description: 'This job listing has expired. Browse current approved jobs and vacancies on LeamJobs.',
+              canonicalUrl: null,
+              robots: 'noindex,follow' as const,
+            }
+          : {
+              ...getJobPageMetadata(job),
+              canonicalUrl,
+              robots: 'index,follow' as const,
+            }),
+      });
+      applyJobPostingStructuredData(job, isExpired ? null : canonicalUrl);
+    } else if (error) {
+      applyPageMetadata({
+        title: 'Job unavailable | LeamJobs',
+        description: 'This job listing is currently unavailable. Search approved jobs and vacancies on LeamJobs.',
+        canonicalUrl: null,
+        robots: 'noindex,follow',
+      });
+      applyJobPostingStructuredData(null, null);
+    } else {
+      applyPageMetadata(getPageMetadata(pathname));
+      applyJobPostingStructuredData(null, null);
+    }
+  }, [error, isSeekerRoute, job, jobId, pathname]);
 
   useEffect(() => {
     if (!aiServiceModal) return undefined;
@@ -226,6 +270,7 @@ function JobDetailsPage() {
 
   const companyName = job.company?.name ?? 'Company not provided';
   const logoUrl = job.company?.logoUrl;
+  const isExpired = isJobApplicationDeadlineExpired(job);
   const detailPath = `/seeker/applications?jobId=${job.id}&apply=true`;
   const premiumPreparationTools = isSeekerRoute && currentPlan?.entitlements?.includes('AI_INTERVIEW_PREPARATION') ? (
     <div className="job-detail-premium-tools">
@@ -244,19 +289,18 @@ function JobDetailsPage() {
             <FaArrowLeft />
           </button>
           <div>
-            <h1>Job Details</h1>
-            <p>Learn more about this opportunity</p>
+            <h1>{job.title}</h1>
+            <p>{companyName} · {job.location}</p>
           </div>
         </div>
       </header>
+
+      {isExpired ? <p className="job-detail-section" role="status">This job listing has expired and is no longer accepting applications.</p> : null}
 
       <div className="job-detail-layout">
         <section className="job-detail-summary card" aria-label={`${job.title} at ${companyName}`}>
           <CompanyLogo company={companyName} logoUrl={logoUrl} logoText={getInitials(companyName)} />
           <div className="job-detail-summary__content">
-            <div className="job-detail-summary__top">
-              <h2>{job.title}</h2>
-            </div>
             <p className="job-detail-company">{companyName}</p>
             <p className="job-detail-meta">
               <span>{formatCompensation(job)}</span>
@@ -328,8 +372,8 @@ function JobDetailsPage() {
 
         <aside className="job-detail-sidebar" aria-label="Application details">
           <div className="job-detail-apply-card card">
-            <h2>Ready to apply?</h2>
-            <p>{alreadyApplied ? 'You have already applied to this job.' : isSeekerRoute ? 'Review this role and start your application when you are ready.' : 'Create a free account or sign in to start your application for this role.'}</p>
+            <h2>{isExpired ? 'Job listing closed' : 'Ready to apply?'}</h2>
+            <p>{isExpired ? 'This job is no longer accepting applications.' : alreadyApplied ? 'You have already applied to this job.' : isSeekerRoute ? 'Review this role and start your application when you are ready.' : 'Create a free account or sign in to start your application for this role.'}</p>
             <div className="job-detail-quick-facts">
               <span>
                 <FaMapMarkerAlt />
@@ -344,7 +388,7 @@ function JobDetailsPage() {
                 {formatJobType(job.engagementType ?? job.jobType)}
               </span>
             </div>
-            <Link className="button button--primary job-detail-apply-link" to={alreadyApplied ? '/seeker/applications' : detailPath}>{alreadyApplied ? 'View application' : 'Apply Now'}</Link>
+            {!isExpired || alreadyApplied ? <Link className="button button--primary job-detail-apply-link" to={alreadyApplied ? '/seeker/applications' : detailPath}>{alreadyApplied ? 'View application' : 'Apply Now'}</Link> : null}
             {premiumPreparationTools}
           </div>
         </aside>
@@ -387,8 +431,8 @@ function JobDetailsPage() {
 
       <div className="job-detail-bottom-cta">
         <div className="job-detail-mobile-apply-card">
-          <h2>Ready to apply?</h2>
-          <p>{alreadyApplied ? 'You have already applied to this job.' : 'Review this opportunity and submit your application.'}</p>
+          <h2>{isExpired ? 'Job listing closed' : 'Ready to apply?'}</h2>
+          <p>{isExpired ? 'This job is no longer accepting applications.' : alreadyApplied ? 'You have already applied to this job.' : 'Review this opportunity and submit your application.'}</p>
           <div className="job-detail-quick-facts">
             <span>
               <FaMapMarkerAlt />
@@ -404,7 +448,7 @@ function JobDetailsPage() {
             </span>
           </div>
         </div>
-        <Link className="button button--primary job-detail-apply-link" to={alreadyApplied ? '/seeker/applications' : detailPath}>{alreadyApplied ? 'View application' : 'Apply Now'}</Link>
+        {!isExpired || alreadyApplied ? <Link className="button button--primary job-detail-apply-link" to={alreadyApplied ? '/seeker/applications' : detailPath}>{alreadyApplied ? 'View application' : 'Apply Now'}</Link> : null}
         {premiumPreparationTools}
       </div>
     </article>

@@ -59,8 +59,8 @@ function PublicJobsPage() {
     <main className="public-job-listings-page">
       <header className="public-job-listings-hero">
         <span>Opportunities at LeamJobs</span>
-        <h1>Find your next opportunity</h1>
-        <p>Explore current job openings and project opportunities from employers on LeamJobs.</p>
+        <h1>Find Jobs and Vacancies in Nigeria</h1>
+        <p>Explore approved job openings and project opportunities from employers on LeamJobs.</p>
         <label className="public-job-listings-search">
           <FaSearch aria-hidden="true" />
           <input type="search" value={searchInput} onChange={(event) => setSearchInput(event.target.value)} placeholder="Search job titles, skills, or locations" />

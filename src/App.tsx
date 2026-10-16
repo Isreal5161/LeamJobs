@@ -1,4 +1,5 @@
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { useEffect } from 'react';
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import PublicLayout from './layouts/PublicLayout';
 import SeekerLayout from './layouts/SeekerLayout';
@@ -66,12 +67,25 @@ import AdminCommunicationsPage from './pages/admin/AdminCommunicationsPage';
 import AdminVerificationPage from './pages/admin/AdminVerificationPage';
 import PublicJobsPage from './pages/public/PublicJobsPage';
 import ContactPage from './pages/public/ContactPage';
+import { applyPageMetadata, getPageMetadata } from './utils/seoMetadata';
+
+function RouteMetadataController() {
+  const { pathname } = useLocation();
+
+  useEffect(() => {
+    if (/^\/jobs\/[^/]+\/?$/.test(pathname)) return;
+    applyPageMetadata(getPageMetadata(pathname));
+  }, [pathname]);
+
+  return null;
+}
 
 function App() {
   return (
     <JobStoreProvider>
       <SiteContentProvider>
           <SubscriptionProvider>
+        <RouteMetadataController />
         <Routes>
           <Route path="/" element={<PublicLayout />}>
             <Route index element={<WelcomePage />} />
