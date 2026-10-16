@@ -1,0 +1,209 @@
+.public-job-listings-page,
+.public-contact-page {
+  width: min(calc(100% - 2rem), 1120px);
+  margin: 0 auto;
+  padding: 2rem 0 3rem;
+}
+
+.public-job-listings-page {
+  display: grid;
+  gap: 1.25rem;
+}
+
+.public-job-listings-hero,
+.public-job-listings-results,
+.public-contact-card {
+  border: 1px solid #e1e8f0;
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 10px 28px rgba(15, 23, 42, .055);
+}
+
+.public-job-listings-hero {
+  display: grid;
+  gap: .65rem;
+  padding: clamp(1.25rem, 4vw, 2.5rem);
+  background: linear-gradient(135deg, #fff 0%, #f7f9ff 100%);
+}
+
+.public-job-listings-hero > span,
+.public-job-listings-heading > div > span,
+.public-contact-eyebrow {
+  color: #322f6a;
+  font-size: .76rem;
+  font-weight: 800;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+
+.public-job-listings-hero h1,
+.public-job-listings-heading h2,
+.public-contact-card h1 {
+  margin: 0;
+  color: #142033;
+}
+
+.public-job-listings-hero h1 {
+  font-size: clamp(1.8rem, 4vw, 2.6rem);
+}
+
+.public-job-listings-hero p,
+.public-contact-card p {
+  max-width: 680px;
+  margin: 0;
+  color: #64748b;
+  line-height: 1.65;
+}
+
+.public-job-listings-search {
+  display: flex;
+  align-items: center;
+  gap: .65rem;
+  width: min(100%, 700px);
+  min-height: 48px;
+  margin-top: .5rem;
+  padding: 0 .85rem;
+  border: 1px solid #dbe3ee;
+  border-radius: 9px;
+  background: #fff;
+  color: #64748b;
+}
+
+.public-job-listings-search:focus-within {
+  border-color: #322f6a;
+  box-shadow: 0 0 0 3px rgba(50, 47, 106, .1);
+}
+
+.public-job-listings-search input {
+  width: 100%;
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: #142033;
+  font: inherit;
+}
+
+.public-job-listings-results {
+  display: grid;
+  gap: 1rem;
+  padding: clamp(1rem, 3vw, 1.5rem);
+}
+
+.public-job-listings-heading {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.public-job-listings-heading h2 {
+  margin-top: .2rem;
+  font-size: 1.35rem;
+}
+
+.public-job-listings-heading > strong {
+  color: #64748b;
+  font-size: .85rem;
+}
+
+.public-job-listings-state {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: .6rem;
+  min-height: 100px;
+  margin: 0;
+  color: #64748b;
+  text-align: center;
+}
+
+.public-job-listings-state button,
+.public-job-listings-more {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: .5rem;
+  min-height: 42px;
+  padding: 0 .9rem;
+  border: 1px solid #dbe3ee;
+  border-radius: 8px;
+  background: #fff;
+  color: #322f6a;
+  font: inherit;
+  font-weight: 750;
+  cursor: pointer;
+}
+
+.public-job-listings-more {
+  justify-self: center;
+}
+
+.public-job-listings-contact {
+  margin: 0;
+  color: #64748b;
+  text-align: center;
+}
+
+.public-job-listings-contact a,
+.public-contact-email {
+  color: #322f6a;
+  font-weight: 750;
+}
+
+.public-contact-page {
+  display: grid;
+  min-height: min(65vh, 650px);
+  place-items: center;
+}
+
+.public-contact-card {
+  display: grid;
+  justify-items: center;
+  gap: .8rem;
+  width: min(100%, 700px);
+  padding: clamp(1.5rem, 5vw, 3rem);
+  text-align: center;
+}
+
+.public-contact-card__icon {
+  display: grid;
+  width: 56px;
+  height: 56px;
+  place-items: center;
+  border-radius: 50%;
+  background: #f1f0ff;
+  color: #322f6a;
+  font-size: 1.25rem;
+}
+
+.public-contact-card h1 {
+  font-size: clamp(1.7rem, 4vw, 2.3rem);
+}
+
+.public-contact-email {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  margin-top: .25rem;
+  padding: 0 1rem;
+  border: 1px solid #dedcf8;
+  border-radius: 8px;
+  background: #f8f7ff;
+  text-decoration: none;
+}
+
+@media (max-width: 620px) {
+  .public-job-listings-page,
+  .public-contact-page {
+    width: min(calc(100% - 1rem), 1120px);
+    padding: 1rem 0 2rem;
+  }
+
+  .public-job-listings-heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}

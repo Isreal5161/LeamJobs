@@ -39,6 +39,7 @@ import './styles/dashboard-theme.css';
 import './styles/email-preferences.css';
 import './styles/admin-communications.css';
 import './styles/job-updates-popup.css';
+import './styles/public-seo.css';
 
 ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
   <React.StrictMode>

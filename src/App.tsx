@@ -64,6 +64,8 @@ import PublicJobUpdatesUnsubscribePage from './pages/public/PublicJobUpdatesUnsu
 import MarketingUnsubscribePage from './pages/public/MarketingUnsubscribePage';
 import AdminCommunicationsPage from './pages/admin/AdminCommunicationsPage';
 import AdminVerificationPage from './pages/admin/AdminVerificationPage';
+import PublicJobsPage from './pages/public/PublicJobsPage';
+import ContactPage from './pages/public/ContactPage';
 
 function App() {
   return (
@@ -78,6 +80,8 @@ function App() {
             <Route path="how-it-works" element={<HowItWorksPage />} />
             <Route path="companies" element={<CompaniesPage />} />
             <Route path="companies/:employerId" element={<CompanyProfilePage />} />
+            <Route path="jobs" element={<PublicJobsPage />} />
+            <Route path="contact" element={<ContactPage />} />
             <Route path="login" element={<SignInPage />} />
             <Route path="forgot-password" element={<ForgotPasswordPage />} />
             <Route path="reset-password" element={<ResetPasswordPage />} />

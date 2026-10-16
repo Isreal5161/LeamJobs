@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+Disallow: /seeker/
+Disallow: /employer/
+Disallow: /admin/
+Disallow: /Leamjobs2026admin/
+
+Sitemap: https://leamjobs.com/sitemap.xml
