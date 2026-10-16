@@ -71,7 +71,7 @@ export const getPageMetadata = (pathname: string): PageMetadata => {
 
   return {
     ...metadata,
-    canonicalUrl: `${CANONICAL_SITE_ORIGIN}${path}`,
+    canonicalUrl: `${CANONICAL_SITE_ORIGIN}${path === '/jobs' || isJobDetail ? `${path}/` : path}`,
     robots: 'index,follow',
   };
 };
@@ -93,7 +93,7 @@ export const getJobPageMetadata = (job: SeekerDashboardJob) => {
   const title = cleanText(job.title) || 'Job opportunity';
   const company = cleanText(job.company?.name);
   const location = cleanText(job.location);
-  const titleDetails = [title, company ? `at ${company}` : '', location ? `in ${location}` : ''].filter(Boolean).join(' | ');
+  const titleDetails = [title, company ? `at ${company}` : '', location ? `in ${location}` : ''].filter(Boolean).join(' ');
   const descriptionParts = [
     `${title}${company ? ` at ${company}` : ''}${location ? ` in ${location}` : ''}.`,
     cleanText(job.description),

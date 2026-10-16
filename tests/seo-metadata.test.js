@@ -14,7 +14,7 @@ test('public landing pages have distinct canonical metadata', () => {
   assert.equal(home.canonicalUrl, 'https://leamjobs.com/');
   assert.equal(home.robots, 'index,follow');
   assert.match(home.title, /LeamJobs.*Nigeria/);
-  assert.equal(jobs.canonicalUrl, 'https://leamjobs.com/jobs');
+  assert.equal(jobs.canonicalUrl, 'https://leamjobs.com/jobs/');
   assert.notEqual(jobs.title, home.title);
   assert.match(jobs.description, /jobs and vacancies/i);
 });

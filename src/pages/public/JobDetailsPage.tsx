@@ -10,6 +10,7 @@ import {
   applyJobPostingStructuredData,
   applyPageMetadata,
   getJobPageMetadata,
+  getJobPostingStructuredData,
   getPageMetadata,
   isJobApplicationDeadlineExpired,
 } from '../../utils/seoMetadata';
@@ -100,11 +101,16 @@ function JobDetailsPage() {
     if (job && job.id === jobId) {
       const canonicalUrl = getPageMetadata(pathname).canonicalUrl;
       const isExpired = isJobApplicationDeadlineExpired(job);
+      const structuredData = isExpired || !canonicalUrl
+        ? null
+        : getJobPostingStructuredData(job, canonicalUrl);
       applyPageMetadata({
-        ...(isExpired
+        ...(!structuredData
           ? {
-              title: `${job.title} (Closed) | LeamJobs`,
-              description: 'This job listing has expired. Browse current approved jobs and vacancies on LeamJobs.',
+              title: isExpired ? `${job.title} (Closed) | LeamJobs` : getJobPageMetadata(job).title,
+              description: isExpired
+                ? 'This job listing has expired. Browse current approved jobs and vacancies on LeamJobs.'
+                : getJobPageMetadata(job).description,
               canonicalUrl: null,
               robots: 'noindex,follow' as const,
             }
@@ -114,7 +120,7 @@ function JobDetailsPage() {
               robots: 'index,follow' as const,
             }),
       });
-      applyJobPostingStructuredData(job, isExpired ? null : canonicalUrl);
+      applyJobPostingStructuredData(job, structuredData ? canonicalUrl : null);
     } else if (error) {
       applyPageMetadata({
         title: 'Job unavailable | LeamJobs',
