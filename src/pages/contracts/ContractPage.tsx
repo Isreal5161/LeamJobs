@@ -205,6 +205,40 @@ function ContractPage({ role }: ContractPageProps) {
 
   useEffect(() => { void loadContract(); }, [contractId, role, token]);
 
+  useEffect(() => {
+    if (role !== 'EMPLOYER' || !token || !contractId) return;
+
+    let active = true;
+    let requestPending = false;
+    const refreshActivities = async () => {
+      if (requestPending) return;
+      requestPending = true;
+      try {
+        const result = await getContractActivities(contractId, role, token);
+        if (!active) return;
+        if (result.ok) {
+          setActivities(result.data.data.activities);
+          setActivityError('');
+        } else {
+          setActivityError(result.error.message || 'Contract activity could not be refreshed.');
+        }
+      } catch {
+        if (active) setActivityError('Contract activity could not be refreshed. Please try again.');
+      } finally {
+        requestPending = false;
+      }
+    };
+    const handleFocus = () => { void refreshActivities(); };
+    const intervalId = window.setInterval(() => { void refreshActivities(); }, 10000);
+    window.addEventListener('focus', handleFocus);
+
+    return () => {
+      active = false;
+      window.clearInterval(intervalId);
+      window.removeEventListener('focus', handleFocus);
+    };
+  }, [contractId, role, token]);
+
   const verifyReturnedPayment = async (id: string, reference: string | null) => {
     if (!token || !contractId || isVerifyingReturn) return;
     setIsVerifyingReturn(true);
@@ -697,7 +731,7 @@ function ContractPage({ role }: ContractPageProps) {
       {role !== 'ADMIN' ? (
         <section className="contract-panel contract-activity">
           <div className="contract-panel-heading contract-activity__heading">
-            <div><h2>Work activity and deliverables</h2><p>Progress, submissions, revisions, feedback, and approvals are recorded here. Approval does not complete the contract or release payment.</p></div>
+            <div><h2>Work activity and deliverables</h2><p>Progress, submissions, revisions, feedback, and approvals are recorded here. New seeker submissions appear automatically while this page is open. Approval does not complete the contract or release payment.</p></div>
             <button type="button" className="button button--secondary contract-activity__message" onClick={() => void openContractMessages()} disabled={isMutating}>
               <FaComments aria-hidden="true" />
               {isMutating ? 'Opening conversation...' : 'Message collaborator'}

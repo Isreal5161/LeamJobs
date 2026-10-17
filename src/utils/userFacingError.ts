@@ -86,6 +86,10 @@ export const normalizeApiError = ({ status = 0, message, code, details, context 
   if (['ROLE_MISMATCH', 'EMPLOYER_NOT_VERIFIED', 'VERIFICATION_STATE_CONFLICT'].includes(String(code)) && isSafeMessage(rawMessage)) {
     return { message: rawMessage, code: code ?? 'FORBIDDEN', fieldErrors };
   }
+  if (status === 409 && code === 'CONTRACT_CANCELLATION_BLOCKED'
+    && rawMessage.length > 0 && rawMessage.length <= 240 && !technicalMessagePattern.test(rawMessage)) {
+    return { message: rawMessage, code, fieldErrors };
+  }
   if (status === 403) return { message: "You don't have permission to perform this action.", code: code ?? 'FORBIDDEN', fieldErrors };
   if (status === 404) return { message: "We couldn't find what you're looking for.", code: code ?? 'NOT_FOUND', fieldErrors };
   if (status === 408 || /timed out|timeout/i.test(rawMessage)) return { message: 'The request took too long to complete. Please try again.', code: code ?? 'TIMEOUT', fieldErrors };
