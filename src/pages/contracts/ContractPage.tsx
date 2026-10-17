@@ -8,16 +8,24 @@ import {
   confirmEmployerContractTerms,
   confirmEmployerCompletion,
   cancelEmployerContract,
+  createEmployerApplicationConversation,
+  createSeekerConversationFromApplication,
   confirmSeekerContractTerms,
+  downloadContractWorkAttachment,
+  getContractActivities,
   getAdminContract,
   getEmployerContract,
   getSeekerContract,
   initializeAdminContractPayment,
   initializeEmployerContractPayment,
   submitSeekerCompletion,
+  submitContractWork,
+  updateContractProgress,
+  reviewContractSubmission,
   verifyAdminContractPayment,
   verifyEmployerContractPayment,
   type ContractData,
+  type ContractActivity,
 } from '../../services/api';
 import {
   areContractFundingTermsValid,
@@ -128,6 +136,14 @@ function ContractPage({ role }: ContractPageProps) {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [contract, setContract] = useState<ContractData | null>(null);
+  const [activities, setActivities] = useState<ContractActivity[]>([]);
+  const [activityError, setActivityError] = useState('');
+  const [progressDescription, setProgressDescription] = useState('');
+  const [progressStatus, setProgressStatus] = useState<NonNullable<ContractActivity['status']>>('IN_PROGRESS');
+  const [submissionDescription, setSubmissionDescription] = useState('');
+  const [submissionLinks, setSubmissionLinks] = useState('');
+  const [submissionFiles, setSubmissionFiles] = useState<File[]>([]);
+  const [reviewNotes, setReviewNotes] = useState<Record<string, string>>({});
   const [note, setNote] = useState('');
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
@@ -171,6 +187,18 @@ function ContractPage({ role }: ContractPageProps) {
       setNote(result.data.data.contract.freelance?.completionNote ?? '');
       setAlreadyFunded(['FUNDED', 'RELEASE_ELIGIBLE', 'RELEASED'].includes(result.data.data.contract.freelance?.escrow?.status ?? ''));
       setError('');
+      if (role !== 'ADMIN') {
+        const activityResult = await getContractActivities(contractId, role, token);
+        if (activityResult.ok) {
+          setActivities(activityResult.data.data.activities);
+          setActivityError('');
+        } else {
+          setActivityError(activityResult.error.message || 'Contract activity could not be loaded.');
+        }
+      } else {
+        setActivities([]);
+        setActivityError('');
+      }
     } else setError(result.error.message || 'We could not load this contract.');
     setIsLoading(false);
   };
@@ -330,6 +358,105 @@ function ContractPage({ role }: ContractPageProps) {
     setIsMutating(false);
   };
 
+  const refreshActivities = async () => {
+    if (!token || !contractId || role === 'ADMIN') return;
+    const result = await getContractActivities(contractId, role, token);
+    if (result.ok) {
+      setActivities(result.data.data.activities);
+      setActivityError('');
+    } else setActivityError(result.error.message || 'Contract activity could not be loaded.');
+  };
+
+  const publishProgress = async (event: FormEvent) => {
+    event.preventDefault();
+    if (!token || !contractId || isMutating || role !== 'SEEKER') return;
+    setIsMutating(true);
+    setError('');
+    const result = await updateContractProgress(contractId, {
+      description: progressDescription,
+      status: progressStatus,
+    }, token);
+    if (!result.ok) setError(result.error.message || 'Progress update could not be published.');
+    else {
+      setProgressDescription('');
+      await refreshActivities();
+      setMessage('Progress update published.');
+    }
+    setIsMutating(false);
+  };
+
+  const publishSubmission = async (event: FormEvent) => {
+    event.preventDefault();
+    if (!token || !contractId || isMutating || role !== 'SEEKER') return;
+    const links = submissionLinks.split(/\r?\n/).map((link) => link.trim()).filter(Boolean);
+    setIsMutating(true);
+    setError('');
+    const result = await submitContractWork(contractId, {
+      description: submissionDescription,
+      links,
+      files: submissionFiles,
+    }, token);
+    if (!result.ok) setError(result.error.message || 'Work could not be submitted.');
+    else {
+      setSubmissionDescription('');
+      setSubmissionLinks('');
+      setSubmissionFiles([]);
+      await refreshActivities();
+      setMessage('Work submitted for employer review. This does not complete the contract or release payment.');
+    }
+    setIsMutating(false);
+  };
+
+  const reviewSubmission = async (activityId: string, action: 'REQUEST_REVISION' | 'FEEDBACK' | 'APPROVE') => {
+    if (!token || !contractId || isMutating || role !== 'EMPLOYER') return;
+    setIsMutating(true);
+    setError('');
+    const result = await reviewContractSubmission(contractId, activityId, {
+      action,
+      description: reviewNotes[activityId] ?? '',
+    }, token);
+    if (!result.ok) setError(result.error.message || 'Submission review could not be saved.');
+    else {
+      setReviewNotes((current) => ({ ...current, [activityId]: '' }));
+      await refreshActivities();
+      setMessage(action === 'APPROVE'
+        ? 'Submission approved. Contract completion and payment release remain separate.'
+        : action === 'REQUEST_REVISION'
+          ? 'Revision requested.'
+          : 'Feedback sent.');
+    }
+    setIsMutating(false);
+  };
+
+  const openContractMessages = async () => {
+    if (!token || !contract || (role !== 'EMPLOYER' && role !== 'SEEKER')) return;
+    setIsMutating(true);
+    setError('');
+    const result = role === 'EMPLOYER'
+      ? await createEmployerApplicationConversation(contract.jobId, contract.applicationId, token)
+      : await createSeekerConversationFromApplication(contract.applicationId, token);
+    if (result.ok) {
+      const conversationId = result.data.data.conversation.id;
+      navigate(`/${role.toLowerCase()}/messages?conversationId=${encodeURIComponent(conversationId)}`);
+    } else setError(result.error.message || 'The contract conversation could not be opened.');
+    setIsMutating(false);
+  };
+
+  const downloadAttachment = async (activity: ContractActivity, attachment: ContractActivity['attachments'][number]) => {
+    if (!token || role === 'ADMIN') return;
+    const result = await downloadContractWorkAttachment(contractId ?? '', activity.id, attachment.id, role, token);
+    if (!result.ok) {
+      setError(result.error.message || 'The attachment could not be downloaded.');
+      return;
+    }
+    const objectUrl = URL.createObjectURL(result.data);
+    const anchor = document.createElement('a');
+    anchor.href = objectUrl;
+    anchor.download = attachment.fileName;
+    anchor.click();
+    window.setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
+  };
+
   const confirmCompletion = async () => {
     if (!token || !contractId || isMutating) return;
     setIsMutating(true);
@@ -391,6 +518,10 @@ function ContractPage({ role }: ContractPageProps) {
     && user.id === contract.employerId
     && contract.availableActions?.cancel === true;
   const hasSubmitted = Boolean(freelance.completionSubmittedAt);
+  const canCollaborate = isFunded
+    && ['ACTIVE', 'IN_PROGRESS'].includes(contract.status)
+    && !hasSubmitted
+    && !['CANCELLED', 'COMPLETED', 'ENDED'].includes(contract.status);
   const isContractJob = contract.type === 'CONTRACT_PROJECT';
   const confirmationAction = getPendingFreelanceConfirmationAction({
     role,
@@ -563,6 +694,96 @@ function ContractPage({ role }: ContractPageProps) {
         </div>
       ) : null}
       {error ? <p className="contract-error" role="alert">{error}</p> : null}
+      {role !== 'ADMIN' ? (
+        <section className="contract-panel contract-activity">
+          <div className="contract-panel-heading contract-activity__heading">
+            <div><h2>Work activity and deliverables</h2><p>Progress, submissions, revisions, feedback, and approvals are recorded here. Approval does not complete the contract or release payment.</p></div>
+            <button type="button" className="button button--secondary" onClick={() => void openContractMessages()} disabled={isMutating}>
+              {isMutating ? 'Opening conversation...' : 'Message collaborator'}
+            </button>
+          </div>
+          {activityError ? <p className="contract-error" role="alert">{activityError}</p> : null}
+          {role === 'SEEKER' && canCollaborate ? (
+            <>
+              <form className="contract-activity-form" onSubmit={publishProgress}>
+                <h3>Publish a progress update</h3>
+                <label htmlFor="contract-progress-status">Progress status</label>
+                <select id="contract-progress-status" value={progressStatus} onChange={(event) => setProgressStatus(event.target.value as NonNullable<ContractActivity['status']>)}>
+                  <option value="IN_PROGRESS">In progress</option>
+                  <option value="BLOCKED">Blocked</option>
+                  <option value="WAITING">Waiting</option>
+                  <option value="SUBMITTED_FOR_REVIEW">Submitted for review</option>
+                  <option value="REVISION_IN_PROGRESS">Revision in progress</option>
+                </select>
+                <label htmlFor="contract-progress-description">Update</label>
+                <textarea id="contract-progress-description" value={progressDescription} onChange={(event) => setProgressDescription(event.target.value)} maxLength={5000} required />
+                <button type="submit" className="button button--secondary" disabled={isMutating || !progressDescription.trim()}>{isMutating ? 'Publishing...' : 'Publish update'}</button>
+              </form>
+              <form className="contract-activity-form" onSubmit={publishSubmission}>
+                <h3>Submit work or a new version</h3>
+                <label htmlFor="contract-submission-description">Description</label>
+                <textarea id="contract-submission-description" value={submissionDescription} onChange={(event) => setSubmissionDescription(event.target.value)} maxLength={5000} placeholder="Describe the deliverables..." />
+                <label htmlFor="contract-submission-links">Deliverable links (one HTTPS URL per line)</label>
+                <textarea id="contract-submission-links" value={submissionLinks} onChange={(event) => setSubmissionLinks(event.target.value)} placeholder="https://..." />
+                <label htmlFor="contract-submission-files">Attachments (up to 5 files, 10 MB each)</label>
+                <input id="contract-submission-files" type="file" multiple accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.webp" onChange={(event) => {
+                  const selectedFiles = Array.from(event.target.files ?? []);
+                  if (selectedFiles.length > 5) {
+                    setError('You can attach up to 5 files per submission.');
+                    event.target.value = '';
+                    setSubmissionFiles([]);
+                  } else {
+                    setError('');
+                    setSubmissionFiles(selectedFiles);
+                  }
+                }} />
+                <button type="submit" className="button button--primary" disabled={isMutating || (!submissionDescription.trim() && !submissionLinks.trim() && !submissionFiles.length)}>{isMutating ? 'Submitting...' : 'Submit for review'}</button>
+              </form>
+            </>
+          ) : null}
+          <h3 className="contract-activity__list-title">Activity history</h3>
+          {activities.length ? (
+            <ol className="contract-activity-list">
+              {activities.map((activity) => {
+                const parent = activity.parentActivityId
+                  ? activities.find((candidate) => candidate.id === activity.parentActivityId)
+                  : undefined;
+                const alreadyReviewed = activity.type === 'SUBMISSION' && activities.some((candidate) =>
+                  candidate.parentActivityId === activity.id && ['REVISION_REQUEST', 'APPROVAL'].includes(candidate.type)
+                );
+                return (
+                  <li key={activity.id} className="contract-activity-item">
+                    <div className="contract-activity-item__meta">
+                      <strong>{activity.type === 'PROGRESS_UPDATE' ? 'Progress update' : activity.type === 'SUBMISSION' ? `Work submission${activity.submissionVersion ? ` · Version ${activity.submissionVersion}` : ''}` : activity.type === 'REVISION_REQUEST' ? 'Revision requested' : activity.type === 'APPROVAL' ? 'Submission approved' : 'Feedback'}</strong>
+                      <span>{activity.actor} · {new Date(activity.createdAt).toLocaleString()}</span>
+                    </div>
+                    {activity.status ? <span className="contract-activity-item__status">{formatStatus(activity.status)}</span> : null}
+                    {parent?.submissionVersion ? <p className="contract-muted">For submission version {parent.submissionVersion}</p> : null}
+                    <p className="contract-activity-item__description">{activity.description}</p>
+                    {activity.links.map((link) => <a key={link} href={link} target="_blank" rel="noopener noreferrer">{link}</a>)}
+                    {activity.attachments.map((attachment) => (
+                      <button key={attachment.id} type="button" className="contract-activity-item__attachment" onClick={() => void downloadAttachment(activity, attachment)}>
+                        {attachment.fileName} · {(attachment.fileSize / 1024 / 1024).toFixed(2)} MB
+                      </button>
+                    ))}
+                    {role === 'EMPLOYER' && activity.type === 'SUBMISSION' && !alreadyReviewed && canCollaborate ? (
+                      <div className="contract-activity-review">
+                        <label htmlFor={`review-${activity.id}`}>Feedback for this submission</label>
+                        <textarea id={`review-${activity.id}`} value={reviewNotes[activity.id] ?? ''} onChange={(event) => setReviewNotes((current) => ({ ...current, [activity.id]: event.target.value }))} maxLength={5000} />
+                        <div>
+                          <button type="button" className="button button--secondary" onClick={() => void reviewSubmission(activity.id, 'REQUEST_REVISION')} disabled={isMutating || !(reviewNotes[activity.id] ?? '').trim()}>Request revision</button>
+                          <button type="button" className="button button--secondary" onClick={() => void reviewSubmission(activity.id, 'FEEDBACK')} disabled={isMutating || !(reviewNotes[activity.id] ?? '').trim()}>Send feedback</button>
+                          <button type="button" className="button button--primary" onClick={() => void reviewSubmission(activity.id, 'APPROVE')} disabled={isMutating}>Approve submission</button>
+                        </div>
+                      </div>
+                    ) : null}
+                  </li>
+                );
+              })}
+            </ol>
+          ) : <p className="contract-muted">No work activity has been recorded yet.</p>}
+        </section>
+      ) : null}
       <section className="contract-grid">
         <article className="contract-panel contract-panel--identity"><div className="contract-panel-heading"><FaLock /><div><h2>Project participants</h2><p>{contract.job.title}</p></div></div><div className="contract-terms"><div><span>Employer</span><strong>{displayName(contract.employer)}</strong></div><div><span>Seeker</span><strong>{displayName(contract.seeker)}</strong></div></div></article>
         <article className="contract-panel contract-panel--terms">

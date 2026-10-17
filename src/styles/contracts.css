@@ -78,6 +78,28 @@
 .contract-action { width: 100%; min-height: 44px; justify-content: center; border-radius: 12px; font-weight: 700; }
 .contract-action--secondary { background: transparent; border: 1px solid var(--border); color: var(--text-primary); }
 .contract-workflow { margin-top: 1rem; }
+.contract-activity { margin-top: 1rem; }
+.contract-activity__heading { justify-content: space-between; align-items: center; }
+.contract-activity__heading > div { display: grid; gap: .35rem; }
+.contract-activity__heading .button { flex: 0 0 auto; }
+.contract-activity-form { display: grid; gap: .65rem; max-width: 760px; margin: 1.25rem 0; padding: 1rem; background: var(--surface-muted); border-radius: .75rem; }
+.contract-activity-form h3, .contract-activity__list-title { margin: 0; }
+.contract-activity-form label, .contract-activity-review label { font-weight: 700; }
+.contract-activity-form textarea, .contract-activity-review textarea, .contract-activity-form select, .contract-activity-form input[type="file"] { width: 100%; border: 1px solid var(--border); border-radius: .65rem; padding: .7rem; background: var(--surface); color: var(--text-primary); }
+.contract-activity-form textarea, .contract-activity-review textarea { min-height: 90px; resize: vertical; }
+.contract-activity-form button { justify-content: center; min-height: 42px; }
+.contract-activity__list-title { margin: 1.5rem 0 .8rem; }
+.contract-activity-list { display: grid; gap: .8rem; list-style: none; padding: 0; margin: 0; }
+.contract-activity-item { display: grid; gap: .55rem; min-width: 0; padding: 1rem; border: 1px solid #dfe7f1; border-radius: 12px; }
+.contract-activity-item__meta { display: flex; flex-wrap: wrap; justify-content: space-between; gap: .35rem 1rem; }
+.contract-activity-item__meta span { color: var(--text-secondary); font-size: .85rem; }
+.contract-activity-item__status { justify-self: start; border-radius: 999px; padding: .25rem .6rem; background: #e0f2fe; color: #075985; font-size: .8rem; font-weight: 700; }
+.contract-activity-item__description { white-space: pre-wrap; overflow-wrap: anywhere; margin: 0; }
+.contract-activity-item > a { overflow-wrap: anywhere; }
+.contract-activity-item__attachment { justify-self: start; border: 0; padding: 0; background: none; color: var(--accent); text-decoration: underline; cursor: pointer; overflow-wrap: anywhere; text-align: left; }
+.contract-activity-review { display: grid; gap: .6rem; margin-top: .5rem; padding-top: .8rem; border-top: 1px solid var(--border); }
+.contract-activity-review > div { display: flex; flex-wrap: wrap; gap: .5rem; }
+.contract-activity-review button { min-height: 40px; }
 .contract-workflow form, .contract-review { display: grid; gap: .75rem; max-width: 680px; }
 .contract-workflow label { font-weight: 700; }
 .contract-workflow textarea { min-height: 150px; resize: vertical; border: 1px solid var(--border); border-radius: .75rem; padding: .8rem; }
@@ -97,5 +119,9 @@
   .contract-grid { grid-template-columns: 1fr; }
   .contract-header { gap: .75rem; }
   .contract-status { justify-self: start; }
+  .contract-activity__heading { align-items: stretch; }
+  .contract-activity__heading .button { width: 100%; justify-content: center; }
+  .contract-activity-review > div { display: grid; }
+  .contract-activity-review button { justify-content: center; }
   .contract-terms { grid-template-columns: 1fr; gap: .8rem; }
 }

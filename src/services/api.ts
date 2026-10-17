@@ -2376,6 +2376,111 @@ export type ContractData = {
   } | null;
 };
 
+export type ContractActivity = {
+  id: string;
+  type: 'PROGRESS_UPDATE' | 'SUBMISSION' | 'REVISION_REQUEST' | 'FEEDBACK' | 'APPROVAL';
+  status: 'IN_PROGRESS' | 'BLOCKED' | 'WAITING' | 'SUBMITTED_FOR_REVIEW' | 'REVISION_IN_PROGRESS' | null;
+  description: string;
+  links: string[];
+  submissionVersion: number | null;
+  parentActivityId: string | null;
+  actor: string;
+  createdAt: string;
+  attachments: Array<{
+    id: string;
+    fileName: string;
+    contentType: string;
+    fileSize: number;
+    createdAt: string;
+  }>;
+};
+
+type ContractActivityResponse = { success: true; data: { activity: ContractActivity } };
+
+export function getContractActivities(contractId: string, role: 'EMPLOYER' | 'SEEKER', token: string) {
+  return request<{ success: true; data: { activities: ContractActivity[] } }>({
+    method: 'GET',
+    endpoint: `/${role.toLowerCase()}/contracts/${encodeURIComponent(contractId)}/activities`,
+    token,
+  });
+}
+
+export function updateContractProgress(
+  contractId: string,
+  payload: { description: string; status: NonNullable<ContractActivity['status']> },
+  token: string,
+) {
+  return request<ContractActivityResponse>({
+    method: 'POST',
+    endpoint: `/seeker/contracts/${encodeURIComponent(contractId)}/progress`,
+    body: payload,
+    token,
+  });
+}
+
+export function submitContractWork(
+  contractId: string,
+  payload: { description: string; links: string[]; files: File[] },
+  token: string,
+) {
+  const body = new FormData();
+  body.append('description', payload.description);
+  body.append('links', JSON.stringify(payload.links));
+  payload.files.forEach((file) => body.append('files', file));
+  return request<ContractActivityResponse>({
+    method: 'POST',
+    endpoint: `/seeker/contracts/${encodeURIComponent(contractId)}/submissions`,
+    body,
+    token,
+  });
+}
+
+export function reviewContractSubmission(
+  contractId: string,
+  activityId: string,
+  payload: { action: 'REQUEST_REVISION' | 'FEEDBACK' | 'APPROVE'; description: string },
+  token: string,
+) {
+  return request<ContractActivityResponse>({
+    method: 'POST',
+    endpoint: `/employer/contracts/${encodeURIComponent(contractId)}/submissions/${encodeURIComponent(activityId)}/review`,
+    body: payload,
+    token,
+  });
+}
+
+export async function downloadContractWorkAttachment(
+  contractId: string,
+  activityId: string,
+  attachmentId: string,
+  role: 'EMPLOYER' | 'SEEKER',
+  token: string,
+): Promise<ApiResponse<Blob>> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/${role.toLowerCase()}/contracts/${encodeURIComponent(contractId)}/activities/${encodeURIComponent(activityId)}/attachments/${encodeURIComponent(attachmentId)}`, {
+      method: 'GET',
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!response.ok) {
+      const data = await response.json().catch(() => undefined) as { message?: string; error?: { message?: string; code?: string }; errors?: unknown } | undefined;
+      const normalizedError = normalizeApiError({
+        status: response.status,
+        message: data?.message ?? data?.error?.message ?? 'The attachment could not be loaded.',
+        code: data?.error?.code,
+        details: data?.errors,
+        context: 'upload',
+      });
+      const safeDetails = normalizedError.fieldErrors
+        ? Object.entries(normalizedError.fieldErrors).map(([field, message]) => ({ field, message }))
+        : undefined;
+      return { ok: false, status: response.status, error: { ...normalizedError, details: safeDetails } };
+    }
+    return { ok: true, status: response.status, data: await response.blob() };
+  } catch (error) {
+    return { ok: false, status: 0, error: getUserFacingError(error, 'upload') };
+  }
+}
+
 export type ContractResponse = { success: true; data: { contract: ContractData } };
 export type EmployerContractListResponse = {
   success: true;
