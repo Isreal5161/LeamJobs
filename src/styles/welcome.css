@@ -68,6 +68,11 @@
   font-size: 1.05rem;
 }
 
+.hero__keyword-copy {
+  margin: 0;
+  color: #ffffff;
+}
+
 .hero-actions {
   display: flex;
   align-items: center;

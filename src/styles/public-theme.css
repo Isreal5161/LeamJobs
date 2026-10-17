@@ -80,9 +80,16 @@
 
 .public-layout--welcome .hero-actions__employer:hover,
 .public-layout--welcome .hero-actions__employer:focus-visible {
-  border-color: var(--secondary-hover);
-  background: var(--secondary-hover);
-  color: #ffffff;
+  border-color: #ffffff;
+  background: #ffffff;
+  color: var(--brand-secondary);
+}
+
+.public-layout--welcome .hero-actions__employer:hover span,
+.public-layout--welcome .hero-actions__employer:hover svg,
+.public-layout--welcome .hero-actions__employer:focus-visible span,
+.public-layout--welcome .hero-actions__employer:focus-visible svg {
+  color: var(--brand-secondary);
 }
 
 .public-layout--welcome .job-card {
@@ -134,11 +141,6 @@
 .public-layout--welcome .button--apply:hover,
 .public-layout--welcome .button--apply:focus-visible {
   background: var(--primary-hover);
-}
-
-.public-layout--welcome .hero-actions__employer:hover,
-.public-layout--welcome .hero-actions__secondary:hover {
-  color: var(--primary);
 }
 
 .public-layout--about .about-hero,

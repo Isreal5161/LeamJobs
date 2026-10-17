@@ -21,7 +21,6 @@ import {
   getSeekerJob,
   getSeekerProfile,
   generateApplicationCoverLetter,
-  requestApplicationAssistance,
   getSeekerInterviews,
   type SeekerApplication,
   type InterviewRecord,
@@ -68,22 +67,6 @@ function ApplicationsPage() {
   const [aiApplication, setAiApplication] = useState<{ coverLetter: string } | null>(null);
   const [isAiLoading, setIsAiLoading] = useState(false);
   const [aiError, setAiError] = useState('');
-  const [applicationInsights, setApplicationInsights] = useState<Record<string, { alignmentPoints: string[]; strengths: string[]; gaps: string[] }>>({});
-  const [insightsLoadingId, setInsightsLoadingId] = useState<string | null>(null);
-  const [insightsError, setInsightsError] = useState('');
-
-  const loadApplicationInsights = async (application: SeekerApplication) => {
-    if (!token || insightsLoadingId) return;
-    setInsightsLoadingId(application.id);
-    setInsightsError('');
-    const result = await requestApplicationAssistance({ applicationId: application.id, request: 'Assess my alignment with this role and identify practical strengths and gaps.' }, token);
-    if (result.ok) {
-      setApplicationInsights((current) => ({ ...current, [application.id]: { alignmentPoints: result.data.data.alignmentPoints, strengths: result.data.data.strengths, gaps: result.data.data.gaps } }));
-    } else {
-      setInsightsError(result.error.message || 'Application insights are unavailable.');
-    }
-    setInsightsLoadingId(null);
-  };
 
   const loadApplications = async () => {
     if (!token) {
@@ -345,17 +328,6 @@ function ApplicationsPage() {
           <FaExternalLinkAlt />
         </Link>
       )}
-      <div className="seeker-application-card__insights">
-        <button type="button" onClick={() => void loadApplicationInsights(application)} disabled={insightsLoadingId !== null}>
-          <FaMagic aria-hidden="true" /> {insightsLoadingId === application.id ? 'Analysing...' : 'Application insights'}
-        </button>
-        {applicationInsights[application.id] ? <div className="seeker-application-insights" aria-live="polite">
-          <strong>Premium application insights</strong>
-          {applicationInsights[application.id].alignmentPoints.length ? <p><b>Alignment:</b> {applicationInsights[application.id].alignmentPoints.join(' ')}</p> : null}
-          {applicationInsights[application.id].strengths.length ? <p><b>Strengths:</b> {applicationInsights[application.id].strengths.join(' ')}</p> : null}
-          {applicationInsights[application.id].gaps.length ? <p><b>Gaps:</b> {applicationInsights[application.id].gaps.join(' ')}</p> : null}
-        </div> : null}
-      </div>
     </article>
   );
 
@@ -433,7 +405,6 @@ function ApplicationsPage() {
               ))}
             </div>
             <div className="seeker-application-list" aria-busy={isLoading}>
-              {insightsError ? <p role="alert">{insightsError}</p> : null}
               {interviewsError ? <p className="seeker-interview-list-error" role="alert">{interviewsError}</p> : null}
               {error ? <p role="alert">{error}</p> : null}
               {isLoading ? (

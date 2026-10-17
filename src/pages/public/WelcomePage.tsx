@@ -194,7 +194,7 @@ function WelcomePage() {
             <div className="hero__text-panel">
               <h1 className="hero__title">{heroTitle}</h1>
               <p className="hero__subtitle">{heroSubtitle}</p>
-              <p>Explore job vacancies and career opportunities across Nigeria.</p>
+              <p className="hero__keyword-copy">Explore job vacancies and career opportunities across Nigeria.</p>
               {/* CTA buttons moved to bottom row for horizontal alignment with search */}
             </div>
 
