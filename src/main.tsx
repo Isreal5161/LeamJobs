@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useLayoutEffect } from 'react';
 import ReactDOM from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 import App from './App';
@@ -41,8 +41,16 @@ import './styles/admin-communications.css';
 import './styles/job-updates-popup.css';
 import './styles/public-seo.css';
 
+function MarkAppReady() {
+  useLayoutEffect(() => {
+    document.getElementById('root')?.removeAttribute('data-app-ready');
+  }, []);
+  return null;
+}
+
 ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
   <React.StrictMode>
+    <MarkAppReady />
     <BrowserRouter>
       <AuthProvider>
         <App />

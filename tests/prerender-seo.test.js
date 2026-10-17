@@ -14,7 +14,9 @@ const template = `<!doctype html><html><head>
 <link rel="canonical" href="https://leamjobs.com/">
 <meta property="og:title" content="default"><meta property="og:url" content="https://leamjobs.com/">
 <meta name="twitter:card" content="summary"><script type="module" src="/assets/app.js"></script>
-</head><body><div id="root"></div></body></html>`;
+<style>#root[data-app-ready="false"] > .seo-prerender-content { visibility: hidden; }</style>
+<noscript><style>#root[data-app-ready="false"] > .seo-prerender-content { visibility: visible; }</style></noscript>
+</head><body><div id="root" data-app-ready="false"></div></body></html>`;
 
 const completeJob = (overrides = {}) => ({
   id: 'job-123',
@@ -64,7 +66,9 @@ test('homepage and Jobs page receive distinct initial metadata and canonical pat
   assert.match(home, /<title>LeamJobs \| Find Jobs and Career Opportunities in Nigeria<\/title>/);
   assert.match(home, /<link rel="canonical" href="https:\/\/leamjobs\.com\/" \/>/);
   assert.match(home, /<h1>Find jobs and career opportunities in Nigeria<\/h1>/);
-  assert.match(home, /id="root">[\s\S]*Find jobs and career opportunities/);
+  assert.match(home, /id="root" data-app-ready="false">[\s\S]*Find jobs and career opportunities/);
+  assert.match(home, /#root\[data-app-ready="false"\] > \.seo-prerender-content \{ visibility: hidden; \}/);
+  assert.match(home, /<noscript><style>#root\[data-app-ready="false"\] > \.seo-prerender-content \{ visibility: visible; \}<\/style><\/noscript>/);
   assert.match(jobs, /<title>Jobs in Nigeria \| Find Vacancies and Career Opportunities \| LeamJobs<\/title>/);
   assert.match(jobs, /<link rel="canonical" href="https:\/\/leamjobs\.com\/jobs\/" \/>/);
   assert.match(jobs, /<h1>Find jobs and vacancies in Nigeria<\/h1>/);

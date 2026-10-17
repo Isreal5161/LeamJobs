@@ -1,6 +1,6 @@
 import { FormEvent, useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { FaArrowLeft, FaBriefcase, FaCheckCircle, FaCreditCard, FaFileUpload, FaLock, FaSpinner, FaTimes } from 'react-icons/fa';
+import { FaArrowLeft, FaBriefcase, FaCheckCircle, FaComments, FaCreditCard, FaFileUpload, FaLock, FaSpinner, FaTimes } from 'react-icons/fa';
 import { useAuth } from '../../context/AuthContext';
 import AuthenticatedImage from '../../components/common/AuthenticatedImage';
 import {
@@ -698,15 +698,19 @@ function ContractPage({ role }: ContractPageProps) {
         <section className="contract-panel contract-activity">
           <div className="contract-panel-heading contract-activity__heading">
             <div><h2>Work activity and deliverables</h2><p>Progress, submissions, revisions, feedback, and approvals are recorded here. Approval does not complete the contract or release payment.</p></div>
-            <button type="button" className="button button--secondary" onClick={() => void openContractMessages()} disabled={isMutating}>
+            <button type="button" className="button button--secondary contract-activity__message" onClick={() => void openContractMessages()} disabled={isMutating}>
+              <FaComments aria-hidden="true" />
               {isMutating ? 'Opening conversation...' : 'Message collaborator'}
             </button>
           </div>
           {activityError ? <p className="contract-error" role="alert">{activityError}</p> : null}
           {role === 'SEEKER' && canCollaborate ? (
-            <>
+            <div className="contract-activity__forms">
               <form className="contract-activity-form" onSubmit={publishProgress}>
-                <h3>Publish a progress update</h3>
+                <div className="contract-activity-form__heading">
+                  <span className="contract-activity-form__step">01</span>
+                  <div><h3>Share a progress update</h3><p>Keep the employer informed about the work.</p></div>
+                </div>
                 <label htmlFor="contract-progress-status">Progress status</label>
                 <select id="contract-progress-status" value={progressStatus} onChange={(event) => setProgressStatus(event.target.value as NonNullable<ContractActivity['status']>)}>
                   <option value="IN_PROGRESS">In progress</option>
@@ -720,7 +724,10 @@ function ContractPage({ role }: ContractPageProps) {
                 <button type="submit" className="button button--secondary" disabled={isMutating || !progressDescription.trim()}>{isMutating ? 'Publishing...' : 'Publish update'}</button>
               </form>
               <form className="contract-activity-form" onSubmit={publishSubmission}>
-                <h3>Submit work or a new version</h3>
+                <div className="contract-activity-form__heading">
+                  <span className="contract-activity-form__step">02</span>
+                  <div><h3>Submit work for review</h3><p>Share deliverables or send a revised version.</p></div>
+                </div>
                 <label htmlFor="contract-submission-description">Description</label>
                 <textarea id="contract-submission-description" value={submissionDescription} onChange={(event) => setSubmissionDescription(event.target.value)} maxLength={5000} placeholder="Describe the deliverables..." />
                 <label htmlFor="contract-submission-links">Deliverable links (one HTTPS URL per line)</label>
@@ -739,7 +746,7 @@ function ContractPage({ role }: ContractPageProps) {
                 }} />
                 <button type="submit" className="button button--primary" disabled={isMutating || (!submissionDescription.trim() && !submissionLinks.trim() && !submissionFiles.length)}>{isMutating ? 'Submitting...' : 'Submit for review'}</button>
               </form>
-            </>
+            </div>
           ) : null}
           <h3 className="contract-activity__list-title">Activity history</h3>
           {activities.length ? (

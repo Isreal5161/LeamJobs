@@ -19,6 +19,18 @@
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
     <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png" />
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <style>
+      #root[data-app-ready="false"] > .seo-prerender-content {
+        visibility: hidden;
+      }
+    </style>
+    <noscript>
+      <style>
+        #root[data-app-ready="false"] > .seo-prerender-content {
+          visibility: visible;
+        }
+      </style>
+    </noscript>
     <link
       rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
@@ -27,7 +39,7 @@
     />
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root" data-app-ready="false"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
