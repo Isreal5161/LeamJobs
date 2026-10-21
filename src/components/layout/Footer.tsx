@@ -67,13 +67,19 @@ function Footer({ variant = 'full' }: FooterProps) {
         </form>
       </div>
 
-      <div className="container site-footer__bottom">
-        <p>&copy; 2026 JobPortal. Crafted for modern hiring experiences.</p>
-        <div>
-          <a href="#">Privacy</a>
-          <a href="#">Terms</a>
-          <a href="#">Contact</a>
-        </div>
+<div className="container site-footer__bottom">
+        <p>
+          &copy; {new Date().getFullYear()} Leadingedge Astute-Minds Limited.
+          All rights reserved.
+          <br />
+          LEAMJobs is a platform by Leadingedge Astute-Minds Limited.
+        </p>
+
+        <nav aria-label="Legal navigation">
+  <a href="#">Privacy</a>{' '}
+  <a href="#">Terms</a>{' '}
+  <a href="#">Contact</a>
+</nav>
       </div>
     </footer>
   );

@@ -515,6 +515,7 @@ export type AdminUser = {
   role: 'SEEKER' | 'EMPLOYER' | 'ADMIN';
   isActive: boolean;
   isVerified: boolean;
+  isAnonymized: boolean;
   lastLogin: string | null;
   createdAt: string;
   profile: {
@@ -1567,6 +1568,20 @@ export function getAdminUsers(token: string, query: AdminUsersQuery = {}) {
     endpoint: `/admin/users${queryString ? `?${queryString}` : ''}`,
     token,
   });
+}
+
+export function anonymizeAdminUser(token: string, userId: string) {
+  return request<{
+    success: true;
+    data: {
+      userId: string;
+      role: 'SEEKER' | 'EMPLOYER';
+      anonymized: true;
+      isActive: false;
+      anonymizedAt: string;
+      retainedHistory: string[];
+    };
+  }>({ method: 'DELETE', endpoint: `/admin/users/${encodeURIComponent(userId)}`, token });
 }
 
 export type AdminCompany = {
