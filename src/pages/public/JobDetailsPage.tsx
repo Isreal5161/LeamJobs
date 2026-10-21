@@ -18,12 +18,19 @@ import {
 const skillClasses = ['job-detail-skill--pink', 'job-detail-skill--purple', 'job-detail-skill--green', 'job-detail-skill--yellow', 'job-detail-skill--blue'];
 
 const formatJobType = (value: string) => value.replaceAll('_', ' ').toLowerCase().replace(/\b\w/g, (character) => character.toUpperCase());
+const formatCompensationAmount = (value: string | null | undefined) => {
+  if (value === null || value === undefined || value.trim() === '') return 'Not specified';
+  const amount = Number(value);
+  return Number.isFinite(amount)
+    ? new Intl.NumberFormat('en-NG', { maximumFractionDigits: 2 }).format(amount)
+    : value;
+};
 
 const formatCompensation = (job: SeekerDashboardJob) => {
   if (!job.compensation) return 'Compensation not specified';
-  if (job.compensation.type === 'FREELANCE') return `${job.compensation.currency} ${job.compensation.projectAmount} project`;
-  if (job.compensation.type === 'CONTRACT') return `${job.compensation.currency} ${job.compensation.amount} Contract Job${job.compensation.duration ? ` / ${job.compensation.duration}` : ''}`;
-  return `${job.compensation.currency} ${job.compensation.salaryMin ?? 'Not specified'} - ${job.compensation.salaryMax ?? 'Not specified'} / ${job.compensation.salaryPeriod.toLowerCase()}`;
+  if (job.compensation.type === 'FREELANCE') return `${job.compensation.currency} ${formatCompensationAmount(job.compensation.projectAmount)} project`;
+  if (job.compensation.type === 'CONTRACT') return `${job.compensation.currency} ${formatCompensationAmount(job.compensation.amount)} Contract Job${job.compensation.duration ? ` / ${job.compensation.duration}` : ''}`;
+  return `${job.compensation.currency} ${formatCompensationAmount(job.compensation.salaryMin)} - ${formatCompensationAmount(job.compensation.salaryMax)} / ${job.compensation.salaryPeriod.toLowerCase()}`;
 };
 
 const formatList = (items: string[] | Record<string, unknown> | null) => {
@@ -301,22 +308,25 @@ function JobDetailsPage() {
         </div>
       </header>
 
-      {isExpired ? <p className="job-detail-section" role="status">This job listing has expired and is no longer accepting applications.</p> : null}
-
       <div className="job-detail-layout">
         <section className="job-detail-summary card" aria-label={`${job.title} at ${companyName}`}>
           <CompanyLogo company={companyName} logoUrl={logoUrl} logoText={getInitials(companyName)} />
           <div className="job-detail-summary__content">
             <p className="job-detail-company">{companyName}</p>
             <p className="job-detail-meta">
-              <span>{formatCompensation(job)}</span>
+              <strong className="job-detail-compensation">{formatCompensation(job)}</strong>
               <span>{job.location}</span>
             </p>
             <div className="job-detail-tags">
               <span className="job-tag job-tag--yellow">{job.engagementType === 'CONTRACT' ? 'Contract Job' : formatJobType(job.engagementType ?? job.jobType)}</span>
               {job.workArrangement ? <span className="job-tag job-tag--green">{formatJobType(job.workArrangement)}</span> : null}
             </div>
-            {job.compensation?.type === 'CONTRACT' ? <div className="job-detail-contract-dates"><span>{job.compensation.startMode === 'SCHEDULED' && job.compensation.scheduledStartDate ? `Starts ${new Date(job.compensation.scheduledStartDate).toLocaleDateString()}` : 'Starts immediately'}</span>{job.compensation.expectedCompletionDate ? <span>Expected completion {new Date(job.compensation.expectedCompletionDate).toLocaleDateString()}</span> : null}</div> : null}
+            {job.compensation?.type === 'CONTRACT' ? (
+              <div className="job-detail-contract-dates">
+                <span><small>Start date</small><strong>{job.compensation.startMode === 'SCHEDULED' && job.compensation.scheduledStartDate ? new Date(job.compensation.scheduledStartDate).toLocaleDateString() : 'Immediately'}</strong></span>
+                {job.compensation.expectedCompletionDate ? <span><small>Expected completion</small><strong>{new Date(job.compensation.expectedCompletionDate).toLocaleDateString()}</strong></span> : null}
+              </div>
+            ) : null}
           </div>
         </section>
 

@@ -183,6 +183,41 @@
   vertical-align: middle;
 }
 
+.job-detail-compensation {
+  color: #172033;
+  font-size: 1rem;
+  font-weight: 800;
+}
+
+.job-detail-contract-dates {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  margin-top: 0.35rem;
+}
+
+.job-detail-contract-dates > span {
+  display: grid;
+  gap: 0.2rem;
+  min-width: 150px;
+  padding: 0.55rem 0.75rem;
+  border: 1px solid #e5eaf1;
+  border-radius: 10px;
+  background: #f8fafc;
+}
+
+.job-detail-contract-dates small {
+  color: #64748b;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.job-detail-contract-dates strong {
+  color: #172033;
+  font-size: 0.9rem;
+  font-weight: 750;
+}
+
 .job-detail-tags,
 .job-detail-skills {
   display: flex;
@@ -471,6 +506,20 @@
     flex-wrap: wrap;
     gap: 0.35rem 0.65rem;
     font-size: 0.92rem;
+  }
+
+  .job-detail-compensation {
+    font-size: 0.92rem;
+  }
+
+  .job-detail-contract-dates {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0.45rem;
+  }
+
+  .job-detail-contract-dates > span {
+    min-width: 0;
   }
 
   .job-detail-tags {
