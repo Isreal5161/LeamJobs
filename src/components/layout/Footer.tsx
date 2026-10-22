@@ -34,6 +34,7 @@ function Footer({ variant = 'full' }: FooterProps) {
             <Link to="/about">About</Link>
             <Link to="/companies">Companies</Link>
             <Link to="/how-it-works">How it works</Link>
+            <Link to="/contact">Contact</Link>
           </nav>
         </div>
       </footer>
@@ -52,6 +53,7 @@ function Footer({ variant = 'full' }: FooterProps) {
           <Link to="/about">About</Link>
           <Link to="/companies">Companies</Link>
           <Link to="/how-it-works">How it works</Link>
+          <Link to="/contact">Contact</Link>
           <Link to="/login">Sign in</Link>
         </nav>
 
@@ -78,7 +80,7 @@ function Footer({ variant = 'full' }: FooterProps) {
         <nav aria-label="Legal navigation">
   <a href="#">Privacy</a>{' '}
   <a href="#">Terms</a>{' '}
-  <a href="#">Contact</a>
+  <Link to="/contact">Contact</Link>
 </nav>
       </div>
     </footer>

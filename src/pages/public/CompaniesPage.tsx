@@ -1,4 +1,3 @@
-import Button from '../../components/common/Button';
 import { Link } from 'react-router-dom';
 import {
   FaAirbnb,
@@ -53,8 +52,8 @@ function CompaniesPage() {
           <h1>{heroTitle}</h1>
           <p>{heroSubtitle}</p>
           <div className="companies-hero__actions">
-            <Button variant="primary">{primaryCta}</Button>
-            <Button variant="outline">{secondaryCta}</Button>
+            <Link className="button button--primary" to="/register">{primaryCta}</Link>
+            <Link className="button button--outline" to="/login">{secondaryCta}</Link>
           </div>
         </div>
         <CompaniesHeroArt />
@@ -109,7 +108,7 @@ function CompaniesPage() {
           <h2>{ctaTitle}</h2>
           <p>{ctaSubtitle}</p>
         </div>
-        <Button variant="primary">{ctaButton}</Button>
+        <Link className="button button--primary" to="/employers/register">{ctaButton}</Link>
       </section>
     </div>
   );

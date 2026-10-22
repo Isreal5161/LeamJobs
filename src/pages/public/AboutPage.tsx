@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import Button from '../../components/common/Button';
 import {
   FaBriefcase,
   FaBuilding,
@@ -87,8 +86,8 @@ function AboutPage() {
           <h1>{title}</h1>
           <p>{description}</p>
           <div className="about-hero__actions">
-            <Button variant="primary">{primaryCta}</Button>
-            <Button variant="outline">{secondaryCta}</Button>
+            <Link className="button button--primary" to="/register">{primaryCta}</Link>
+            <Link className="button button--outline" to="/login">{secondaryCta}</Link>
           </div>
         </div>
         <AboutIllustration />
@@ -138,7 +137,7 @@ function AboutPage() {
         <article className="about-team-copy">
           <h2>{content.about.teamTitle}</h2>
           <p>{content.about.teamText}</p>
-          <Button variant="outline">{content.about.teamButton}</Button>
+          <Link className="button button--outline" to="/register">{content.about.teamButton}</Link>
         </article>
         <div className="about-team-avatars" aria-label="Team members">
           {team.map((member, index) => (

@@ -113,6 +113,17 @@
   color: var(--muted-text);
 }
 
+.public-layout--welcome .job-card__salary {
+  color: var(--brand-secondary);
+  font-weight: 700;
+}
+
+.public-layout--welcome .bookmark-button--saved {
+  background: var(--brand-background);
+  border-color: var(--brand-border);
+  color: var(--brand-primary-active);
+}
+
 .public-layout--welcome .job-tag--blue {
   background: var(--primary-light);
   color: var(--primary-hover);

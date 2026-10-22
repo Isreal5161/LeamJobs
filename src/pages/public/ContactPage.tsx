@@ -8,7 +8,7 @@ function ContactPage() {
         <span className="public-contact-eyebrow">We’re here to help</span>
         <h1>Contact LeamJobs</h1>
         <p>Questions about finding work, hiring, or using LeamJobs? Send our support team an email and we’ll be happy to help.</p>
-        <a className="public-contact-email" href="mailto:support@leamjobs.com">support@leamjobs.com</a>
+        <a className="public-contact-email" href="mailto:admin@leamjobs.com">Contact Us</a>
       </section>
     </main>
   );

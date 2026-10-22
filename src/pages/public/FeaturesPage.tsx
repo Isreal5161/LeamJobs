@@ -1,4 +1,4 @@
-import Button from '../../components/common/Button';
+import { Link } from 'react-router-dom';
 import {
   FaBookmark,
   FaBriefcase,
@@ -53,8 +53,8 @@ function FeaturesPage() {
           <h1>{heroTitle}</h1>
           <p>{heroSubtitle}</p>
           <div className="features-hero__actions">
-            <Button variant="primary">{primaryCta}</Button>
-            <Button variant="outline">{secondaryCta}</Button>
+            <Link className="button button--primary" to="/register">{primaryCta}</Link>
+            <Link className="button button--outline" to="/login">{secondaryCta}</Link>
           </div>
         </div>
         <HeroPanel recommendations={recommendations} profileCompletion={profileCompletion} />
@@ -81,7 +81,7 @@ function FeaturesPage() {
           <h2>{ctaTitle}</h2>
           <p>{ctaSubtitle}</p>
         </div>
-        <Button variant="primary">{ctaButton}</Button>
+        <Link className="button button--primary" to="/register">{ctaButton}</Link>
       </section>
     </div>
   );
