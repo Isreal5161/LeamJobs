@@ -244,6 +244,10 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 1fr));
 }
 
+.payment-page:not(.admin-payments-page) .payment-stat-grid > .payment-stat-card {
+  grid-template-columns: minmax(0, 1fr);
+}
+
 .payment-page:not(.admin-payments-page) .payment-stat-grid > article > strong {
   font-size: clamp(1rem, 2vw, 1.35rem);
   white-space: nowrap;
