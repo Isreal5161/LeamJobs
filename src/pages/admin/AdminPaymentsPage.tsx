@@ -3,17 +3,21 @@ import { FaCheckCircle, FaChevronDown, FaCoins, FaEye, FaFilter, FaLock, FaSearc
 import { useAuth } from '../../context/AuthContext';
 import {
   getAdminAnalytics,
+  getAdminConversionOperations,
   getAdminPayments,
   getAdminPlatformFee,
   getAdminReleaseCandidates,
+  getFreelancePaymentCapabilities,
   releaseAdminContract,
   updateAdminPlatformFee,
   type AdminAnalytics,
+  type AdminConversionOperation,
   type AdminPayment,
   type AdminPaymentProvider,
   type AdminPaymentStatus,
   type AdminPaymentType,
   type AdminReleaseCandidate,
+  type FreelancePaymentCapabilities,
 } from '../../services/api';
 import AdminPageSkeleton from './AdminPageSkeleton';
 
@@ -22,9 +26,18 @@ const fullName = (person: { firstName: string; lastName: string }) => `${person.
 const money = (amount: string, currency: string) => `${currency} ${amount}`;
 const label = (value: string) => value.replaceAll('_', ' ').toLowerCase().replace(/(^| )\w/g, (letter) => letter.toUpperCase());
 const metricValue = (rows: { currency: string; amount: string }[]) => rows.length ? rows.map((row) => `${row.currency} ${row.amount}`).join(' / ') : 'No records';
+const isVerifiedFundingPayment = (payment: AdminPayment) => payment.paymentType === 'CONTRACT_FUNDING'
+  && payment.status === 'SUCCESSFUL'
+  && Boolean(payment.verifiedAt)
+  && Boolean(payment.transactionId?.trim());
+const releaseHasFinancialBlockers = (candidate: AdminReleaseCandidate) => (
+  candidate.freelance.escrow.disputes.length > 0
+  || candidate.freelance.escrow.refunds.some((refund) => !['FAILED', 'CANCELLED'].includes(refund.status))
+  || Number(candidate.freelance.escrow.refundedAmount) > 0
+);
 const statuses: AdminPaymentStatus[] = ['PENDING', 'PROCESSING', 'SUCCESSFUL', 'FAILED', 'CANCELLED', 'REFUNDED'];
 const paymentTypes: AdminPaymentType[] = ['CONTRACT_FUNDING', 'SUBSCRIPTION', 'OTHER'];
-const providers: AdminPaymentProvider[] = ['FLUTTERWAVE', 'OTHER'];
+const providers: AdminPaymentProvider[] = ['FLUTTERWAVE', 'PAYSTACK', 'OTHER'];
 
 type PaymentFilters = {
   search: string;
@@ -53,6 +66,8 @@ function AdminPaymentsPage() {
   const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [selectedPayment, setSelectedPayment] = useState<AdminPayment | null>(null);
   const [contracts, setContracts] = useState<AdminReleaseCandidate[]>([]);
+  const [paymentCapabilities, setPaymentCapabilities] = useState<FreelancePaymentCapabilities | null>(null);
+  const [paymentCapabilitiesError, setPaymentCapabilitiesError] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [loadingId, setLoadingId] = useState<string | null>(null);
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
@@ -64,6 +79,56 @@ function AdminPaymentsPage() {
   const [feeSettingsSaving, setFeeSettingsSaving] = useState(false);
   const [feeSettingsError, setFeeSettingsError] = useState('');
   const [feeSettingsNotice, setFeeSettingsNotice] = useState('');
+  const [conversionOperations, setConversionOperations] = useState<AdminConversionOperation[]>([]);
+  const [conversionOperationsLoading, setConversionOperationsLoading] = useState(true);
+  const [conversionOperationsError, setConversionOperationsError] = useState('');
+  const [conversionRefreshKey, setConversionRefreshKey] = useState(0);
+  const [conversionStatusFilter, setConversionStatusFilter] = useState<AdminConversionOperation['status'] | ''>('');
+  const [conversionStaleOnly, setConversionStaleOnly] = useState(false);
+  const escrowReleaseEnabled = paymentCapabilities?.escrowReleaseEnabled === true;
+
+  useEffect(() => {
+    let active = true;
+    void getFreelancePaymentCapabilities().then((result) => {
+      if (!active) return;
+      if (result.ok) {
+        setPaymentCapabilities(result.data.data);
+        setPaymentCapabilitiesError('');
+      } else {
+        setPaymentCapabilities(null);
+        setPaymentCapabilitiesError('Payment availability could not be confirmed. New escrow releases are disabled for safety.');
+      }
+    }).catch(() => {
+      if (!active) return;
+      setPaymentCapabilities(null);
+      setPaymentCapabilitiesError('Payment availability could not be confirmed. New escrow releases are disabled for safety.');
+    });
+    return () => { active = false; };
+  }, []);
+
+  useEffect(() => {
+    if (!token) {
+      setConversionOperationsLoading(false);
+      setConversionOperationsError('Your session could not be loaded. Please sign in again.');
+      return undefined;
+    }
+    let active = true;
+    setConversionOperationsLoading(true);
+    void getAdminConversionOperations(token, {
+      status: conversionStatusFilter,
+      ...(conversionStaleOnly ? { staleMinutes: 1440 } : {}),
+    }).then((result) => {
+      if (!active) return;
+      if (result.ok) {
+        setConversionOperations(result.data.data.items);
+        setConversionOperationsError('');
+      } else {
+        setConversionOperationsError(result.error.message || 'Conversion operations could not be loaded.');
+      }
+      setConversionOperationsLoading(false);
+    });
+    return () => { active = false; };
+  }, [token, conversionRefreshKey, conversionStatusFilter, conversionStaleOnly]);
 
   useEffect(() => {
     if (!token) {
@@ -220,7 +285,7 @@ function AdminPaymentsPage() {
   useEffect(() => { void loadCandidates(); }, [token]);
 
   const release = async (candidate: AdminReleaseCandidate) => {
-    if (!token || loadingId) return;
+    if (!token || loadingId || !escrowReleaseEnabled || !candidate.freelance.escrow.fundingVerified || releaseHasFinancialBlockers(candidate)) return;
     setLoadingId(candidate.contractId);
     setError('');
     setMessage('');
@@ -276,6 +341,39 @@ function AdminPaymentsPage() {
         </form> : null}
       </section>
 
+      <section className="payment-panel admin-conversion-panel" aria-labelledby="conversion-operations-title" aria-busy={conversionOperationsLoading}>
+        <div className="payment-heading">
+          <div><span><FaCoins /> Reconciliation view · currency-specific</span><h2 id="conversion-operations-title">Conversion operations</h2></div>
+          <button type="button" className="payment-heading-action" onClick={() => setConversionRefreshKey((current) => current + 1)} disabled={conversionOperationsLoading}>Refresh</button>
+        </div>
+        <div className="admin-conversion-filters">
+          <label><span>Operation status</span><select value={conversionStatusFilter} onChange={(event) => setConversionStatusFilter(event.target.value as AdminConversionOperation['status'] | '')}>
+            <option value="">All statuses</option>
+            {['BLOCKED', 'QUOTED', 'SUBMITTED', 'UNCERTAIN', 'RECONCILIATION_REQUIRED', 'FAILED', 'CONFIRMED'].map((status) => <option value={status} key={status}>{label(status)}</option>)}
+          </select></label>
+          <label className="admin-conversion-stale-filter"><input type="checkbox" checked={conversionStaleOnly} onChange={(event) => setConversionStaleOnly(event.target.checked)} /><span>Only stale for at least 24 hours</span></label>
+        </div>
+        <p className="payment-copy">Read-only operation status and audit history. Provider execution, retries, and manual status changes are disabled.</p>
+        {conversionOperationsLoading ? <p className="payment-copy" role="status">Loading conversion operations…</p> : null}
+        {!conversionOperationsLoading && conversionOperationsError ? <p className="payment-copy payment-copy--error" role="alert">{conversionOperationsError} <button type="button" className="payment-filter-clear" onClick={() => setConversionRefreshKey((current) => current + 1)}>Retry</button></p> : null}
+        {!conversionOperationsLoading && !conversionOperationsError && conversionOperations.length === 0 ? <p className="payment-copy">No conversion operations have been recorded.</p> : null}
+        {!conversionOperationsLoading && !conversionOperationsError && conversionOperations.length > 0 ? <div className="admin-conversion-list">
+          {conversionOperations.map((operation) => <article className="admin-conversion-row" key={operation.id}>
+            <div><strong>{operation.sourceCurrency} {operation.sourceAmount} <span aria-hidden="true">→</span> {operation.destinationCurrency}</strong><small>Escrow {operation.escrowId} · Seeker {operation.seekerId}</small></div>
+            <span className={`payment-status payment-status--${operation.status.toLowerCase()}`}>{label(operation.status)}</span>
+            <div><span>Outcome</span><strong>{operation.convertedAmount ? `${operation.destinationCurrency} ${operation.convertedAmount}` : 'Not confirmed'}</strong></div>
+            <div><span>Last reconciled</span><strong>{formatDate(operation.lastReconciledAt)}</strong></div>
+            <p>{operation.statusReason || 'No additional status detail recorded.'}</p>
+            <small>{operation.reconciliationAttempts} reconciliation checks · {operation.events.length} recent audit events</small>
+            {operation.events.length > 0 ? <ol className="admin-conversion-events">{operation.events.map((event) => <li key={event.id}>
+              <strong>{label(event.toStatus)} · {label(event.eventType)}</strong>
+              <span>{event.reason || 'No event detail recorded.'}</span>
+              <small>{event.actorUserId ? `Operator ${event.actorUserId}` : 'System event'} · {formatDate(event.createdAt)}</small>
+            </li>)}</ol> : null}
+          </article>)}
+        </div> : null}
+      </section>
+
       <section className="payment-panel payment-history-panel" aria-labelledby="payment-history-title">
         <div className="payment-heading"><div><span><FaCoins /> Payment records</span><h2 id="payment-history-title">Payment History</h2></div><span className="payment-history-count">{payments.length} loaded</span></div>
         <form className="payment-filter-toolbar" onSubmit={(event) => { event.preventDefault(); applyFilters(); }}>
@@ -297,7 +395,7 @@ function AdminPaymentsPage() {
             <div><span className="payment-history-label">Type</span><strong>{label(payment.paymentType)}</strong></div>
             <div><span className="payment-history-label">Amount</span><strong>{money(payment.amount, payment.currency)}</strong></div>
             <div><span className="payment-history-label">Provider</span><strong>{label(payment.provider)}</strong></div>
-            <div><span className="payment-history-label">Status</span><span className={`payment-status payment-status--${payment.status.toLowerCase()}`}>{label(payment.status)}</span></div>
+            <div><span className="payment-history-label">Status</span><span className={`payment-status payment-status--${payment.status.toLowerCase()}`}>{label(payment.status)}</span>{payment.manualReviewRequired ? <small role="status">Verified payment requires manual review; subscription access was not activated.</small> : payment.paymentType === 'CONTRACT_FUNDING' ? <small>{isVerifiedFundingPayment(payment) ? 'Provider payment verified; escrow status is tracked separately.' : 'Not verified as escrow funding.'}</small> : null}</div>
             <div className="payment-history-date"><span className="payment-history-label">Date</span><strong>{formatDate(payment.createdAt)}</strong></div>
             <button type="button" className="payment-history-details" onClick={(event) => { paymentDetailsTriggerRef.current = event.currentTarget; setSelectedPayment(payment); }} aria-label={`View details for ${payment.providerReference}`}><FaEye /> Details</button>
           </article>)}
@@ -309,6 +407,7 @@ function AdminPaymentsPage() {
       {error ? <p className="payment-copy payment-copy--error" role="alert">{error}</p> : null}
       <section className="payment-panel" aria-labelledby="release-queue-title" aria-busy={isLoading}>
         <div className="payment-heading"><div><span><FaLock /> Authoritative escrow queue</span><h2 id="release-queue-title">Contracts Awaiting Release</h2><p className="payment-copy">Review completed freelance contracts before crediting seeker wallets.</p></div><button type="button" onClick={() => void loadCandidates()} disabled={isLoading}>Refresh</button></div>
+        {!escrowReleaseEnabled ? <p className="payment-copy" role="status">{paymentCapabilitiesError || 'New escrow releases are temporarily disabled. Existing payment history and escrow status remain available.'}</p> : null}
         {isLoading ? <AdminPageSkeleton showToolbar={false} statCards={0} rows={4} /> : null}
         {!isLoading && !contracts.length ? <p className="payment-copy">No freelance contracts are currently release eligible.</p> : null}
         <div className="payment-list">
@@ -317,17 +416,27 @@ function AdminPaymentsPage() {
             const isConfirming = confirmingId === candidate.contractId;
             const isReleasing = loadingId === candidate.contractId;
             return <article className="payment-row payment-row--stack admin-release-card" key={candidate.contractId}>
-              <div className="admin-release-card__heading"><div><strong>{candidate.job.title}</strong><p>Contract {candidate.contractId}</p></div><span className="payment-status payment-status--completed">{freelance.escrow.status}</span></div>
+              <div className="admin-release-card__heading"><div><strong>{candidate.job.title}</strong><p>Contract {candidate.contractId}</p></div><span className={`payment-status payment-status--${freelance.escrow.fundingVerified ? 'completed' : 'pending'}`}>{label(freelance.escrow.fundingState)}</span></div>
               <div className="admin-release-card__people"><div><span>Employer</span><strong>{fullName(candidate.employer)}</strong><small>{candidate.employer.email}</small></div><div><span>Seeker</span><strong>{fullName(candidate.seeker)}</strong><small>{candidate.seeker.email}</small></div></div>
               <div className="admin-release-card__money"><div><span>Gross/agreed amount</span><strong>{money(freelance.agreedAmount, freelance.currency)}</strong></div><div><span>Platform fee</span><strong>{money(freelance.platformFeeAmount, freelance.currency)} ({freelance.platformFeePercentage}%)</strong></div><div><span>Seeker net</span><strong>{money(freelance.seekerNetAmount, freelance.currency)}</strong></div><div><span>Escrow</span><strong>{freelance.escrow.status}</strong></div></div>
-              <div className="admin-release-card__status"><span>Completion submitted: {formatDate(freelance.completionSubmittedAt)}</span><span>Employer confirmed: {formatDate(freelance.employerCompletionConfirmedAt)}</span><span>Release eligible: {formatDate(freelance.escrow.releaseEligibleAt)}</span></div>
-              {isConfirming ? <div className="admin-release-confirmation" role="alert"><p><strong>Release {money(freelance.seekerNetAmount, freelance.currency)} to {fullName(candidate.seeker)}?</strong><br />This action will credit the seeker's wallet and cannot be reversed from this screen.</p><div><button type="button" onClick={() => void release(candidate)} disabled={Boolean(loadingId)}>{isReleasing ? 'Releasing...' : 'Confirm Release'}</button><button type="button" onClick={() => setConfirmingId(null)} disabled={Boolean(loadingId)}>Cancel</button></div></div> : <button type="button" className="button button--primary" onClick={() => setConfirmingId(candidate.contractId)} disabled={Boolean(loadingId)}><FaCheckCircle /> Release Funds</button>}
+              <div className="admin-release-card__status">
+                <span>Provider funding: {freelance.escrow.fundingVerified ? 'Verified against escrow amount' : 'Not verified — manual review required'}</span>
+                {freelance.escrow.matchedFundingPayment ? <span>Matched payment: {label(freelance.escrow.matchedFundingPayment.provider)} · {freelance.escrow.matchedFundingPayment.providerReference} · {money(freelance.escrow.matchedFundingPayment.amount, freelance.escrow.matchedFundingPayment.currency)} · transaction {freelance.escrow.matchedFundingPayment.transactionId}</span> : null}
+                {!freelance.escrow.fundingPayments.length ? <span>No contract-funding payment record exists.</span> : null}
+                {freelance.escrow.fundingPayments.filter((payment) => payment.status !== 'SUCCESSFUL' || !payment.verifiedAt).map((payment) => <span key={payment.id}>Unverified payment: {label(payment.provider)} · {payment.providerReference} · {money(payment.amount, payment.currency)} · {label(payment.status)}</span>)}
+                {freelance.escrow.disputes.map((dispute) => <span key={dispute.id}>Dispute {dispute.id}: {label(dispute.status)} — release blocked.</span>)}
+                {freelance.escrow.refunds.map((refund) => <span key={refund.id}>Refund {refund.id}: {label(refund.status)} · {money(refund.amount, refund.currency)}{!['FAILED', 'CANCELLED'].includes(refund.status) ? ' — release blocked for review.' : ''}</span>)}
+                {Number(freelance.escrow.refundedAmount) > 0 ? <span>Previously refunded: {money(freelance.escrow.refundedAmount, freelance.currency)} — release blocked.</span> : null}
+                {freelance.escrow.manualReviewIndicators.includes('MULTIPLE_FUNDING_ATTEMPTS') ? <span>Multiple funding attempts exist; verify all provider outcomes before release.</span> : null}
+                <span>Completion submitted: {formatDate(freelance.completionSubmittedAt)}</span><span>Employer confirmed: {formatDate(freelance.employerCompletionConfirmedAt)}</span><span>Release eligible: {formatDate(freelance.escrow.releaseEligibleAt)}</span>
+              </div>
+              {isConfirming ? <div className="admin-release-confirmation" role="alert"><p><strong>Release {money(freelance.seekerNetAmount, freelance.currency)} to {fullName(candidate.seeker)}?</strong><br />This action will credit the seeker's wallet and cannot be reversed from this screen.</p><div><button type="button" onClick={() => void release(candidate)} disabled={Boolean(loadingId) || !escrowReleaseEnabled || !freelance.escrow.fundingVerified || releaseHasFinancialBlockers(candidate)}>{isReleasing ? 'Releasing...' : 'Confirm Release'}</button><button type="button" onClick={() => setConfirmingId(null)} disabled={Boolean(loadingId)}>Cancel</button></div></div> : <button type="button" className="button button--primary" onClick={() => setConfirmingId(candidate.contractId)} disabled={Boolean(loadingId) || !escrowReleaseEnabled || !freelance.escrow.fundingVerified || releaseHasFinancialBlockers(candidate)}><FaCheckCircle /> {!freelance.escrow.fundingVerified || releaseHasFinancialBlockers(candidate) ? 'Review funding' : !escrowReleaseEnabled ? 'Release unavailable' : 'Release Funds'}</button>}
             </article>;
           })}
         </div>
       </section>
 
-      {selectedPayment ? <div className="payment-modal-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) closePaymentDetails(); }}><section className="payment-modal payment-details-modal" role="dialog" aria-modal="true" aria-labelledby="payment-details-title"><div className="payment-modal__header"><span>Payment details</span><button ref={paymentDetailsCloseRef} type="button" className="payment-modal__close" onClick={closePaymentDetails} aria-label="Close payment details"><FaTimes /></button></div><h2 id="payment-details-title">{selectedPayment.providerReference}</h2><div className="payment-details-grid"><div><span>Payment ID</span><strong>{selectedPayment.id}</strong></div><div><span>Provider reference</span><strong>{selectedPayment.providerReference}</strong></div><div><span>Transaction ID</span><strong>{selectedPayment.transactionId || 'Not recorded'}</strong></div><div><span>Payer</span><strong>{selectedPayment.payer.name}<small>{selectedPayment.payer.email}</small></strong></div><div><span>Payment type</span><strong>{label(selectedPayment.paymentType)}</strong></div><div><span>Amount</span><strong>{money(selectedPayment.amount, selectedPayment.currency)}</strong></div><div><span>Provider</span><strong>{label(selectedPayment.provider)}</strong></div><div><span>Status</span><strong>{label(selectedPayment.status)}</strong></div><div><span>Created</span><strong>{formatDate(selectedPayment.createdAt)}</strong></div><div><span>Verified</span><strong>{formatDate(selectedPayment.verifiedAt)}</strong></div><div><span>Related record</span><strong>{selectedPayment.context.jobTitle || selectedPayment.context.subscriptionPlan || 'Not linked'}</strong></div></div><button type="button" className="payment-heading-action" onClick={closePaymentDetails}>Close</button></section></div> : null}
+      {selectedPayment ? <div className="payment-modal-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) closePaymentDetails(); }}><section className="payment-modal payment-details-modal" role="dialog" aria-modal="true" aria-labelledby="payment-details-title"><div className="payment-modal__header"><span>Payment details</span><button ref={paymentDetailsCloseRef} type="button" className="payment-modal__close" onClick={closePaymentDetails} aria-label="Close payment details"><FaTimes /></button></div><h2 id="payment-details-title">{selectedPayment.providerReference}</h2>{selectedPayment.manualReviewRequired ? <p className="payment-copy" role="status">The provider payment is verified, but the subscription remains {label(selectedPayment.context.subscriptionStatus ?? 'unknown')}. Manual review is required; no subscription access was activated.</p> : null}<div className="payment-details-grid"><div><span>Payment ID</span><strong>{selectedPayment.id}</strong></div><div><span>Provider reference</span><strong>{selectedPayment.providerReference}</strong></div><div><span>Transaction ID</span><strong>{selectedPayment.transactionId || 'Not recorded'}</strong></div><div><span>Payer</span><strong>{selectedPayment.payer.name}<small>{selectedPayment.payer.email}</small></strong></div><div><span>Payment type</span><strong>{label(selectedPayment.paymentType)}</strong></div><div><span>Amount</span><strong>{money(selectedPayment.amount, selectedPayment.currency)}</strong></div><div><span>Provider</span><strong>{label(selectedPayment.provider)}</strong></div><div><span>Status</span><strong>{label(selectedPayment.status)}</strong></div><div><span>Created</span><strong>{formatDate(selectedPayment.createdAt)}</strong></div><div><span>Verified</span><strong>{formatDate(selectedPayment.verifiedAt)}</strong></div><div><span>Related record</span><strong>{selectedPayment.context.jobTitle || selectedPayment.context.subscriptionPlan || 'Not linked'}</strong></div>{selectedPayment.context.subscriptionStatus ? <div><span>Subscription status</span><strong>{label(selectedPayment.context.subscriptionStatus)}</strong></div> : null}</div><button type="button" className="payment-heading-action" onClick={closePaymentDetails}>Close</button></section></div> : null}
     </div>
   );
 }

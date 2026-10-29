@@ -110,7 +110,7 @@ function SubscriptionPage() {
         }
         setCheckoutError(result.status === 0 || result.status >= 500
           ? result.status === 502
-            ? 'Flutterwave could not start this checkout. Close this review and begin a new attempt.'
+            ? 'Paystack could not start this checkout. Close this review and begin a new attempt.'
             : 'We could not confirm whether checkout started. Reopen this plan to safely retry the same attempt.'
           : 'We could not start checkout for this plan. Please review the plan and try again.');
         return;
@@ -119,7 +119,13 @@ function SubscriptionPage() {
       if (!result.data?.data?.checkoutUrl) {
         const paymentStatus = String(result.data?.data?.payment?.status ?? '');
         if (result.data.data.initializing || paymentStatus === 'PROCESSING') {
-          setCheckoutError('Secure checkout is still being prepared. Please wait a moment before trying again.');
+          const providerReference = result.data.data.payment?.providerReference;
+          if (providerReference) {
+            const params = new URLSearchParams({ reference: providerReference, plan: plans.find((plan) => plan.id === planId)?.key ?? '' });
+            navigate(`/seeker/subscription/payment-result?${params.toString()}`);
+          } else {
+            setCheckoutError('Secure checkout is still being prepared. Please wait a moment before trying again.');
+          }
         } else {
           setCheckoutError('This checkout attempt could not be started. Close this review and begin a new attempt.');
           if (paymentStatus === 'FAILED') {
@@ -353,7 +359,7 @@ function SubscriptionPage() {
           <div className="subscription-checkout-dialog__heading">
             <span className="seeker-subscription-eyebrow"><FaLock aria-hidden="true" /> Secure hosted checkout</span>
             <h2 id="subscription-checkout-title">Review your plan</h2>
-            <p>You will complete payment on Flutterwave. LeamJobs verifies payment before activating access.</p>
+            <p>You will complete payment on Paystack. LeamJobs verifies payment before activating access.</p>
           </div>
           <div className="subscription-checkout-summary">
             <div><span>Plan</span><strong>{getAccountTypeLabel(selectedCheckoutPlan.key, selectedCheckoutPlan.name)}</strong></div>

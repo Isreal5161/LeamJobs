@@ -13,6 +13,7 @@ import {
   getSeekerTransactions,
   getSeekerWithdrawals,
   getSeekerWithdrawalQuote,
+  getFreelancePaymentCapabilities,
   requestSeekerWithdrawal,
   type ApiFailure,
   type SeekerPaymentItem,
@@ -23,11 +24,13 @@ import {
   type SeekerTransactionItem,
   type SeekerWithdrawalQuote,
   type SeekerWithdrawalItem,
+  type FreelancePaymentCapabilities,
 } from '../../services/api';
 
 const formatMoney = (amount: string | null | undefined, currency: string | null | undefined) => {
   if (!currency) return 'Currency unavailable';
-  const numericAmount = Number(amount ?? 0);
+  if (amount === null || amount === undefined || amount.trim() === '') return 'Amount unavailable';
+  const numericAmount = Number(amount);
   if (!Number.isFinite(numericAmount)) return 'Amount unavailable';
   try {
     return new Intl.NumberFormat(undefined, { style: 'currency', currency }).format(numericAmount);
@@ -65,13 +68,13 @@ const isCurrentCapabilityAccount = (
   && capability.currency === account.currency
   && capability.provider === account.provider
   && capability.payoutMethod === account.payoutMethod
+  && capability.withdrawalEnabled === true
 ));
 
 const isAvailablePayoutAccount = (
   account: SeekerPayoutAccount,
   capabilities: SeekerPayoutCapability[],
 ) => account.withdrawalSupported
-  && account.verified
   && account.status !== 'DISABLED'
   && isCurrentCapabilityAccount(account, capabilities);
 
@@ -93,6 +96,7 @@ const humanize = (value: string) => value.toLowerCase().split('_').map((part) =>
 const statusLabel = (status: string) => ({ CREDITED: 'Credited', PENDING: 'Pending', PROCESSING: 'Processing', SUCCESSFUL: 'Successful', FAILED: 'Failed', CANCELLED: 'Cancelled' }[status] ?? humanize(status));
 const statusClass = (status: string) => status.toLowerCase().replace(/[^a-z0-9]+/g, '-');
 const friendlyError = (failure: ApiFailure) => failure.status === 401 ? 'Your session has expired. Please sign in again.' : failure.status === 403 ? 'You do not have permission to view this information.' : 'We could not load this information right now. Please try again.';
+type PaymentListSection = 'payments' | 'transactions' | 'withdrawals';
 
 function SectionState({ error, empty, children }: { error?: string; empty: string; children: ReactNode }) {
   if (error) return <p className="payment-copy payment-copy--error" role="alert">{error}</p>;
@@ -102,11 +106,24 @@ function SectionState({ error, empty, children }: { error?: string; empty: strin
 function PaymentsPage() {
   const { token } = useAuth();
   const [summary, setSummary] = useState<SeekerPaymentSummary | null>(null);
+  const [selectedCurrency, setSelectedCurrency] = useState('NGN');
   const [payments, setPayments] = useState<SeekerPaymentItem[]>([]);
   const [transactions, setTransactions] = useState<SeekerTransactionItem[]>([]);
   const [withdrawals, setWithdrawals] = useState<SeekerWithdrawalItem[]>([]);
+  const [nextCursors, setNextCursors] = useState<Record<PaymentListSection, string | null>>({
+    payments: null,
+    transactions: null,
+    withdrawals: null,
+  });
+  const [loadingMore, setLoadingMore] = useState<Record<PaymentListSection, boolean>>({
+    payments: false,
+    transactions: false,
+    withdrawals: false,
+  });
   const [payoutAccounts, setPayoutAccounts] = useState<SeekerPayoutAccount[]>([]);
   const [payoutCapabilities, setPayoutCapabilities] = useState<SeekerPayoutCapability[]>([]);
+  const [paymentCapabilities, setPaymentCapabilities] = useState<FreelancePaymentCapabilities | null>(null);
+  const [paymentCapabilitiesError, setPaymentCapabilitiesError] = useState('');
   const [payoutBanks, setPayoutBanks] = useState<SeekerPayoutBank[]>([]);
   const [isLoadingPayoutBanks, setIsLoadingPayoutBanks] = useState(false);
   const [payoutBankError, setPayoutBankError] = useState('');
@@ -131,6 +148,18 @@ function PaymentsPage() {
   const emptyPayoutForm = {
     bankCode: '',
     accountNumber: '',
+    routingNumber: '',
+    swiftCode: '',
+    bankName: '',
+    accountType: 'checking' as 'checking' | 'depository',
+    beneficiaryName: '',
+    beneficiaryAddress: '',
+    postalCode: '',
+    streetNumber: '',
+    streetName: '',
+    city: '',
+    email: '',
+    mobileNumber: '',
   };
   const [selectedPayoutCountry, setSelectedPayoutCountry] = useState('');
   const [showPayoutSettings, setShowPayoutSettings] = useState(false);
@@ -140,12 +169,19 @@ function PaymentsPage() {
   const [isSavingPayout, setIsSavingPayout] = useState(false);
   const [payoutNotice, setPayoutNotice] = useState('');
   const payoutSettingsTriggerRef = useRef<HTMLButtonElement>(null);
-  const currency = normalizeCurrencyCode(summary?.currency);
+  const dataRequestRef = useRef(0);
+  const currency = normalizeCurrencyCode(selectedCurrency);
+  const walletSummary = summary?.wallets?.find((wallet) => wallet.currency === selectedCurrency)
+    ?? (summary?.currency === selectedCurrency ? summary : null);
   const withdrawalCapability = currency
-    ? payoutCapabilities.find((capability) => normalizeCurrencyCode(capability.currency) === currency) ?? null
+    ? payoutCapabilities.find((capability) => normalizeCurrencyCode(capability.currency) === currency
+      && capability.withdrawalEnabled === true) ?? null
     : null;
+  const withdrawalEnabled = Boolean(withdrawalCapability)
+    && paymentCapabilities?.withdrawalsEnabled === true;
 
   const loadPaymentData = async () => {
+    const requestId = ++dataRequestRef.current;
     if (!token) {
       setIsLoading(false);
       setError('Your session could not be loaded. Please sign in again.');
@@ -154,18 +190,43 @@ function PaymentsPage() {
     setIsLoading(true);
     setError('');
     setSectionErrors({});
-    const [summaryResult, paymentsResult, transactionsResult, withdrawalsResult, accountsResult, profileResult, capabilitiesResult] = await Promise.all([
-      getSeekerPaymentSummary(token), getSeekerPayments(token), getSeekerTransactions(token), getSeekerWithdrawals(token), getSeekerPayoutAccounts(token), getSeekerProfile(token), getSeekerPayoutCapabilities(token),
+    const [summaryResult, paymentsResult, transactionsResult, withdrawalsResult, accountsResult, profileResult, capabilitiesResult, paymentCapabilitiesResult] = await Promise.all([
+      getSeekerPaymentSummary(token), getSeekerPayments(token, selectedCurrency), getSeekerTransactions(token, selectedCurrency), getSeekerWithdrawals(token, selectedCurrency), getSeekerPayoutAccounts(token), getSeekerProfile(token), getSeekerPayoutCapabilities(token), getFreelancePaymentCapabilities(),
     ]);
+    if (requestId !== dataRequestRef.current) return;
     const nextErrors: Record<string, string> = {};
-    if (summaryResult.ok) setSummary(summaryResult.data.data); else nextErrors.summary = friendlyError(summaryResult);
-    if (paymentsResult.ok) setPayments(paymentsResult.data.data.items); else nextErrors.payments = friendlyError(paymentsResult);
-    if (transactionsResult.ok) setTransactions(transactionsResult.data.data.items); else nextErrors.transactions = friendlyError(transactionsResult);
-    if (withdrawalsResult.ok) setWithdrawals(withdrawalsResult.data.data.items); else nextErrors.withdrawals = friendlyError(withdrawalsResult);
+    if (summaryResult.ok) setSummary(summaryResult.data.data); else {
+      setSummary(null);
+      nextErrors.summary = friendlyError(summaryResult);
+    }
+    if (paymentsResult.ok) {
+      setPayments(paymentsResult.data.data.items);
+      setNextCursors((current) => ({ ...current, payments: paymentsResult.data.data.nextCursor }));
+    } else {
+      setPayments([]);
+      setNextCursors((current) => ({ ...current, payments: null }));
+      nextErrors.payments = friendlyError(paymentsResult);
+    }
+    if (transactionsResult.ok) {
+      setTransactions(transactionsResult.data.data.items);
+      setNextCursors((current) => ({ ...current, transactions: transactionsResult.data.data.nextCursor }));
+    } else {
+      setTransactions([]);
+      setNextCursors((current) => ({ ...current, transactions: null }));
+      nextErrors.transactions = friendlyError(transactionsResult);
+    }
+    if (withdrawalsResult.ok) {
+      setWithdrawals(withdrawalsResult.data.data.items);
+      setNextCursors((current) => ({ ...current, withdrawals: withdrawalsResult.data.data.nextCursor }));
+    } else {
+      setWithdrawals([]);
+      setNextCursors((current) => ({ ...current, withdrawals: null }));
+      nextErrors.withdrawals = friendlyError(withdrawalsResult);
+    }
     if (accountsResult.ok) {
       const accounts = accountsResult.data.data.payoutAccounts;
       setPayoutAccounts(accounts);
-      const walletCurrency = summaryResult.ok ? normalizeCurrencyCode(summaryResult.data.data.currency) : null;
+      const walletCurrency = selectedCurrency;
       const supportedCapabilities = capabilitiesResult.ok ? capabilitiesResult.data.data.capabilities : [];
       const eligibleAccounts = accounts.filter((account) => isAvailablePayoutAccount(account, supportedCapabilities)
         && account.currency === walletCurrency);
@@ -186,14 +247,77 @@ function PaymentsPage() {
       setPayoutCapabilities([]);
       setPayoutCapabilityError(friendlyError(capabilitiesResult));
     }
+    if (paymentCapabilitiesResult.ok) {
+      setPaymentCapabilities(paymentCapabilitiesResult.data.data);
+      setPaymentCapabilitiesError('');
+    } else {
+      setPaymentCapabilities(null);
+      setPaymentCapabilitiesError('Payment availability could not be confirmed. New withdrawals are disabled for safety.');
+    }
     setSectionErrors(nextErrors);
     setIsLoading(false);
   };
 
-  useEffect(() => { void loadPaymentData(); }, [token, retryKey]);
+  const loadMore = async (section: PaymentListSection) => {
+    if (!token || !nextCursors[section] || loadingMore[section]) return;
+    const cursor = nextCursors[section];
+    const requestId = dataRequestRef.current;
+    setLoadingMore((current) => ({ ...current, [section]: true }));
+    setSectionErrors((current) => ({ ...current, [section]: '' }));
+    try {
+      if (section === 'payments') {
+        const result = await getSeekerPayments(token, selectedCurrency, cursor);
+        if (requestId !== dataRequestRef.current) return;
+        if (!result.ok) {
+          setSectionErrors((current) => ({ ...current, payments: friendlyError(result) }));
+          return;
+        }
+        setPayments((current) => {
+          const ids = new Set(current.map((item) => item.id));
+          return [...current, ...result.data.data.items.filter((item) => !ids.has(item.id))];
+        });
+        setNextCursors((current) => ({ ...current, payments: result.data.data.nextCursor }));
+      } else if (section === 'transactions') {
+        const result = await getSeekerTransactions(token, selectedCurrency, cursor);
+        if (requestId !== dataRequestRef.current) return;
+        if (!result.ok) {
+          setSectionErrors((current) => ({ ...current, transactions: friendlyError(result) }));
+          return;
+        }
+        setTransactions((current) => {
+          const ids = new Set(current.map((item) => item.id));
+          return [...current, ...result.data.data.items.filter((item) => !ids.has(item.id))];
+        });
+        setNextCursors((current) => ({ ...current, transactions: result.data.data.nextCursor }));
+      } else {
+        const result = await getSeekerWithdrawals(token, selectedCurrency, cursor);
+        if (requestId !== dataRequestRef.current) return;
+        if (!result.ok) {
+          setSectionErrors((current) => ({ ...current, withdrawals: friendlyError(result) }));
+          return;
+        }
+        setWithdrawals((current) => {
+          const ids = new Set(current.map((item) => item.id));
+          return [...current, ...result.data.data.items.filter((item) => !ids.has(item.id))];
+        });
+        setNextCursors((current) => ({ ...current, withdrawals: result.data.data.nextCursor }));
+      }
+    } catch (loadError) {
+      setSectionErrors((current) => ({
+        ...current,
+        [section]: loadError instanceof Error
+          ? loadError.message
+          : 'We could not load more records. Please try again.',
+      }));
+    } finally {
+      setLoadingMore((current) => ({ ...current, [section]: false }));
+    }
+  };
+
+  useEffect(() => { void loadPaymentData(); }, [token, retryKey, selectedCurrency]);
   useEffect(() => {
     const amountCents = decimalToCents(amount);
-    if (!token || !currency || !withdrawalCapability || !selectedPayoutAccountId || amountCents === null || amountCents <= 0n) {
+    if (!token || !currency || !withdrawalEnabled || !selectedPayoutAccountId || amountCents === null || amountCents <= 0n) {
       setWithdrawalQuote(null);
       setIsLoadingWithdrawalQuote(false);
       setWithdrawalQuoteError('');
@@ -220,7 +344,7 @@ function PaymentsPage() {
       active = false;
       window.clearTimeout(timeout);
     };
-  }, [amount, currency, selectedPayoutAccountId, token, withdrawalCapability, withdrawalQuoteRefreshKey]);
+  }, [amount, currency, selectedPayoutAccountId, token, withdrawalEnabled, withdrawalQuoteRefreshKey]);
   useEffect(() => {
     if (!showConfirmation && !showPayoutSettings) return undefined;
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -272,30 +396,45 @@ function PaymentsPage() {
   const payoutCountry = editingPayoutAccount?.country ?? selectedPayoutCountry;
   const payoutCapability = payoutCapabilities.find((capability) => capability.country === payoutCountry) ?? null;
   const supportsBankAccount = payoutCapability?.payoutMethod === 'BANK_ACCOUNT'
-    && payoutCapability.verificationMethod === 'FLUTTERWAVE_ACCOUNT_RESOLVE';
+    && payoutCapability.destinationSetupEnabled !== false
+    && ['FLUTTERWAVE_ACCOUNT_RESOLVE', 'BENEFICIARY_DETAILS'].includes(payoutCapability.verificationMethod);
+  const isUsUsdPayout = payoutCapability?.route === 'INTERNATIONAL_USD';
   const canEditPayoutAccount = (account: SeekerPayoutAccount) => account.withdrawalSupported || account.provider === 'PAYSTACK';
-  const availableCents = decimalToCents(summary?.availableBalance ?? '0');
+  const availableCents = walletSummary ? decimalToCents(walletSummary.availableBalance) : null;
   const amountCents = decimalToCents(amount);
   const hasValidAmount = amountCents !== null && amountCents > 0n && availableCents !== null && amountCents <= availableCents;
   const validateAmount = () => {
     if (!amount.trim()) return 'Enter an amount.';
     if (!amountCents || amountCents <= 0n) return 'Enter an amount greater than zero with no more than 2 decimal places.';
-    if (!availableCents || amountCents > availableCents) return 'Your available balance is not sufficient for this withdrawal.';
+    if (!walletSummary || availableCents === null) return 'Your available balance is unavailable. Please refresh before requesting a withdrawal.';
+    if (amountCents > availableCents) return 'Your available balance is not sufficient for this withdrawal.';
     if (!currency) return 'Wallet currency is unavailable.';
-    if (!withdrawalCapability) return 'Withdrawals are not supported for this wallet currency.';
+    if (paymentCapabilitiesError) return paymentCapabilitiesError;
+    if (paymentCapabilities?.withdrawalsEnabled !== true) return 'New withdrawals are temporarily disabled. Your wallet balance and payment history remain available.';
+    if (!withdrawalEnabled) return currency === 'USD'
+      ? 'USD withdrawals are unavailable until provider and compliance approval is complete.'
+      : 'Withdrawals are not supported for this wallet currency.';
     return '';
   };
   const withdrawalButtonReason = !currency
     ? 'Wallet currency is unavailable.'
-    : !withdrawalCapability
-      ? 'Withdrawals are not supported for this wallet currency.'
-      : !selectedPayoutAccount
-        ? 'A payout account supported for your wallet currency is required.'
-        : !amount.trim()
-          ? 'Enter an amount to continue.'
-          : !hasValidAmount
-            ? 'Enter a valid amount within your available balance.'
-            : '';
+    : paymentCapabilitiesError
+      ? paymentCapabilitiesError
+      : paymentCapabilities?.withdrawalsEnabled !== true
+        ? 'New withdrawals are temporarily disabled. Your wallet balance and payment history remain available.'
+    : !withdrawalEnabled
+      ? currency === 'USD'
+        ? 'USD withdrawals are unavailable until provider and compliance approval is complete.'
+        : 'Withdrawals are not supported for this wallet currency.'
+      : !walletSummary
+        ? 'Wallet balance is unavailable. Refresh before requesting a withdrawal.'
+        : !selectedPayoutAccount
+          ? 'A payout account supported for your wallet currency is required.'
+          : !amount.trim()
+            ? 'Enter an amount to continue.'
+            : !hasValidAmount
+              ? 'Enter a valid amount within your available balance.'
+              : '';
   const openConfirmation = () => {
     const nextError = validateAmount();
     if (nextError) { setFormError(nextError); return; }
@@ -327,11 +466,21 @@ function PaymentsPage() {
     window.setTimeout(() => payoutSettingsTriggerRef.current?.focus(), 0);
   };
   const validatePayoutForm = () => {
-    if (supportsBankAccount) {
+    if (!supportsBankAccount) return payoutCapability?.unavailableReason || 'Payouts are not supported for this country.';
+    if (isUsUsdPayout) {
+      if (!/^\d{4,17}$/.test(payoutForm.accountNumber.trim())) return 'Enter a valid US account number.';
+      if (!/^\d{9}$/.test(payoutForm.routingNumber.trim())) return 'Enter a valid 9-digit US routing number.';
+      if (!/^[A-Z0-9]{8}(?:[A-Z0-9]{3})?$/.test(payoutForm.swiftCode.trim().toUpperCase())) return 'Enter a valid 8- or 11-character SWIFT/BIC code.';
+      if (payoutForm.bankName.trim().length < 2) return 'Enter the beneficiary bank name.';
+      if (payoutForm.beneficiaryName.trim().length < 2) return 'Enter the beneficiary name.';
+      if (payoutForm.beneficiaryAddress.trim().length < 5) return 'Enter the beneficiary address.';
+      if (!/^\d{5}(?:-\d{4})?$/.test(payoutForm.postalCode.trim())) return 'Enter a valid US postal code.';
+      if (!payoutForm.streetNumber.trim() || payoutForm.streetName.trim().length < 2 || payoutForm.city.trim().length < 2) return 'Complete the beneficiary street number, street name, and city.';
+    } else {
       if (!payoutForm.bankCode.trim()) return 'Select your bank.';
       if (isLoadingPayoutBanks || payoutBankError) return 'Wait until the supported bank list is available.';
       if (!/^\d{6,20}$/.test(payoutForm.accountNumber.trim())) return 'Enter a valid account number.';
-    } else return 'Payouts are not supported for this country.';
+    }
     return '';
   };
   const handleSavePayoutDetails = async (event: FormEvent<HTMLFormElement>) => {
@@ -347,11 +496,29 @@ function PaymentsPage() {
       setPayoutFormError('Payouts are not supported for this country.');
       return;
     }
-    const payload = {
-      country: payoutCapability.country,
-      bankCode: payoutForm.bankCode,
-      accountNumber: payoutForm.accountNumber.trim(),
-    };
+    const payload = isUsUsdPayout
+      ? {
+        country: payoutCapability.country,
+        currency: 'USD' as const,
+        accountNumber: payoutForm.accountNumber.trim(),
+        routingNumber: payoutForm.routingNumber.trim(),
+        swiftCode: payoutForm.swiftCode.trim().toUpperCase(),
+        bankName: payoutForm.bankName.trim(),
+        accountType: payoutForm.accountType,
+        beneficiaryName: payoutForm.beneficiaryName.trim(),
+        beneficiaryAddress: payoutForm.beneficiaryAddress.trim(),
+        postalCode: payoutForm.postalCode.trim(),
+        streetNumber: payoutForm.streetNumber.trim(),
+        streetName: payoutForm.streetName.trim(),
+        city: payoutForm.city.trim(),
+        email: payoutForm.email.trim() || undefined,
+        mobileNumber: payoutForm.mobileNumber.trim() || undefined,
+      }
+      : {
+        country: payoutCapability.country,
+        bankCode: payoutForm.bankCode,
+        accountNumber: payoutForm.accountNumber.trim(),
+      };
     const result = editingPayoutAccountId
       ? await updateSeekerPayoutAccount(editingPayoutAccountId, payload, token)
       : await createSeekerPayoutAccount(payload, token);
@@ -394,7 +561,7 @@ function PaymentsPage() {
     setPayoutNotice('Default payout account updated.');
   };
   const submitWithdrawal = async () => {
-    if (!token || !selectedPayoutAccount || !hasValidAmount || !currency || !withdrawalCapability || !withdrawalQuote || isSubmitting) return;
+    if (!token || !selectedPayoutAccount || !hasValidAmount || !currency || !withdrawalEnabled || !withdrawalQuote || isSubmitting) return;
     const idempotencyKey = globalThis.crypto?.randomUUID?.();
     if (!idempotencyKey) { setFormError('This browser cannot securely create a withdrawal request key.'); return; }
     setIsSubmitting(true); setFormError(''); setNotice('');
@@ -458,29 +625,56 @@ function PaymentsPage() {
 
   return <div className="payment-page">
     <section className="payment-hero"><div><span>Seeker wallet</span><h1>Your earnings</h1><p>Track completed work, available balance, and withdrawal requests.</p></div><FaMoneyBillWave aria-hidden="true" /></section>
-    <section className="payment-stat-grid" aria-label="Wallet summary">
-      <article className="payment-stat-card payment-stat-card--primary"><span>Available balance</span><strong>{formatMoney(summary?.availableBalance, displayCurrency)}</strong><small>Ready for withdrawal</small></article>
-      <article><span>Pending earnings</span><strong>{formatMoney(summary?.pendingEarnings, displayCurrency)}</strong><small>Secured by LeamJobs until completion and release</small></article>
-      <article><span>Pending withdrawal</span><strong>{formatMoney(summary?.pendingWithdrawalBalance, displayCurrency)}</strong><small>Reserved for processing</small></article>
-      <article><span>Total earnings</span><strong>{formatMoney(summary?.totalEarnings, displayCurrency)}</strong><small>Credited wallet earnings</small></article>
-      <article><span>Total withdrawn</span><strong>{formatMoney(summary?.totalWithdrawn, displayCurrency)}</strong><small>Successful withdrawals</small></article>
-      {sectionErrors.summary && <p className="payment-copy payment-copy--error" role="alert">{sectionErrors.summary}</p>}
+    <section className="payment-wallet-switch" aria-label="Currency wallets">
+      <div className="payment-wallet-switch__heading"><h2>Your wallets</h2><p>Balances and activity are kept separate by currency.</p></div>
+      <div className="payment-wallet-switch__items">
+        {summary?.wallets?.length === 0 && <p className="payment-copy">No wallet has been provisioned for your account yet.</p>}
+        {(summary?.wallets ?? []).map((wallet) => <button
+          type="button"
+          className="payment-wallet-switch__item"
+          key={wallet.currency}
+          aria-pressed={selectedCurrency === wallet.currency}
+          onClick={() => setSelectedCurrency(wallet.currency)}
+        ><span>{wallet.currency} wallet</span><strong>{formatMoney(wallet.availableBalance, wallet.currency)}</strong></button>)}
+        {!summary?.wallets?.some(({ currency: walletCurrency }) => walletCurrency === 'USD') && <div className="payment-wallet-switch__item payment-wallet-switch__item--disabled">
+          <span>USD wallet</span><strong>Not available</strong><small>USD wallet provisioning requires eligibility and provider approval.</small>
+        </div>}
+      </div>
     </section>
+    {sectionErrors.summary
+      ? <p className="payment-copy payment-copy--error" role="alert">{sectionErrors.summary}</p>
+      : walletSummary
+        ? <section className="payment-stat-grid" aria-label={`${selectedCurrency} wallet summary`}>
+          <article className="payment-stat-card payment-stat-card--primary"><span>Available wallet balance · {selectedCurrency}</span><strong>{formatMoney(walletSummary.availableBalance, displayCurrency)}</strong><small>This is a wallet balance, not a withdrawal quote; withdrawal eligibility is checked separately.</small></article>
+          <article><span>Pending earnings · {selectedCurrency}</span><strong>{formatMoney(walletSummary.pendingEarnings, displayCurrency)}</strong><small>Secured until eligible contract release</small></article>
+          <article><span>Pending withdrawal · {selectedCurrency}</span><strong>{formatMoney(walletSummary.pendingWithdrawalBalance, displayCurrency)}</strong><small>Reserved for processing</small></article>
+          <article><span>Total earnings · {selectedCurrency}</span><strong>{formatMoney(walletSummary.totalEarnings, displayCurrency)}</strong><small>Credited wallet earnings</small></article>
+          <article><span>Total withdrawn · {selectedCurrency}</span><strong>{formatMoney(walletSummary.totalWithdrawn, displayCurrency)}</strong><small>Successful withdrawals</small></article>
+        </section>
+        : <section className="payment-empty payment-empty--wallet" role="status">
+          <strong>No {selectedCurrency} wallet is available</strong>
+          <p>Wallet balances will appear here when an eligible wallet has been provisioned.</p>
+        </section>}
+    {!summary?.conversionEnabled && <p className="payment-conversion-notice" role="status">Cross-currency contract releases are disabled. An escrow requiring conversion remains unreleased until an approved settlement route is available.</p>}
     {notice && <p className="payment-notice" role="status">{notice}</p>}
     <main className="payment-content-grid">
       <section className="payment-panel payment-panel--withdrawal" aria-labelledby="withdrawal-heading">
-        <div className="payment-heading"><div><span><FaArrowDown aria-hidden="true" /> Withdraw balance</span><h2 id="withdrawal-heading">Request a payout</h2></div><button type="button" className="payment-heading-action" onClick={openConfirmation} disabled={!currency || !withdrawalCapability || !hasValidAmount || !selectedPayoutAccount || isSubmitting}>Withdraw</button></div>
+        <div className="payment-heading"><div><span><FaArrowDown aria-hidden="true" /> Withdraw balance</span><h2 id="withdrawal-heading">Request a payout</h2></div><button type="button" className="payment-heading-action" onClick={openConfirmation} disabled={!withdrawalEnabled || !walletSummary || !hasValidAmount || !selectedPayoutAccount || isSubmitting}>Withdraw</button></div>
         <div className="payment-withdraw-box">
           <div className="payment-withdrawal-currency">
             <span>Withdrawal currency</span>
-            <strong>{!currency || payoutCapabilityError ? 'Currency unavailable' : withdrawalCapability ? formatPayoutCurrency(withdrawalCapability) : 'Withdrawals unavailable for this wallet currency'}</strong>
+            <strong>{!currency ? 'Currency unavailable' : paymentCapabilitiesError ? 'Withdrawal availability unavailable' : paymentCapabilities?.withdrawalsEnabled !== true ? 'Withdrawals temporarily disabled' : currency === 'USD' ? 'Withdrawals unavailable for this wallet currency' : payoutCapabilityError ? 'Payout availability unavailable' : !withdrawalCapability ? 'Withdrawals unavailable for this wallet currency' : formatPayoutCurrency(withdrawalCapability)}</strong>
             {!currency ? <small>Wallet currency unavailable. Withdrawals cannot be requested until it is available.</small>
-              : !withdrawalCapability ? <small>There is no enabled payout capability for this wallet currency.</small> : null}
+              : paymentCapabilitiesError ? <small>{paymentCapabilitiesError}</small>
+                : paymentCapabilities?.withdrawalsEnabled !== true ? <small>New withdrawal quotes and requests are disabled; existing withdrawal records are unchanged.</small>
+                  : currency === 'USD' ? <small>USD withdrawals remain disabled until provider settlement and compliance approval are verified.</small>
+                : payoutCapabilityError ? <small>We could not verify payout availability. Please retry before continuing.</small>
+                  : !withdrawalCapability ? <small>There is no enabled payout capability for this wallet currency.</small> : null}
           </div>
-          <div className="payment-balance-line"><span>Available to withdraw</span><strong>{formatMoney(summary?.availableBalance, displayCurrency)}</strong></div>
+          <div className="payment-balance-line"><span>Wallet balance</span><strong>{formatMoney(walletSummary?.availableBalance, displayCurrency)}</strong></div>
           <label htmlFor="withdrawal-amount">Amount<input id="withdrawal-amount" type="text" inputMode="decimal" value={amount} onChange={(event) => { setAmount(event.target.value); setFormError(''); }} placeholder="0.00" aria-invalid={Boolean(formError)} aria-describedby="withdrawal-help withdrawal-error" disabled={isSubmitting} /></label>
-          <label htmlFor="payout-account">Payout account<select id="payout-account" value={selectedPayoutAccountId} onChange={(event) => setSelectedPayoutAccountId(event.target.value)} disabled={isSubmitting || eligiblePayoutAccounts.length === 0}><option value="">Select a verified payout account</option>{eligiblePayoutAccounts.map((account) => <option value={account.id} key={account.id}>{account.bankName || 'Bank name unavailable'} · {account.maskedAccountNumber || `••••${account.accountNumberLast4}`} · Verified{account.isDefault ? ' (Default)' : ''}</option>)}</select></label>
-          <p id="withdrawal-help">{currency ? `Wallet currency: ${currency}. The amount will be reserved and remain pending processing.` : 'Wallet currency unavailable. The amount cannot be submitted for withdrawal.'}</p>
+          <label htmlFor="payout-account">Payout account<select id="payout-account" value={selectedPayoutAccountId} onChange={(event) => setSelectedPayoutAccountId(event.target.value)} disabled={isSubmitting || eligiblePayoutAccounts.length === 0}><option value="">Select an eligible payout account</option>{eligiblePayoutAccounts.map((account) => <option value={account.id} key={account.id}>{account.bankName || 'Bank name unavailable'} · {account.maskedAccountNumber || `••••${account.accountNumberLast4}`} · Eligible{account.isDefault ? ' (Default)' : ''}</option>)}</select></label>
+          <p id="withdrawal-help">{currency ? `Wallet currency: ${currency}. If withdrawals are enabled, the backend rechecks eligibility and reserves the amount only after confirmation.` : 'Wallet currency unavailable. The amount cannot be submitted for withdrawal.'}</p>
           {isLoadingWithdrawalQuote ? <p className="payment-copy" role="status">Calculating withdrawal charge…</p> : null}
           {withdrawalQuoteError ? <p className="payment-copy payment-copy--error" role="alert">{withdrawalQuoteError}</p> : null}
           {withdrawalQuote ? <div className="payment-withdrawal-quote" aria-live="polite">
@@ -493,7 +687,7 @@ function PaymentsPage() {
           {!sectionErrors.accounts && eligiblePayoutAccounts.length === 0 && <p className="payment-copy">No payout account matching your wallet currency is ready. Add one of the supported payout destinations below.</p>}
           {formError && <p id="withdrawal-error" className="payment-copy payment-copy--error" role="alert">{formError}</p>}
           {!formError && withdrawalButtonReason && <p className="payment-copy">{withdrawalButtonReason}</p>}
-          <button type="button" onClick={openConfirmation} disabled={!currency || !withdrawalCapability || !hasValidAmount || !selectedPayoutAccount || !withdrawalQuote || isLoadingWithdrawalQuote || isSubmitting}>{isSubmitting ? 'Submitting withdrawal...' : 'Review withdrawal'}</button>
+          <button type="button" onClick={openConfirmation} disabled={!withdrawalEnabled || !walletSummary || !hasValidAmount || !selectedPayoutAccount || !withdrawalQuote || isLoadingWithdrawalQuote || isSubmitting}>{isSubmitting ? 'Submitting withdrawal...' : 'Review withdrawal'}</button>
         </div>
       </section>
       <section className="payment-panel" aria-labelledby="account-heading">
@@ -503,7 +697,7 @@ function PaymentsPage() {
             <section className="payment-account-group" aria-labelledby="available-payout-accounts-heading">
               <div className="payment-account-group__heading">
                 <h3 id="available-payout-accounts-heading">Available payout accounts</h3>
-                <p>Verified accounts supported for current withdrawals.</p>
+                <p>Accounts whose destination details meet the currently supported payout requirements.</p>
               </div>
               <div className="payment-account-list">
                 {availablePayoutAccounts.length > 0 ? availablePayoutAccounts.map((account) => (
@@ -514,14 +708,14 @@ function PaymentsPage() {
                       <p>{account.accountName} · {account.provider} · {account.country || 'Country unavailable'} · {account.currency || 'Currency unavailable'}</p>
                     </div>
                     <div className="payment-account__actions">
-                      <span className="payment-status payment-status--verified">Verified · Ready for withdrawal{account.isDefault ? ' · Default' : ''}</span>
+                      <span className={`payment-status payment-status--${paymentCapabilities?.withdrawalsEnabled === true && withdrawalCapability?.withdrawalEnabled === true ? 'verified' : 'pending'}`}>{paymentCapabilities?.withdrawalsEnabled === true && withdrawalCapability?.withdrawalEnabled === true ? 'Eligible · Ready for withdrawal' : 'Eligible destination · new withdrawals disabled'}{account.isDefault ? ' · Default' : ''}</span>
                       <div className="payment-account__buttons">
                         <button type="button" className="payment-account__action" onClick={() => openPayoutSettings(account)}>Edit</button>
                         {!account.isDefault ? <button type="button" className="payment-account__action" onClick={() => setDefaultPayoutAccount(account.id)} disabled={isSavingPayout}>Make default</button> : null}
                       </div>
                     </div>
                   </article>
-                )) : <p className="payment-copy">No verified payout accounts are available for the current withdrawal capability.</p>}
+                )) :                 <p className="payment-copy">No payout accounts are available for the current withdrawal capability.</p>}
               </div>
             </section>
             {historicalPayoutAccounts.length > 0 ? (
@@ -562,9 +756,54 @@ function PaymentsPage() {
         </SectionState>
       </section>
     </main>
-    <section className="payment-panel" aria-labelledby="payments-heading"><div className="payment-heading"><div><span><FaReceipt aria-hidden="true" /> Earnings</span><h2 id="payments-heading">Job payment history</h2></div></div><SectionState error={sectionErrors.payments} empty="No payment activity yet."><div className="payment-list">{payments.length > 0 ? payments.map((payment) => <article className="payment-row payment-row--payment" key={payment.id}><div><strong>{payment.jobTitle || 'Payment activity'}</strong><p>{payment.employerName || 'Employer unavailable'} · {formatDate(payment.date)}</p></div><div><span className={`payment-status payment-status--${statusClass(payment.status)}`}>{statusLabel(payment.status)}</span><p>Payment status</p></div><div><strong>{formatMoney(payment.amount, payment.currency)}</strong><p>Gross amount</p></div><div><strong>{formatMoney(payment.platformFee, payment.currency)}</strong><p>Platform fee</p></div><div><strong>{formatMoney(payment.netAmount, payment.currency)}</strong><p>Net amount</p></div></article>) : <p className="payment-copy">No payment activity yet.</p>}</div></SectionState></section>
-    <section className="payment-panel" aria-labelledby="transactions-heading"><div className="payment-heading"><div><span><FaReceipt aria-hidden="true" /> Transactions</span><h2 id="transactions-heading">Wallet transaction history</h2></div></div><SectionState error={sectionErrors.transactions} empty="No wallet transactions yet."><div className="payment-list">{transactions.length > 0 ? transactions.map((transaction) => <article className="payment-row payment-row--transaction" key={transaction.id}><div><strong>{humanize(transaction.type)}</strong><p>{transaction.description || 'No description'} · {formatDate(transaction.createdAt)}</p></div><div><strong>{formatMoney(transaction.amount, transaction.currency)}</strong><p>{transaction.currency}</p></div><div><strong>{formatMoney(transaction.balanceAfter, transaction.currency)}</strong><p>Balance after</p></div></article>) : <p className="payment-copy">No wallet transactions yet.</p>}</div></SectionState></section>
-    <section className="payment-panel" aria-labelledby="withdrawals-heading"><div className="payment-heading"><div><span><FaArrowDown aria-hidden="true" /> Withdrawals</span><h2 id="withdrawals-heading">Withdrawal history</h2></div></div><SectionState error={sectionErrors.withdrawals} empty="No withdrawal requests yet."><div className="payment-list">{withdrawals.length > 0 ? withdrawals.map((withdrawal) => <article className="payment-row payment-row--withdrawal" key={withdrawal.id}><div><strong>{formatMoney(withdrawal.amount, withdrawal.currency)} request</strong><p>Requested {formatDate(withdrawal.requestedAt)} · {withdrawal.paymentMethod ? `${humanize(withdrawal.paymentMethod.type)} ···· ${withdrawal.paymentMethod.last4}` : 'Payment method unavailable'}</p></div><div><span className={`payment-status payment-status--${statusClass(withdrawal.status)}`}>{statusLabel(withdrawal.status)}</span><p>Status</p></div><div className="payment-date-list"><p>Charge ({withdrawal.withdrawalFeePercentage}%): {formatMoney(withdrawal.withdrawalFeeAmount, withdrawal.currency)}</p><p>Payout amount: {formatMoney(withdrawal.payoutAmount, withdrawal.currency)}</p><p>Processing: {formatDate(withdrawal.processingAt)}</p><p>Completed: {formatDate(withdrawal.completedAt)}</p><p>Failed: {formatDate(withdrawal.failedAt)}</p></div>{withdrawal.failureReason && <p className="payment-copy payment-copy--error">Failure reason: {withdrawal.failureReason}</p>}</article>) : <p className="payment-copy">No withdrawal requests yet.</p>}</div></SectionState></section>
+    <section className="payment-panel" aria-labelledby="payments-heading">
+      <div className="payment-heading"><div><span><FaReceipt aria-hidden="true" /> Earnings</span><h2 id="payments-heading">Job payment history</h2></div></div>
+      <SectionState error={sectionErrors.payments} empty="No payment activity yet.">
+        <div className="payment-list" aria-busy={loadingMore.payments}>
+          {payments.length > 0 ? payments.map((payment) => (
+            <article className="payment-row payment-row--payment" key={payment.id}>
+              <div><strong>{payment.jobTitle || 'Payment activity'}</strong><p>{payment.employerName || 'Employer unavailable'} · {formatDate(payment.date)}</p></div>
+              <div><span className={`payment-status payment-status--${statusClass(payment.status)}`}>{statusLabel(payment.status)}</span><p>Payment status</p></div>
+              <div><strong>{formatMoney(payment.amount, payment.currency)}</strong><p>Gross amount</p></div>
+              <div><strong>{formatMoney(payment.platformFee, payment.currency)}</strong><p>Platform fee</p></div>
+              <div><strong>{formatMoney(payment.netAmount, payment.currency)}</strong><p>Net amount</p></div>
+            </article>
+          )) : <p className="payment-copy">No payment activity yet.</p>}
+        </div>
+      </SectionState>
+      {nextCursors.payments && <button type="button" className="payment-load-more" onClick={() => void loadMore('payments')} disabled={loadingMore.payments}>{loadingMore.payments ? 'Loading…' : 'Load more payments'}</button>}
+    </section>
+    <section className="payment-panel" aria-labelledby="transactions-heading">
+      <div className="payment-heading"><div><span><FaReceipt aria-hidden="true" /> Transactions</span><h2 id="transactions-heading">Wallet transaction history</h2></div></div>
+      <SectionState error={sectionErrors.transactions} empty="No wallet transactions yet.">
+        <div className="payment-list" aria-busy={loadingMore.transactions}>
+          {transactions.length > 0 ? transactions.map((transaction) => (
+            <article className="payment-row payment-row--transaction" key={transaction.id}>
+              <div><strong>{humanize(transaction.type)}</strong><p>{transaction.description || 'No description'} · {formatDate(transaction.createdAt)}</p></div>
+              <div><strong>{formatMoney(transaction.amount, transaction.currency)}</strong><p>{transaction.currency}</p></div>
+              <div><strong>{formatMoney(transaction.balanceAfter, transaction.currency)}</strong><p>Balance after</p></div>
+            </article>
+          )) : <p className="payment-copy">No wallet transactions yet.</p>}
+        </div>
+      </SectionState>
+      {nextCursors.transactions && <button type="button" className="payment-load-more" onClick={() => void loadMore('transactions')} disabled={loadingMore.transactions}>{loadingMore.transactions ? 'Loading…' : 'Load more transactions'}</button>}
+    </section>
+    <section className="payment-panel" aria-labelledby="withdrawals-heading">
+      <div className="payment-heading"><div><span><FaArrowDown aria-hidden="true" /> Withdrawals</span><h2 id="withdrawals-heading">Withdrawal history</h2></div></div>
+      <SectionState error={sectionErrors.withdrawals} empty="No withdrawal requests yet.">
+        <div className="payment-list" aria-busy={loadingMore.withdrawals}>
+          {withdrawals.length > 0 ? withdrawals.map((withdrawal) => (
+            <article className="payment-row payment-row--withdrawal" key={withdrawal.id}>
+              <div><strong>{formatMoney(withdrawal.amount, withdrawal.currency)} request</strong><p>Requested {formatDate(withdrawal.requestedAt)} · {withdrawal.paymentMethod ? `${humanize(withdrawal.paymentMethod.type)} ···· ${withdrawal.paymentMethod.last4}` : 'Payment method unavailable'}</p></div>
+              <div><span className={`payment-status payment-status--${statusClass(withdrawal.status)}`}>{statusLabel(withdrawal.status)}</span><p>Status</p></div>
+              <div className="payment-date-list"><p>Charge ({withdrawal.withdrawalFeePercentage}%): {formatMoney(withdrawal.withdrawalFeeAmount, withdrawal.currency)}</p><p>Payout amount: {formatMoney(withdrawal.payoutAmount, withdrawal.currency)}</p><p>Processing: {formatDate(withdrawal.processingAt)}</p><p>Completed: {formatDate(withdrawal.completedAt)}</p><p>Failed: {formatDate(withdrawal.failedAt)}</p></div>
+              {withdrawal.failureReason && <p className="payment-copy payment-copy--error">Failure reason: {withdrawal.failureReason}</p>}
+            </article>
+          )) : <p className="payment-copy">No withdrawal requests yet.</p>}
+        </div>
+      </SectionState>
+      {nextCursors.withdrawals && <button type="button" className="payment-load-more" onClick={() => void loadMore('withdrawals')} disabled={loadingMore.withdrawals}>{loadingMore.withdrawals ? 'Loading…' : 'Load more withdrawals'}</button>}
+    </section>
     {showConfirmation && selectedPayoutAccount && withdrawalQuote && <div className="payment-modal-backdrop" role="presentation"><section className="payment-modal" role="dialog" aria-modal="true" aria-labelledby="withdrawal-confirmation-title" aria-describedby="withdrawal-confirmation-copy"><div className="payment-modal__header"><span><FaClock aria-hidden="true" /> Confirm withdrawal</span><button type="button" className="payment-modal__close" onClick={() => setShowConfirmation(false)} disabled={isSubmitting} aria-label="Close withdrawal confirmation">×</button></div><h2 id="withdrawal-confirmation-title">Review payout request</h2><p id="withdrawal-confirmation-copy" className="payment-copy">You are confirming the exact server-generated quote shown below.</p><div className="payment-modal__amount"><span>Withdrawal amount</span><strong>{formatMoney(withdrawalQuote.amount, withdrawalQuote.currency)}</strong></div><div className="payment-withdrawal-quote"><div><span>Withdrawal charge ({withdrawalQuote.withdrawalFeePercentage}%)</span><strong>{formatMoney(withdrawalQuote.withdrawalFeeAmount, withdrawalQuote.currency)}</strong></div><div><span>You’ll receive</span><strong>{formatMoney(withdrawalQuote.payoutAmount, withdrawalQuote.currency)}</strong></div></div><p>To: {selectedPayoutAccount.provider} ···· {selectedPayoutAccount.accountNumberLast4}</p><p>Available after request: {availableCents !== null && amountCents !== null ? formatMoney(centsToAmount(availableCents - amountCents), displayCurrency) : '-'}</p><p>The requested amount is reserved from your available balance; only the net payout is sent to your account.</p><div className="payment-actions"><button type="button" className="payment-button-secondary" onClick={() => setShowConfirmation(false)} disabled={isSubmitting}>Cancel</button><button type="button" onClick={submitWithdrawal} disabled={isSubmitting}>{isSubmitting ? 'Submitting withdrawal...' : 'Confirm withdrawal'}</button></div></section></div>}
 
     {showPayoutSettings && (
@@ -582,12 +821,30 @@ function PaymentsPage() {
           ) : (
             <form className="payment-payout-form" onSubmit={handleSavePayoutDetails} aria-busy={isSavingPayout}>
               <div className="payment-withdraw-box">
-                <label htmlFor="payout-country">Destination country<select id="payout-country" value={payoutCountry ?? ''} onChange={(event) => { setSelectedPayoutCountry(event.target.value); setPayoutForm(emptyPayoutForm); setPayoutBankSearch(''); setPayoutFormError(''); }} disabled={isSavingPayout || Boolean(editingPayoutAccountId)}><option value="">Select a supported destination</option>{payoutCapabilities.map((capability) => <option key={capability.countryCode} value={capability.country}>{capability.country}</option>)}</select></label>
+                <label htmlFor="payout-country">Destination country<select id="payout-country" value={payoutCountry ?? ''} onChange={(event) => { setSelectedPayoutCountry(event.target.value); setPayoutForm(emptyPayoutForm); setPayoutBankSearch(''); setPayoutFormError(''); }} disabled={isSavingPayout || Boolean(editingPayoutAccountId)}><option value="">Select a supported destination</option>{[...new Map(payoutCapabilities.filter((capability) => capability.destinationSetupEnabled !== false).map((capability) => [capability.country, capability])).values()].map((capability) => <option key={`${capability.countryCode}-${capability.currency}`} value={capability.country}>{capability.country} · {capability.currency}</option>)}</select></label>
                 <div className="payment-balance-line"><span>Country</span><strong>{payoutCountry}</strong></div>
                 <div className="payment-balance-line"><span>Payout method</span><strong>{payoutCapability.provider} bank account</strong></div>
                 <div className="payment-balance-line"><span>Currency</span><strong>{payoutCapability.currency}</strong></div>
                 {supportsBankAccount ? (
-                  <>
+                  isUsUsdPayout ? (
+                    <>
+                      <p className="payment-copy">Flutterwave requires these exact beneficiary banking and address details for international USD transfers. Details are encrypted and snapshotted when a withdrawal is reserved.</p>
+                      <label htmlFor="payout-beneficiary-name">Beneficiary full name<input id="payout-beneficiary-name" value={payoutForm.beneficiaryName} onChange={(event) => setPayoutForm((current) => ({ ...current, beneficiaryName: event.target.value }))} disabled={isSavingPayout} /></label>
+                      <label htmlFor="payout-account-number">US account number<input id="payout-account-number" inputMode="numeric" value={payoutForm.accountNumber} onChange={(event) => setPayoutForm((current) => ({ ...current, accountNumber: event.target.value }))} disabled={isSavingPayout} /></label>
+                      <label htmlFor="payout-routing-number">Routing number<input id="payout-routing-number" inputMode="numeric" value={payoutForm.routingNumber} onChange={(event) => setPayoutForm((current) => ({ ...current, routingNumber: event.target.value }))} disabled={isSavingPayout} /></label>
+                      <label htmlFor="payout-swift-code">SWIFT/BIC code<input id="payout-swift-code" value={payoutForm.swiftCode} onChange={(event) => setPayoutForm((current) => ({ ...current, swiftCode: event.target.value.toUpperCase() }))} disabled={isSavingPayout} /></label>
+                      <label htmlFor="payout-bank-name">Bank name<input id="payout-bank-name" value={payoutForm.bankName} onChange={(event) => setPayoutForm((current) => ({ ...current, bankName: event.target.value }))} disabled={isSavingPayout} /></label>
+                      <label htmlFor="payout-account-type">Account type<select id="payout-account-type" value={payoutForm.accountType} onChange={(event) => setPayoutForm((current) => ({ ...current, accountType: event.target.value as 'checking' | 'depository' }))} disabled={isSavingPayout}><option value="checking">Checking</option><option value="depository">Depository</option></select></label>
+                      <label htmlFor="payout-beneficiary-address">Beneficiary address<input id="payout-beneficiary-address" value={payoutForm.beneficiaryAddress} onChange={(event) => setPayoutForm((current) => ({ ...current, beneficiaryAddress: event.target.value }))} disabled={isSavingPayout} /></label>
+                      <label htmlFor="payout-street-number">Street number<input id="payout-street-number" value={payoutForm.streetNumber} onChange={(event) => setPayoutForm((current) => ({ ...current, streetNumber: event.target.value }))} disabled={isSavingPayout} /></label>
+                      <label htmlFor="payout-street-name">Street name<input id="payout-street-name" value={payoutForm.streetName} onChange={(event) => setPayoutForm((current) => ({ ...current, streetName: event.target.value }))} disabled={isSavingPayout} /></label>
+                      <label htmlFor="payout-city">City<input id="payout-city" value={payoutForm.city} onChange={(event) => setPayoutForm((current) => ({ ...current, city: event.target.value }))} disabled={isSavingPayout} /></label>
+                      <label htmlFor="payout-postal-code">ZIP / postal code<input id="payout-postal-code" value={payoutForm.postalCode} onChange={(event) => setPayoutForm((current) => ({ ...current, postalCode: event.target.value }))} disabled={isSavingPayout} /></label>
+                      <label htmlFor="payout-email">Beneficiary email (optional)<input id="payout-email" type="email" value={payoutForm.email} onChange={(event) => setPayoutForm((current) => ({ ...current, email: event.target.value }))} disabled={isSavingPayout} /></label>
+                      <label htmlFor="payout-mobile-number">Beneficiary mobile (optional)<input id="payout-mobile-number" value={payoutForm.mobileNumber} onChange={(event) => setPayoutForm((current) => ({ ...current, mobileNumber: event.target.value }))} disabled={isSavingPayout} /></label>
+                    </>
+                  ) : (
+                    <>
                 <div className="payment-bank-selector">
                   <label htmlFor="payout-bank-search">Bank</label>
                   <div className="payment-bank-search">
@@ -636,7 +893,8 @@ function PaymentsPage() {
                 </div>
                 <p className="payment-copy">Flutterwave will verify the account details and use the verified account name.</p>
                     <label htmlFor="payout-account-number">Account number{editingPayoutAccountId ? <small>Re-enter to replace the masked account ending {editingPayoutAccount?.accountNumberLast4}</small> : null}<input id="payout-account-number" inputMode="numeric" value={payoutForm.accountNumber} onChange={(event) => { setPayoutForm((current) => ({ ...current, accountNumber: event.target.value })); setPayoutFormError(''); }} disabled={isSavingPayout} /></label>
-                  </>
+                    </>
+                  )
                 ) : <p className="payment-copy">An enabled payout flow is not available for this destination.</p>}
                 {payoutFormError && <p className="payment-copy payment-copy--error" role="alert">{payoutFormError}</p>}
                 {payoutNotice && <p className="payment-notice" role="status">{payoutNotice}</p>}

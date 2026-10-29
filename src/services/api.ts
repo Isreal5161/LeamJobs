@@ -80,6 +80,20 @@ export const isAiRateLimitError = (status: number, error?: { code?: string; mess
 
 export type ApiResponse<T> = ApiSuccess<T> | ApiFailure;
 
+export type FreelancePaymentCapabilities = {
+  enabled: boolean;
+  contractFundingEnabled: boolean;
+  escrowReleaseEnabled: boolean;
+  withdrawalsEnabled: boolean;
+};
+
+export function getFreelancePaymentCapabilities() {
+  return request<{ success: true; data: FreelancePaymentCapabilities }>({
+    method: 'GET',
+    endpoint: '/public/capabilities/freelance-payments',
+  });
+}
+
 export type PagePagination = {
   page: number;
   limit: number;
@@ -1739,7 +1753,7 @@ export function getAdminAnalytics(token: string, query: { from?: string; to?: st
 
 export type AdminPaymentStatus = 'PENDING' | 'PROCESSING' | 'SUCCESSFUL' | 'FAILED' | 'CANCELLED' | 'REFUNDED';
 export type AdminPaymentType = 'SUBSCRIPTION' | 'CONTRACT_FUNDING' | 'OTHER';
-export type AdminPaymentProvider = 'FLUTTERWAVE' | 'OTHER';
+export type AdminPaymentProvider = 'FLUTTERWAVE' | 'PAYSTACK' | 'OTHER';
 
 export type AdminPayment = {
   id: string;
@@ -1751,12 +1765,14 @@ export type AdminPayment = {
   amount: string;
   currency: string;
   status: AdminPaymentStatus;
+  manualReviewRequired: boolean;
   verifiedAt: string | null;
   createdAt: string;
   updatedAt: string;
   context: {
     subscriptionId: string | null;
     subscriptionPlan: string | null;
+    subscriptionStatus: string | null;
     escrowId: string | null;
     contractId: string | null;
     jobId: string | null;
@@ -1777,6 +1793,29 @@ export type AdminPaymentsQuery = {
 };
 
 export type AdminPaymentsResponse = { success: true; data: { items: AdminPayment[]; nextCursor: string | null } };
+
+export type AdminConversionOperation = {
+  id: string;
+  escrowId: string;
+  seekerId: string;
+  sourceCurrency: string;
+  destinationCurrency: string;
+  sourceAmount: string;
+  convertedAmount: string | null;
+  status: 'BLOCKED' | 'QUOTED' | 'SUBMITTED' | 'UNCERTAIN' | 'CONFIRMED' | 'FAILED' | 'RECONCILIATION_REQUIRED';
+  statusReason: string | null;
+  providerTransactionId: string | null;
+  reconciliationAttempts: number;
+  createdAt: string;
+  updatedAt: string;
+  lastReconciledAt: string | null;
+  events: { id: string; actorUserId: string | null; eventType: string; fromStatus: string | null; toStatus: string; reason: string | null; createdAt: string }[];
+};
+
+export type AdminConversionOperationsResponse = {
+  success: true;
+  data: { items: AdminConversionOperation[]; nextCursor: string | null };
+};
 
 export type AdminPlatformFeeConfiguration = {
   key: string;
@@ -1812,6 +1851,17 @@ export function getAdminPayments(token: string, query: AdminPaymentsQuery = {}) 
   if (query.search?.trim()) params.set('search', query.search.trim());
   const queryString = params.toString();
   return request<AdminPaymentsResponse>({ method: 'GET', endpoint: `/admin/payments${queryString ? `?${queryString}` : ''}`, token });
+}
+
+export function getAdminConversionOperations(token: string, query: { status?: AdminConversionOperation['status'] | ''; staleMinutes?: number } = {}) {
+  const params = new URLSearchParams({ limit: '50' });
+  if (query.status) params.set('status', query.status);
+  if (query.staleMinutes) params.set('staleMinutes', String(query.staleMinutes));
+  return request<AdminConversionOperationsResponse>({
+    method: 'GET',
+    endpoint: `/admin/conversion-operations?${params.toString()}`,
+    token,
+  });
 }
 
 export type AdminSubscriptionPlan = {
@@ -2136,6 +2186,40 @@ export type AdminReleaseCandidate = {
       platformFeeAmount: string;
       seekerNetAmount: string;
       status: string;
+      fundingVerified: boolean;
+      fundingState: 'VERIFIED_FUNDED' | 'UNFUNDED' | 'PENDING_OR_UNVERIFIED' | 'MANUAL_REVIEW' | 'DISPUTE_REVIEW' | 'REFUND_REVIEW';
+      matchedFundingPayment: {
+        id: string;
+        provider: AdminPaymentProvider;
+        providerReference: string;
+        transactionId: string;
+        amount: string;
+        currency: string;
+        status: string;
+        verifiedAt: string;
+      } | null;
+      fundingPayments: Array<{
+        id: string;
+        provider: AdminPaymentProvider;
+        providerReference: string;
+        transactionId: string | null;
+        amount: string;
+        currency: string;
+        status: string;
+        verifiedAt: string | null;
+      }>;
+      disputes: Array<{ id: string; status: string; openedAt: string }>;
+      refunds: Array<{
+        id: string;
+        amount: string;
+        currency: string;
+        provider: AdminPaymentProvider;
+        providerReference: string | null;
+        status: string;
+        requestedAt: string;
+      }>;
+      refundedAmount: string;
+      manualReviewIndicators: string[];
       releaseEligibleAt: string | null;
       releasedAmount: string;
       releasedAt: string | null;
@@ -2304,6 +2388,7 @@ export type ContractPayment = {
   id: string;
   amount: string;
   currency: string;
+  transactionId: string | null;
   status: string;
   paymentType: string;
   provider?: string | null;
@@ -2947,6 +3032,15 @@ export type SeekerPaymentSummary = {
   pendingEarnings: string;
   totalEarnings: string;
   totalWithdrawn: string;
+  wallets: {
+    currency: string;
+    availableBalance: string;
+    pendingWithdrawalBalance: string;
+    pendingEarnings: string;
+    totalEarnings: string;
+    totalWithdrawn: string;
+  }[];
+  conversionEnabled: false;
 };
 
 export type SeekerPaymentItem = {
@@ -2996,16 +3090,22 @@ export function getSeekerPaymentSummary(token: string) {
   return request<SeekerPaymentPageResponse<SeekerPaymentSummary>>({ method: 'GET', endpoint: '/seeker/payments/summary', token });
 }
 
-export function getSeekerPayments(token: string) {
-  return request<SeekerPaymentPageResponse<{ items: SeekerPaymentItem[]; nextCursor: string | null }>>({ method: 'GET', endpoint: '/seeker/payments?limit=25', token });
+export function getSeekerPayments(token: string, currency = 'NGN', cursor?: string) {
+  const params = new URLSearchParams({ limit: '25', currency });
+  if (cursor) params.set('cursor', cursor);
+  return request<SeekerPaymentPageResponse<{ items: SeekerPaymentItem[]; nextCursor: string | null }>>({ method: 'GET', endpoint: `/seeker/payments?${params.toString()}`, token });
 }
 
-export function getSeekerTransactions(token: string) {
-  return request<SeekerPaymentPageResponse<{ items: SeekerTransactionItem[]; nextCursor: string | null }>>({ method: 'GET', endpoint: '/seeker/payments/transactions?limit=25', token });
+export function getSeekerTransactions(token: string, currency = 'NGN', cursor?: string) {
+  const params = new URLSearchParams({ limit: '25', currency });
+  if (cursor) params.set('cursor', cursor);
+  return request<SeekerPaymentPageResponse<{ items: SeekerTransactionItem[]; nextCursor: string | null }>>({ method: 'GET', endpoint: `/seeker/payments/transactions?${params.toString()}`, token });
 }
 
-export function getSeekerWithdrawals(token: string) {
-  return request<SeekerPaymentPageResponse<{ items: SeekerWithdrawalItem[]; nextCursor: string | null }>>({ method: 'GET', endpoint: '/seeker/payments/withdrawals?limit=25', token });
+export function getSeekerWithdrawals(token: string, currency = 'NGN', cursor?: string) {
+  const params = new URLSearchParams({ limit: '25', currency });
+  if (cursor) params.set('cursor', cursor);
+  return request<SeekerPaymentPageResponse<{ items: SeekerWithdrawalItem[]; nextCursor: string | null }>>({ method: 'GET', endpoint: `/seeker/payments/withdrawals?${params.toString()}`, token });
 }
 
 export type SeekerPayoutAccount = {
@@ -3046,6 +3146,10 @@ export type SeekerPayoutCapability = {
   verifiedBeforeWithdrawal: boolean;
   bankListAvailable: boolean;
   requiredFields: string[];
+  route?: string;
+  withdrawalEnabled?: boolean;
+  destinationSetupEnabled?: boolean;
+  unavailableReason?: string;
 };
 
 export function getSeekerPayoutCapabilities(token: string) {
@@ -3066,8 +3170,21 @@ export function getSeekerPayoutBanks(countryCode: string, token: string) {
 
 export type CreateSeekerPayoutAccountPayload = {
   country: string;
+  currency?: 'NGN' | 'USD';
   bankCode?: string;
   accountNumber?: string;
+  routingNumber?: string;
+  swiftCode?: string;
+  bankName?: string;
+  accountType?: 'checking' | 'depository';
+  beneficiaryName?: string;
+  beneficiaryAddress?: string;
+  postalCode?: string;
+  streetNumber?: string;
+  streetName?: string;
+  city?: string;
+  email?: string;
+  mobileNumber?: string;
   isDefault?: boolean;
 };
 

@@ -16,6 +16,7 @@ import {
   getAdminContract,
   getEmployerContract,
   getSeekerContract,
+  getFreelancePaymentCapabilities,
   initializeAdminContractPayment,
   initializeEmployerContractPayment,
   submitSeekerCompletion,
@@ -26,6 +27,7 @@ import {
   verifyEmployerContractPayment,
   type ContractData,
   type ContractActivity,
+  type FreelancePaymentCapabilities,
 } from '../../services/api';
 import {
   areContractFundingTermsValid,
@@ -115,6 +117,27 @@ const getFundingSummary = (
     model,
   };
 };
+const hasVerifiedEscrowFunding = (contract: ContractData) => {
+  const freelance = contract.freelance;
+  const escrow = freelance?.escrow;
+  if (!freelance || !escrow?.fundedAt || !hasSuccessfulContractFundingPayment(escrow.payments)) return false;
+  const fundingSummary = getFundingSummary(freelance, contract.funding, escrow);
+  const expectedPaymentAmount = amountInMinorUnits(fundingSummary.totalAmount);
+  const grossAmount = amountInMinorUnits(escrow.grossAmount);
+  const fundedAmount = amountInMinorUnits(escrow.fundedAmount);
+  if (fundingSummary.model === 'UNKNOWN'
+    || expectedPaymentAmount === null
+    || grossAmount === null
+    || fundedAmount !== grossAmount) return false;
+  return Boolean(escrow.payments?.some((payment) => (
+    payment.paymentType === 'CONTRACT_FUNDING'
+    && payment.status === 'SUCCESSFUL'
+    && Boolean(payment.verifiedAt)
+    && Boolean(payment.transactionId?.trim())
+    && payment.currency === freelance.currency
+    && amountInMinorUnits(payment.amount) === expectedPaymentAmount
+  )));
+};
 const statusLabel = (contract: ContractData) => {
   const escrowStatus = contract.freelance?.escrow?.status;
   const workStatus = contract.freelance?.workStatus;
@@ -136,6 +159,8 @@ function ContractPage({ role }: ContractPageProps) {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [contract, setContract] = useState<ContractData | null>(null);
+  const [paymentCapabilities, setPaymentCapabilities] = useState<FreelancePaymentCapabilities | null>(null);
+  const [paymentCapabilitiesError, setPaymentCapabilitiesError] = useState('');
   const [activities, setActivities] = useState<ContractActivity[]>([]);
   const [activityError, setActivityError] = useState('');
   const [progressDescription, setProgressDescription] = useState('');
@@ -159,6 +184,25 @@ function ContractPage({ role }: ContractPageProps) {
   const transactionId = searchParams.get('transaction_id');
   const providerReference = searchParams.get('tx_ref');
   const returnStatus = searchParams.get('status');
+
+  useEffect(() => {
+    let active = true;
+    void getFreelancePaymentCapabilities().then((result) => {
+      if (!active) return;
+      if (result.ok) {
+        setPaymentCapabilities(result.data.data);
+        setPaymentCapabilitiesError('');
+      } else {
+        setPaymentCapabilities(null);
+        setPaymentCapabilitiesError('Payment availability could not be confirmed. New contract funding is disabled for safety.');
+      }
+    }).catch(() => {
+      if (!active) return;
+      setPaymentCapabilities(null);
+      setPaymentCapabilitiesError('Payment availability could not be confirmed. New contract funding is disabled for safety.');
+    });
+    return () => { active = false; };
+  }, []);
 
   useEffect(() => {
     if (!showCancellationConfirmation) return;
@@ -185,7 +229,10 @@ function ContractPage({ role }: ContractPageProps) {
     if (result.ok) {
       setContract(result.data.data.contract);
       setNote(result.data.data.contract.freelance?.completionNote ?? '');
-      setAlreadyFunded(['FUNDED', 'RELEASE_ELIGIBLE', 'RELEASED'].includes(result.data.data.contract.freelance?.escrow?.status ?? ''));
+      setAlreadyFunded(
+        ['FUNDED', 'RELEASE_ELIGIBLE', 'RELEASED'].includes(result.data.data.contract.freelance?.escrow?.status ?? '')
+        && hasVerifiedEscrowFunding(result.data.data.contract),
+      );
       setError('');
       if (role !== 'ADMIN') {
         const activityResult = await getContractActivities(contractId, role, token);
@@ -256,8 +303,9 @@ function ContractPage({ role }: ContractPageProps) {
       const escrow = verifiedContract.freelance?.escrow;
       setContract(verifiedContract);
       const funded = payment.status === 'SUCCESSFUL'
-        && ['FUNDED', 'RELEASE_ELIGIBLE', 'RELEASED'].includes(escrow?.status ?? '');
-      setAlreadyFunded(['FUNDED', 'RELEASE_ELIGIBLE', 'RELEASED'].includes(escrow?.status ?? ''));
+        && ['FUNDED', 'RELEASE_ELIGIBLE', 'RELEASED'].includes(escrow?.status ?? '')
+        && hasVerifiedEscrowFunding(verifiedContract);
+      setAlreadyFunded(funded);
 
       if (funded) {
         setMessage('Payment verified and escrow funded.');
@@ -266,6 +314,8 @@ function ContractPage({ role }: ContractPageProps) {
         next.delete('tx_ref');
         next.delete('status');
         setSearchParams(next, { replace: true });
+      } else if (payment.status === 'SUCCESSFUL') {
+        setMessage('The provider confirmed this payment, but the escrow funding record could not be verified. Manual review is required before any release.');
       } else if (payment.status === 'FAILED') {
         setMessage('The backend confirmed that this payment failed. You can try funding again.');
         const next = new URLSearchParams(searchParams);
@@ -313,9 +363,10 @@ function ContractPage({ role }: ContractPageProps) {
         : await initializeEmployerContractPayment(contractId, token, idempotencyKey);
       if (!result.ok) {
         if (result.error.message.toLowerCase().includes('already funded')) {
-          setAlreadyFunded(true);
+          setAlreadyFunded(false);
           setError('');
-          setMessage('Payment already completed. This contract has already been funded.');
+          setMessage('The escrow reports existing funding activity. Refreshing its verified payment status.');
+          await loadContract();
         } else {
           setError('Payment could not be started. Please try again.');
           setMessage('');
@@ -367,7 +418,10 @@ function ContractPage({ role }: ContractPageProps) {
       }
       const updatedContract = result.data.data.contract;
       setContract(updatedContract);
-      setAlreadyFunded(['FUNDED', 'RELEASE_ELIGIBLE', 'RELEASED'].includes(updatedContract.freelance?.escrow?.status ?? ''));
+      setAlreadyFunded(
+        ['FUNDED', 'RELEASE_ELIGIBLE', 'RELEASED'].includes(updatedContract.freelance?.escrow?.status ?? '')
+        && hasVerifiedEscrowFunding(updatedContract),
+      );
       setMessage(updatedContract.status === 'ACTIVE'
         ? 'Both parties confirmed. The contract is active and eligible funding is now available to the employer.'
         : 'Your confirmation was saved. The contract will activate after the other party confirms.');
@@ -544,9 +598,14 @@ function ContractPage({ role }: ContractPageProps) {
 
   const freelance = contract.freelance;
   const escrow = freelance.escrow;
-  const isFunded = escrow?.status === 'FUNDED';
-  const isReleaseEligible = escrow?.status === 'RELEASE_ELIGIBLE';
-  const isReleased = escrow?.status === 'RELEASED';
+  const fundingSummary = getFundingSummary(freelance, contract.funding, escrow);
+  const isVerifiedFundedEscrow = hasVerifiedEscrowFunding(contract);
+  const isFunded = escrow?.status === 'FUNDED' && isVerifiedFundedEscrow;
+  const isReleaseEligible = escrow?.status === 'RELEASE_ELIGIBLE' && isVerifiedFundedEscrow;
+  const isReleased = escrow?.status === 'RELEASED' && isVerifiedFundedEscrow;
+  const paymentNeedsReview = ['FUNDED', 'RELEASE_ELIGIBLE', 'RELEASED'].includes(escrow?.status ?? '')
+    && !isVerifiedFundedEscrow;
+  const escrowStatusLabel = paymentNeedsReview ? 'Payment verification review' : escrow?.status ?? contract.status;
   const canCancelContract = role === 'EMPLOYER'
     && user?.role === 'EMPLOYER'
     && user.id === contract.employerId
@@ -564,9 +623,8 @@ function ContractPage({ role }: ContractPageProps) {
     employerConfirmedAt: freelance.employerConfirmedAt,
     seekerConfirmedAt: freelance.seekerConfirmedAt,
   });
-  const fundingSummary = getFundingSummary(freelance, contract.funding, escrow);
-  const hasSuccessfulFundingPayment = hasSuccessfulContractFundingPayment(escrow?.payments);
-  const hasCompletedFunding = alreadyFunded || hasSuccessfulFundingPayment;
+  const hasCompletedFunding = alreadyFunded || isVerifiedFundedEscrow;
+  const contractFundingEnabled = paymentCapabilities?.contractFundingEnabled === true;
   const canShowFundingAction = canShowContractFundingAction({
     role,
     contractType: contract.type,
@@ -590,8 +648,8 @@ function ContractPage({ role }: ContractPageProps) {
     },
     {
       label: 'Payment funded',
-      date: escrow?.fundedAt ?? null,
-      complete: ['FUNDED', 'RELEASE_ELIGIBLE', 'RELEASED'].includes(escrow?.status ?? ''),
+      date: isVerifiedFundedEscrow ? escrow?.fundedAt ?? null : null,
+      complete: isVerifiedFundedEscrow,
     },
     {
       label: 'Work in progress',
@@ -623,7 +681,7 @@ function ContractPage({ role }: ContractPageProps) {
   return (
     <main className="contract-page">
       <button type="button" className="contract-back" onClick={() => navigate(role === 'EMPLOYER' ? '/employer/contracts' : role === 'ADMIN' ? `/admin/jobs/${contract?.job.id ?? ''}/applicants` : '/seeker/applications')}><FaArrowLeft /> {role === 'EMPLOYER' ? 'Back to My Contracts' : 'Back to applications'}</button>
-      <header className="contract-header"><div><span className="contract-eyebrow">{isContractJob ? 'Contract Job' : 'Freelance Project'}</span><h1>{contract.job.title}</h1><p>{role === 'EMPLOYER' ? `${isContractJob ? 'Securing this contract' : 'Funding this project'} for ${displayName(contract.seeker)}` : role === 'ADMIN' ? `${isContractJob ? 'Managing this contract' : 'Managing this project'} for ${displayName(contract.seeker)}` : `${isContractJob ? 'Contract Job with' : 'Project with'} ${displayName(contract.employer)}`}</p></div><span className={`contract-status contract-status--${(escrow?.status ?? contract.status).toLowerCase()}`}>{statusLabel(contract)}</span></header>
+      <header className="contract-header"><div><span className="contract-eyebrow">{isContractJob ? 'Contract Job' : 'Freelance Project'}</span><h1>{contract.job.title}</h1><p>{role === 'EMPLOYER' ? `${isContractJob ? 'Securing this contract' : 'Funding this project'} for ${displayName(contract.seeker)}` : role === 'ADMIN' ? `${isContractJob ? 'Managing this contract' : 'Managing this project'} for ${displayName(contract.seeker)}` : `${isContractJob ? 'Contract Job with' : 'Project with'} ${displayName(contract.employer)}`}</p></div><span className={`contract-status contract-status--${(paymentNeedsReview ? 'review' : escrow?.status ?? contract.status).toLowerCase()}`}>{paymentNeedsReview ? escrowStatusLabel : statusLabel(contract)}</span></header>
       {contract.type === 'FREELANCE_PROJECT' && contract.status === 'PENDING' ? (
         <section className="contract-panel" aria-live="polite">
           <div className="contract-panel-heading"><FaCheckCircle /><div><h2>Confirm project terms</h2><p>Either party may confirm these terms. The employer can fund the project now; funding does not require the other party to confirm first.</p></div></div>
@@ -839,7 +897,7 @@ function ContractPage({ role }: ContractPageProps) {
           </div>
         </article>
         <article className="contract-panel">
-          <div className="contract-panel-heading"><FaCreditCard /><div><h2>Protected payment</h2><p>{isReleased ? 'Funds have been released for this project.' : isFunded ? 'Payment is secured and held by LeamJobs until completion and release.' : isReleaseEligible ? 'Funds are ready for admin release.' : 'Payment is held securely by LeamJobs. It is not released to the seeker until the approved completion and release process.'}</p></div></div>
+          <div className="contract-panel-heading"><FaCreditCard /><div><h2>Protected payment</h2><p>{paymentNeedsReview ? 'The escrow status does not have a matching verified provider payment. The payment needs manual review.' : isReleased ? 'Funds have been released for this project.' : isFunded ? 'Payment is secured and held by LeamJobs until completion and release.' : isReleaseEligible ? 'Funds are ready for admin release.' : 'Payment is held securely by LeamJobs. It is not released to the seeker until the approved completion and release process.'}</p></div></div>
           <div className="contract-escrow-status"><strong>{escrow?.status ?? 'UNFUNDED'}</strong><span>{escrow?.fundedAt ? `Funded ${new Date(escrow.fundedAt).toLocaleDateString()}` : 'Waiting for employer payment'}</span>{isReleased ? <span>Funds released to the seeker wallet.</span> : null}{escrow?.payments?.length ? <span>Payment status: {escrow.payments[0].status}</span> : null}</div>
           {canCancelContract ? <div className="contract-cancellation-action">
             <p>This contract has no recorded payment attempt or financial activity. Cancelling it also rejects the selected application and makes the selection available for a replacement.</p>
@@ -858,9 +916,10 @@ function ContractPage({ role }: ContractPageProps) {
                     ? `This contract uses its saved historical terms: the funding charge is deducted from the agreed project amount. The employer payment is ${formatMoney(fundingSummary.totalAmount, freelance.currency)} and the seeker entitlement is ${formatMoney(freelance.seekerNetAmount, freelance.currency)}.`
                     : 'The saved funding terms are incomplete or inconsistent, so payment cannot be safely confirmed from this page.'}</p>
               </div>}
-              <button type="button" className="button button--primary contract-action" onClick={() => { if (!showFundingReview) { setShowFundingReview(true); return; } void confirmFunding(); }} disabled={isMutating || isVerifyingReturn || (showFundingReview && fundingSummary.model === 'UNKNOWN')}>
-                <FaCreditCard /> {isMutating ? 'Preparing secure payment...' : isVerifyingReturn ? 'Verifying payment...' : showFundingReview ? `Confirm & Pay ${formatMoney(fundingSummary.totalAmount, freelance.currency)}` : 'Secure payment'}
+              <button type="button" className="button button--primary contract-action" onClick={() => { if (!showFundingReview) { setShowFundingReview(true); return; } void confirmFunding(); }} disabled={!contractFundingEnabled || isMutating || isVerifyingReturn || (showFundingReview && fundingSummary.model === 'UNKNOWN')}>
+                <FaCreditCard /> {!contractFundingEnabled ? 'Funding unavailable' : isMutating ? 'Preparing secure payment...' : isVerifyingReturn ? 'Verifying payment...' : showFundingReview ? `Confirm & Pay ${formatMoney(fundingSummary.totalAmount, freelance.currency)}` : 'Secure payment'}
               </button>
+              {!contractFundingEnabled ? <p className="contract-muted" role="status">{paymentCapabilitiesError || 'New contract funding is temporarily disabled. Existing payment history and verification remain available.'}</p> : null}
               {showFundingReview && fundingSummary.model === 'UNKNOWN' ? <p className="contract-error" role="alert">Funding details are unavailable or inconsistent. Please contact support before paying.</p> : null}
               {showFundingReview ? <button type="button" className="button button--secondary contract-action contract-action--secondary" onClick={() => setShowFundingReview(false)} disabled={isMutating}>Back</button> : null}
             </>

@@ -59,10 +59,18 @@ type FundingTermsValidationInput = {
 };
 
 export function hasSuccessfulContractFundingPayment(
-  payments: Array<{ paymentType?: string | null; status?: string | null }> | null | undefined,
+  payments: Array<{
+    paymentType?: string | null;
+    status?: string | null;
+    transactionId?: string | null;
+    verifiedAt?: string | null;
+  }> | null | undefined,
 ): boolean {
   return Boolean(payments?.some(
-    (payment) => payment.paymentType === 'CONTRACT_FUNDING' && payment.status === 'SUCCESSFUL',
+    (payment) => payment.paymentType === 'CONTRACT_FUNDING'
+      && payment.status === 'SUCCESSFUL'
+      && Boolean(payment.verifiedAt)
+      && Boolean(payment.transactionId?.trim()),
   ));
 }
 

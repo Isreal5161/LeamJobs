@@ -24,7 +24,10 @@ function SubscriptionPaymentResultPage() {
   const plansRef = useRef(plans);
   plansRef.current = plans;
 
-  const providerReference = searchParams.get('tx_ref') ?? searchParams.get('providerReference') ?? undefined;
+  const providerReference = searchParams.get('reference')
+    ?? searchParams.get('tx_ref')
+    ?? searchParams.get('providerReference')
+    ?? undefined;
   const transactionId = searchParams.get('transaction_id') ?? searchParams.get('transactionId') ?? undefined;
   const planKey = (searchParams.get('plan') ?? '').trim().toUpperCase();
 
@@ -170,7 +173,7 @@ function SubscriptionPaymentResultPage() {
         <span className="seeker-subscription-eyebrow"><FaLock aria-hidden="true" /> Secure payment confirmation</span>
         {resultState === 'verifying' ? <>
           <h1>Verifying your payment</h1>
-          <p>Flutterwave is confirming your transaction. Subscription access is granted only after server verification.</p>
+          <p>Paystack is confirming your transaction. Subscription access is granted only after server verification.</p>
           <span className="subscription-result-progress"><FaSpinner className="subscription-spin" aria-hidden="true" /> Checking payment securely…</span>
         </> : null}
         {resultState === 'success' ? <>
