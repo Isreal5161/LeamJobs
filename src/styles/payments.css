@@ -244,6 +244,11 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 1fr));
 }
 
+.payment-page:not(.admin-payments-page) .payment-stat-grid > article > strong {
+  font-size: clamp(1rem, 2vw, 1.35rem);
+  white-space: nowrap;
+}
+
 .payment-page:not(.admin-payments-page) .payment-row {
   grid-template-columns: minmax(0, 1.5fr) repeat(3, minmax(0, 1fr));
 }
@@ -307,6 +312,10 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
 @media (max-width: 767px) {
   .payment-page:not(.admin-payments-page) {
     max-width: 520px;
+  }
+
+  .payment-page:not(.admin-payments-page) .payment-stat-grid {
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .payment-page:not(.admin-payments-page) .payment-row,
