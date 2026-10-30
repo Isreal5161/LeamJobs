@@ -85,6 +85,7 @@ export type FreelancePaymentCapabilities = {
   contractFundingEnabled: boolean;
   escrowReleaseEnabled: boolean;
   withdrawalsEnabled: boolean;
+  usdWithdrawalsEnabled: boolean;
 };
 
 export function getFreelancePaymentCapabilities() {
