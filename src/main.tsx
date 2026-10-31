@@ -40,6 +40,7 @@ import './styles/email-preferences.css';
 import './styles/admin-communications.css';
 import './styles/job-updates-popup.css';
 import './styles/public-seo.css';
+import './styles/legal-cookie-consent.css';
 
 function MarkAppReady() {
   useLayoutEffect(() => {

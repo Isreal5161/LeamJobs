@@ -3,6 +3,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import Button from '../../components/common/Button';
 import Input from '../../components/common/Input';
 import { request } from '../../services/api';
+import { TERMS_POLICY_VERSION, PRIVACY_POLICY_VERSION } from '../../utils/legalVersions';
 import { FaBriefcase, FaBuilding, FaCheck, FaEnvelope, FaEye, FaEyeSlash, FaGoogle, FaLock, FaUser } from 'react-icons/fa';
 
 type AuthRole = 'seeker' | 'employer';
@@ -22,7 +23,7 @@ const authContent = {
     emailLabel: 'Email address',
     emailPlaceholder: 'you@example.com',
     companyLabel: '',
-    terms: 'I agree to receive job alerts and product updates.',
+    terms: 'I have read and agree to the Terms and Conditions.',
     submitLabel: 'Create account',
     switchText: 'Already have an account?',
     switchLink: 'Sign in',
@@ -43,7 +44,7 @@ const authContent = {
     emailLabel: 'Work email',
     emailPlaceholder: 'hiring@company.com',
     companyLabel: 'Company name',
-    terms: 'I agree to receive applicant updates and hiring product emails.',
+    terms: 'I have read and agree to the Terms and Conditions.',
     submitLabel: 'Create employer account',
     switchText: 'Already hiring here?',
     switchLink: 'Sign in',
@@ -64,6 +65,7 @@ type RegistrationForm = {
   password: string;
   confirmPassword: string;
   termsAccepted: boolean;
+  privacyAccepted: boolean;
 };
 
 type RegistrationErrors = Record<string, string>;
@@ -94,6 +96,7 @@ function SignUpPage({ role = 'seeker' }: SignUpPageProps) {
     password: '',
     confirmPassword: '',
     termsAccepted: false,
+    privacyAccepted: false,
   });
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -124,7 +127,8 @@ function SignUpPage({ role = 'seeker' }: SignUpPageProps) {
     const passwordError = getPasswordError(form.password);
     if (passwordError) nextErrors.password = passwordError;
     if (form.password !== form.confirmPassword) nextErrors.confirmPassword = 'Passwords do not match.';
-    if (!form.termsAccepted) nextErrors.terms = 'Accept the terms to create your account.';
+    if (!form.termsAccepted) nextErrors.terms = 'Accept the Terms and Conditions to create your account.';
+    if (!form.privacyAccepted) nextErrors.privacy = 'Acknowledge the Privacy Policy to create your account.';
 
     if (Object.keys(nextErrors).length > 0) {
       setErrors(nextErrors);
@@ -141,6 +145,10 @@ function SignUpPage({ role = 'seeker' }: SignUpPageProps) {
       password: form.password,
       ...(form.phone.trim() ? { phone: form.phone.trim() } : {}),
       role: roleValues[role],
+      termsAccepted: true,
+      privacyAccepted: true,
+      acceptedTermsVersion: TERMS_POLICY_VERSION,
+      acceptedPrivacyVersion: PRIVACY_POLICY_VERSION,
     };
 
     const result = await request<{ id: string }>({
@@ -348,9 +356,11 @@ function SignUpPage({ role = 'seeker' }: SignUpPageProps) {
                 onChange={(event) => setField('termsAccepted', event.target.checked)}
                 aria-invalid={Boolean(errors.terms)}
               />
-              <span>{content.terms}</span>
+              <span>{content.terms} <Link to="/terms">Read the Terms</Link></span>
             </label>
             {errors.terms ? <small role="alert">{errors.terms}</small> : null}
+            <label className="auth-check auth-check--terms"><input type="checkbox" name="privacyAccepted" checked={form.privacyAccepted} onChange={(event) => setField('privacyAccepted', event.target.checked)} aria-invalid={Boolean(errors.privacy)} /><span>I acknowledge that I have read the <Link to="/privacy">Privacy Policy</Link>.</span></label>
+            {errors.privacy ? <small role="alert">{errors.privacy}</small> : null}
 
             <Button type="submit" variant="primary" fullWidth className="auth-submit" disabled={isSubmitting}>
               {isSubmitting ? 'Creating account...' : content.submitLabel}

@@ -147,6 +147,11 @@ export type EmailPreferences = {
   transactionalEmailsEnabled: true;
 };
 
+export type LegalAcceptanceStatus = {
+  terms: { version: string; acceptedAt: string | null };
+  privacy: { version: string; acceptedAt: string | null };
+};
+
 export type SeekerDashboardProfile = {
   id: string;
   firstName: string;
@@ -1519,6 +1524,26 @@ export function updateEmailPreferences(token: string, marketingEmailsEnabled: bo
     method: 'PATCH',
     endpoint: '/auth/email-preferences',
     body: { marketingEmailsEnabled },
+    token,
+  });
+}
+
+export function getLegalAcceptanceStatus(token: string) {
+  return request<{ success: true; data: LegalAcceptanceStatus }>({
+    method: 'GET',
+    endpoint: '/auth/legal-acceptances',
+    token,
+  });
+}
+
+export function acceptCurrentLegalDocuments(
+  token: string,
+  acceptance: { termsAccepted: true; privacyAccepted: true; acceptedTermsVersion: string; acceptedPrivacyVersion: string },
+) {
+  return request<{ success: true; data: LegalAcceptanceStatus }>({
+    method: 'POST',
+    endpoint: '/auth/legal-acceptances',
+    body: acceptance,
     token,
   });
 }

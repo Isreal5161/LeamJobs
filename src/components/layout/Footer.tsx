@@ -1,6 +1,7 @@
 import { FormEvent, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { subscribeToJobUpdates } from '../../services/api';
+import { OPEN_COOKIE_SETTINGS_EVENT } from '../../utils/cookieConsent';
 import Logo from './Logo';
 
 type FooterProps = {
@@ -35,6 +36,15 @@ function Footer({ variant = 'full' }: FooterProps) {
             <Link to="/companies">Companies</Link>
             <Link to="/how-it-works">How it works</Link>
             <Link to="/contact">Contact</Link>
+          </nav>
+          <nav aria-label="Legal navigation">
+            <Link to="/privacy">Privacy</Link>
+            <Link to="/terms">Terms</Link>
+            <Link to="/cookies">Cookies</Link>
+            <Link to="/payment-policy">Payments</Link>
+            <Link to="/freelancer-terms">Freelancer terms</Link>
+            <Link to="/employer-terms">Employer terms</Link>
+            <button type="button" onClick={() => window.dispatchEvent(new Event(OPEN_COOKIE_SETTINGS_EVENT))}>Cookie settings</button>
           </nav>
         </div>
       </footer>
@@ -78,9 +88,14 @@ function Footer({ variant = 'full' }: FooterProps) {
         </p>
 
         <nav aria-label="Legal navigation">
-  <a href="#">Privacy</a>{' '}
-  <a href="#">Terms</a>{' '}
-  <Link to="/contact">Contact</Link>
+  <Link to="/privacy">Privacy</Link>{' '}
+  <Link to="/terms">Terms</Link>{' '}
+  <Link to="/cookies">Cookies</Link>{' '}
+  <Link to="/payment-policy">Payments</Link>{' '}
+  <Link to="/freelancer-terms">Freelancer terms</Link>{' '}
+  <Link to="/employer-terms">Employer terms</Link>{' '}
+  <Link to="/contact">Contact</Link>{' '}
+  <button type="button" onClick={() => window.dispatchEvent(new Event(OPEN_COOKIE_SETTINGS_EVENT))}>Cookie settings</button>
 </nav>
       </div>
     </footer>

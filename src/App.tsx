@@ -67,6 +67,8 @@ import AdminCommunicationsPage from './pages/admin/AdminCommunicationsPage';
 import AdminVerificationPage from './pages/admin/AdminVerificationPage';
 import PublicJobsPage from './pages/public/PublicJobsPage';
 import ContactPage from './pages/public/ContactPage';
+import LegalPage from './pages/public/LegalPage';
+import CookieConsentManager from './components/public/CookieConsentManager';
 import { applyPageMetadata, getPageMetadata } from './utils/seoMetadata';
 
 function RouteMetadataController() {
@@ -86,6 +88,7 @@ function App() {
       <SiteContentProvider>
           <SubscriptionProvider>
         <RouteMetadataController />
+        <CookieConsentManager />
         <Routes>
           <Route path="/" element={<PublicLayout />}>
             <Route index element={<WelcomePage />} />
@@ -96,6 +99,12 @@ function App() {
             <Route path="companies/:employerId" element={<CompanyProfilePage />} />
             <Route path="jobs" element={<PublicJobsPage />} />
             <Route path="contact" element={<ContactPage />} />
+            <Route path="terms" element={<LegalPage document="terms" />} />
+            <Route path="privacy" element={<LegalPage document="privacy" />} />
+            <Route path="cookies" element={<LegalPage document="cookies" />} />
+            <Route path="payment-policy" element={<LegalPage document="payments" />} />
+            <Route path="freelancer-terms" element={<LegalPage document="freelancer" />} />
+            <Route path="employer-terms" element={<LegalPage document="employer" />} />
             <Route path="login" element={<SignInPage />} />
             <Route path="forgot-password" element={<ForgotPasswordPage />} />
             <Route path="reset-password" element={<ResetPasswordPage />} />

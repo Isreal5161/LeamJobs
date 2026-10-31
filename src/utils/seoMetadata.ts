@@ -25,6 +25,12 @@ const publicRouteMetadata: Record<string, { title: string; description: string }
     title: 'Contact LeamJobs | Job Search and Hiring Support',
     description: 'Contact LeamJobs support for help with finding work, hiring, or using the platform.',
   },
+  '/terms': { title: 'Terms and Conditions | LeamJobs', description: 'Draft terms and conditions for the LeamJobs job and hiring platform; pending counsel and company review.' },
+  '/privacy': { title: 'Privacy Policy | LeamJobs', description: 'Draft privacy policy for LeamJobs; data inventory and company details require confirmation.' },
+  '/cookies': { title: 'Cookie Policy | LeamJobs', description: 'Read about browser storage and manage optional analytics and marketing preferences on LeamJobs.' },
+  '/payment-policy': { title: 'Payment, Refund and Escrow Policy | LeamJobs', description: 'Draft information on payment, contract funding, withdrawals and refunds; provider terms require confirmation.' },
+  '/freelancer-terms': { title: 'Freelancer Terms | LeamJobs', description: 'Draft supplemental terms for freelancers using LeamJobs.' },
+  '/employer-terms': { title: 'Employer Terms | LeamJobs', description: 'Draft supplemental terms for employers using LeamJobs.' },
   '/features': {
     title: 'LeamJobs Features | Tools for Job Seekers and Employers',
     description: 'Explore LeamJobs tools for job discovery, career development, candidate matching, and hiring.',
