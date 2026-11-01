@@ -7,6 +7,7 @@ import { FaArrowRight, FaBriefcase, FaBuilding, FaUsers, FaWifi, FaClock, FaPenc
 import { useSiteContent } from '../../context/SiteContentContext';
 import { useAuth } from '../../context/AuthContext';
 import { getPublicJobs, type SeekerDashboardJob } from '../../services/api';
+import { sortJobsByNewest } from '../../utils/jobSorting';
 
 const mapJob = (job: SeekerDashboardJob) => {
   const companyName = job.company?.name ?? 'Company not provided';
@@ -101,7 +102,7 @@ function WelcomePage() {
         setPublicJobs([]);
         setJobsError(result.error.message || 'We could not load jobs right now.');
       } else {
-        setPublicJobs(result.data.data.jobs.map(mapJob));
+        setPublicJobs(sortJobsByNewest(result.data.data.jobs.map(mapJob)));
       }
 
       setIsLoadingJobs(false);

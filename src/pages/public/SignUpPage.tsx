@@ -3,7 +3,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import Button from '../../components/common/Button';
 import Input from '../../components/common/Input';
 import { request } from '../../services/api';
-import { TERMS_POLICY_VERSION, PRIVACY_POLICY_VERSION } from '../../utils/legalVersions';
+import { LEGAL_REGISTRATION_ACCEPTANCE, TERMS_POLICY_VERSION, PRIVACY_POLICY_VERSION } from '../../utils/legalVersions';
 import { FaBriefcase, FaBuilding, FaCheck, FaEnvelope, FaEye, FaEyeSlash, FaGoogle, FaLock, FaUser } from 'react-icons/fa';
 
 type AuthRole = 'seeker' | 'employer';
@@ -108,9 +108,20 @@ function SignUpPage({ role = 'seeker' }: SignUpPageProps) {
     setErrors((current) => ({ ...current, [field]: '' }));
   };
 
-  const handleGoogleSignup = async () => {
+  const handleGoogleSignup = () => {
+    if (!form.termsAccepted || !form.privacyAccepted) {
+      setErrors((current) => ({ ...current, terms: !form.termsAccepted ? 'Accept the Terms and Conditions to continue.' : '', privacy: !form.privacyAccepted ? 'Acknowledge the Privacy Policy to continue.' : '' }));
+      return;
+    }
     const targetRole = roleValues[role];
-    window.location.href = `${import.meta.env.VITE_API_BASE_URL ?? 'https://leamjobs.com/api'}/auth/google/start?role=${encodeURIComponent(targetRole)}`;
+    const query = new URLSearchParams({
+      role: targetRole,
+      termsAccepted: 'true',
+      privacyAccepted: 'true',
+      acceptedTermsVersion: TERMS_POLICY_VERSION,
+      acceptedPrivacyVersion: PRIVACY_POLICY_VERSION,
+    });
+    window.location.href = `${import.meta.env.VITE_API_BASE_URL ?? 'https://leamjobs.com/api'}/auth/google/start?${query.toString()}`;
   };
 
   const submitRegistration = async (event: FormEvent<HTMLFormElement>) => {
@@ -145,10 +156,7 @@ function SignUpPage({ role = 'seeker' }: SignUpPageProps) {
       password: form.password,
       ...(form.phone.trim() ? { phone: form.phone.trim() } : {}),
       role: roleValues[role],
-      termsAccepted: true,
-      privacyAccepted: true,
-      acceptedTermsVersion: TERMS_POLICY_VERSION,
-      acceptedPrivacyVersion: PRIVACY_POLICY_VERSION,
+      ...LEGAL_REGISTRATION_ACCEPTANCE,
     };
 
     const result = await request<{ id: string }>({
@@ -220,6 +228,7 @@ function SignUpPage({ role = 'seeker' }: SignUpPageProps) {
             <h2>{content.heading}</h2>
           </div>
 
+          {(errors.terms || errors.privacy) ? <p role="alert">Accept both linked policies before continuing with Google.</p> : null}
           <button type="button" className="auth-social-button auth-social-button--full" onClick={handleGoogleSignup}>
             <FaGoogle />
             Continue with Google

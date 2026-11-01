@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import Button from '../../components/common/Button';
 import Input from '../../components/common/Input';
 import { useAuth } from '../../context/AuthContext';
+import { API_BASE_URL } from '../../services/api';
 import { getUserFacingError } from '../../utils/userFacingError';
 import { FaApple, FaCheck, FaEnvelope, FaEye, FaEyeSlash, FaGoogle, FaLock } from 'react-icons/fa';
 
@@ -65,6 +66,17 @@ function SignInPage({ role = 'seeker' }: SignInPageProps) {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isStartingGoogleSignIn, setIsStartingGoogleSignIn] = useState(false);
+
+  const handleGoogleSignIn = () => {
+    setError('');
+    setIsStartingGoogleSignIn(true);
+
+    const targetRole = role === 'employer' ? 'EMPLOYER' : 'SEEKER';
+    const apiBaseUrl = (import.meta.env.VITE_API_BASE_URL ?? API_BASE_URL).replace(/\/$/, '');
+    const query = new URLSearchParams({ role: targetRole });
+    window.location.assign(`${apiBaseUrl}/auth/google/start?${query.toString()}`);
+  };
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -148,9 +160,14 @@ function SignInPage({ role = 'seeker' }: SignInPageProps) {
           </div>
 
           <div className="auth-social-grid">
-            <button type="button" className="auth-social-button">
+            <button
+              type="button"
+              className="auth-social-button"
+              onClick={handleGoogleSignIn}
+              disabled={isStartingGoogleSignIn || isSubmitting || isAuthLoading}
+            >
               <FaGoogle />
-              Google
+              {isStartingGoogleSignIn ? 'Connecting to Google...' : 'Google'}
             </button>
             <button type="button" className="auth-social-button">
               <FaApple />

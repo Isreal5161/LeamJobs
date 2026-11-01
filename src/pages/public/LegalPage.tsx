@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
+import { legalDocumentMetadata, type LegalDocumentKey } from '../../utils/legalVersions';
 
-export type LegalDocument = 'terms' | 'privacy' | 'cookies' | 'payments' | 'freelancer' | 'employer';
+export type LegalDocument = LegalDocumentKey;
 
 type LegalSection = {
   title: string;
@@ -217,16 +218,17 @@ const sectionId = (title: string) => title.toLowerCase().replace(/[^a-z0-9]+/g, 
 
 function LegalPage({ document }: { document: LegalDocument }) {
   const page = documents[document];
+  const metadata = legalDocumentMetadata[document];
   return (
     <article className="legal-page">
       <header>
-        <span className="legal-page__eyebrow">LEAMJobs · Draft for review</span>
+        <span className="legal-page__eyebrow">LEAMJobs · {metadata.status === 'approved' ? 'Approved' : 'Draft for review'}</span>
         <h1>{page.title}</h1>
         <p>{page.intro}</p>
         <dl className="legal-page__metadata">
-          <div><dt>Version</dt><dd>1.0-draft</dd></div>
-          <div><dt>Last updated</dt><dd>31 October 2026</dd></div>
-          <div><dt>Effective date</dt><dd>Pending Company and legal-counsel approval</dd></div>
+          <div><dt>Version</dt><dd>{metadata.version}</dd></div>
+          <div><dt>Last updated</dt><dd>{metadata.lastUpdated}</dd></div>
+          {metadata.effectiveDate ? <div><dt>Effective date</dt><dd>{metadata.effectiveDate}</dd></div> : null}
         </dl>
       </header>
       <nav className="legal-page__contents" aria-label={`${page.title} contents`}>
@@ -241,9 +243,11 @@ function LegalPage({ document }: { document: LegalDocument }) {
           </section>
         ))}
       </div>
-      <aside className="legal-page__review-note">
-        <strong>Draft — not yet approved:</strong> Confirm operational disclosures and obtain qualified legal review before publication or reliance. A draft does not guarantee compliance in every jurisdiction.
-      </aside>
+      {metadata.status === 'draft' ? (
+        <aside className="legal-page__review-note">
+          <strong>Draft — not yet approved:</strong> Confirm operational disclosures and obtain qualified legal review before publication or reliance. A draft does not guarantee compliance in every jurisdiction.
+        </aside>
+      ) : null}
       <p className="legal-page__contact">Questions or privacy requests? Use the existing <Link to="/contact">Contact page</Link>.</p>
     </article>
   );

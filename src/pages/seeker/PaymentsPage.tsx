@@ -4,6 +4,7 @@ import { useAuth } from '../../context/AuthContext';
 import {
   getSeekerPaymentSummary,
   getSeekerPayments,
+  provisionSeekerUsdWallet,
   getSeekerPayoutAccounts,
   getSeekerPayoutCapabilities,
   getSeekerPayoutBanks,
@@ -138,6 +139,8 @@ function PaymentsPage() {
   const [withdrawalQuoteRefreshKey, setWithdrawalQuoteRefreshKey] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isProvisioningUsdWallet, setIsProvisioningUsdWallet] = useState(false);
+  const [usdWalletProvisionError, setUsdWalletProvisionError] = useState('');
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [error, setError] = useState('');
   const [sectionErrors, setSectionErrors] = useState<Record<string, string>>({});
@@ -312,6 +315,20 @@ function PaymentsPage() {
     } finally {
       setLoadingMore((current) => ({ ...current, [section]: false }));
     }
+  };
+
+  const provisionUsdWallet = async () => {
+    if (!token || paymentCapabilities?.usdWalletProvisioningEnabled !== true || isProvisioningUsdWallet) return;
+    setIsProvisioningUsdWallet(true);
+    setUsdWalletProvisionError('');
+    const result = await provisionSeekerUsdWallet(token);
+    if (!result.ok) {
+      setUsdWalletProvisionError(result.error.message || 'USD wallet provisioning could not be completed.');
+      setIsProvisioningUsdWallet(false);
+      return;
+    }
+    await loadPaymentData();
+    setIsProvisioningUsdWallet(false);
   };
 
   useEffect(() => { void loadPaymentData(); }, [token, retryKey, selectedCurrency]);
@@ -637,9 +654,16 @@ function PaymentsPage() {
           onClick={() => setSelectedCurrency(wallet.currency)}
         ><span>{wallet.currency} wallet</span><strong>{formatMoney(wallet.availableBalance, wallet.currency)}</strong></button>)}
         {!summary?.wallets?.some(({ currency: walletCurrency }) => walletCurrency === 'USD') && <div className="payment-wallet-switch__item payment-wallet-switch__item--disabled">
-          <span>USD wallet</span><strong>Not available</strong><small>USD wallet provisioning requires eligibility and provider approval.</small>
+          <span>USD wallet</span><strong>Not provisioned</strong><small>An internal USD wallet has no provider account or funds until eligible USD earnings are credited.</small>
+          <button className="payment-button-secondary" type="button" onClick={provisionUsdWallet} disabled={paymentCapabilities?.usdWalletProvisioningEnabled !== true || isProvisioningUsdWallet}>
+            {isProvisioningUsdWallet ? 'Provisioning…' : 'Provision USD wallet'}
+          </button>
         </div>}
       </div>
+      {usdWalletProvisionError && <p className="payment-copy payment-copy--error" role="alert">{usdWalletProvisionError}</p>}
+      {paymentCapabilities && !paymentCapabilities.usdCollectionEnabled && <p className="payment-copy" role="status">
+        USD collection unavailable: {paymentCapabilities.usdCollectionUnavailableReason}
+      </p>}
     </section>
     {sectionErrors.summary
       ? <p className="payment-copy payment-copy--error" role="alert">{sectionErrors.summary}</p>
@@ -655,7 +679,12 @@ function PaymentsPage() {
           <strong>No {selectedCurrency} wallet is available</strong>
           <p>Wallet balances will appear here when an eligible wallet has been provisioned.</p>
         </section>}
-    {!summary?.conversionEnabled && <p className="payment-conversion-notice" role="status">Cross-currency contract releases are disabled. An escrow requiring conversion remains unreleased until an approved settlement route is available.</p>}
+    {!summary?.conversionEnabled && <p className="payment-conversion-notice" role="status">
+      Cross-currency contract releases are unavailable. No NGN-to-USD or USD-to-NGN settlement route is currently enabled.
+      {paymentCapabilities?.crossCurrencySettlementUnavailableReason
+        ? ` ${paymentCapabilities.crossCurrencySettlementUnavailableReason}`
+        : ' Availability could not be confirmed; no conversion will be assumed.'}
+    </p>}
     {notice && <p className="payment-notice" role="status">{notice}</p>}
     <main className="payment-content-grid">
       <section className="payment-panel payment-panel--withdrawal" aria-labelledby="withdrawal-heading">
@@ -667,7 +696,7 @@ function PaymentsPage() {
             {!currency ? <small>Wallet currency unavailable. Withdrawals cannot be requested until it is available.</small>
               : paymentCapabilitiesError ? <small>{paymentCapabilitiesError}</small>
                 : paymentCapabilities?.withdrawalsEnabled !== true ? <small>New withdrawal quotes and requests are disabled; existing withdrawal records are unchanged.</small>
-                  : currency === 'USD' ? <small>USD withdrawals remain disabled until provider settlement and compliance approval are verified.</small>
+                  : currency === 'USD' ? <small>{paymentCapabilities.usdWithdrawalUnavailableReason || 'USD withdrawals remain disabled until provider settlement and compliance approval are verified.'}</small>
                 : payoutCapabilityError ? <small>We could not verify payout availability. Please retry before continuing.</small>
                   : !withdrawalCapability ? <small>There is no enabled payout capability for this wallet currency.</small> : null}
           </div>

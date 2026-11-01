@@ -300,7 +300,12 @@ test('existing active payment must match the validated amount, currency, and typ
 
 test('successful contract funding payment counts as already funded', () => {
   const successfulFunding = hasSuccessfulContractFundingPayment([
-    { paymentType: 'CONTRACT_FUNDING', status: 'SUCCESSFUL' },
+    {
+      paymentType: 'CONTRACT_FUNDING',
+      status: 'SUCCESSFUL',
+      transactionId: '987654321',
+      verifiedAt: '2026-11-01T22:00:00.000Z',
+    },
   ]);
   assert.equal(successfulFunding, true);
   assert.equal(canShowContractFundingAction({ ...base, alreadyFunded: successfulFunding }), false);

@@ -21,6 +21,7 @@ type AuthContextValue = {
   isAuthenticated: boolean;
   isLoading: boolean;
   login: (email: string, password: string, requestedRole?: AuthRole) => Promise<AuthUser>;
+  setAuthenticatedSession: (token: string, user: AuthUser) => void;
   logout: () => void;
 };
 
@@ -109,6 +110,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return currentUser;
   }, [loadCurrentUser]);
 
+  const setAuthenticatedSession = useCallback((nextToken: string, nextUser: AuthUser) => {
+    if (!nextToken) {
+      throw new Error('Authentication token was not returned by the server.');
+    }
+
+    writeStoredToken(nextToken);
+    setToken(nextToken);
+    setUser(nextUser);
+  }, []);
+
   const logout = useCallback(() => {
     clearSession();
   }, [clearSession]);
@@ -161,8 +172,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     isAuthenticated: Boolean(token && user),
     isLoading,
     login,
+    setAuthenticatedSession,
     logout,
-  }), [login, logout, token, user, isLoading]);
+  }), [login, logout, setAuthenticatedSession, token, user, isLoading]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

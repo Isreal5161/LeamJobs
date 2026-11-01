@@ -29,7 +29,7 @@ function sortJobs(jobs: RecommendedJob[], sortKey: SortOption) {
 
 function RecommendedJobs({ jobs }: { jobs?: RecommendedJob[] }) {
   const { visibleJobs } = useJobStore();
-  const [sortOption, setSortOption] = useState<SortOption>('relevance');
+  const [sortOption, setSortOption] = useState<SortOption>('newest');
   const [savedIds, setSavedIds] = useState<string[]>([]);
 
   const jobsToDisplay = jobs ?? visibleJobs;

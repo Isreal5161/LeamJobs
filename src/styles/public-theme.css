@@ -47,11 +47,18 @@
 
 .public-layout .site-footer__subscribe button {
   background: var(--primary);
+  color: #FFFFFF;
 }
 
 .public-layout .site-footer__subscribe button:hover,
 .public-layout .site-footer__subscribe button:focus-visible {
   background: var(--primary-hover);
+}
+
+.public-layout .site-footer__subscribe button:hover,
+.public-layout .site-footer__subscribe button:focus-visible,
+.public-layout .site-footer__subscribe button:disabled {
+  color: #FFFFFF;
 }
 
 .public-layout--welcome .hero__panel {

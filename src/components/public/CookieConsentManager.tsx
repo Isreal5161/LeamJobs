@@ -102,7 +102,7 @@ function CookieConsentManager() {
         <small className="cookie-consent__version">Policy version {COOKIE_POLICY_VERSION}{preferences ? ` · Saved ${new Date(preferences.savedAt).toLocaleString()}` : ''}</small>
       </section>
     </div> : null}
-    {loaded && preferences ? <span className="visually-hidden" aria-live="polite">Optional analytics {isOptionalCategoryAllowed(preferences, 'analytics') ? 'allowed by preference' : 'not allowed'}; marketing {isOptionalCategoryAllowed(preferences, 'marketing') ? 'allowed by preference' : 'not allowed'}.</span> : null}
+    {loaded && preferences ? <span className="sr-only" aria-live="polite">Optional analytics {isOptionalCategoryAllowed(preferences, 'analytics') ? 'allowed by preference' : 'not allowed'}; marketing {isOptionalCategoryAllowed(preferences, 'marketing') ? 'allowed by preference' : 'not allowed'}.</span> : null}
   </>;
 }
 

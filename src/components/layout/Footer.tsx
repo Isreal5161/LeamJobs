@@ -81,7 +81,7 @@ function Footer({ variant = 'full' }: FooterProps) {
 
 <div className="container site-footer__bottom">
         <p>
-          &copy; {new Date().getFullYear()} Leadingedge Astute-Minds Limited.
+          &copy; 2026 Leadingedge Astute-Minds Limited.
           All rights reserved.
           <br />
           LEAMJobs is a platform by Leadingedge Astute-Minds Limited.

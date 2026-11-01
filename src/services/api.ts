@@ -86,6 +86,13 @@ export type FreelancePaymentCapabilities = {
   escrowReleaseEnabled: boolean;
   withdrawalsEnabled: boolean;
   usdWithdrawalsEnabled: boolean;
+  usdWalletProvisioningEnabled: boolean;
+  usdCollectionEnabled: boolean;
+  usdCollectionUnavailableReason: string;
+  usdWithdrawalRoutes: { country: string; currency: 'USD'; provider: string }[];
+  usdWithdrawalUnavailableReason: string;
+  crossCurrencySettlementRoutes: { sourceCurrency: 'NGN' | 'USD'; destinationCurrency: 'NGN' | 'USD' }[];
+  crossCurrencySettlementUnavailableReason: string;
 };
 
 export function getFreelancePaymentCapabilities() {
@@ -1557,6 +1564,36 @@ export function verifyEmailCode(email: string, code: string) {
     method: 'POST',
     endpoint: '/auth/verify-email',
     body: { email, code },
+  });
+}
+
+export type GoogleRegistrationCompletion = {
+  pendingId: string;
+  continuationToken: string;
+  email: string;
+  companyName?: string;
+  phone?: string;
+};
+
+export function completeGoogleRegistration(completion: GoogleRegistrationCompletion) {
+  return request<{
+    success: true;
+    token: string;
+    user: {
+      id: string;
+      email: string;
+      firstName: string;
+      lastName: string;
+      phone: string | null;
+      role: 'SEEKER' | 'EMPLOYER';
+      isActive: boolean;
+      isVerified: boolean;
+      createdAt: string;
+    };
+  }>({
+    method: 'POST',
+    endpoint: '/auth/google/complete',
+    body: completion,
   });
 }
 
@@ -3114,6 +3151,14 @@ export type SeekerPaymentPageResponse<T> = {
 
 export function getSeekerPaymentSummary(token: string) {
   return request<SeekerPaymentPageResponse<SeekerPaymentSummary>>({ method: 'GET', endpoint: '/seeker/payments/summary', token });
+}
+
+export function provisionSeekerUsdWallet(token: string) {
+  return request<SeekerPaymentPageResponse<{ wallet: { currency: 'USD' } }>>({
+    method: 'POST',
+    endpoint: '/seeker/payments/wallets/USD',
+    token,
+  });
 }
 
 export function getSeekerPayments(token: string, currency = 'NGN', cursor?: string) {
