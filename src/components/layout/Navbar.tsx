@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { Link, NavLink } from 'react-router-dom';
+import { Link, NavLink, useLocation } from 'react-router-dom';
 import { FaBars, FaTimes } from 'react-icons/fa';
 import Logo from './Logo';
 import { useAuth } from '../../context/AuthContext';
+import type { AuthRoleModalMode } from '../public/HomeAuthRoleModal';
 
 const NAV_LINKS = [
   { to: '/', label: 'Home' },
@@ -12,9 +13,14 @@ const NAV_LINKS = [
   { to: '/companies', label: 'Companies' },
 ];
 
-function Navbar() {
+type NavbarProps = {
+  onOpenAuthRoleModal: (mode: AuthRoleModalMode) => void;
+};
+
+function Navbar({ onOpenAuthRoleModal }: NavbarProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const { user, isAuthenticated, logout } = useAuth();
+  const isWelcomePage = useLocation().pathname === '/';
   const dashboardPath = user?.role === 'ADMIN'
     ? '/admin/moderation'
     : user?.role === 'EMPLOYER'
@@ -50,8 +56,17 @@ function Navbar() {
             </>
           ) : (
             <>
-              <Link to="/login" className="button button--outline navbar__button">Sign in</Link>
-              <Link to="/register" className="button button--primary navbar__button">Get started</Link>
+              {isWelcomePage ? (
+                <>
+                  <button type="button" className="button button--outline navbar__button" onClick={() => onOpenAuthRoleModal('signin')}>Sign in</button>
+                  <button type="button" className="button button--primary navbar__button" onClick={() => onOpenAuthRoleModal('signup')}>Get started</button>
+                </>
+              ) : (
+                <>
+                  <Link to="/login" className="button button--outline navbar__button">Sign in</Link>
+                  <Link to="/register" className="button button--primary navbar__button">Get started</Link>
+                </>
+              )}
             </>
           )}
         </div>
@@ -84,8 +99,17 @@ function Navbar() {
           </>
         ) : (
           <>
-            <NavLink to="/login" onClick={() => setMenuOpen(false)}>Sign in</NavLink>
-            <NavLink to="/register" onClick={() => setMenuOpen(false)}>Register</NavLink>
+            {isWelcomePage ? (
+              <>
+                <button type="button" className="navbar__mobile-action" onClick={() => { setMenuOpen(false); onOpenAuthRoleModal('signin'); }}>Sign in</button>
+                <button type="button" className="navbar__mobile-action" onClick={() => { setMenuOpen(false); onOpenAuthRoleModal('signup'); }}>Register</button>
+              </>
+            ) : (
+              <>
+                <NavLink to="/login" onClick={() => setMenuOpen(false)}>Sign in</NavLink>
+                <NavLink to="/register" onClick={() => setMenuOpen(false)}>Register</NavLink>
+              </>
+            )}
           </>
         )}
       </nav>

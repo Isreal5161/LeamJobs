@@ -1,13 +1,18 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useOutletContext } from 'react-router-dom';
 import Button from '../../components/common/Button';
 import Input from '../../components/common/Input';
 import RecommendedJobs from '../../components/jobs/RecommendedJobs';
+import type { AuthRoleModalMode } from '../../components/public/HomeAuthRoleModal';
 import { FaArrowRight, FaBriefcase, FaBuilding, FaUsers, FaWifi, FaClock, FaPencilAlt, FaMapMarkerAlt, FaDollarSign, FaCode, FaBullhorn } from 'react-icons/fa';
 import { useSiteContent } from '../../context/SiteContentContext';
 import { useAuth } from '../../context/AuthContext';
 import { getPublicJobs, type SeekerDashboardJob } from '../../services/api';
 import { sortJobsByNewest } from '../../utils/jobSorting';
+
+type WelcomePageContext = {
+  openAuthRoleModal: (mode: AuthRoleModalMode) => void;
+};
 
 const mapJob = (job: SeekerDashboardJob) => {
   const companyName = job.company?.name ?? 'Company not provided';
@@ -59,6 +64,7 @@ const mapJob = (job: SeekerDashboardJob) => {
 };
 
 function WelcomePage() {
+  const { openAuthRoleModal } = useOutletContext<WelcomePageContext>();
   const { content } = useSiteContent();
   const { user, isAuthenticated } = useAuth();
   const {
@@ -215,18 +221,30 @@ function WelcomePage() {
           <div className="hero__bottom">
             <div className="hero-actions" aria-label="Account actions">
               <div className="hero-actions__seeker">
-                <Link className="button button--primary hero-actions__primary" to={isAuthenticated ? dashboardPath : '/register'}>
-                  {isAuthenticated ? 'Dashboard' : primaryCta}
-                </Link>
-                <Link className="hero-actions__secondary" to={isAuthenticated ? jobsPath : '/login'}>
-                  {isAuthenticated ? 'Browse jobs' : secondaryCta}
-                </Link>
+                {isAuthenticated ? (
+                  <Link className="button button--primary hero-actions__primary" to={dashboardPath}>Dashboard</Link>
+                ) : (
+                  <button type="button" className="button button--primary hero-actions__primary" onClick={() => openAuthRoleModal('signup')}>
+                    {primaryCta}
+                  </button>
+                )}
+                {isAuthenticated ? (
+                  <Link className="hero-actions__secondary" to={jobsPath}>Browse jobs</Link>
+                ) : (
+                  <button type="button" className="hero-actions__secondary" onClick={() => openAuthRoleModal('signin')}>
+                    {secondaryCta}
+                  </button>
+                )}
               </div>
-              <Link className="hero-actions__employer" to={isAuthenticated ? dashboardPath : '/employers/register'}>
-                <span>{isAuthenticated ? 'Open' : 'Hiring?'}</span>
-                {isAuthenticated ? 'Workspace' : employerCta}
-                <FaArrowRight />
-              </Link>
+              {isAuthenticated ? (
+                <Link className="hero-actions__employer" to={dashboardPath}>
+                  <span>Open</span>Workspace<FaArrowRight />
+                </Link>
+              ) : (
+                <button type="button" className="hero-actions__employer" onClick={() => openAuthRoleModal('signup')}>
+                  <span>Hiring?</span>{employerCta}<FaArrowRight />
+                </button>
+              )}
             </div>
 
             <div className="hero__search-panel card">
