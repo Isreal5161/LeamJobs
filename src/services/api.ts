@@ -2503,6 +2503,7 @@ export type ContractData = {
     fund: boolean;
     cancel: boolean;
     confirmCompletion: boolean;
+    delete: boolean;
   };
   freelance: {
     id: string;
@@ -2672,6 +2673,14 @@ export function getEmployerContract(contractId: string, token: string) {
 
 export function cancelEmployerContract(contractId: string, token: string) {
   return request<ContractResponse>({ method: 'POST', endpoint: `/employer/contracts/${encodeURIComponent(contractId)}/cancel`, token });
+}
+
+export function deleteEmployerContract(contractId: string, token: string) {
+  return request<{ success: true; data: { deleted: boolean; alreadyDeleted: boolean } }>({
+    method: 'DELETE',
+    endpoint: `/employer/contracts/${encodeURIComponent(contractId)}`,
+    token,
+  });
 }
 
 export function confirmEmployerContractTerms(contractId: string, token: string) {

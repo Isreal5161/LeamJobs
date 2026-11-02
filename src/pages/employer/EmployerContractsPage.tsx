@@ -1,8 +1,9 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { FaArrowRight, FaBriefcase, FaCalendarAlt, FaChevronLeft, FaChevronRight, FaFileContract, FaRedoAlt, FaTimes } from 'react-icons/fa';
+import { FaArrowRight, FaBriefcase, FaCalendarAlt, FaChevronLeft, FaChevronRight, FaFileContract, FaRedoAlt, FaTimes, FaTrashAlt } from 'react-icons/fa';
 import { useAuth } from '../../context/AuthContext';
-import { cancelEmployerContract, getEmployerContracts, type ContractData, type EmployerContractStatus } from '../../services/api';
+import { cancelEmployerContract, deleteEmployerContract, getEmployerContracts, type ContractData, type EmployerContractStatus } from '../../services/api';
+import { canDeleteEmployerContract } from '../../utils/employerContractActions';
 
 const PAGE_SIZE = 10;
 const statusOptions: Array<{ label: string; value: EmployerContractStatus | '' }> = [
@@ -70,6 +71,44 @@ function EmployerContractsPage() {
   const [contractToCancel, setContractToCancel] = useState<ContractData | null>(null);
   const [isCancelling, setIsCancelling] = useState(false);
   const [cancellationError, setCancellationError] = useState('');
+  const [contractToDelete, setContractToDelete] = useState<ContractData | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [deletionError, setDeletionError] = useState('');
+  const [feedback, setFeedback] = useState('');
+  const isDeletingRef = useRef(false);
+  const deleteDialogRef = useRef<HTMLElement | null>(null);
+  isDeletingRef.current = isDeleting;
+
+  useEffect(() => {
+    if (!contractToDelete) return undefined;
+    const previousOverflow = document.body.style.overflow;
+    const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && !isDeletingRef.current) setContractToDelete(null);
+      if (event.key !== 'Tab') return;
+      const dialog = deleteDialogRef.current;
+      const focusable = dialog?.querySelectorAll<HTMLElement>(
+        'button:not([disabled]), a[href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+      );
+      if (!dialog || !focusable?.length) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (event.shiftKey && (document.activeElement === first || !dialog.contains(document.activeElement))) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && (document.activeElement === last || !dialog.contains(document.activeElement))) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+    document.body.style.overflow = 'hidden';
+    window.addEventListener('keydown', closeOnEscape);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener('keydown', closeOnEscape);
+      if (opener?.isConnected) opener.focus();
+    };
+  }, [contractToDelete]);
 
   const loadContracts = useCallback(async () => {
     if (!token) return;
@@ -115,6 +154,36 @@ function EmployerContractsPage() {
     }
   };
 
+  const deleteContract = async () => {
+    if (!token || !contractToDelete || isDeleting) return;
+    setIsDeleting(true);
+    setDeletionError('');
+    setFeedback('');
+    try {
+      const result = await deleteEmployerContract(contractToDelete.id, token);
+      if (!result.ok) {
+        setDeletionError(result.error.message || 'This contract could not be deleted. Refresh its financial state and try again.');
+        return;
+      }
+      const remainingTotal = Math.max(0, total - 1);
+      const remainingPages = Math.ceil(remainingTotal / PAGE_SIZE);
+      const needsPageRefresh = remainingPages > 0 && page > remainingPages;
+      setContracts((current) => current.filter((contract) => contract.id !== contractToDelete.id));
+      setTotal(remainingTotal);
+      setTotalPages(remainingPages);
+      setContractToDelete(null);
+      setFeedback('Contract deleted from your list. Financial and transaction records have been retained.');
+      if (needsPageRefresh) {
+        setPage(remainingPages);
+        setReloadKey((value) => value + 1);
+      }
+    } catch {
+      setDeletionError('This contract could not be deleted. Refresh its financial state and try again.');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   return (
     <main className="employer-contracts-page">
       <header className="employer-contracts-heading">
@@ -135,6 +204,7 @@ function EmployerContractsPage() {
         <span>{isLoading ? 'Loading contracts...' : `${total} ${total === 1 ? 'contract' : 'contracts'}`}</span>
         {!isLoading && totalPages > 1 ? <span>Page {page} of {totalPages}</span> : null}
       </div>
+      {feedback ? <p className="employer-contract-feedback" role="status">{feedback}</p> : null}
 
       {isLoading ? (
         <div className="employer-contract-list" aria-label="Loading contracts">
@@ -203,6 +273,20 @@ function EmployerContractsPage() {
                           Cancel
                         </button>
                       ) : null}
+                      {canDeleteEmployerContract(contract) ? (
+                        <button
+                          type="button"
+                          className="button button--secondary employer-contract-delete"
+                          aria-label={`Delete contract ${contract.job?.title || 'Untitled project'}`}
+                          onClick={() => {
+                            setDeletionError('');
+                            setFeedback('');
+                            setContractToDelete(contract);
+                          }}
+                        >
+                          <FaTrashAlt aria-hidden="true" /> <span>Delete</span>
+                        </button>
+                      ) : null}
                       <Link className="button button--secondary employer-contract-view" to={`/employer/contracts/${encodeURIComponent(contract.id)}`}>
                         View contract <FaArrowRight />
                       </Link>
@@ -243,6 +327,29 @@ function EmployerContractsPage() {
               <button type="button" className="button button--secondary" onClick={() => setContractToCancel(null)} disabled={isCancelling}>Keep contract</button>
               <button type="button" className="button button--primary contract-cancel-confirm" onClick={() => void cancelContract()} disabled={isCancelling}>
                 {isCancelling ? 'Cancelling...' : 'Cancel contract'}
+              </button>
+            </div>
+          </section>
+        </div>
+      ) : null}
+      {contractToDelete ? (
+        <div className="employer-contract-dialog-backdrop" role="presentation" onMouseDown={(event) => {
+          if (event.target === event.currentTarget && !isDeleting) setContractToDelete(null);
+        }}>
+          <section ref={deleteDialogRef} className="employer-contract-dialog" role="alertdialog" aria-modal="true" aria-busy={isDeleting} aria-labelledby="employer-contract-list-delete-title" aria-describedby="employer-contract-list-delete-description">
+            <button type="button" className="employer-contract-dialog__close" aria-label="Close delete confirmation" onClick={() => setContractToDelete(null)} disabled={isDeleting}>
+              <FaTimes />
+            </button>
+            <span className="employer-contract-dialog__icon employer-contract-dialog__icon--delete"><FaTrashAlt aria-hidden="true" /></span>
+            <h2 id="employer-contract-list-delete-title">Delete contract?</h2>
+            <p id="employer-contract-list-delete-description">
+              “{contractToDelete.job?.title || 'Untitled project'}” will be removed from your employer contract list. Financial and transaction records will be retained.
+            </p>
+            {deletionError ? <p className="employer-contract-cancel-error" role="alert">{deletionError}</p> : null}
+            <div className="employer-contract-dialog__actions">
+              <button type="button" className="button button--secondary" onClick={() => setContractToDelete(null)} disabled={isDeleting} autoFocus>Cancel</button>
+              <button type="button" className="button button--primary employer-contract-delete-confirm" onClick={() => void deleteContract()} disabled={isDeleting}>
+                {isDeleting ? 'Deleting...' : 'Delete Contract'}
               </button>
             </div>
           </section>

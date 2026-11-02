@@ -221,6 +221,44 @@
   font-size: .85rem;
 }
 
+.employer-contract-delete {
+  min-height: 39px;
+  gap: .4rem;
+  border-color: #ef5036;
+  color: #b42318;
+  font-size: .85rem;
+  transition: background-color .18s ease, color .18s ease, border-color .18s ease;
+}
+
+.employer-contract-delete:hover,
+.employer-contract-delete:focus-visible {
+  border-color: #ef5036;
+  background: #fff1ee;
+  color: #b42318;
+}
+
+.employer-contract-delete-confirm {
+  background: #ef5036;
+  border-color: #ef5036;
+}
+
+.employer-contract-delete-confirm:hover,
+.employer-contract-delete-confirm:focus-visible {
+  background: #d9432c;
+  border-color: #d9432c;
+}
+
+.employer-contract-dialog__icon--delete {
+  background: #fff1ee;
+  color: #ef5036;
+}
+
+.employer-contract-feedback {
+  margin: -.25rem 0 1rem;
+  color: #17643a;
+  font-size: .88rem;
+}
+
 .employer-contract-cancel-error {
   margin-top: 1rem !important;
   color: #b42318 !important;
@@ -555,6 +593,9 @@
 .employer-contract-dialog {
   position: relative;
   width: min(100%, 500px);
+  max-height: calc(100vh - 2rem);
+  overflow-y: auto;
+  overscroll-behavior: contain;
   padding: 2rem;
   border: 1px solid var(--border);
   border-radius: 18px;
@@ -655,6 +696,7 @@
   .employer-contract-card__actions { align-self: stretch; }
   .employer-contract-view { flex: 1; justify-content: center; }
   .employer-contract-cancel { flex: 0 0 auto; }
+  .employer-contract-delete { flex: 0 0 auto; }
   .employer-contract-pagination { gap: .55rem; }
   .employer-contract-pagination .button { padding-inline: .65rem; }
   .employer-contract-financial-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
