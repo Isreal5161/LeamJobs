@@ -155,6 +155,15 @@ test('both employer viewers use the shared CV resolver and authenticated applica
   assert.match(api, /\/employer\/jobs\/\$\{encodeURIComponent\(jobId\)\}\/applications\/\$\{encodeURIComponent\(applicationId\)\}\/resume/);
 });
 
+test('employer applicant selection uses backend blocking state and presents cancelled contracts as history', async () => {
+  const source = await readSource('../src/pages/employer/EmployerApplicantsPage.tsx');
+
+  assert.match(source, /application\.id !== selectedListItem\.id\s*&& application\.blocksSelection/);
+  assert.match(source, /application\.contractStatus === 'CANCELLED'\s*\?\s*'Cancelled'/);
+  assert.match(source, /const anotherCandidateSelected = Boolean\(selectedContractApplication\)/);
+  assert.match(source, /&& !anotherCandidateSelected/);
+});
+
 test('employer CV API sends the application-specific endpoint with bearer authentication', async () => {
   const originalFetch = globalThis.fetch;
   let capturedUrl;

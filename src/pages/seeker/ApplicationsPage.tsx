@@ -311,7 +311,7 @@ function ApplicationsPage() {
           </div>
         ))}
       </div>
-      {application.contractId ? (
+      {application.contractId && application.contractStatus !== 'CANCELLED' ? (
         <Link
           to={`/seeker/contracts/${application.contractId}`}
           className="seeker-application-card__link"
@@ -319,6 +319,10 @@ function ApplicationsPage() {
         >
           Contract
         </Link>
+      ) : application.contractStatus === 'CANCELLED' ? (
+        <span className="seeker-application-card__link" aria-label={`${application.jobTitle} contract cancelled`}>
+          Contract cancelled
+        </span>
       ) : (
         <Link
           to={`/seeker/jobs/${application.jobId}`}

@@ -952,6 +952,7 @@ export type SeekerApplication = {
   appliedAt: string;
   updatedAt: string;
   contractId: string | null;
+  contractStatus: string | null;
 };
 
 export type SeekerApplicationsResponse = {

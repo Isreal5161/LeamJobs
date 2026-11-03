@@ -744,7 +744,7 @@ function EmployerApplicantsPage() {
                     : null}
                   {canCancelSelection ? <button className="employer-button employer-button--danger" type="button" onClick={() => setShowContractCancellation(true)} disabled={isMutating}>Cancel contract &amp; reject candidate</button> : null}
                   {canSelectContract ? <button className="employer-button employer-button--primary" type="button" onClick={() => void updateStatus('ACCEPTED')} disabled={isMutating}>Select &amp; fund contract</button> : null}
-                  {selectedApplication.contractId ? <button className="employer-button employer-button--primary" type="button" onClick={() => navigate(`/employer/contracts/${selectedApplication.contractId}`)}>Open contract workspace</button> : null}
+                  {selectedApplication.contractId && selectedListItem?.contractStatus !== 'CANCELLED' ? <button className="employer-button employer-button--primary" type="button" onClick={() => navigate(`/employer/contracts/${selectedApplication.contractId}`)}>Open contract workspace</button> : null}
                 </section>
                 {actionError ? <p className="employer-action-error" role="alert">{actionError}</p> : null}
                 {actionMessage ? <p className="employer-action-success" role="status">{actionMessage}</p> : null}
