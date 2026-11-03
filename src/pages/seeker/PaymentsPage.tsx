@@ -716,7 +716,7 @@ function PaymentsPage() {
           <p>Your balance will appear here when your wallet is ready.</p>
         </section>}
     {!summary?.conversionEnabled && <p className="payment-conversion-notice" role="status">
-      This payment can’t be completed because the contract and wallet use different currencies.
+      Currency conversion is currently unavailable. Payments must be made using the wallet that matches the transaction currency.
     </p>}
     {notice && <p className="payment-notice" role="status">{notice}</p>}
     <main className="payment-content-grid">
