@@ -655,7 +655,7 @@ function PaymentsPage() {
         ><span>{wallet.currency} wallet</span><strong>{formatMoney(wallet.availableBalance, wallet.currency)}</strong></button>)}
         {!summary?.wallets?.some(({ currency: walletCurrency }) => walletCurrency === 'USD') && <div className="payment-wallet-switch__item payment-wallet-switch__item--disabled">
           <span>USD wallet</span><strong>Not provisioned</strong><small>An internal USD wallet has no provider account or funds until eligible USD earnings are credited.</small>
-          <button className="payment-button-secondary" type="button" onClick={provisionUsdWallet} disabled={paymentCapabilities?.usdWalletProvisioningEnabled !== true || isProvisioningUsdWallet}>
+          <button className="payment-wallet-provision-button" type="button" onClick={provisionUsdWallet} disabled={paymentCapabilities?.usdWalletProvisioningEnabled !== true || isProvisioningUsdWallet}>
             {isProvisioningUsdWallet ? 'Provisioning…' : 'Provision USD wallet'}
           </button>
         </div>}

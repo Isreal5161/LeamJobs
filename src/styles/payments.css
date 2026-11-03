@@ -20,6 +20,10 @@ button.payment-wallet-switch__item[aria-pressed="true"] { border-color: #322F6A;
 .payment-wallet-switch__item > strong { color: #322F6A; font-size: 1.12rem; }
 .payment-wallet-switch__item small { color: #64748b; font-size: .74rem; line-height: 1.4; }
 .payment-wallet-switch__item--disabled { border-style: dashed; background: #f8fafc; }
+.payment-wallet-provision-button { display: inline-flex; align-items: center; justify-content: center; width: 100%; min-height: 42px; margin-top: .2rem; padding: .6rem .9rem; border: 0; border-radius: 8px; background: #EF5036; box-shadow: 0 3px 8px rgba(239,80,54,.2); color: #fff; font: inherit; font-size: .8rem; font-weight: 700; line-height: 1.2; cursor: pointer; transition: background-color .18s ease, box-shadow .18s ease, transform .18s ease; }
+.payment-wallet-provision-button:hover:not(:disabled) { background: #D9432A; box-shadow: 0 5px 12px rgba(217,67,42,.26); transform: translateY(-1px); }
+.payment-wallet-provision-button:focus-visible { outline: 3px solid rgba(50,47,106,.35); outline-offset: 3px; }
+.payment-wallet-provision-button:disabled { background: #cbd5e1; box-shadow: none; color: #475569; cursor: not-allowed; }
 .payment-conversion-notice { margin: 0; padding: .85rem 1rem; border: 1px solid rgba(239,80,54,.24); border-left: 4px solid #EF5036; border-radius: 8px; background: #fff8f6; color: #54302a; font-size: .82rem; line-height: 1.5; }
 .admin-conversion-list { display: grid; gap: .7rem; }
 .admin-conversion-filters { display: flex; flex-wrap: wrap; align-items: end; gap: .8rem 1.2rem; }
