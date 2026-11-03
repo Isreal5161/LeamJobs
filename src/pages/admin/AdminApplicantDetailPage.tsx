@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { FaArrowLeft, FaCalendarAlt, FaCheck, FaDownload, FaFileAlt, FaMapMarkerAlt, FaSpinner, FaTimes } from 'react-icons/fa';
 import { useAuth } from '../../context/AuthContext';
@@ -34,11 +35,15 @@ function AdminApplicantDetailPage() {
   const [adminCanManageApplicants, setAdminCanManageApplicants] = useState(false);
   const [isOpeningResume, setIsOpeningResume] = useState(false);
   const [resumeError, setResumeError] = useState('');
+  const [cvModalOpen, setCvModalOpen] = useState(false);
   const [showTemplateCv, setShowTemplateCv] = useState(false);
   const [resumeObjectUrl, setResumeObjectUrl] = useState<string | null>(null);
   const [resumeContentType, setResumeContentType] = useState('');
   const [showUploadedResume, setShowUploadedResume] = useState(false);
   const resumeRequestVersion = useRef(0);
+  const cvModalRef = useRef<HTMLElement>(null);
+  const cvModalCloseRef = useRef<HTMLButtonElement>(null);
+  const lastCvTriggerRef = useRef<HTMLElement | null>(null);
   const [isSelecting, setIsSelecting] = useState(false);
   const [selectionError, setSelectionError] = useState('');
   const [showConfirmSelection, setShowConfirmSelection] = useState(false);
@@ -50,6 +55,7 @@ function AdminApplicantDetailPage() {
   useEffect(() => {
     resumeRequestVersion.current += 1;
     setIsOpeningResume(false);
+    setCvModalOpen(false);
     setShowTemplateCv(false);
     setResumeObjectUrl(null);
     setResumeContentType('');
@@ -111,22 +117,37 @@ function AdminApplicantDetailPage() {
     };
   }, [applicationId, jobId, token]);
 
-  useEffect(() => () => {
-    if (resumeObjectUrl) URL.revokeObjectURL(resumeObjectUrl);
+  useEffect(() => {
+    if (!resumeObjectUrl) return undefined;
+    return () => URL.revokeObjectURL(resumeObjectUrl);
   }, [resumeObjectUrl]);
+
+  const closeCvModal = () => {
+    resumeRequestVersion.current += 1;
+    setIsOpeningResume(false);
+    setCvModalOpen(false);
+    setShowTemplateCv(false);
+    setShowUploadedResume(false);
+    setResumeObjectUrl(null);
+    window.setTimeout(() => {
+      if (lastCvTriggerRef.current?.isConnected) lastCvTriggerRef.current.focus();
+    }, 0);
+  };
 
   const openResume = async () => {
     if (!application) return;
     const cvView = resolveApplicationCvView(application, application.applicant);
+    lastCvTriggerRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    setCvModalOpen(true);
+    setResumeError('');
     if (cvView.source === 'template') {
-      setResumeError('');
-      setShowTemplateCv((current) => !current);
+      setShowTemplateCv(true);
       setShowUploadedResume(false);
       return;
     }
     if (!cvView.available || !token || !jobId || !applicationId) return;
     if (resumeObjectUrl) {
-      setShowUploadedResume((current) => !current);
+      setShowUploadedResume(true);
       return;
     }
 
@@ -148,6 +169,44 @@ function AdminApplicantDetailPage() {
     setShowUploadedResume(true);
     setIsOpeningResume(false);
   };
+
+  useEffect(() => {
+    if (!cvModalOpen) return undefined;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    const focusTimer = window.setTimeout(() => cvModalCloseRef.current?.focus(), 0);
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        closeCvModal();
+      }
+      if (event.key === 'Tab' && cvModalRef.current) {
+        const focusable = Array.from(cvModalRef.current.querySelectorAll<HTMLElement>(
+          'button:not([disabled]), a[href], iframe, [tabindex]:not([tabindex="-1"])',
+        )).filter((element) => element.offsetParent !== null);
+        if (!focusable.length) {
+          event.preventDefault();
+          cvModalRef.current.focus();
+          return;
+        }
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+        if (event.shiftKey && (document.activeElement === first || !cvModalRef.current.contains(document.activeElement))) {
+          event.preventDefault();
+          last.focus();
+        } else if (!event.shiftKey && (document.activeElement === last || !cvModalRef.current.contains(document.activeElement))) {
+          event.preventDefault();
+          first.focus();
+        }
+      }
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.clearTimeout(focusTimer);
+      document.body.style.overflow = previousOverflow;
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [cvModalOpen]);
 
   const canSelectCandidate = adminCanManageApplicants && job !== null && application !== null
     && job.engagementType === 'CONTRACT'
@@ -212,6 +271,10 @@ function AdminApplicantDetailPage() {
     return <AdminPageSkeleton showToolbar={false} statCards={0} rows={3} />;
   }
 
+  if (application && application.id !== applicationId) {
+    return <AdminPageSkeleton showToolbar={false} statCards={0} rows={3} />;
+  }
+
   if (!job || !application) {
     return (
       <div className="admin-page admin-empty-state" role="alert">
@@ -242,13 +305,6 @@ function AdminApplicantDetailPage() {
           <span>Back to applicants</span>
         </Link>
       </section>
-
-      {resumeError ? (
-        <section className="admin-panel admin-empty-state" role="alert">
-          <strong>CV could not be opened</strong>
-          <p>{resumeError}</p>
-        </section>
-      ) : null}
 
       {selectionError ? (
         <section className="admin-panel admin-empty-state" role="alert">
@@ -309,9 +365,9 @@ function AdminApplicantDetailPage() {
             {!adminCanManageApplicants ? (
               <span className="admin-applicant-mode-badge admin-applicant-mode-badge--readonly">View only</span>
             ) : null}
-            <button type="button" className="admin-button admin-button--secondary admin-button--icon" onClick={() => void openResume()} disabled={isOpeningResume || !cvView.available}>
+            <button type="button" className="admin-button admin-button--secondary admin-button--icon" onClick={() => cvModalOpen ? closeCvModal() : void openResume()} disabled={isOpeningResume || !cvView.available}>
               {isOpeningResume ? <FaSpinner className="leamjobs-spin" /> : <FaFileAlt />}
-              <span>{cvView.source === 'template' && showTemplateCv || showUploadedResume ? 'Hide CV' : 'View CV'}</span>
+              <span>{cvModalOpen ? 'Hide CV' : 'View CV'}</span>
             </button>
           </div>
         </div>
@@ -339,29 +395,6 @@ function AdminApplicantDetailPage() {
                         : 'No application CV or legacy profile CV is available.'}
             </p>
             {cvView.submittedAt ? <small>CV captured {formatDate(cvView.submittedAt)}.</small> : null}
-            {resumeError ? <p role="alert">{resumeError}</p> : null}
-            {showTemplateCv && cvView.source === 'template' ? (
-              <>
-                {cvView.version ? (
-                  <small>Template version {cvView.version}.</small>
-                ) : application.cvSnapshot ? (
-                  <small>The original template version was not recorded; the saved content is shown in the current layout.</small>
-                ) : null}
-                {cvView.templateData ? (
-                  <CVTemplateRenderer data={cvView.templateData} template={cvView.template} templateVersion={cvView.version} />
-                ) : (
-                  <p role="alert">The saved CV snapshot content is unavailable.</p>
-                )}
-              </>
-            ) : null}
-            {showUploadedResume && resumeObjectUrl && resumeContentType === 'application/pdf' ? (
-              <iframe className="admin-applicant-detail__cv-document" src={resumeObjectUrl} title={`${applicant.fullName} application CV`} />
-            ) : null}
-            {showUploadedResume && resumeObjectUrl && resumeContentType !== 'application/pdf' ? (
-              <a className="admin-button admin-button--secondary" href={resumeObjectUrl} download={`${applicant.fullName.replace(/[^a-z0-9]+/gi, '-')}-cv`}>
-                <FaDownload /> Download submitted CV
-              </a>
-            ) : null}
           </article>
 
           <article className="admin-applicant-detail__section">
@@ -535,6 +568,106 @@ function AdminApplicantDetailPage() {
           ) : null}
         </div>
       </section>
+      {cvModalOpen ? createPortal(
+        <div
+          className="admin-applicant-cv-modal-backdrop"
+          role="presentation"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) closeCvModal();
+          }}
+        >
+          <section
+            ref={cvModalRef}
+            className="admin-applicant-cv-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="admin-applicant-cv-modal-title"
+            aria-describedby="admin-applicant-cv-modal-description"
+            tabIndex={-1}
+          >
+            <header className="admin-applicant-cv-modal__header">
+              <div>
+                <span className="admin-eyebrow">Application CV</span>
+                <h2 id="admin-applicant-cv-modal-title">{applicant.fullName}</h2>
+              </div>
+              <button
+                ref={cvModalCloseRef}
+                type="button"
+                className="admin-button admin-button--secondary admin-button--icon"
+                aria-label="Close CV viewer"
+                onClick={closeCvModal}
+              >
+                <FaTimes />
+                <span>Close</span>
+              </button>
+            </header>
+            <div id="admin-applicant-cv-modal-description" className="admin-applicant-cv-modal__body">
+              {isOpeningResume ? (
+                <div className="admin-applicant-cv-modal__state" role="status" aria-live="polite">
+                  <FaSpinner className="leamjobs-spin" />
+                  <strong>Loading CV...</strong>
+                </div>
+              ) : null}
+              {!isOpeningResume && resumeError ? (
+                <div className="admin-applicant-cv-modal__state" role="alert">
+                  <FaFileAlt />
+                  <strong>CV could not be opened</strong>
+                  <p>{resumeError}</p>
+                </div>
+              ) : null}
+              {!isOpeningResume && !resumeError && !cvView.available ? (
+                <div className="admin-applicant-cv-modal__state" role="status">
+                  <FaFileAlt />
+                  <strong>CV unavailable</strong>
+                  <p>{cvView.unavailableReason === 'storage_reference_missing'
+                    ? 'This saved CV cannot be retrieved because its secure storage reference is missing. The applicant may need to upload it again.'
+                    : 'No application CV or legacy profile CV is available.'}</p>
+                </div>
+              ) : null}
+              {!isOpeningResume && !resumeError && showTemplateCv && cvView.source === 'template' ? (
+                <div className="admin-applicant-cv-modal__template">
+                  {cvView.isHistorical ? (
+                    <p className="admin-applicant-cv-modal__note">
+                      {cvView.version
+                        ? `Saved application CV snapshot · template version ${cvView.version}`
+                        : 'Saved application CV snapshot · original template version not recorded'}
+                    </p>
+                  ) : (
+                    <p className="admin-applicant-cv-modal__note">
+                      Current profile template; this application has no historical template snapshot.
+                    </p>
+                  )}
+                  {cvView.templateData ? (
+                    <CVTemplateRenderer data={cvView.templateData} template={cvView.template} templateVersion={cvView.version} />
+                  ) : (
+                    <p role="alert">The saved CV snapshot content is unavailable.</p>
+                  )}
+                </div>
+              ) : null}
+              {!isOpeningResume && !resumeError && showUploadedResume ? (
+                <p className="admin-applicant-cv-modal__note">
+                  {cvView.source === 'profile'
+                    ? 'Current profile CV; this is not a historical copy of the application document.'
+                    : 'Uploaded CV submitted with this application.'}
+                </p>
+              ) : null}
+              {!isOpeningResume && !resumeError && showUploadedResume && resumeObjectUrl && resumeContentType === 'application/pdf' ? (
+                <iframe className="admin-applicant-cv-modal__document" src={resumeObjectUrl} title={`${applicant.fullName} application CV`} />
+              ) : null}
+              {!isOpeningResume && !resumeError && showUploadedResume && resumeObjectUrl && resumeContentType !== 'application/pdf' ? (
+                <div className="admin-applicant-cv-modal__state">
+                  <FaDownload />
+                  <strong>Submitted CV ready</strong>
+                  <a className="admin-button admin-button--primary" href={resumeObjectUrl} download={`${applicant.fullName.replace(/[^a-z0-9]+/gi, '-')}-cv`}>
+                    <FaDownload /> Download CV
+                  </a>
+                </div>
+              ) : null}
+            </div>
+          </section>
+        </div>,
+        document.body,
+      ) : null}
     </div>
   );
 }

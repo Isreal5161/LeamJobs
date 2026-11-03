@@ -117,6 +117,19 @@ test('admin viewer requests the authorized application endpoint and ignores stal
   assert.match(source, /if \(requestVersion !== resumeRequestVersion\.current\) return/);
   assert.match(source, /resumeRequestVersion\.current \+= 1/);
   assert.match(source, /setResumeObjectUrl\(null\)/);
+  assert.match(source, /createPortal\(/);
+  assert.match(source, /role="dialog"/);
+  assert.match(source, /aria-modal="true"/);
+  assert.match(source, /aria-labelledby="admin-applicant-cv-modal-title"/);
+  assert.match(source, /event\.key === 'Escape'/);
+  assert.match(source, /event\.target === event\.currentTarget/);
+  assert.match(source, /document\.body\.style\.overflow = 'hidden'/);
+  assert.match(source, /URL\.revokeObjectURL\(resumeObjectUrl\)/);
+  assert.match(source, /Loading CV\.\.\./);
+  assert.match(source, /CV could not be opened/);
+  assert.match(source, /<CVTemplateRenderer data=\{cvView\.templateData\}/);
+  assert.match(source, /className="admin-applicant-cv-modal__document"/);
+  assert.match(source, /if \(application && application\.id !== applicationId\)/);
   assert.match(api, /\/admin\/jobs\/\$\{encodeURIComponent\(jobId\)\}\/applications\/\$\{encodeURIComponent\(applicationId\)\}\/resume/);
 });
 

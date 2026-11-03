@@ -1052,12 +1052,92 @@
   border-top: 1px solid #edf2f7;
 }
 
-.admin-applicant-detail__cv-document {
+.admin-applicant-cv-modal-backdrop {
+  position: fixed;
+  z-index: 1200;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: clamp(0.5rem, 3vw, 2rem);
+  background: rgba(15, 23, 42, 0.68);
+  backdrop-filter: blur(3px);
+}
+
+.admin-applicant-cv-modal {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  width: min(1120px, 100%);
+  max-height: min(92vh, 100%);
+  min-height: min(560px, 80vh);
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.75);
+  border-radius: 18px;
+  background: #f8fafc;
+  box-shadow: 0 24px 80px rgba(15, 23, 42, 0.35);
+}
+
+.admin-applicant-cv-modal__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid #e2e8f0;
+  background: #fff;
+}
+
+.admin-applicant-cv-modal__header h2 {
+  margin: 0.2rem 0 0;
+  color: #0f172a;
+  font-size: 1.2rem;
+}
+
+.admin-applicant-cv-modal__body {
+  display: grid;
+  align-content: start;
+  gap: 0.8rem;
+  min-height: 0;
+  overflow: auto;
+  padding: 1rem;
+}
+
+.admin-applicant-cv-modal__document {
   width: 100%;
-  min-height: 70vh;
+  min-height: 65vh;
+  flex: 1;
   border: 1px solid #dbe3ec;
   border-radius: 12px;
   background: #fff;
+}
+
+.admin-applicant-cv-modal__state {
+  display: grid;
+  justify-items: center;
+  gap: 0.75rem;
+  padding: 3rem 1.25rem;
+  color: #475569;
+  text-align: center;
+}
+
+.admin-applicant-cv-modal__state > svg {
+  color: #ef5036;
+  font-size: 1.5rem;
+}
+
+.admin-applicant-cv-modal__state p {
+  max-width: 38rem;
+  margin: 0;
+}
+
+.admin-applicant-cv-modal__note {
+  margin: 0;
+  color: #64748b;
+  font-size: 0.85rem;
+}
+
+.admin-applicant-cv-modal__template {
+  display: grid;
+  gap: 0.8rem;
 }
 
 .admin-applicant-detail__section:first-child {
@@ -4962,4 +5042,33 @@
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.3px;
+}
+
+@media (max-width: 767px) {
+  .admin-applicant-cv-modal-backdrop {
+    padding: 0.4rem;
+  }
+
+  .admin-applicant-cv-modal {
+    width: 100%;
+    min-height: 0;
+    max-height: 96vh;
+    border-radius: 12px;
+  }
+
+  .admin-applicant-cv-modal__header {
+    padding: 0.8rem;
+  }
+
+  .admin-applicant-cv-modal__header h2 {
+    font-size: 1rem;
+  }
+
+  .admin-applicant-cv-modal__body {
+    padding: 0.7rem;
+  }
+
+  .admin-applicant-cv-modal__document {
+    min-height: 72vh;
+  }
 }
