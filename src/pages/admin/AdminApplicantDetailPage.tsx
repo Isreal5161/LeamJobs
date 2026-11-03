@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { FaArrowLeft, FaCalendarAlt, FaCheck, FaDownload, FaFileAlt, FaMapMarkerAlt, FaSpinner, FaTimes } from 'react-icons/fa';
 import { useAuth } from '../../context/AuthContext';
+import CVTemplateRenderer from '../../components/cv-templates/CVTemplateRenderer';
 import {
   getAdminJob,
   getAdminJobApplication,
@@ -12,6 +13,7 @@ import {
   type AdminJob,
   type EmployerApplicationStatus,
 } from '../../services/api';
+import { resolveApplicationCvView } from '../../utils/applicationCv';
 import AdminPageSkeleton from './AdminPageSkeleton';
 
 const statusLabels: Record<EmployerApplicationStatus, string> = {
@@ -32,6 +34,11 @@ function AdminApplicantDetailPage() {
   const [adminCanManageApplicants, setAdminCanManageApplicants] = useState(false);
   const [isOpeningResume, setIsOpeningResume] = useState(false);
   const [resumeError, setResumeError] = useState('');
+  const [showTemplateCv, setShowTemplateCv] = useState(false);
+  const [resumeObjectUrl, setResumeObjectUrl] = useState<string | null>(null);
+  const [resumeContentType, setResumeContentType] = useState('');
+  const [showUploadedResume, setShowUploadedResume] = useState(false);
+  const resumeRequestVersion = useRef(0);
   const [isSelecting, setIsSelecting] = useState(false);
   const [selectionError, setSelectionError] = useState('');
   const [showConfirmSelection, setShowConfirmSelection] = useState(false);
@@ -41,6 +48,13 @@ function AdminApplicantDetailPage() {
   const [actionMessage, setActionMessage] = useState('');
 
   useEffect(() => {
+    resumeRequestVersion.current += 1;
+    setIsOpeningResume(false);
+    setShowTemplateCv(false);
+    setResumeObjectUrl(null);
+    setResumeContentType('');
+    setShowUploadedResume(false);
+
     if (!token || !jobId || !applicationId) {
       setJob(null);
       setApplication(null);
@@ -82,6 +96,10 @@ function AdminApplicantDetailPage() {
       setJob(jobResult.data.data.job);
       setApplication(applicationResult.data.data.application);
       setAdminCanManageApplicants(Boolean(applicationResult.data.data.adminCanManageApplicants));
+      setShowTemplateCv(false);
+      setResumeObjectUrl(null);
+      setResumeContentType('');
+      setShowUploadedResume(false);
       setIsLoading(false);
     };
 
@@ -89,15 +107,35 @@ function AdminApplicantDetailPage() {
 
     return () => {
       active = false;
+      resumeRequestVersion.current += 1;
     };
   }, [applicationId, jobId, token]);
 
+  useEffect(() => () => {
+    if (resumeObjectUrl) URL.revokeObjectURL(resumeObjectUrl);
+  }, [resumeObjectUrl]);
+
   const openResume = async () => {
-    if (!token || !jobId || !applicationId) return;
+    if (!application) return;
+    const cvView = resolveApplicationCvView(application, application.applicant);
+    if (cvView.source === 'template') {
+      setResumeError('');
+      setShowTemplateCv((current) => !current);
+      setShowUploadedResume(false);
+      return;
+    }
+    if (!cvView.available || !token || !jobId || !applicationId) return;
+    if (resumeObjectUrl) {
+      setShowUploadedResume((current) => !current);
+      return;
+    }
+
+    const requestVersion = ++resumeRequestVersion.current;
     setIsOpeningResume(true);
     setResumeError('');
 
     const result = await getAdminJobApplicationResume(jobId, applicationId, token);
+    if (requestVersion !== resumeRequestVersion.current) return;
     if (!result.ok) {
       setResumeError(result.error.message || 'The CV could not be loaded.');
       setIsOpeningResume(false);
@@ -105,7 +143,9 @@ function AdminApplicantDetailPage() {
     }
 
     const url = URL.createObjectURL(result.data);
-    window.open(url, '_blank', 'noopener,noreferrer');
+    setResumeObjectUrl(url);
+    setResumeContentType(result.data.type);
+    setShowUploadedResume(true);
     setIsOpeningResume(false);
   };
 
@@ -182,6 +222,7 @@ function AdminApplicantDetailPage() {
   }
 
   const applicant = application.applicant;
+  const cvView = resolveApplicationCvView(application, applicant);
 
   return (
     <div className="admin-page admin-applicant-detail-page">
@@ -268,9 +309,9 @@ function AdminApplicantDetailPage() {
             {!adminCanManageApplicants ? (
               <span className="admin-applicant-mode-badge admin-applicant-mode-badge--readonly">View only</span>
             ) : null}
-            <button type="button" className="admin-button admin-button--secondary admin-button--icon" onClick={() => void openResume()} disabled={isOpeningResume}>
+            <button type="button" className="admin-button admin-button--secondary admin-button--icon" onClick={() => void openResume()} disabled={isOpeningResume || !cvView.available}>
               {isOpeningResume ? <FaSpinner className="leamjobs-spin" /> : <FaFileAlt />}
-              <span>View CV</span>
+              <span>{cvView.source === 'template' && showTemplateCv || showUploadedResume ? 'Hide CV' : 'View CV'}</span>
             </button>
           </div>
         </div>
@@ -278,10 +319,51 @@ function AdminApplicantDetailPage() {
         <div className="admin-applicant-detail__facts">
           <span><FaMapMarkerAlt /> {applicant.location || 'Location not provided'}</span>
           <span><FaCalendarAlt /> Applied {formatDate(application.createdAt)}</span>
-          <span><FaDownload /> Resume {application.resume.available ? 'available' : 'unavailable'}</span>
+          <span><FaDownload /> {cvView.available ? 'CV source found' : 'No CV on file'}</span>
         </div>
 
         <div className="admin-applicant-detail__content">
+          <article className="admin-applicant-detail__section admin-applicant-detail__cv">
+            <h3>Application CV</h3>
+            <p>
+              {cvView.source === 'application'
+                ? 'Uploaded CV submitted with this application.'
+                : cvView.source === 'profile'
+                  ? 'Current profile CV. This is not a historical copy of the application document.'
+                  : application.cvSnapshot
+                    ? 'LeamJobs template snapshot saved for this application.'
+                    : cvView.source === 'template'
+                      ? 'Current profile template. This application has no historical template snapshot.'
+                      : cvView.unavailableReason === 'storage_reference_missing'
+                        ? 'This saved CV cannot be retrieved because its secure storage reference is missing. The applicant may need to upload it again.'
+                        : 'No application CV or legacy profile CV is available.'}
+            </p>
+            {cvView.submittedAt ? <small>CV captured {formatDate(cvView.submittedAt)}.</small> : null}
+            {resumeError ? <p role="alert">{resumeError}</p> : null}
+            {showTemplateCv && cvView.source === 'template' ? (
+              <>
+                {cvView.version ? (
+                  <small>Template version {cvView.version}.</small>
+                ) : application.cvSnapshot ? (
+                  <small>The original template version was not recorded; the saved content is shown in the current layout.</small>
+                ) : null}
+                {cvView.templateData ? (
+                  <CVTemplateRenderer data={cvView.templateData} template={cvView.template} templateVersion={cvView.version} />
+                ) : (
+                  <p role="alert">The saved CV snapshot content is unavailable.</p>
+                )}
+              </>
+            ) : null}
+            {showUploadedResume && resumeObjectUrl && resumeContentType === 'application/pdf' ? (
+              <iframe className="admin-applicant-detail__cv-document" src={resumeObjectUrl} title={`${applicant.fullName} application CV`} />
+            ) : null}
+            {showUploadedResume && resumeObjectUrl && resumeContentType !== 'application/pdf' ? (
+              <a className="admin-button admin-button--secondary" href={resumeObjectUrl} download={`${applicant.fullName.replace(/[^a-z0-9]+/gi, '-')}-cv`}>
+                <FaDownload /> Download submitted CV
+              </a>
+            ) : null}
+          </article>
+
           <article className="admin-applicant-detail__section">
             <h3>About</h3>
             <p>{applicant.bio || 'No profile bio is available yet.'}</p>

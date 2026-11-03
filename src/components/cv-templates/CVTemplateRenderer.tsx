@@ -1,4 +1,5 @@
 import { FaEnvelope, FaPhone, FaMapMarkerAlt, FaLinkedin } from 'react-icons/fa';
+import { CURRENT_CV_TEMPLATE_VERSION } from '../../utils/applicationCv';
 import './cv-templates.css';
 
 export interface CVData {
@@ -59,6 +60,7 @@ export const sampleCVData: CVData = {
 interface CVTemplateRendererProps {
   data: CVData;
   template: CVTemplateId;
+  templateVersion?: string | null;
 }
 
 function AdditionalSections({ data, className }: { data: CVData; className: string }) {
@@ -469,7 +471,11 @@ function CompactTemplate({ data }: { data: CVData }) {
   </div>;
 }
 
-function CVTemplateRenderer({ data, template }: CVTemplateRendererProps) {
+function CVTemplateRenderer({ data, template, templateVersion }: CVTemplateRendererProps) {
+  if (templateVersion && templateVersion !== CURRENT_CV_TEMPLATE_VERSION) {
+    return <p role="alert">This CV uses a template version that this application cannot render.</p>;
+  }
+
   const renderTemplate = () => {
     switch (template) {
       case 'modern':

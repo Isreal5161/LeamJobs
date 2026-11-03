@@ -1052,6 +1052,14 @@
   border-top: 1px solid #edf2f7;
 }
 
+.admin-applicant-detail__cv-document {
+  width: 100%;
+  min-height: 70vh;
+  border: 1px solid #dbe3ec;
+  border-radius: 12px;
+  background: #fff;
+}
+
 .admin-applicant-detail__section:first-child {
   border-top: 0;
 }

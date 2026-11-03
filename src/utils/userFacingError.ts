@@ -83,6 +83,12 @@ export const normalizeApiError = ({ status = 0, message, code, details, context 
   }
 
   if (status === 401) return { message: 'Your session has expired. Please sign in again.', code: code ?? 'UNAUTHORIZED', fieldErrors };
+  if (code === 'STORAGE_OBJECT_MISSING') {
+    return { message: 'The uploaded CV file is no longer available.', code, fieldErrors };
+  }
+  if (code === 'CV_REFERENCE_UNAVAILABLE') {
+    return { message: 'This CV cannot be retrieved securely. Upload it again before using it.', code, fieldErrors };
+  }
   if (['ROLE_MISMATCH', 'EMPLOYER_NOT_VERIFIED', 'VERIFICATION_STATE_CONFLICT'].includes(String(code)) && isSafeMessage(rawMessage)) {
     return { message: rawMessage, code: code ?? 'FORBIDDEN', fieldErrors };
   }

@@ -697,7 +697,7 @@ export type EmployerApplicationDetail = {
   createdAt: string;
   updatedAt: string;
   contractId: string | null;
-  resume: { available: boolean; source: 'application' | 'profile' | 'template' | null; submittedAt: string | null; version: string | null };
+  resume: { available: boolean; source: 'application' | 'profile' | 'template' | null; isHistorical: boolean; unavailableReason?: 'storage_reference_missing' | null; submittedAt: string | null; version: string | null };
   cvSnapshot: {
     id: string;
     source: 'LEAMJOBS_TEMPLATE';
@@ -730,7 +730,7 @@ export type AdminApplicationDetail = {
   createdAt: string;
   updatedAt: string;
   contractId: string | null;
-  resume: { available: boolean; source: 'application' | 'profile' | 'template' | null; submittedAt: string | null; version: string | null };
+  resume: { available: boolean; source: 'application' | 'profile' | 'template' | null; isHistorical: boolean; unavailableReason?: 'storage_reference_missing' | null; submittedAt: string | null; version: string | null };
   cvSnapshot: {
     id: string;
     source: 'LEAMJOBS_TEMPLATE';

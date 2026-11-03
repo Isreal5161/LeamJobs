@@ -5,7 +5,7 @@ import {
   FaExternalLinkAlt, FaFileAlt, FaGlobe, FaMapMarkerAlt, FaSearch, FaSpinner, FaTimes, FaWhatsapp,
 } from 'react-icons/fa';
 import ApplicantAvatar from '../../components/employer/ApplicantAvatar';
-import CVTemplateRenderer, { type CVData, type CVTemplateId } from '../../components/cv-templates/CVTemplateRenderer';
+import CVTemplateRenderer from '../../components/cv-templates/CVTemplateRenderer';
 import InterviewScheduleModal from '../../components/interviews/InterviewScheduleModal';
 import { useAuth } from '../../context/AuthContext';
 import {
@@ -27,6 +27,7 @@ import {
   selectContractApplication,
   updateEmployerApplicationStatus,
 } from '../../services/api';
+import { resolveApplicationCvView } from '../../utils/applicationCv';
 
 const statuses: Array<'ALL' | EmployerApplicationStatus> = ['ALL', 'APPLIED', 'REVIEWING', 'SHORTLISTED', 'INTERVIEW', 'REJECTED', 'ACCEPTED', 'PAYMENT_PENDING', 'WITHDRAWN'];
 const normalApplicationStatuses: EmployerApplicationStatus[] = ['APPLIED', 'REVIEWING', 'SHORTLISTED', 'INTERVIEW', 'REJECTED', 'ACCEPTED', 'WITHDRAWN'];
@@ -63,6 +64,7 @@ function EmployerApplicantsPage() {
   const cvModalCloseRef = useRef<HTMLButtonElement>(null);
   const cancelDialogCloseRef = useRef<HTMLButtonElement>(null);
   const lastFocusedElementRef = useRef<HTMLElement | null>(null);
+  const cvRequestVersion = useRef(0);
   const [error, setError] = useState('');
   const [detailError, setDetailError] = useState('');
   const [actionError, setActionError] = useState('');
@@ -176,8 +178,12 @@ function EmployerApplicantsPage() {
   }, [filteredApplications, selectedApplicationId]);
 
   const selectedListItem = applications.find((application) => application.id === selectedApplicationId) ?? null;
+  const cvView = selectedApplication
+    ? resolveApplicationCvView(selectedApplication, selectedApplication.applicant)
+    : null;
 
   useEffect(() => {
+    cvRequestVersion.current += 1;
     if (!token || !selectedListItem) {
       setSelectedApplication(null);
       setIsLoadingDetail(false);
@@ -188,6 +194,12 @@ function EmployerApplicantsPage() {
     setDetailError('');
     setResumeState('idle');
     setResumeError('');
+    setIsOpeningResume(false);
+    setCvModalOpen(false);
+    setCvDocumentUrl((url) => {
+      if (url) URL.revokeObjectURL(url);
+      return null;
+    });
     void getEmployerApplication(selectedListItem.jobId, selectedListItem.id, token).then((result) => {
       if (!active) return;
       if (!result.ok) {
@@ -196,7 +208,10 @@ function EmployerApplicantsPage() {
       } else setSelectedApplication(result.data.data.application);
       setIsLoadingDetail(false);
     });
-    return () => { active = false; };
+    return () => {
+      active = false;
+      cvRequestVersion.current += 1;
+    };
   }, [detailRetryKey, selectedListItem, token]);
 
   const selectedJob = jobs.find((job) => job.id === selectedJobId);
@@ -352,35 +367,9 @@ function EmployerApplicantsPage() {
     }
   };
 
-  const templateDataForApplicant = (applicantData: EmployerApplicationDetail['applicant']): CVData => ({
-    personalInfo: {
-      fullName: applicantData.fullName,
-      title: applicantData.professionalTitle || 'Professional',
-      email: applicantData.email,
-      phone: applicantData.phone ?? undefined,
-      location: applicantData.location ?? undefined,
-      linkedin: applicantData.linkedinUrl ?? undefined,
-    },
-    summary: applicantData.bio ?? '',
-    experience: (applicantData.experience ?? []).map((item) => ({
-      jobTitle: item.jobTitle || '',
-      company: item.company || '',
-      startDate: item.startDate || '',
-      endDate: item.endDate || '',
-      currentlyWorking: Boolean(item.currentlyWorking),
-      description: item.description || '',
-    })),
-    education: (applicantData.education ?? []).map((item) => ({ degree: item.degree || '', school: item.school || '', year: item.year || '' })),
-    skills: applicantData.skills ?? [],
-    certifications: (applicantData.certifications ?? []).map((item) => ({ name: item.name || '', issuer: item.issuer || '' })),
-    languages: (applicantData.languages ?? []).map((item) => ({ name: item.name || '', proficiency: item.proficiency || '' })),
-    projects: (applicantData.projects ?? []).map((item) => ({
-      name: item.name || '', description: item.description || '', technologies: item.technologies ?? [],
-      projectUrl: item.projectUrl || '', githubUrl: item.githubUrl || '', startDate: item.startDate || '', endDate: item.endDate || '',
-    })),
-  });
-
   const closeCvModal = () => {
+    cvRequestVersion.current += 1;
+    setIsOpeningResume(false);
     setCvModalOpen(false);
     if (cvDocumentUrl) URL.revokeObjectURL(cvDocumentUrl);
     setCvDocumentUrl(null);
@@ -388,7 +377,7 @@ function EmployerApplicantsPage() {
   };
 
   const openResume = async () => {
-    if (!token || !selectedListItem || !selectedApplication || isOpeningResume) return;
+    if (!token || !selectedListItem || !selectedApplication || !cvView?.available || isOpeningResume) return;
     lastFocusedElementRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     setCvModalOpen(true);
     setCvModalState('loading');
@@ -397,20 +386,22 @@ function EmployerApplicantsPage() {
     setActionError('');
     setResumeError('');
     setResumeState('idle');
-    if (selectedApplication.resume.source === 'template') {
+    if (cvView.source === 'template') {
       setCvModalState('template');
       setResumeState('success');
       setIsOpeningResume(false);
       return;
     }
-    if (!selectedApplication.resume.source) {
+    if (!cvView?.source) {
       setCvModalState('unavailable');
       setIsOpeningResume(false);
       return;
     }
+    const requestVersion = ++cvRequestVersion.current;
     const result = await getEmployerApplicationResume(selectedListItem.jobId, selectedListItem.id, token);
+    if (requestVersion !== cvRequestVersion.current) return;
     if (!result.ok) {
-      setResumeError('The CV could not be retrieved.');
+      setResumeError(result.error.message || 'The CV could not be retrieved.');
       setResumeState('error');
       setCvModalState('error');
     } else {
@@ -666,7 +657,7 @@ function EmployerApplicantsPage() {
               </div>
               <div className="employer-candidate-detail__header-actions">
                 <span className={statusClass(selectedApplication.status)}>{statusLabels[selectedApplication.status]}</span>
-                <button className="employer-button employer-button--primary" type="button" onClick={() => void openResume()} disabled={!selectedApplication.resume.available || isOpeningResume}>
+                <button className="employer-button employer-button--primary" type="button" onClick={() => void openResume()} disabled={!cvView?.available || isOpeningResume}>
                   {isOpeningResume ? <FaSpinner className="leamjobs-spin" /> : <FaFileAlt />} View CV
                 </button>
                 <button className="employer-button employer-button--ghost" type="button" onClick={() => void startConversation()} disabled={isMutating}><FaEnvelope /> Message</button>
@@ -699,7 +690,7 @@ function EmployerApplicantsPage() {
                   </div>
                   <div className="employer-summary-list">
                     <div><span>Submitted</span><strong>{formatDate(selectedApplication.createdAt)}</strong></div>
-                    <div><span>Resume</span><strong>{selectedApplication.resume.available ? 'Available' : 'Unavailable'}</strong></div>
+                    <div><span>Resume</span><strong>{cvView?.available ? 'Available' : 'Unavailable'}</strong></div>
                     <div><span>Job</span><strong>{selectedApplication.job.title}</strong></div>
                     <div><span>Job fit</span><strong className="employer-job-fit__value">{typeof applicant.jobFitScore === 'number' ? `${applicant.jobFitScore}% Match` : 'Not available'}</strong></div>
                     <div><span>Availability</span><strong className={`employer-availability__value employer-availability__value--${applicant.availability.toLowerCase()}`}>{applicant.availability === 'AVAILABLE_NOW' ? 'Available now' : applicant.availability === 'AVAILABLE_SOON' ? 'Available soon' : 'Not currently available'}</strong></div>
@@ -753,8 +744,8 @@ function EmployerApplicantsPage() {
                   <span className="employer-cv-card__icon"><FaFileAlt /></span>
                   <div>
                     <h2>Candidate CV</h2>
-                    <p>{resumeState === 'error' ? resumeError : selectedApplication.resume.source === 'application' ? 'Submitted with this application.' : selectedApplication.resume.source === 'profile' ? 'Using the seeker\'s saved profile CV.' : selectedApplication.resume.source === 'template' ? 'Using the seeker\'s saved LeamJobs CV template.' : 'No CV is available for this applicant.'}</p>
-                    {selectedApplication.resume.submittedAt ? <small>Submitted {formatDate(selectedApplication.resume.submittedAt)}</small> : null}
+                    <p>{resumeState === 'error' ? resumeError : cvView?.unavailableReason === 'storage_reference_missing' ? 'This saved CV cannot be retrieved because its secure storage reference is missing. The applicant may need to upload it again.' : cvView?.source === 'application' ? 'Uploaded CV submitted with this application.' : cvView?.source === 'profile' ? 'Using the current profile CV. This is not a historical copy of the application document.' : selectedApplication.cvSnapshot ? 'Submitted LeamJobs CV template snapshot.' : cvView?.source === 'template' ? 'Using the current profile template. This application has no historical snapshot.' : 'No CV is available for this applicant.'}</p>
+                    {cvView?.submittedAt ? <small>Submitted {formatDate(cvView.submittedAt)}</small> : null}
                   </div>
                   {resumeState === 'error' ? <button className="employer-button employer-button--ghost applicant-cv-retry" type="button" onClick={() => void openResume()} disabled={isOpeningResume}>{isOpeningResume ? <FaSpinner className="leamjobs-spin" /> : <FaExternalLinkAlt />} Try again</button> : null}
                 </section>
@@ -792,15 +783,25 @@ function EmployerApplicantsPage() {
             </header>
             <div className="employer-cv-modal__body">
               {cvModalState === 'loading' ? <div className="employer-cv-modal__state" role="status" aria-live="polite"><FaSpinner className="leamjobs-spin" /><strong>Loading CV...</strong></div> : null}
-              {cvModalState === 'error' ? <div className="employer-cv-modal__state" role="alert"><FaFileAlt /><strong>Unable to load CV</strong><p>The CV could not be retrieved.</p><button className="employer-button employer-button--primary" type="button" onClick={() => void openResume()}>Retry</button></div> : null}
+              {cvModalState === 'error' ? <div className="employer-cv-modal__state" role="alert"><FaFileAlt /><strong>Unable to load CV</strong><p>{resumeError || 'The CV could not be retrieved.'}</p><button className="employer-button employer-button--primary" type="button" onClick={() => void openResume()}>Retry</button></div> : null}
               {cvModalState === 'unavailable' ? <div className="employer-cv-modal__state"><FaFileAlt /><strong>CV unavailable</strong><p>This applicant does not currently have a CV available to view.</p></div> : null}
               {cvModalState === 'pdf' && cvDocumentUrl ? <iframe className="employer-cv-modal__document" src={cvDocumentUrl} title={`${applicant.fullName} CV document`} /> : null}
               {cvModalState === 'template' ? (() => {
-                const templateVariant = (selectedApplication.cvSnapshot?.templateId ?? applicant.cvTemplate ?? 'professional') as CVTemplateId;
+                const cvView = resolveApplicationCvView(selectedApplication, applicant);
                 return (
                   <div className="employer-cv-modal__template">
-                    <p className="employer-cv-modal__template-note">{selectedApplication.cvSnapshot ? 'Submitted LeamJobs CV snapshot.' : 'Saved LeamJobs CV template. This application does not include a historical CV snapshot.'}</p>
-                    <CVTemplateRenderer data={selectedApplication.cvSnapshot?.snapshot ?? templateDataForApplicant(applicant)} template={templateVariant} />
+                    <p className="employer-cv-modal__template-note">
+                      {cvView.isHistorical
+                        ? cvView.version
+                          ? `Submitted LeamJobs CV snapshot (template version ${cvView.version}).`
+                          : 'Submitted CV content snapshot; the original template version was not recorded, so the current layout is used.'
+                        : 'Current profile template; this application has no historical template snapshot.'}
+                    </p>
+                    {cvView.templateData ? (
+                      <CVTemplateRenderer data={cvView.templateData} template={cvView.template} templateVersion={cvView.version} />
+                    ) : (
+                      <p role="alert">The saved CV snapshot content is unavailable.</p>
+                    )}
                   </div>
                 );
               })() : null}

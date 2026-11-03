@@ -14,7 +14,8 @@ import {
   type EmployerJob,
 } from '../../services/api';
 import AuthenticatedImage from '../../components/common/AuthenticatedImage';
-import CVTemplateRenderer, { type CVData, type CVTemplateId } from '../../components/cv-templates/CVTemplateRenderer';
+import CVTemplateRenderer from '../../components/cv-templates/CVTemplateRenderer';
+import { resolveApplicationCvView } from '../../utils/applicationCv';
 
 const PAGE_SIZE = 25;
 
@@ -227,13 +228,17 @@ function EmployerCandidatesPage() {
     clearCandidateCv();
   };
 
+  const cvView = applicationDetail
+    ? resolveApplicationCvView(applicationDetail, applicationDetail.applicant)
+    : null;
+
   const openCandidateCv = async () => {
-    if (!token || !applicationDetail || isLoadingCv || !applicationDetail.resume.available) return;
+    if (!token || !applicationDetail || isLoadingCv || !cvView?.available) return;
     const version = cvRequestVersion.current + 1;
     cvRequestVersion.current = version;
     setCvError('');
     setShowCv(false);
-    if (applicationDetail.resume.source === 'template') {
+    if (cvView.source === 'template') {
       setShowCv(true);
       return;
     }
@@ -468,23 +473,35 @@ function EmployerCandidatesPage() {
                           <p><strong>Status:</strong> {applicationDetail.status.replaceAll('_', ' ')}</p>
                           <p><strong>Applied:</strong> {formatCandidateDate(applicationDetail.createdAt)}</p>
                           {applicationDetail.coverLetter ? <p><strong>Cover letter:</strong><br />{applicationDetail.coverLetter}</p> : null}
-                          {applicationDetail.resume.available ? (
+                          {cvView?.available ? (
                             <div className="employer-candidate-cv-actions">
                               <button className="employer-button employer-button--primary" type="button" onClick={() => void openCandidateCv()} disabled={isLoadingCv}>
                                 {isLoadingCv ? <FaSpinner className="leamjobs-spin" /> : <FaFileAlt />}
                                 {isLoadingCv ? 'Loading CV...' : showCv ? 'Reload CV' : 'View CV'}
                               </button>
                               {cvObjectUrl ? <button className="employer-button employer-button--ghost" type="button" onClick={downloadCandidateCv}><FaDownload /> Download CV</button> : null}
-                              {applicationDetail.cvSnapshot ? <small>Using the CV snapshot captured for this application on {formatCandidateDate(applicationDetail.cvSnapshot.snapshotCapturedAt)}.</small> : null}
+                              {cvView.source === 'template' && cvView.isHistorical ? (
+                                <small>
+                                  Submitted CV snapshot{cvView.submittedAt ? ` captured ${formatCandidateDate(cvView.submittedAt)}` : ''}.
+                                  {cvView.version
+                                    ? ` Template version ${cvView.version}.`
+                                    : ' Original template version was not recorded; showing the saved content in the current layout.'}
+                                </small>
+                              ) : cvView.source === 'profile' ? (
+                                <small>Current profile CV; this is not a historical copy of the application document.</small>
+                              ) : cvView.source === 'template' ? (
+                                <small>Current profile template; this application has no historical template snapshot.</small>
+                              ) : null}
                             </div>
-                          ) : <p className="employer-candidate-detail-empty"><FaFileAlt /> No CV was attached or saved for this application.</p>}
+                          ) : <p className="employer-candidate-detail-empty"><FaFileAlt /> {cvView?.unavailableReason === 'storage_reference_missing' ? 'This saved CV cannot be retrieved because its secure storage reference is missing. The applicant may need to upload it again.' : 'No CV was attached or saved for this application.'}</p>}
                           {cvError ? <p className="employer-action-error" role="alert">{cvError}</p> : null}
-                          {showCv && applicationDetail.resume.source === 'template' ? (
+                          {showCv && cvView?.source === 'template' ? (
                             <div className="employer-candidate-cv-template">
-                              <CVTemplateRenderer
-                                data={applicationDetail.cvSnapshot?.snapshot ?? cvDataForApplicant(applicationDetail)}
-                                template={(applicationDetail.cvSnapshot?.templateId ?? applicationDetail.applicant.cvTemplate ?? 'professional') as CVTemplateId}
-                              />
+                              {cvView.templateData ? (
+                                <CVTemplateRenderer data={cvView.templateData} template={cvView.template} templateVersion={cvView.version} />
+                              ) : (
+                                <p role="alert">The saved CV snapshot content is unavailable.</p>
+                              )}
                             </div>
                           ) : null}
                           {showCv && cvObjectUrl && cvContentType === 'application/pdf' ? (
@@ -551,43 +568,6 @@ function formatCandidateDate(value: string | null | undefined) {
   if (!value) return 'Not provided';
   const date = new Date(value);
   return Number.isNaN(date.getTime()) ? 'Not provided' : new Intl.DateTimeFormat(undefined, { dateStyle: 'medium' }).format(date);
-}
-
-function cvDataForApplicant(application: EmployerApplicationDetail): CVData {
-  const applicant = application.applicant;
-  return {
-    personalInfo: {
-      fullName: applicant.fullName,
-      title: applicant.professionalTitle || 'Professional',
-      email: applicant.email,
-      phone: applicant.phone ?? undefined,
-      location: applicant.location ?? undefined,
-      linkedin: applicant.linkedinUrl ?? undefined,
-      website: applicant.website ?? undefined,
-    },
-    summary: applicant.bio ?? '',
-    experience: (applicant.experience ?? []).map((item) => ({
-      jobTitle: item.jobTitle || '',
-      company: item.company || '',
-      startDate: item.startDate || '',
-      endDate: item.endDate || '',
-      currentlyWorking: Boolean(item.currentlyWorking),
-      description: item.description || '',
-    })),
-    education: (applicant.education ?? []).map((item) => ({ degree: item.degree || '', school: item.school || '', year: item.year || '', details: item.details || '' })),
-    skills: applicant.skills ?? [],
-    certifications: (applicant.certifications ?? []).map((item) => ({ name: item.name || '', issuer: item.issuer || '' })),
-    languages: (applicant.languages ?? []).map((item) => ({ name: item.name || '', proficiency: item.proficiency || '' })),
-    projects: (applicant.projects ?? []).map((item) => ({
-      name: item.name || '',
-      description: item.description || '',
-      technologies: item.technologies ?? [],
-      projectUrl: item.projectUrl || '',
-      githubUrl: item.githubUrl || '',
-      startDate: item.startDate || '',
-      endDate: item.endDate || '',
-    })),
-  };
 }
 
 function CandidateCard({ candidate, token, onInvite, onDetails }: {
