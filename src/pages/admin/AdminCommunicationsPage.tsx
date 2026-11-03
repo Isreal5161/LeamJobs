@@ -27,6 +27,7 @@ import {
   type AdminCampaignDelivery,
   type AdminCampaignRecord,
   type AdminEmailTemplate,
+  type AdminCommunicationPurpose,
 } from "../../services/api";
 
 type Editor = AdminCommunicationFields & {
@@ -40,14 +41,28 @@ const blankCampaign: AdminCommunicationFields = {
   body: "",
   ctaLabel: "",
   ctaUrl: "",
+  purpose: "PROMOTIONAL_MARKETING",
   segment: "ALL_MARKETING_USERS",
+  operationalContentConfirmed: false,
 };
 
 const audienceLabels: Record<string, string> = {
+  ALL_REGISTERED_USERS: "All registered users",
   ALL_MARKETING_USERS: "All opted-in registered users",
-  SEEKERS: "Opted-in seekers",
-  EMPLOYERS: "Opted-in employers",
-  PUBLIC_JOB_SUBSCRIBERS: "Public job-update subscribers",
+  SEEKERS: "Registered seekers",
+  EMPLOYERS: "Registered employers",
+  PUBLIC_JOB_SUBSCRIBERS: "Public newsletter subscribers (job updates only)",
+};
+const audienceLabel = (campaign: { purpose: AdminCommunicationPurpose; segment: string }) => {
+  if (campaign.purpose === "PROMOTIONAL_MARKETING") {
+    if (campaign.segment === "SEEKERS") return "Opt-in registered seekers";
+    if (campaign.segment === "EMPLOYERS") return "Opt-in registered employers";
+  }
+  return audienceLabels[campaign.segment] || campaign.segment;
+};
+const purposeLabels: Record<AdminCommunicationPurpose, string> = {
+  ESSENTIAL_ANNOUNCEMENT: "Essential platform announcement",
+  PROMOTIONAL_MARKETING: "Promotional marketing",
 };
 
 const reportStatusLabels: Record<string, string> = {
@@ -56,6 +71,7 @@ const reportStatusLabels: Record<string, string> = {
   SENT: "Sent",
   PARTIALLY_FAILED: "Partially failed",
   FAILED: "Failed",
+  SUPPRESSED: "Suppressed",
 };
 
 const formatCampaignDate = (value: string | null) => value ? new Date(value).toLocaleString() : "Not available";
@@ -92,7 +108,12 @@ function AdminCommunicationsPage() {
   const [campaignReportLoading, setCampaignReportLoading] = useState(false);
   const [campaignReportError, setCampaignReportError] = useState("");
   const [campaignReportPreview, setCampaignReportPreview] = useState<{ subject: string; html: string } | null>(null);
+  const [campaignReportPreviewLoading, setCampaignReportPreviewLoading] = useState(false);
+  const [recipientCountLoading, setRecipientCountLoading] = useState(false);
+  const [recipientCountError, setRecipientCountError] = useState("");
   const campaignBodyRef = useRef<HTMLTextAreaElement>(null);
+  const recipientCountRequestId = useRef(0);
+  const campaignReportPreviewRequestId = useRef(0);
 
   const loadTemplates = async () => {
     if (!token) return;
@@ -157,11 +178,22 @@ function AdminCommunicationsPage() {
     else setError(result.error.message || "Unable to render preview.");
   };
   const updateCampaign = (
-    field: keyof AdminCommunicationFields,
+    field: "subject" | "heading" | "body" | "ctaLabel" | "ctaUrl" | "segment",
     value: string,
   ) => {
-    setCampaign((current) => ({ ...current, [field]: value }));
-    setRecipientCount(null);
+    setCampaign((current) => ({
+      ...current,
+      [field]: value,
+      ...(field !== "segment" && current.purpose === "ESSENTIAL_ANNOUNCEMENT"
+        ? { operationalContentConfirmed: false }
+        : {}),
+    }));
+    if (field === "segment") {
+      recipientCountRequestId.current += 1;
+      setRecipientCount(null);
+      setRecipientCountLoading(false);
+      setRecipientCountError("");
+    }
   };
   const formatCampaignBody = (format: "heading" | "bold") => {
     const textarea = campaignBodyRef.current;
@@ -193,19 +225,26 @@ function AdminCommunicationsPage() {
   };
   const checkRecipients = async () => {
     if (!token || !campaign.segment) return;
+    const requestId = ++recipientCountRequestId.current;
+    setRecipientCount(null);
+    setRecipientCountError("");
+    setRecipientCountLoading(true);
     const result = await getAdminRecipientCount(
       token,
-      campaign.segment || "ALL_MARKETING_USERS",
+      campaign.purpose ?? "PROMOTIONAL_MARKETING",
+      campaign.segment,
     );
+    if (requestId !== recipientCountRequestId.current) return;
     if (result.ok) setRecipientCount(result.data.data.recipientCount);
-    else
-      setError(
-        result.error.message || "Unable to calculate eligible recipients.",
-      );
+    else setRecipientCountError(result.error.message || "Unable to calculate eligible recipients.");
+    setRecipientCountLoading(false);
   };
   useEffect(() => {
     void checkRecipients();
-  }, [token, campaign.segment]);
+    return () => {
+      recipientCountRequestId.current += 1;
+    };
+  }, [token, campaign.purpose, campaign.segment]);
   useEffect(() => {
     if (!editor && !pendingSend) return undefined;
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -249,9 +288,11 @@ function AdminCommunicationsPage() {
   };
   const openCampaignReport = async (record: AdminCampaignRecord) => {
     if (!token) return;
+    campaignReportPreviewRequestId.current += 1;
     setSelectedCampaign(record);
     setCampaignDeliveries([]);
     setCampaignReportPreview(null);
+    setCampaignReportPreviewLoading(false);
     setCampaignReportError("");
     setCampaignReportLoading(true);
     const [reportResult, deliveriesResult] = await Promise.all([
@@ -266,9 +307,15 @@ function AdminCommunicationsPage() {
   };
   const loadCampaignReportPreview = async () => {
     if (!token || !selectedCampaign) return;
+    const requestId = ++campaignReportPreviewRequestId.current;
+    setCampaignReportPreview(null);
+    setCampaignReportPreviewLoading(true);
+    setCampaignReportError("");
     const result = await getAdminCampaignPreview(token, selectedCampaign.campaign.id);
+    if (requestId !== campaignReportPreviewRequestId.current) return;
     if (result.ok) setCampaignReportPreview({ subject: result.data.data.subject, html: result.data.data.html });
     else setCampaignReportError(result.error.message || "Unable to render campaign preview.");
+    setCampaignReportPreviewLoading(false);
   };
   const sendCampaign = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -291,12 +338,17 @@ function AdminCommunicationsPage() {
     }
     const countResult = await getAdminRecipientCount(
       token,
-      campaign.segment || "ALL_MARKETING_USERS",
+      campaign.purpose ?? "PROMOTIONAL_MARKETING",
+      campaign.segment ?? "ALL_MARKETING_USERS",
     );
-    const count = countResult.ok
-      ? countResult.data.data.recipientCount
-      : (recipientCount ?? 0);
+    if (!countResult.ok) {
+      setError(countResult.error.message || "Unable to calculate eligible recipients.");
+      setSaving(false);
+      return;
+    }
+    const count = countResult.data.data.recipientCount;
     if (!count) {
+      setError("There are no eligible recipients for this communication.");
       setSaving(false);
       return;
     }
@@ -311,7 +363,7 @@ function AdminCommunicationsPage() {
     const sent = await sendAdminCampaign(token, pendingSend.id);
     if (sent.ok) {
       setNotice(
-        `Campaign queued for ${pendingSend.count.toLocaleString()} eligible recipients.`,
+        `Communication queued for ${(sent.data.data.campaign.recipientCount ?? pendingSend.count).toLocaleString()} eligible recipients.`,
       );
       setCampaign(blankCampaign);
       setCampaignId(null);
@@ -426,12 +478,12 @@ function AdminCommunicationsPage() {
         <div className="admin-communications-section__heading">
           <div>
             <span className="admin-eyebrow">
-              Explicit confirmation required
+              Purpose-aware communication
             </span>
-            <h2>Promotional emails</h2>
+            <h2>Platform communications</h2>
             <p>
-              Only recipients with active marketing consent are eligible.
-              Transactional email rules are separate.
+              Essential announcements reach active registered seekers and employers without requiring marketing consent.
+              Promotional marketing is sent only to users who opted in.
             </p>
           </div>
         </div>
@@ -439,6 +491,38 @@ function AdminCommunicationsPage() {
           className="admin-communications-campaign"
           onSubmit={(event) => void sendCampaign(event)}
         >
+          <label>
+            Communication purpose
+            <select
+              value={campaign.purpose ?? "PROMOTIONAL_MARKETING"}
+              disabled={Boolean(campaignId)}
+              onChange={(event) => {
+                const purpose = event.target.value as AdminCommunicationPurpose;
+                const segment = purpose === "ESSENTIAL_ANNOUNCEMENT"
+                  ? "ALL_REGISTERED_USERS"
+                  : "ALL_MARKETING_USERS";
+                recipientCountRequestId.current += 1;
+                setCampaign((current) => ({
+                  ...current,
+                  purpose,
+                  segment,
+                  operationalContentConfirmed: false,
+                }));
+                setRecipientCount(null);
+                setRecipientCountLoading(false);
+                setRecipientCountError("");
+                setError("");
+              }}
+            >
+              <option value="ESSENTIAL_ANNOUNCEMENT">Essential Platform Announcement</option>
+              <option value="PROMOTIONAL_MARKETING">Promotional Marketing</option>
+            </select>
+          </label>
+          <p className="admin-communications-purpose-note">
+            {campaign.purpose === "ESSENTIAL_ANNOUNCEMENT"
+              ? "Use only for necessary operational, availability, maintenance, security, or account-service information. Do not include promotional advertising."
+              : "Only active, non-anonymized seekers and employers who explicitly opted in can receive these emails. Public job-update subscribers remain a separate opt-in audience."}
+          </p>
           <label>
             Subject
             <input
@@ -518,16 +602,37 @@ function AdminCommunicationsPage() {
                 updateCampaign("segment", event.target.value)
               }
             >
-              <option value="ALL_MARKETING_USERS">
-                All opted-in registered users
-              </option>
-              <option value="SEEKERS">Opted-in seekers</option>
-              <option value="EMPLOYERS">Opted-in employers</option>
-              <option value="PUBLIC_JOB_SUBSCRIBERS">
-                Subscribed public job-update visitors
-              </option>
+              {campaign.purpose === "ESSENTIAL_ANNOUNCEMENT" ? <>
+                <option value="ALL_REGISTERED_USERS">All Registered Users</option>
+                <option value="SEEKERS">Registered Seekers</option>
+                <option value="EMPLOYERS">Registered Employers</option>
+              </> : <>
+                <option value="ALL_MARKETING_USERS">All Opt-in Registered Users</option>
+                <option value="SEEKERS">Opt-in Registered Seekers</option>
+                <option value="EMPLOYERS">Opt-in Registered Employers</option>
+                <option value="PUBLIC_JOB_SUBSCRIBERS">Public newsletter subscribers (job updates only)</option>
+              </>}
             </select>
           </label>
+          {campaign.purpose === "PROMOTIONAL_MARKETING" && campaign.segment === "PUBLIC_JOB_SUBSCRIBERS" ? (
+            <p className="admin-communications-purpose-note">
+              These subscribers opted in to job updates only. Keep this audience separate from general promotions and essential announcements.
+            </p>
+          ) : null}
+          {campaign.purpose === "ESSENTIAL_ANNOUNCEMENT" ? (
+            <label className="admin-communications-checkbox">
+              <input
+                type="checkbox"
+                checked={campaign.operationalContentConfirmed === true}
+                onChange={(event) => setCampaign((current) => ({
+                  ...current,
+                  operationalContentConfirmed: event.target.checked,
+                }))}
+                required
+              />
+              I confirm this message is strictly operational and contains no promotional advertising.
+            </label>
+          ) : null}
           <div className="admin-communications-campaign__actions">
             <button
               type="button"
@@ -536,18 +641,36 @@ function AdminCommunicationsPage() {
             >
               <FaEye /> Check eligible recipients
             </button>
-            <span>
-              {recipientCount === null
-                ? "Recipient count not checked"
-                : `${recipientCount.toLocaleString()} eligible recipients`}
+            <span aria-live="polite" aria-busy={recipientCountLoading}>
+              {recipientCountLoading
+                ? "Checking eligible recipients..."
+                : recipientCountError
+                  ? <span className="admin-communications-error" role="alert">{recipientCountError}</span>
+                  : recipientCount === null
+                    ? "Recipient count not checked"
+                    : `${recipientCount.toLocaleString()} eligible recipients`}
             </span>
             <button
               type="submit"
               className="admin-button admin-button--primary"
-              disabled={saving}
+              disabled={saving || (campaign.purpose === "ESSENTIAL_ANNOUNCEMENT" && campaign.operationalContentConfirmed !== true)}
             >
-              <FaPaperPlane /> {saving ? "Queueing..." : "Send promotion"}
+              <FaPaperPlane /> {saving ? "Queueing..." : campaign.purpose === "ESSENTIAL_ANNOUNCEMENT" ? "Send announcement" : "Send promotion"}
             </button>
+            {campaignId ? <button
+              type="button"
+              className="admin-button admin-button--secondary"
+              disabled={saving}
+              onClick={() => {
+                setCampaign(blankCampaign);
+                setCampaignId(null);
+                setCampaignPreview(null);
+                setRecipientCount(null);
+                setError("");
+              }}
+            >
+              Start a new communication
+            </button> : null}
           </div>
         </form>
       </section>
@@ -555,7 +678,7 @@ function AdminCommunicationsPage() {
         <div className="admin-communications-section__heading">
           <div>
             <span className="admin-eyebrow"><FaHistory /> Campaign history</span>
-            <h2 id="campaign-records-title">Campaign records</h2>
+            <h2 id="campaign-records-title">Communication records</h2>
             <p>Review queued campaigns and the actual delivery-worker results for each recipient.</p>
           </div>
         </div>
@@ -564,7 +687,7 @@ function AdminCommunicationsPage() {
         ) : campaignRecordsError ? (
           <div className="admin-communications-error" role="alert">{campaignRecordsError}</div>
         ) : campaignRecords.length === 0 ? (
-          <div className="admin-communications-records-state">No promotional campaigns have been created yet.</div>
+          <div className="admin-communications-records-state">No communications have been created yet.</div>
         ) : (
           <div className="admin-communications-records-list">
             {campaignRecords.map((record) => (
@@ -576,7 +699,7 @@ function AdminCommunicationsPage() {
                       {reportStatusLabels[record.delivery.reportingStatus]}
                     </span>
                   </div>
-                  <p>{audienceLabels[record.campaign.segment] || record.campaign.segment}</p>
+                  <p>{purposeLabels[record.campaign.purpose] || record.campaign.purpose} · {audienceLabel(record.campaign)}</p>
                   <small>Created {formatCampaignDate(record.campaign.createdAt)}</small>
                 </div>
                 <div className="admin-communications-record__counts" aria-label="Campaign delivery counts">
@@ -584,6 +707,7 @@ function AdminCommunicationsPage() {
                   <span><strong>{record.delivery.sent}</strong> sent</span>
                   <span><strong>{record.delivery.pending + record.delivery.processing}</strong> active</span>
                   <span><strong>{record.delivery.failed}</strong> failed</span>
+                  <span><strong>{record.delivery.suppressed}</strong> suppressed</span>
                 </div>
                 <button type="button" className="admin-button admin-button--secondary" onClick={() => void openCampaignReport(record)}>
                   <FaEye /> View report
@@ -708,14 +832,22 @@ function AdminCommunicationsPage() {
                 <span className="admin-eyebrow">Campaign report</span>
                 <h2 id="campaign-report-title">{selectedCampaign.campaign.subject}</h2>
               </div>
-              <button type="button" onClick={() => setSelectedCampaign(null)} aria-label="Close campaign report"><FaTimes /></button>
+              <button type="button" onClick={() => {
+                campaignReportPreviewRequestId.current += 1;
+                setCampaignReportPreviewLoading(false);
+                setSelectedCampaign(null);
+              }} aria-label="Close campaign report"><FaTimes /></button>
             </div>
             {campaignReportLoading ? <div className="admin-communications-records-state">Loading report...</div> : null}
             {campaignReportError ? <div className="admin-communications-error" role="alert">{campaignReportError}</div> : null}
             {!campaignReportLoading ? (
               <>
                 <div className="admin-communications-report-meta">
-                  <span><strong>Audience</strong>{audienceLabels[selectedCampaign.campaign.segment] || selectedCampaign.campaign.segment}</span>
+                  <span><strong>Purpose</strong>{purposeLabels[selectedCampaign.campaign.purpose] || selectedCampaign.campaign.purpose}</span>
+                  <span><strong>Audience</strong>{audienceLabel(selectedCampaign.campaign)}</span>
+                  {selectedCampaign.campaign.purpose === "ESSENTIAL_ANNOUNCEMENT"
+                    ? <span><strong>Operational confirmation</strong>{selectedCampaign.campaign.operationalContentConfirmed ? "Confirmed" : "Not confirmed"}</span>
+                    : null}
                   <span><strong>Created</strong>{formatCampaignDate(selectedCampaign.campaign.createdAt)}</span>
                   <span><strong>Queued</strong>{formatCampaignDate(selectedCampaign.campaign.sentAt)}</span>
                   <span><strong>State</strong><em className={`admin-communications-status admin-communications-status--${selectedCampaign.delivery.reportingStatus.toLowerCase()}`}>{reportStatusLabels[selectedCampaign.delivery.reportingStatus]}</em></span>
@@ -726,6 +858,7 @@ function AdminCommunicationsPage() {
                   <div><strong>{selectedCampaign.delivery.pending}</strong><span>Pending</span></div>
                   <div><strong>{selectedCampaign.delivery.processing}</strong><span>Processing</span></div>
                   <div><strong>{selectedCampaign.delivery.failed}</strong><span>Failed</span></div>
+                  <div><strong>{selectedCampaign.delivery.suppressed}</strong><span>Suppressed</span></div>
                 </div>
                 <div className="admin-communications-report-content">
                   <h3>Original content</h3>
@@ -736,9 +869,10 @@ function AdminCommunicationsPage() {
                     <dt>CTA label</dt><dd>{selectedCampaign.campaign.ctaLabel || "None"}</dd>
                     <dt>CTA URL</dt><dd>{selectedCampaign.campaign.ctaUrl || "None"}</dd>
                   </dl>
-                  <button type="button" className="admin-button admin-button--secondary" onClick={() => void loadCampaignReportPreview()}>
-                    <FaEye /> {campaignReportPreview ? "Refresh preview" : "Preview email"}
+                  <button type="button" className="admin-button admin-button--secondary" disabled={campaignReportPreviewLoading} onClick={() => void loadCampaignReportPreview()}>
+                    <FaEye /> {campaignReportPreviewLoading ? "Loading preview..." : campaignReportPreview ? "Refresh preview" : "Preview email"}
                   </button>
+                  {campaignReportPreviewLoading ? <p role="status">Loading email preview...</p> : null}
                   {campaignReportPreview ? <div className="admin-communications-preview"><strong>{campaignReportPreview.subject}</strong><iframe title="Campaign email preview" srcDoc={campaignReportPreview.html} /></div> : null}
                 </div>
                 <div className="admin-communications-report-content">
@@ -746,8 +880,8 @@ function AdminCommunicationsPage() {
                   {campaignDeliveries.length === 0 ? <p className="admin-communications-records-state">No delivery records are available for this campaign.</p> : (
                     <div className="admin-communications-delivery-table-wrap">
                       <table className="admin-communications-delivery-table">
-                        <thead><tr><th>Recipient</th><th>Status</th><th>Attempts</th><th>Created</th><th>Sent</th><th>Failure</th></tr></thead>
-                        <tbody>{campaignDeliveries.map((delivery) => <tr key={delivery.id}><td>{delivery.recipientEmail}</td><td><span className={`admin-communications-status admin-communications-status--${delivery.status.toLowerCase()}`}>{delivery.status}</span></td><td>{delivery.attempts}</td><td>{formatCampaignDate(delivery.createdAt)}</td><td>{formatCampaignDate(delivery.sentAt)}</td><td>{delivery.lastError || "-"}</td></tr>)}</tbody>
+                        <thead><tr><th>Recipient</th><th>Status</th><th>Attempts</th><th>Created</th><th>Sent</th><th>Failure / suppression</th></tr></thead>
+                        <tbody>{campaignDeliveries.map((delivery) => <tr key={delivery.id}><td>{delivery.recipientEmail}</td><td><span className={`admin-communications-status admin-communications-status--${delivery.status.toLowerCase()}`}>{delivery.status}</span></td><td>{delivery.attempts}</td><td>{formatCampaignDate(delivery.createdAt)}</td><td>{formatCampaignDate(delivery.sentAt)}</td><td>{delivery.lastError || delivery.suppressionReason || "-"}</td></tr>)}</tbody>
                       </table>
                     </div>
                   )}

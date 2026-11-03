@@ -18,6 +18,7 @@ function JobUpdatesSubscriptionPopup({ enabled = true }: JobUpdatesSubscriptionP
   const [error, setError] = useState('');
   const emailRef = useRef<HTMLInputElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
+  const submissionInProgress = useRef(false);
 
   useEffect(() => {
     if (!enabled || authLoading || token || sessionStorage.getItem(DISMISSED_KEY) || sessionStorage.getItem(SUCCESS_KEY)) return undefined;
@@ -47,16 +48,22 @@ function JobUpdatesSubscriptionPopup({ enabled = true }: JobUpdatesSubscriptionP
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    if (submissionInProgress.current) return;
+    submissionInProgress.current = true;
     setError('');
     setStatus('submitting');
-    const result = await subscribeToJobUpdates(email.trim());
-    if (result.ok) {
-      sessionStorage.setItem(SUCCESS_KEY, 'true');
-      setStatus('success');
-      return;
+    try {
+      const result = await subscribeToJobUpdates(email);
+      if (result.ok) {
+        sessionStorage.setItem(SUCCESS_KEY, 'true');
+        setStatus('success');
+        return;
+      }
+      setError(result.error.message || 'We could not subscribe you right now. Please try again.');
+      setStatus('idle');
+    } finally {
+      submissionInProgress.current = false;
     }
-    setError(result.error.message || 'We could not subscribe you right now. Please try again.');
-    setStatus('idle');
   };
 
   if (!isOpen) return null;

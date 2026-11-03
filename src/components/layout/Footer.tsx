@@ -1,4 +1,4 @@
-import { FormEvent, useState } from 'react';
+import { FormEvent, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { subscribeToJobUpdates } from '../../services/api';
 import { OPEN_COOKIE_SETTINGS_EVENT } from '../../utils/cookieConsent';
@@ -14,16 +14,23 @@ function Footer({ variant = 'full' }: FooterProps) {
   const [status, setStatus] = useState('');
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const submissionInProgress = useRef(false);
 
   const handleSubscribe = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    if (submissionInProgress.current) return;
+    submissionInProgress.current = true;
     setStatus('');
     setError('');
     setIsSubmitting(true);
-    const result = await subscribeToJobUpdates(email.trim());
-    if (result.ok) { setStatus(result.data.data.message); setEmail(''); }
-    else setError(result.error.message || 'Unable to subscribe right now.');
-    setIsSubmitting(false);
+    try {
+      const result = await subscribeToJobUpdates(email);
+      if (result.ok) { setStatus(result.data.data.message); setEmail(''); }
+      else setError(result.error.message || 'Unable to subscribe right now.');
+    } finally {
+      submissionInProgress.current = false;
+      setIsSubmitting(false);
+    }
   };
 
   if (variant === 'compact') {
