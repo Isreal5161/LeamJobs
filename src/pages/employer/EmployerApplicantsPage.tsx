@@ -1,10 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   FaArrowLeft, FaBriefcase, FaCalendarCheck, FaCheck, FaEnvelope,
   FaExternalLinkAlt, FaFileAlt, FaGlobe, FaMapMarkerAlt, FaSearch, FaSpinner, FaTimes, FaWhatsapp,
 } from 'react-icons/fa';
 import ApplicantAvatar from '../../components/employer/ApplicantAvatar';
+import ApplicationCoverLetter from '../../components/employer/ApplicationCoverLetter';
 import CVTemplateRenderer from '../../components/cv-templates/CVTemplateRenderer';
 import InterviewScheduleModal from '../../components/interviews/InterviewScheduleModal';
 import { useAuth } from '../../context/AuthContext';
@@ -75,6 +77,19 @@ function EmployerApplicantsPage() {
   const [detailRetryKey, setDetailRetryKey] = useState(0);
   const [applicationsRetryKey, setApplicationsRetryKey] = useState(0);
   const applicationCache = useRef<Record<string, EmployerApplicationListItem[]>>({});
+  const cvModalRef = useRef<HTMLElement>(null);
+
+  function closeCvModal(restoreFocus = true) {
+    cvRequestVersion.current += 1;
+    setIsOpeningResume(false);
+    setCvModalOpen(false);
+    setCvDocumentUrl(null);
+    if (restoreFocus) {
+      window.setTimeout(() => {
+        if (lastFocusedElementRef.current?.isConnected) lastFocusedElementRef.current.focus();
+      }, 0);
+    }
+  }
 
   useEffect(() => {
     if (!showContractCancellation) return;
@@ -99,6 +114,8 @@ function EmployerApplicantsPage() {
     if (!nextApplicationId) {
       setSelectedApplication(null);
       setPendingRejection(false);
+    } else {
+      setSelectedApplication((current) => current?.id === nextApplicationId ? current : null);
     }
   }, [searchParams]);
 
@@ -178,7 +195,8 @@ function EmployerApplicantsPage() {
   }, [filteredApplications, selectedApplicationId]);
 
   const selectedListItem = applications.find((application) => application.id === selectedApplicationId) ?? null;
-  const cvView = selectedApplication
+  const isSelectedApplicationCurrent = Boolean(selectedListItem && selectedApplication?.id === selectedListItem.id);
+  const cvView = isSelectedApplicationCurrent && selectedApplication
     ? resolveApplicationCvView(selectedApplication, selectedApplication.applicant)
     : null;
 
@@ -196,10 +214,8 @@ function EmployerApplicantsPage() {
     setResumeError('');
     setIsOpeningResume(false);
     setCvModalOpen(false);
-    setCvDocumentUrl((url) => {
-      if (url) URL.revokeObjectURL(url);
-      return null;
-    });
+    setCvDocumentUrl(null);
+    setSelectedApplication(null);
     void getEmployerApplication(selectedListItem.jobId, selectedListItem.id, token).then((result) => {
       if (!active) return;
       if (!result.ok) {
@@ -213,6 +229,11 @@ function EmployerApplicantsPage() {
       cvRequestVersion.current += 1;
     };
   }, [detailRetryKey, selectedListItem, token]);
+
+  useEffect(() => {
+    if (!cvDocumentUrl) return undefined;
+    return () => URL.revokeObjectURL(cvDocumentUrl);
+  }, [cvDocumentUrl]);
 
   const selectedJob = jobs.find((job) => job.id === selectedJobId);
   const selectedJobForApplication = selectedListItem ? jobs.find((job) => job.id === selectedListItem.jobId) : undefined;
@@ -263,12 +284,15 @@ function EmployerApplicantsPage() {
   const selectApplication = (applicationId: string) => {
     const application = applications.find((item) => item.id === applicationId);
     if (!application) return;
+    closeCvModal(false);
+    setSelectedApplication(null);
     setSelectedApplicationId(applicationId);
     setMobileView('detail');
     setSearchParams({ jobId: application.jobId, applicationId });
   };
 
   const returnToApplicantList = () => {
+    closeCvModal(false);
     setSelectedApplicationId('');
     setSelectedApplication(null);
     setMobileView('list');
@@ -367,15 +391,6 @@ function EmployerApplicantsPage() {
     }
   };
 
-  const closeCvModal = () => {
-    cvRequestVersion.current += 1;
-    setIsOpeningResume(false);
-    setCvModalOpen(false);
-    if (cvDocumentUrl) URL.revokeObjectURL(cvDocumentUrl);
-    setCvDocumentUrl(null);
-    window.setTimeout(() => lastFocusedElementRef.current?.focus(), 0);
-  };
-
   const openResume = async () => {
     if (!token || !selectedListItem || !selectedApplication || !cvView?.available || isOpeningResume) return;
     lastFocusedElementRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
@@ -422,9 +437,24 @@ function EmployerApplicantsPage() {
         event.preventDefault();
         closeCvModal();
       }
-      if (event.key === 'Tab' && cvModalCloseRef.current) {
-        event.preventDefault();
-        cvModalCloseRef.current.focus();
+      if (event.key === 'Tab' && cvModalRef.current) {
+        const focusable = Array.from(cvModalRef.current.querySelectorAll<HTMLElement>(
+          'button:not([disabled]), a[href], iframe, [tabindex]:not([tabindex="-1"])',
+        )).filter((element) => element.offsetParent !== null);
+        if (!focusable.length) {
+          event.preventDefault();
+          cvModalRef.current.focus();
+          return;
+        }
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+        if (event.shiftKey && (document.activeElement === first || !cvModalRef.current.contains(document.activeElement))) {
+          event.preventDefault();
+          last.focus();
+        } else if (!event.shiftKey && (document.activeElement === last || !cvModalRef.current.contains(document.activeElement))) {
+          event.preventDefault();
+          first.focus();
+        }
       }
     };
     document.addEventListener('keydown', handleKeyDown);
@@ -445,7 +475,7 @@ function EmployerApplicantsPage() {
     setIsMutating(false);
   };
 
-  const applicant = selectedApplication?.applicant;
+  const applicant = isSelectedApplicationCurrent ? selectedApplication?.applicant : undefined;
   const whatsappHref = applicant?.phone
     ? `https://wa.me/${applicant.phone.replace(/\D/g, '')}?text=${encodeURIComponent(`Hello ${applicant.fullName}, your application for ${selectedApplication?.job.title ?? 'this role'} has been accepted on LeamJobs.`)}`
     : null;
@@ -648,7 +678,7 @@ function EmployerApplicantsPage() {
             </div>
           ) : null}
           {!isLoadingDetail && detailError ? <div className="employer-empty-state applicant-state" role="alert"><strong>Unable to load this candidate</strong><p>We could not load the applicant details right now.</p><button className="employer-button employer-button--ghost" type="button" onClick={() => setDetailRetryKey((value) => value + 1)}>Try again</button></div> : null}
-          {!isLoadingDetail && !detailError && selectedApplication && applicant ? <>
+          {!isLoadingDetail && !detailError && isSelectedApplicationCurrent && selectedApplication && applicant ? <>
             <div className="employer-candidate-detail__header">
               <ApplicantAvatar name={applicant.fullName} imageEndpoint={`/employer/jobs/${selectedApplication.jobId}/applications/${selectedApplication.id}/profile-picture`} token={token} size="lg" />
               <div className="employer-candidate-detail__header-copy">
@@ -680,10 +710,7 @@ function EmployerApplicantsPage() {
                 {applicant.linkedinUrl ? <section className="employer-candidate-section"><div className="employer-detail-section-header"><h2>Profile links</h2></div><p className="employer-profile-link"><FaGlobe /> <a href={applicant.linkedinUrl} target="_blank" rel="noreferrer">View LinkedIn profile ↗</a></p></section> : null}
               </div>
               <div className="employer-detail-sidebar">
-                <section className="employer-candidate-section applicant-cover-letter">
-                  <div className="employer-detail-section-header"><h2>Cover letter</h2></div>
-                  <p>{selectedApplication.coverLetter || 'No cover letter submitted.'}</p>
-                </section>
+                <ApplicationCoverLetter coverLetter={selectedApplication.coverLetter} />
                 <section className="employer-candidate-section">
                   <div className="employer-detail-section-header">
                     <h2>Application summary</h2>
@@ -774,14 +801,14 @@ function EmployerApplicantsPage() {
           </section>
         </div>
       ) : null}
-      {cvModalOpen && selectedApplication && applicant ? (
+      {cvModalOpen && isSelectedApplicationCurrent && selectedApplication && applicant ? createPortal(
         <div className="employer-cv-modal-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) closeCvModal(); }}>
-          <section className="employer-cv-modal" role="dialog" aria-modal="true" aria-labelledby="employer-cv-modal-title">
+          <section ref={cvModalRef} className="employer-cv-modal" role="dialog" aria-modal="true" aria-labelledby="employer-cv-modal-title" aria-describedby="employer-cv-modal-description" tabIndex={-1}>
             <header className="employer-cv-modal__header">
               <div><span className="employer-eyebrow">Candidate CV</span><h2 id="employer-cv-modal-title">{applicant.fullName}</h2></div>
-              <button ref={cvModalCloseRef} className="employer-icon-button" type="button" aria-label="Close CV" onClick={closeCvModal}><FaTimes /></button>
+              <button ref={cvModalCloseRef} className="employer-icon-button" type="button" aria-label="Close CV viewer" onClick={() => closeCvModal()}><FaTimes /></button>
             </header>
-            <div className="employer-cv-modal__body">
+            <div id="employer-cv-modal-description" className="employer-cv-modal__body">
               {cvModalState === 'loading' ? <div className="employer-cv-modal__state" role="status" aria-live="polite"><FaSpinner className="leamjobs-spin" /><strong>Loading CV...</strong></div> : null}
               {cvModalState === 'error' ? <div className="employer-cv-modal__state" role="alert"><FaFileAlt /><strong>Unable to load CV</strong><p>{resumeError || 'The CV could not be retrieved.'}</p><button className="employer-button employer-button--primary" type="button" onClick={() => void openResume()}>Retry</button></div> : null}
               {cvModalState === 'unavailable' ? <div className="employer-cv-modal__state"><FaFileAlt /><strong>CV unavailable</strong><p>This applicant does not currently have a CV available to view.</p></div> : null}
@@ -806,9 +833,10 @@ function EmployerApplicantsPage() {
                 );
               })() : null}
             </div>
-            <footer className="employer-cv-modal__footer"><button className="employer-button employer-button--ghost" type="button" onClick={closeCvModal}>Close</button></footer>
+            <footer className="employer-cv-modal__footer"><button className="employer-button employer-button--ghost" type="button" onClick={() => closeCvModal()}>Close</button></footer>
           </section>
-        </div>
+        </div>,
+        document.body,
       ) : null}
       {interviewScheduleOpen && selectedApplication ? <InterviewScheduleModal
         token={token ?? ''}

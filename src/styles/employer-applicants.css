@@ -452,11 +452,10 @@
   overflow-wrap: anywhere;
 }
 
-.applicant-detail-pane .applicant-cover-letter > p {
-  display: -webkit-box;
-  overflow: hidden;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 8;
+.applicant-detail-pane .applicant-cover-letter__content {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  word-break: normal;
 }
 
 .applicant-detail-pane .employer-profile-entry-list {
@@ -489,7 +488,7 @@
 .employer-cv-modal-backdrop {
   position: fixed;
   inset: 0;
-  z-index: 100;
+  z-index: 10000;
   display: grid;
   place-items: center;
   padding: 1rem;
