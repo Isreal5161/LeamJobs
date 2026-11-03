@@ -39,11 +39,10 @@ function VerifyEmailPage({ role = 'seeker' }: VerifyEmailPageProps) {
   const [searchParams] = useSearchParams();
   const { setAuthenticatedSession } = useAuth();
   const googlePendingId = searchParams.get('pendingId')?.trim() ?? '';
-  const googleContinuationToken = searchParams.get('continuationToken')?.trim() ?? '';
   const callbackRole = searchParams.get('role')?.trim().toUpperCase();
   const accountRole = callbackRole === 'EMPLOYER' || role === 'employer' ? 'employer' : 'seeker';
   const copy = authCopy[accountRole];
-  const isGoogleFlow = searchParams.has('pendingId') || searchParams.has('continuationToken') || searchParams.has('role');
+  const isGoogleFlow = searchParams.has('pendingId') || searchParams.has('role');
 
   const initialEmail = useMemo(() => {
     const stateEmail = typeof location.state === 'object' && location.state !== null && 'email' in location.state
@@ -86,7 +85,7 @@ function VerifyEmailPage({ role = 'seeker' }: VerifyEmailPageProps) {
   const hasUsableEmail = Boolean(email && email.includes('@') && email.includes('.'));
 
   const finishGoogleRegistration = async (includeEmployerDetails: boolean) => {
-    if (!googlePendingId || !googleContinuationToken) {
+    if (!googlePendingId) {
       setError('Your Google sign-up session is incomplete. Please start again.');
       return;
     }
@@ -98,7 +97,6 @@ function VerifyEmailPage({ role = 'seeker' }: VerifyEmailPageProps) {
     try {
       const completion = await completeGoogleRegistration({
         pendingId: googlePendingId,
-        continuationToken: googleContinuationToken,
         email,
         ...(includeEmployerDetails ? { companyName: companyName.trim(), phone: phone.trim() } : {}),
       });
@@ -292,7 +290,7 @@ function VerifyEmailPage({ role = 'seeker' }: VerifyEmailPageProps) {
     );
   }
 
-  if (isGoogleFlow && (!googlePendingId || !googleContinuationToken)) {
+  if (isGoogleFlow && !googlePendingId) {
     return (
       <section className="auth-page" aria-labelledby="verify-email-title">
         <div className="auth-shell auth-shell--single">

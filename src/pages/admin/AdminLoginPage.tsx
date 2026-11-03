@@ -32,7 +32,7 @@ function AdminLoginPage() {
       const user = await login(email, password);
 
       if (user.role !== 'ADMIN') {
-        logout();
+        await logout();
         setError('This sign-in page is for administrators only. Use the platform login for seeker or employer accounts.');
         return;
       }

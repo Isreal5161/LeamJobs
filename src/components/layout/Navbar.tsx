@@ -19,6 +19,7 @@ type NavbarProps = {
 
 function Navbar({ onOpenAuthRoleModal }: NavbarProps) {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [logoutError, setLogoutError] = useState('');
   const { user, isAuthenticated, logout } = useAuth();
   const isWelcomePage = useLocation().pathname === '/';
   const dashboardPath = user?.role === 'ADMIN'
@@ -27,9 +28,14 @@ function Navbar({ onOpenAuthRoleModal }: NavbarProps) {
       ? '/employer/jobs'
       : '/seeker/dashboard';
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     setMenuOpen(false);
-    logout();
+    setLogoutError('');
+    try {
+      await logout();
+    } catch (error) {
+      setLogoutError(error instanceof Error ? error.message : 'Could not securely log out. Please try again.');
+    }
   };
 
   return (
@@ -113,6 +119,7 @@ function Navbar({ onOpenAuthRoleModal }: NavbarProps) {
           </>
         )}
       </nav>
+      {logoutError ? <p className="navbar__logout-error" role="alert">{logoutError}</p> : null}
     </header>
   );
 }

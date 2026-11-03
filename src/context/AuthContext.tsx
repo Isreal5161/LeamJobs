@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
-import { request } from '../services/api';
+import { logoutAuthSession, request } from '../services/api';
 
 export type AuthRole = 'SEEKER' | 'EMPLOYER' | 'ADMIN';
 
@@ -22,7 +22,7 @@ type AuthContextValue = {
   isLoading: boolean;
   login: (email: string, password: string, requestedRole?: AuthRole) => Promise<AuthUser>;
   setAuthenticatedSession: (token: string, user: AuthUser) => void;
-  logout: () => void;
+  logout: () => Promise<void>;
 };
 
 const STORAGE_KEY = 'leamjobs_access_token';
@@ -120,9 +120,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(nextUser);
   }, []);
 
-  const logout = useCallback(() => {
+  const logout = useCallback(async () => {
+    if (!token) {
+      clearSession();
+      return;
+    }
+
+    const result = await logoutAuthSession(token);
+    if (!result.ok && result.status !== 401) {
+      throw new Error(`Could not securely log out. ${result.error.message || 'Please try again.'}`);
+    }
+
     clearSession();
-  }, [clearSession]);
+  }, [clearSession, token]);
 
   useEffect(() => {
     let isMounted = true;

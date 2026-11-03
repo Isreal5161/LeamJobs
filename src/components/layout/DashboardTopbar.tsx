@@ -83,6 +83,16 @@ function DashboardTopbar({
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [isRefreshingNotifications, setIsRefreshingNotifications] = useState(false);
+  const [logoutError, setLogoutError] = useState('');
+
+  const handleLogout = async () => {
+    setLogoutError('');
+    try {
+      await onLogout?.();
+    } catch (error) {
+      setLogoutError(error instanceof Error ? error.message : 'Could not securely log out. Please try again.');
+    }
+  };
 
   const unreadCount = useMemo(() => notifications.filter((item) => !item.isRead).length, [notifications]);
   const imageUrl = getUserScopedImageUrl(profileImage, user?.id);
@@ -289,9 +299,10 @@ function DashboardTopbar({
             roleLabel={role === 'employer' ? 'Employer' : role === 'admin' ? 'Admin' : 'Job Seeker'}
             imageUrl={imageUrl}
             isImageLoading={isImageLoading}
-            onLogout={onLogout}
+            onLogout={handleLogout}
           />
         </div>
+        {logoutError ? <p className="dashboard-topbar__logout-error" role="alert">{logoutError}</p> : null}
       </header>
     );
   }

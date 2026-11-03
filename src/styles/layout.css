@@ -83,6 +83,24 @@
   white-space: nowrap;
 }
 
+.navbar__logout-error,
+.dashboard-topbar__logout-error {
+  margin: 0;
+  padding: 8px 16px;
+  color: #842029;
+  background: #f8d7da;
+  font-size: .875rem;
+}
+
+.dashboard-topbar__logout-error {
+  position: absolute;
+  top: 100%;
+  right: 12px;
+  z-index: 20;
+  max-width: min(420px, calc(100vw - 24px));
+  border-radius: 0 0 8px 8px;
+}
+
 .navbar__menu-toggle,
 .navbar__mobile-menu {
   display: none;

@@ -10,12 +10,13 @@ const authContext = readSource('../src/context/AuthContext.tsx');
 
 test('Google callback continuation reaches the existing completion API', () => {
   assert.match(verifyEmailPage, /searchParams\.get\('pendingId'\)/);
-  assert.match(verifyEmailPage, /searchParams\.get\('continuationToken'\)/);
   assert.match(verifyEmailPage, /await completeGoogleRegistration\(\{/);
   assert.match(api, /endpoint: '\/auth\/google\/complete'/);
   assert.match(api, /body: completion/);
   assert.match(verifyEmailPage, /pendingId: googlePendingId/);
-  assert.match(verifyEmailPage, /continuationToken: googleContinuationToken/);
+  assert.doesNotMatch(verifyEmailPage, /continuationToken/);
+  assert.doesNotMatch(api, /continuationToken: string/);
+  assert.match(api, /credentials: 'include'/);
 });
 
 test('Google email verification precedes completion and permits completion retry', () => {

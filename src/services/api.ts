@@ -11,6 +11,7 @@ export type ApiRequestOptions = {
   endpoint: string;
   body?: unknown;
   token?: string;
+  credentials?: RequestCredentials;
   headers?: HeadersInit;
   errorContext?: UserFacingErrorContext;
 };
@@ -1110,6 +1111,7 @@ export async function request<T>({
   endpoint,
   body,
   token,
+  credentials,
   headers: customHeaders,
   errorContext,
 }: ApiRequestOptions): Promise<ApiResponse<T>> {
@@ -1128,6 +1130,7 @@ export async function request<T>({
       method,
       headers,
       body: body === undefined ? undefined : body instanceof FormData ? body : JSON.stringify(body),
+      credentials,
     });
 
     const data = await response.json().catch(() => undefined);
@@ -1567,9 +1570,16 @@ export function verifyEmailCode(email: string, code: string) {
   });
 }
 
+export function logoutAuthSession(token: string) {
+  return request<{ success: true; message: string }>({
+    method: 'POST',
+    endpoint: '/auth/logout',
+    token,
+  });
+}
+
 export type GoogleRegistrationCompletion = {
   pendingId: string;
-  continuationToken: string;
   email: string;
   companyName?: string;
   phone?: string;
@@ -1594,6 +1604,7 @@ export function completeGoogleRegistration(completion: GoogleRegistrationComplet
     method: 'POST',
     endpoint: '/auth/google/complete',
     body: completion,
+    credentials: 'include',
   });
 }
 
