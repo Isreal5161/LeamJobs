@@ -112,7 +112,6 @@
 
 .legal-page a:focus-visible,
 .cookie-consent a:focus-visible,
-.cookie-settings-reopen:focus-visible,
 .cookie-consent button:focus-visible,
 .cookie-consent input:focus-visible,
 .site-footer button:focus-visible {
@@ -131,23 +130,6 @@
 
 .legal-page__contact {
   margin-top: 20px;
-}
-
-.cookie-settings-reopen {
-  position: fixed;
-  z-index: 1100;
-  right: 16px;
-  bottom: 16px;
-  padding: 10px 15px;
-  color: #fff;
-  font: inherit;
-  font-size: .85rem;
-  font-weight: 700;
-  background: #322f6a;
-  border: 1px solid #322f6a;
-  border-radius: 999px;
-  box-shadow: 0 4px 18px rgb(15 35 60 / 18%);
-  cursor: pointer;
 }
 
 .cookie-consent-backdrop {
@@ -309,19 +291,10 @@
     border-radius: 14px;
   }
 
-  .cookie-settings-reopen {
-    right: 12px;
-    bottom: 12px;
-  }
 }
 
 @media (max-width: 420px) {
   .cookie-consent__actions {
     grid-template-columns: 1fr;
-  }
-
-  .cookie-settings-reopen {
-    padding: 8px 11px;
-    font-size: .76rem;
   }
 }

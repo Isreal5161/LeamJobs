@@ -2,7 +2,6 @@ import { Outlet, useLocation } from 'react-router-dom';
 import { useCallback, useState } from 'react';
 import Navbar from '../components/layout/Navbar';
 import Footer from '../components/layout/Footer';
-import MobileBottomNav from '../components/layout/MobileBottomNav';
 import JobUpdatesSubscriptionPopup from '../components/public/JobUpdatesSubscriptionPopup';
 import HomeAuthRoleModal, { type AuthRoleModalMode } from '../components/public/HomeAuthRoleModal';
 import '../styles/public-theme.css';
@@ -17,7 +16,6 @@ function PublicLayout() {
   const isFeaturesPage = pathname === '/features';
   const isHowPage = pathname === '/how-it-works';
   const isCompaniesPage = pathname === '/companies';
-  const isCompanyDetailsPage = pathname.startsWith('/companies/');
   const isAuthPage = pathname === '/login' || pathname === '/register' || pathname.startsWith('/employers/');
   const isJobDetailsPage = pathname.startsWith('/jobs/');
   const layoutClasses = [
@@ -43,7 +41,6 @@ function PublicLayout() {
         <HomeAuthRoleModal mode={authRoleModalMode} onClose={closeAuthRoleModal} />
       ) : null}
       <JobUpdatesSubscriptionPopup enabled={!isAuthPage && !isJobDetailsPage && !pathname.startsWith('/unsubscribe-') && !pathname.startsWith('/reset-password')} />
-      {!isWelcomePage && !isAboutPage && !isFeaturesPage && !isHowPage && !isCompaniesPage && !isCompanyDetailsPage && !isAuthPage && !isJobDetailsPage && <MobileBottomNav />}
     </div>
   );
 }

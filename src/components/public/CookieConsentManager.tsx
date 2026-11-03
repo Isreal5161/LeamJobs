@@ -12,7 +12,7 @@ function CookieConsentManager() {
   const [showSettings, setShowSettings] = useState(false);
   const [storageError, setStorageError] = useState('');
   const dialogRef = useRef<HTMLElement>(null);
-  const settingsButtonRef = useRef<HTMLButtonElement>(null);
+  const settingsTriggerRef = useRef<HTMLElement | null>(null);
   const wasDialogOpen = useRef(false);
 
   useEffect(() => {
@@ -29,7 +29,10 @@ function CookieConsentManager() {
   }, []);
 
   useEffect(() => {
-    const openSettings = () => setShowSettings(true);
+    const openSettings = () => {
+      if (document.activeElement instanceof HTMLElement) settingsTriggerRef.current = document.activeElement;
+      setShowSettings(true);
+    };
     window.addEventListener(OPEN_COOKIE_SETTINGS_EVENT, openSettings);
     return () => window.removeEventListener(OPEN_COOKIE_SETTINGS_EVENT, openSettings);
   }, []);
@@ -38,7 +41,8 @@ function CookieConsentManager() {
 
   useEffect(() => {
     if (!settingsVisible) {
-      if (wasDialogOpen.current) settingsButtonRef.current?.focus();
+      if (wasDialogOpen.current) settingsTriggerRef.current?.focus();
+      settingsTriggerRef.current = null;
       wasDialogOpen.current = false;
       return;
     }
@@ -78,7 +82,6 @@ function CookieConsentManager() {
   };
 
   return <>
-    <button ref={settingsButtonRef} className="cookie-settings-reopen" type="button" onClick={() => setShowSettings(true)} aria-label="Open cookie settings">Cookie settings</button>
     {settingsVisible ? <div className="cookie-consent-backdrop" role="presentation">
       <section ref={dialogRef} className="cookie-consent" role="dialog" aria-modal="true" aria-labelledby="cookie-consent-title">
         <div className="cookie-consent__copy">

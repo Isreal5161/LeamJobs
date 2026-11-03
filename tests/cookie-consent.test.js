@@ -78,6 +78,21 @@ test('cookie consent status uses the existing screen-reader-only class', async (
   assert.match(styles, /\.sr-only\s*\{/);
 });
 
+test('cookie settings remain available from the footer without a floating reopen button', async () => {
+  const [component, footer, styles] = await Promise.all([
+    readFile(new URL('../src/components/public/CookieConsentManager.tsx', import.meta.url), 'utf8'),
+    readFile(new URL('../src/components/layout/Footer.tsx', import.meta.url), 'utf8'),
+    readFile(new URL('../src/styles/legal-cookie-consent.css', import.meta.url), 'utf8'),
+  ]);
+  assert.doesNotMatch(component, /cookie-settings-reopen/);
+  assert.doesNotMatch(styles, /cookie-settings-reopen/);
+  assert.match(component, /window\.addEventListener\(OPEN_COOKIE_SETTINGS_EVENT, openSettings\)/);
+  assert.match(component, /onClick=\{\(\) => persist\(initialChoices\)\}/);
+  assert.match(component, /onClick=\{\(\) => persist\(choices\)\}/);
+  assert.match(component, /onClick=\{\(\) => persist\(\{ analytics: true, marketing: true \}\)\}/);
+  assert.match(footer, /dispatchEvent\(new Event\(OPEN_COOKIE_SETTINGS_EVENT\)\)/);
+});
+
 test('preference parser validates fields and forces necessary true', () => {
   const parsed = parseCookiePreferences(JSON.stringify({ necessary: false, analytics: true, marketing: false, savedAt: '2026-10-31T12:00:00.000Z', policyVersion: COOKIE_POLICY_VERSION }));
   assert.equal(parsed?.necessary, true);
