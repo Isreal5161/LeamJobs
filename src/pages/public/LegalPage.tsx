@@ -164,7 +164,7 @@ const documents: Record<LegalDocument, LegalDocumentContent> = {
   },
   freelancer: {
     title: 'Freelancer Terms',
-    intro: 'These draft supplemental terms apply to freelancers using LEAMJobs and should be read with the [Terms and Conditions](/terms), [Privacy Policy](/privacy) and [Payment, Refund and Escrow Policy](/payment-policy). They require Company and qualified legal-counsel review and do not determine worker classification.',
+    intro: 'These supplemental terms apply to freelancers using LEAMJobs and should be read with the [Terms and Conditions](/terms), [Privacy Policy](/privacy) and [Payment, Refund and Escrow Policy](/payment-policy). They do not determine worker classification.',
     sections: [
       { title: '1. Profile and account', paragraphs: [
         'Provide truthful information about your skills, experience, availability, portfolio and identity where requested through a supported verification process. Keep your profile current and protect access to your account.',
@@ -187,7 +187,7 @@ const documents: Record<LegalDocument, LegalDocumentContent> = {
   },
   employer: {
     title: 'Employer Terms',
-    intro: 'These draft supplemental terms apply to employers using LEAMJobs and should be read with the [Terms and Conditions](/terms), [Privacy Policy](/privacy) and [Payment, Refund and Escrow Policy](/payment-policy). They require Company and qualified legal-counsel review.',
+    intro: 'These supplemental terms apply to employers using LEAMJobs and should be read with the [Terms and Conditions](/terms), [Privacy Policy](/privacy) and [Payment, Refund and Escrow Policy](/payment-policy).',
     sections: [
       { title: '1. Employer account and company details', paragraphs: [
         'Use accurate company, contact and account information, maintain appropriate access controls, and provide verification material only through supported platform features. Verification availability is not a guarantee of a company’s conduct, finances or hiring intent.',

@@ -4,7 +4,7 @@ import test from 'node:test';
 import { COOKIE_POLICY_VERSION, createCookiePreferences, isOptionalCategoryAllowed, parseCookiePreferences } from '../src/utils/cookieConsent.ts';
 import { legalDocumentMetadata, LEGAL_REGISTRATION_ACCEPTANCE, PRIVACY_POLICY_VERSION, TERMS_POLICY_VERSION } from '../src/utils/legalVersions.ts';
 
-test('Terms and Privacy use approved version 1.0 while other legal documents remain drafts', async () => {
+test('Terms, Privacy, Freelancer Terms, and Employer Terms use approved version 1.0', async () => {
   assert.equal(TERMS_POLICY_VERSION, '1.0');
   assert.equal(PRIVACY_POLICY_VERSION, '1.0');
   assert.deepEqual(LEGAL_REGISTRATION_ACCEPTANCE, {
@@ -22,7 +22,13 @@ test('Terms and Privacy use approved version 1.0 while other legal documents rem
     ['1.0', '1.0'],
   );
 
-  for (const document of ['cookies', 'payments', 'freelancer', 'employer']) {
+  for (const document of ['freelancer', 'employer']) {
+    assert.equal(legalDocumentMetadata[document].status, 'approved');
+    assert.equal(legalDocumentMetadata[document].version, '1.0');
+    assert.equal(legalDocumentMetadata[document].effectiveDate, undefined);
+  }
+
+  for (const document of ['cookies', 'payments']) {
     assert.equal(legalDocumentMetadata[document].status, 'draft');
     assert.equal(legalDocumentMetadata[document].version, '1.0-draft');
   }
@@ -34,6 +40,14 @@ test('Terms and Privacy use approved version 1.0 while other legal documents rem
   assert.match(signupPage, /\.\.\.LEGAL_REGISTRATION_ACCEPTANCE/);
   assert.match(legalPage, /metadata\.status === 'draft' \?/);
   assert.match(legalPage, /metadata\.effectiveDate \?/);
+  for (const approvedIntro of [
+    'These supplemental terms apply to freelancers',
+    'These supplemental terms apply to employers',
+  ]) {
+    assert.match(legalPage, new RegExp(approvedIntro));
+  }
+  assert.doesNotMatch(legalPage, /These draft supplemental terms apply to (?:freelancers|employers)/);
+  assert.doesNotMatch(legalPage, /They require Company and qualified legal-counsel review/);
 });
 
 test('new consent defaults deny optional categories and always enables necessary storage', () => {
