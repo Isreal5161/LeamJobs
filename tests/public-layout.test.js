@@ -12,7 +12,8 @@ test('public pages use the public footer without authenticated mobile navigation
 
   assert.match(publicLayout, /<Footer \/>/);
   assert.doesNotMatch(publicLayout, /MobileBottomNav/);
-  for (const authenticatedLayout of [seekerLayout, employerLayout, adminLayout]) {
+  for (const authenticatedLayout of [seekerLayout, employerLayout]) {
     assert.match(authenticatedLayout, /<MobileBottomNav \/>/);
   }
+  assert.match(adminLayout, /<MobileBottomNav adminPermissionState=\{adminPermissionState\} \/>/);
 });

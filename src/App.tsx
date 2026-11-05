@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { lazy, Suspense, useEffect } from 'react';
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import PublicLayout from './layouts/PublicLayout';
@@ -71,6 +71,9 @@ import LegalPage from './pages/public/LegalPage';
 import CookieConsentManager from './components/public/CookieConsentManager';
 import { applyPageMetadata, getPageMetadata } from './utils/seoMetadata';
 
+const AdminStaffPage = lazy(() => import('./pages/admin/AdminStaffPage'));
+const AdminInvitationAcceptancePage = lazy(() => import('./pages/admin/AdminInvitationAcceptancePage'));
+
 function RouteMetadataController() {
   const { pathname } = useLocation();
 
@@ -122,6 +125,14 @@ function App() {
             <Route path="jobs/:jobId" element={<JobDetailsPage />} />
             <Route path="*" element={<NotFoundPage />} />
           </Route>
+          <Route
+            path="/admin/accept-invitation"
+            element={(
+              <Suspense fallback={<div className="admin-staff-loading" role="status">Loading invitation form…</div>}>
+                <AdminInvitationAcceptancePage />
+              </Suspense>
+            )}
+          />
           <Route path="/Leamjobs2026admin/login" element={<AdminLoginPage />} />
           <Route path="/seeker" element={<ProtectedRoute allowedRoles={['SEEKER']}><SeekerLayout /></ProtectedRoute>}>
             <Route index element={<Navigate to="dashboard" replace />} />
@@ -183,6 +194,14 @@ function App() {
             <Route path="verifications" element={<AdminVerificationPage />} />
             <Route path="notifications" element={<NotificationsPage role="admin" />} />
             <Route path="communications" element={<AdminCommunicationsPage />} />
+            <Route
+              path="staff"
+              element={(
+                <Suspense fallback={<div className="admin-staff-loading" role="status">Loading staff management…</div>}>
+                  <AdminStaffPage />
+                </Suspense>
+              )}
+            />
             <Route path="settings" element={<SettingsPage role="admin" />} />
           </Route>
         </Routes>

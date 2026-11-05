@@ -38,6 +38,7 @@ import './styles/admin-release.css';
 import './styles/dashboard-theme.css';
 import './styles/email-preferences.css';
 import './styles/admin-communications.css';
+import './styles/admin-staff.css';
 import './styles/job-updates-popup.css';
 import './styles/public-seo.css';
 import './styles/legal-cookie-consent.css';

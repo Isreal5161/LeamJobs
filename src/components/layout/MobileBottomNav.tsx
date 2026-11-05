@@ -17,17 +17,38 @@ import {
   FaTimes,
   FaUser,
   FaUsers,
+  FaChartLine,
+  FaCog,
 } from 'react-icons/fa';
+import {
+  ADMIN_MOBILE_LINK_PATHS,
+  getVisibleAdminNavigationItems,
+  type AdminPermissionState,
+} from '../../utils/adminNavigation.js';
 
-const adminPrimaryLinks = [
-  { label: 'Overview', to: '/admin/dashboard', icon: FaHome, match: (path: string) => path === '/admin/dashboard' || path === '/admin' },
-  { label: 'Jobs', to: '/admin/jobs', icon: FaBriefcase, match: (path: string) => path.startsWith('/admin/jobs') },
-  { label: 'Moderation', to: '/admin/moderation', icon: FaFlag, match: (path: string) => path.startsWith('/admin/moderation') },
-  { label: 'Users', to: '/admin/users', icon: FaUser, match: (path: string) => path.startsWith('/admin/users') },
-  { label: 'Comms', ariaLabel: 'Communications', to: '/admin/communications', icon: FaBullhorn, match: (path: string) => path.startsWith('/admin/communications') },
-];
+const adminMobileIcons = {
+  home: FaHome,
+  briefcase: FaBriefcase,
+  flag: FaFlag,
+  user: FaUser,
+  building: FaBuilding,
+  users: FaUsers,
+  chart: FaChartLine,
+  money: FaMoneyBillWave,
+  crown: FaCrown,
+  clipboard: FaClipboardList,
+  bullhorn: FaBullhorn,
+  edit: FaEdit,
+  filter: FaFilter,
+  star: FaStar,
+  cog: FaCog,
+};
 
-function MobileBottomNav() {
+type MobileBottomNavProps = {
+  adminPermissionState?: AdminPermissionState;
+};
+
+function MobileBottomNav({ adminPermissionState }: MobileBottomNavProps) {
   const { pathname } = useLocation();
   const seekerMode = pathname.startsWith('/seeker');
   const employerMode = pathname.startsWith('/employer');
@@ -35,20 +56,27 @@ function MobileBottomNav() {
   const seekerCvMode = seekerMode && pathname === '/seeker/cv';
 
   if (adminMode) {
+    if (adminPermissionState?.status !== 'ready') return null;
+    const links = getVisibleAdminNavigationItems(adminPermissionState, ADMIN_MOBILE_LINK_PATHS);
+    const showStaffManagement = links.some(({ to }) => to === '/admin/staff');
+
     return (
-      <nav className="mobile-bottom-nav mobile-bottom-nav--admin" aria-label="Admin mobile navigation">
-        {adminPrimaryLinks.map(({ icon: Icon, ariaLabel, ...item }) => (
-          <Link
-            to={item.to}
-            key={item.to}
-            aria-label={ariaLabel ?? item.label}
-            title={ariaLabel ?? item.label}
-            className={`mobile-bottom-nav__item ${item.match(pathname) ? 'mobile-bottom-nav__item--active' : ''}`}
-          >
-            <Icon />
-            <span>{item.label}</span>
-          </Link>
-        ))}
+      <nav className={`mobile-bottom-nav mobile-bottom-nav--admin ${showStaffManagement ? 'mobile-bottom-nav--admin-with-staff' : ''}`} aria-label="Admin mobile navigation">
+        {links.map((item) => {
+          const Icon = adminMobileIcons[item.icon as keyof typeof adminMobileIcons];
+          return (
+            <Link
+              to={item.to}
+              key={item.to}
+              aria-label={item.label === 'Communications' ? 'Communications' : item.label}
+              title={item.label}
+              className={`mobile-bottom-nav__item ${pathname === item.to || pathname.startsWith(`${item.to}/`) ? 'mobile-bottom-nav__item--active' : ''}`}
+            >
+              <Icon />
+              <span>{item.label === 'Job Posts' ? 'Jobs' : item.label === 'Staff Management' ? 'Staff' : item.label}</span>
+            </Link>
+          );
+        })}
       </nav>
     );
   }

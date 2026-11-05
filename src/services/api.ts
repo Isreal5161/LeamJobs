@@ -1,5 +1,6 @@
 import type { CVData, CVTemplateId } from '../components/cv-templates/CVTemplateRenderer';
 import { errorContextForEndpoint, getUserFacingError, normalizeApiError, type UserFacingErrorContext } from '../utils/userFacingError';
+import { parseCurrentAdminPermissionsResponse, type CurrentAdminPermissions } from '../utils/adminNavigation.js';
 
 export const API_BASE_URL = 'https://leamjobs.com/api';
 export const PROFILE_IMAGE_UPDATED_EVENT = 'leamjobs-profile-image-updated';
@@ -3352,5 +3353,208 @@ export function requestSeekerWithdrawal(payload: SeekerWithdrawalRequest, idempo
     body: payload,
     token,
     headers: { 'Idempotency-Key': idempotencyKey },
+  });
+}
+
+export type AdminStaffPermission = {
+  key: string;
+  module: string;
+  description: string;
+};
+
+export type AdminStaffMember = {
+  id: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  isActive: boolean;
+  isVerified: boolean;
+  createdAt: string;
+  lastLogin?: string | null;
+  suspendedAt?: string | null;
+  permissionKeys: string[];
+};
+
+export type AdminStaffDetails = Omit<AdminStaffMember, 'permissionKeys'> & {
+  adminAccount: {
+    tier: 'STAFF_ADMIN';
+    suspendedAt: string | null;
+  };
+  permissions: Array<AdminStaffPermission & {
+    enabled: boolean;
+    grantedAt: string;
+    grantedById: string;
+  }>;
+};
+
+export type AdminStaffInvitation = {
+  id: string;
+  email: string;
+  expiresAt: string;
+  acceptedAt: string | null;
+  revokedAt: string | null;
+  createdAt: string;
+  createdById: string;
+  permissionKeys: string[];
+  emailSent?: boolean;
+};
+
+export type AdminStaffAuditEvent = {
+  id: string;
+  actorId: string;
+  subjectId: string;
+  action: string;
+  entityType: string | null;
+  entityId: string | null;
+  before: Record<string, unknown> | null;
+  after: Record<string, unknown> | null;
+  requestId: string | null;
+  createdAt: string;
+};
+
+export type AdminStaffPage<T> = {
+  items: T[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
+};
+
+export type AdminStaffPageResponse<T> = {
+  success: true;
+  data: AdminStaffPage<T>;
+};
+
+export function getAdminStaff(token: string, page = 1, limit = 20) {
+  return request<AdminStaffPageResponse<AdminStaffMember>>({
+    method: 'GET',
+    endpoint: `/admin/staff?page=${page}&limit=${limit}`,
+    token,
+  });
+}
+
+export function getAdminStaffInvitations(token: string, page = 1, limit = 20) {
+  return request<AdminStaffPageResponse<AdminStaffInvitation>>({
+    method: 'GET',
+    endpoint: `/admin/staff/invitations?page=${page}&limit=${limit}`,
+    token,
+  });
+}
+
+export function getAdminStaffPermissions(token: string) {
+  return request<{ success: true; data: AdminStaffPermission[] }>({
+    method: 'GET',
+    endpoint: '/admin/staff/permissions',
+    token,
+  });
+}
+
+export type CurrentAdminPermissionsResponse = {
+  success: true;
+  data: CurrentAdminPermissions;
+};
+
+export async function getCurrentAdminPermissions(token: string): Promise<ApiResponse<CurrentAdminPermissionsResponse>> {
+  const result = await request<unknown>({
+    method: 'GET',
+    endpoint: '/admin/me/permissions',
+    token,
+  });
+
+  if (!result.ok) return result;
+
+  const data = parseCurrentAdminPermissionsResponse(result.data);
+  if (!data) {
+    return {
+      ok: false,
+      status: result.status,
+      error: { message: 'Administrator permissions could not be verified. Please retry.' },
+    };
+  }
+
+  return {
+    ...result,
+    data: { success: true, data },
+  };
+}
+
+export function createAdminStaffInvitation(token: string, payload: { email: string; permissionKeys: string[] }) {
+  return request<{ success: true; data: AdminStaffInvitation }>({
+    method: 'POST',
+    endpoint: '/admin/staff/invitations',
+    body: payload,
+    token,
+  });
+}
+
+export function getAdminStaffDetails(token: string, userId: string) {
+  return request<{ success: true; data: AdminStaffDetails }>({
+    method: 'GET',
+    endpoint: `/admin/staff/${encodeURIComponent(userId)}`,
+    token,
+  });
+}
+
+export function resendAdminStaffInvitation(token: string, invitationId: string) {
+  return request<{ success: true; data: AdminStaffInvitation }>({
+    method: 'POST',
+    endpoint: `/admin/staff/invitations/${encodeURIComponent(invitationId)}/resend`,
+    token,
+  });
+}
+
+export function revokeAdminStaffInvitation(token: string, invitationId: string) {
+  return request<{ success: true; data: AdminStaffInvitation }>({
+    method: 'POST',
+    endpoint: `/admin/staff/invitations/${encodeURIComponent(invitationId)}/revoke`,
+    token,
+  });
+}
+
+export function updateAdminStaffPermissions(token: string, userId: string, permissionKeys: string[]) {
+  return request<{ success: true; data: { userId: string; permissionKeys: string[] } }>({
+    method: 'PATCH',
+    endpoint: `/admin/staff/${encodeURIComponent(userId)}/permissions`,
+    body: { permissionKeys },
+    token,
+  });
+}
+
+export function suspendAdminStaff(token: string, userId: string) {
+  return request<{ success: true; data: { userId: string; isActive: false; suspendedAt: string } }>({
+    method: 'POST',
+    endpoint: `/admin/staff/${encodeURIComponent(userId)}/suspend`,
+    token,
+  });
+}
+
+export function reactivateAdminStaff(token: string, userId: string) {
+  return request<{ success: true; data: { userId: string; isActive: true; suspendedAt: null } }>({
+    method: 'POST',
+    endpoint: `/admin/staff/${encodeURIComponent(userId)}/reactivate`,
+    token,
+  });
+}
+
+export function getAdminStaffAudit(token: string, userId: string, page = 1, limit = 20) {
+  return request<AdminStaffPageResponse<AdminStaffAuditEvent>>({
+    method: 'GET',
+    endpoint: `/admin/staff/${encodeURIComponent(userId)}/audit?page=${page}&limit=${limit}`,
+    token,
+  });
+}
+
+export function acceptAdminStaffInvitation(payload: {
+  token: string;
+  firstName: string;
+  lastName: string;
+  password: string;
+}) {
+  return request<{ success: true; data: { id: string; email: string; firstName: string; lastName: string } }>({
+    method: 'POST',
+    endpoint: '/auth/admin-invitations/accept',
+    body: payload,
   });
 }

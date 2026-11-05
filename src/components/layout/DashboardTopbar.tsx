@@ -7,11 +7,19 @@ import { getEmployerProfile, getEmployerProfileLogo, getNotifications, getSeeker
 import { useAuth } from '../../context/AuthContext';
 import { resolveAccountTypeForPlan, useSubscriptions } from '../../context/SubscriptionContext';
 import { getUserScopedImageUrl, type UserScopedImage } from '../../utils/profileImageState';
+import {
+  ADMIN_ACCOUNT_LINK_PATHS,
+  ADMIN_HEADER_LINK_PATHS,
+  getVisibleAdminNavigationItems,
+  hasAdminNavigationAccess,
+  type AdminPermissionState,
+} from '../../utils/adminNavigation.js';
 
 type DashboardTopbarProps = {
   isOpen?: boolean;
   onToggle?: () => void;
   role?: 'seeker' | 'employer' | 'admin';
+  adminPermissionState?: AdminPermissionState;
   userName?: string;
   onLogout?: () => void;
 };
@@ -71,6 +79,7 @@ function DashboardTopbar({
   isOpen = false,
   onToggle,
   role,
+  adminPermissionState,
   userName,
   onLogout,
 }: DashboardTopbarProps) {
@@ -96,6 +105,17 @@ function DashboardTopbar({
 
   const unreadCount = useMemo(() => notifications.filter((item) => !item.isRead).length, [notifications]);
   const imageUrl = getUserScopedImageUrl(profileImage, user?.id);
+  const canViewAdminNotifications = role !== 'admin'
+    || hasAdminNavigationAccess(adminPermissionState ?? { status: 'loading' }, { permissions: ['notifications.view'] });
+  const adminHeaderItems = role === 'admin'
+    ? getVisibleAdminNavigationItems(adminPermissionState ?? { status: 'loading' }, ADMIN_HEADER_LINK_PATHS)
+    : [];
+  const adminAccountItems = role === 'admin'
+    ? getVisibleAdminNavigationItems(adminPermissionState ?? { status: 'loading' }, ADMIN_ACCOUNT_LINK_PATHS)
+    : [];
+  const accountItems = role === 'admin'
+    ? adminAccountItems.map(({ label, to }) => ({ label, to }))
+    : role ? accountNav[role] : [];
   const seekerAccountLabel = useMemo(() => {
     if (role !== 'seeker') return null;
     const resolvedPlanKey = currentPlan?.key ?? 'BASIC';
@@ -107,8 +127,9 @@ function DashboardTopbar({
   }, [userName]);
 
   useEffect(() => {
-    if (!role || !token) {
+    if (!role || !token || !canViewAdminNotifications) {
       setNotifications([]);
+      setIsRefreshingNotifications(false);
       return undefined;
     }
 
@@ -126,7 +147,7 @@ function DashboardTopbar({
     void loadNotifications();
 
     return () => { active = false; };
-  }, [role, token]);
+  }, [canViewAdminNotifications, role, token]);
 
   useEffect(() => {
     if (!role || !token || !user?.id) {
@@ -229,13 +250,16 @@ function DashboardTopbar({
   const brand = (
     <Logo className="dashboard-topbar__brand" tagline="Career workspace" />
   );
+  const navItems = role === 'admin'
+    ? adminHeaderItems.map(({ label, to }) => ({ label, to }))
+    : role ? primaryNav[role] : [];
 
   if (role) {
     return (
       <header className="dashboard-topbar dashboard-topbar--dashboard">
         {brand}
         <nav className="dashboard-topbar__nav" aria-label={`${role} navigation`}>
-          {primaryNav[role].map((item) => (
+          {navItems.map((item) => (
             <NavLink
               key={item.to}
               to={item.to}
@@ -246,7 +270,7 @@ function DashboardTopbar({
           ))}
         </nav>
         <div className="dashboard-topbar__utility">
-          <div className="dashboard-topbar__notification-wrap">
+          {canViewAdminNotifications ? <div className="dashboard-topbar__notification-wrap">
             <button
               type="button"
               className="dashboard-topbar__notification-button"
@@ -289,12 +313,12 @@ function DashboardTopbar({
                 </button>
               </div>
             ) : null}
-          </div>
+          </div> : null}
           {role === 'seeker' && seekerAccountLabel ? (
             <span className="dashboard-topbar__account-badge">{seekerAccountLabel}</span>
           ) : null}
           <AccountMenu
-            items={accountNav[role]}
+            items={accountItems}
             userName={accountName}
             roleLabel={role === 'employer' ? 'Employer' : role === 'admin' ? 'Admin' : 'Job Seeker'}
             imageUrl={imageUrl}

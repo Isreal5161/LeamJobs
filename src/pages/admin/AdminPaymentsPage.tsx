@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
+import { useOutletContext } from 'react-router-dom';
 import { FaCheckCircle, FaChevronDown, FaCoins, FaEye, FaFilter, FaLock, FaSearch, FaTimes } from 'react-icons/fa';
 import { useAuth } from '../../context/AuthContext';
 import {
@@ -19,6 +20,12 @@ import {
   type AdminReleaseCandidate,
   type FreelancePaymentCapabilities,
 } from '../../services/api';
+import type { AdminPermissionState } from '../../utils/adminNavigation.js';
+import {
+  canAccessAdminPaymentsSection,
+  canExecuteAdminEscrowRelease,
+  getAdminPlatformFeeUpdatePayload,
+} from './adminPaymentsPermissions';
 import AdminPageSkeleton from './AdminPageSkeleton';
 
 const formatDate = (value: string | null) => value ? new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(value)) : 'Not recorded';
@@ -53,6 +60,20 @@ const emptyFilters: PaymentFilters = { search: '', status: '', paymentType: '', 
 
 function AdminPaymentsPage() {
   const { token } = useAuth();
+  const adminPermissionState = useOutletContext<AdminPermissionState | undefined>();
+  const canViewFinancialSummary = canAccessAdminPaymentsSection(adminPermissionState, 'financialSummary');
+  const canViewFees = canAccessAdminPaymentsSection(adminPermissionState, 'platformFees');
+  const canManageFees = canAccessAdminPaymentsSection(adminPermissionState, 'managePlatformFees');
+  const canViewConversionOperations = canAccessAdminPaymentsSection(adminPermissionState, 'conversionOperations');
+  const canViewPayments = canAccessAdminPaymentsSection(adminPermissionState, 'paymentHistory');
+  const canViewReleaseCandidates = canAccessAdminPaymentsSection(adminPermissionState, 'releaseCandidates');
+  const canExecuteEscrowRelease = canExecuteAdminEscrowRelease(adminPermissionState);
+  const hasAccessibleSection = canViewFinancialSummary
+    || canViewFees
+    || canManageFees
+    || canViewConversionOperations
+    || canViewPayments
+    || canViewReleaseCandidates;
   const paymentDetailsCloseRef = useRef<HTMLButtonElement | null>(null);
   const paymentDetailsTriggerRef = useRef<HTMLButtonElement | null>(null);
   const [analytics, setAnalytics] = useState<AdminAnalytics | null>(null);
@@ -88,6 +109,11 @@ function AdminPaymentsPage() {
   const escrowReleaseEnabled = paymentCapabilities?.escrowReleaseEnabled === true;
 
   useEffect(() => {
+    if (!canExecuteEscrowRelease) {
+      setPaymentCapabilities(null);
+      setPaymentCapabilitiesError('');
+      return undefined;
+    }
     let active = true;
     void getFreelancePaymentCapabilities().then((result) => {
       if (!active) return;
@@ -104,9 +130,15 @@ function AdminPaymentsPage() {
       setPaymentCapabilitiesError('Payment availability could not be confirmed. New escrow releases are disabled for safety.');
     });
     return () => { active = false; };
-  }, []);
+  }, [canExecuteEscrowRelease]);
 
   useEffect(() => {
+    if (!canViewConversionOperations) {
+      setConversionOperations([]);
+      setConversionOperationsLoading(false);
+      setConversionOperationsError('');
+      return undefined;
+    }
     if (!token) {
       setConversionOperationsLoading(false);
       setConversionOperationsError('Your session could not be loaded. Please sign in again.');
@@ -128,9 +160,15 @@ function AdminPaymentsPage() {
       setConversionOperationsLoading(false);
     });
     return () => { active = false; };
-  }, [token, conversionRefreshKey, conversionStatusFilter, conversionStaleOnly]);
+  }, [canViewConversionOperations, token, conversionRefreshKey, conversionStatusFilter, conversionStaleOnly]);
 
   useEffect(() => {
+    if (!canViewFees) {
+      setFeeSettings({ percentage: '', withdrawalPercentage: '' });
+      setFeeSettingsLoading(false);
+      setFeeSettingsError('');
+      return undefined;
+    }
     if (!token) {
       setFeeSettingsLoading(false);
       setFeeSettingsError('Your session could not be loaded. Please sign in again.');
@@ -152,10 +190,20 @@ function AdminPaymentsPage() {
       setFeeSettingsLoading(false);
     });
     return () => { active = false; };
-  }, [token]);
+  }, [canViewFees, token]);
 
   useEffect(() => {
-    if (!token) return;
+    if (!canViewFinancialSummary) {
+      setAnalytics(null);
+      setAnalyticsLoading(false);
+      setAnalyticsError('');
+      return undefined;
+    }
+    if (!token) {
+      setAnalyticsLoading(false);
+      setAnalyticsError('Your session could not be loaded. Please sign in again.');
+      return undefined;
+    }
     let active = true;
     setAnalyticsLoading(true);
     void getAdminAnalytics(token).then((result) => {
@@ -170,10 +218,21 @@ function AdminPaymentsPage() {
       setAnalyticsLoading(false);
     });
     return () => { active = false; };
-  }, [token]);
+  }, [canViewFinancialSummary, token]);
 
   const loadPayments = async (cursor?: string, append = false) => {
-    if (!token) return;
+    if (!canViewPayments) {
+      setPayments([]);
+      setNextCursor(null);
+      setPaymentsLoading(false);
+      setPaymentsError('');
+      return;
+    }
+    if (!token) {
+      setPaymentsLoading(false);
+      setPaymentsError('Your session could not be loaded. Please sign in again.');
+      return;
+    }
     setPaymentsLoading(true);
     const result = await getAdminPayments(token, {
       limit: 20,
@@ -200,7 +259,7 @@ function AdminPaymentsPage() {
 
   useEffect(() => {
     void loadPayments();
-  }, [token, paymentFilters]);
+  }, [canViewPayments, token, paymentFilters]);
 
   const applyFilters = () => setPaymentFilters({ ...draftFilters });
   const clearFilters = () => {
@@ -210,26 +269,32 @@ function AdminPaymentsPage() {
 
   const saveFeeSettings = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (!token || feeSettingsSaving) return;
+    if (!canManageFees || !token || feeSettingsSaving) return;
     const percentagePattern = /^(?:100(?:\.0{1,2})?|(?:\d|[1-9]\d)(?:\.\d{1,2})?)$/;
-    if (!percentagePattern.test(feeSettings.percentage.trim()) || !percentagePattern.test(feeSettings.withdrawalPercentage.trim())) {
+    const payload = getAdminPlatformFeeUpdatePayload(adminPermissionState, feeSettings);
+    if (!payload) {
+      setFeeSettingsError('Enter at least one fee percentage to update.');
+      return;
+    }
+    if (Object.values(payload).some((value) => typeof value !== 'string' || !percentagePattern.test(value))) {
       setFeeSettingsError('Enter percentages from 0 to 100 with no more than 2 decimal places.');
       return;
     }
     setFeeSettingsSaving(true);
     setFeeSettingsError('');
     setFeeSettingsNotice('');
-    const result = await updateAdminPlatformFee({
-      percentage: feeSettings.percentage.trim(),
-      withdrawalPercentage: feeSettings.withdrawalPercentage.trim(),
-    }, token);
+    const result = await updateAdminPlatformFee(payload, token);
     if (!result.ok) {
       setFeeSettingsError(result.error.message || 'Fee settings could not be saved.');
     } else {
-      setFeeSettings({
-        percentage: result.data.data.configuration.percentage,
-        withdrawalPercentage: result.data.data.configuration.withdrawalPercentage,
-      });
+      if (canViewFees) {
+        setFeeSettings({
+          percentage: result.data.data.configuration.percentage,
+          withdrawalPercentage: result.data.data.configuration.withdrawalPercentage,
+        });
+      } else {
+        setFeeSettings({ percentage: '', withdrawalPercentage: '' });
+      }
       setFeeSettingsNotice('Fee settings saved. Existing contract funding terms remain unchanged.');
     }
     setFeeSettingsSaving(false);
@@ -272,7 +337,17 @@ function AdminPaymentsPage() {
   }, [selectedPayment]);
 
   const loadCandidates = async () => {
-    if (!token) return;
+    if (!canViewReleaseCandidates) {
+      setContracts([]);
+      setIsLoading(false);
+      setError('');
+      return;
+    }
+    if (!token) {
+      setIsLoading(false);
+      setError('Your session could not be loaded. Please sign in again.');
+      return;
+    }
     setIsLoading(true);
     const result = await getAdminReleaseCandidates(token);
     if (result.ok) {
@@ -282,10 +357,10 @@ function AdminPaymentsPage() {
     setIsLoading(false);
   };
 
-  useEffect(() => { void loadCandidates(); }, [token]);
+  useEffect(() => { void loadCandidates(); }, [canViewReleaseCandidates, token]);
 
   const release = async (candidate: AdminReleaseCandidate) => {
-    if (!token || loadingId || !escrowReleaseEnabled || !candidate.freelance.escrow.fundingVerified || releaseHasFinancialBlockers(candidate)) return;
+    if (!canExecuteEscrowRelease || !token || loadingId || !escrowReleaseEnabled || !candidate.freelance.escrow.fundingVerified || releaseHasFinancialBlockers(candidate)) return;
     setLoadingId(candidate.contractId);
     setError('');
     setMessage('');
@@ -311,6 +386,22 @@ function AdminPaymentsPage() {
     { title: 'Platform Fees', value: analytics.financial.platformFees, tone: 'fees' },
   ] : [];
 
+  if (adminPermissionState?.status === 'loading' || !adminPermissionState) {
+    return <section className="admin-permission-state" role="status">Verifying administrator permissions…</section>;
+  }
+
+  if (adminPermissionState.status === 'error') {
+    return <section className="admin-permission-state admin-permission-state--error" role="alert">Administrator permissions could not be verified.</section>;
+  }
+
+  if (adminPermissionState.status === 'forbidden') {
+    return <section className="admin-permission-state admin-permission-state--error" role="alert">{adminPermissionState.message}</section>;
+  }
+
+  if (!hasAccessibleSection) {
+    return <section className="admin-permission-state admin-permission-state--error" role="alert">You do not have permission to access any Payments sections.</section>;
+  }
+
   return (
     <div className="payment-page admin-release-page admin-payments-page">
       <section className="admin-hero payment-hero">
@@ -318,7 +409,7 @@ function AdminPaymentsPage() {
         <div className="admin-hero__actions"><span className="admin-icon-button" aria-hidden="true"><FaCoins /></span></div>
       </section>
 
-      <section className="payment-section" aria-labelledby="payments-overview-title">
+      {canViewFinancialSummary ? <section className="payment-section" aria-labelledby="payments-overview-title">
         <div className="payment-section-heading"><div><span className="payment-section-kicker"><FaCoins /> Payments overview</span><h2 id="payments-overview-title">Financial summary</h2></div></div>
         {analyticsLoading ? <div className="payment-stat-grid payment-stat-grid--loading" aria-busy="true" aria-label="Loading financial summary">
           {Array.from({ length: 8 }, (_, index) => <article className="payment-stat-card payment-stat-card--skeleton" key={index} aria-hidden="true"><span className="payment-stat-card__icon" /><div><span className="payment-skeleton-line payment-skeleton-line--label" /><span className="payment-skeleton-line payment-skeleton-line--value" /><span className="payment-skeleton-line payment-skeleton-line--note" /></div></article>)}
@@ -327,21 +418,25 @@ function AdminPaymentsPage() {
         {!analyticsLoading && !analyticsError ? <div className="payment-stat-grid">
           {overviewCards.map((card) => <article className={`payment-stat-card payment-stat-card--${card.tone}`} key={card.title}><span className="payment-stat-card__icon" aria-hidden="true"><FaCoins /></span><div><span>{card.title}</span><strong>{metricValue(card.value)}</strong><small>Selected analytics period · currency-separated</small></div></article>)}
         </div> : null}
-      </section>
+      </section> : null}
 
-      <section className="payment-panel" aria-labelledby="platform-fees-title" aria-busy={feeSettingsLoading || feeSettingsSaving}>
+      {canViewFees || canManageFees ? <section className="payment-panel" aria-labelledby="platform-fees-title" aria-busy={(canViewFees && feeSettingsLoading) || feeSettingsSaving}>
         <div className="payment-heading"><div><span><FaCoins /> Fee configuration</span><h2 id="platform-fees-title">Platform charges</h2></div></div>
-        <p className="payment-copy">These percentages are authoritative for new operations. Previously created contract funding snapshots are not repriced.</p>
-        {feeSettingsLoading ? <div className="payment-fee-settings-skeleton" role="status">Loading fee settings…</div> : null}
-        {!feeSettingsLoading && feeSettingsError && !feeSettings.percentage ? <p className="payment-copy payment-copy--error" role="alert">{feeSettingsError} <button type="button" className="payment-filter-clear" onClick={() => { if (!token) return; setFeeSettingsError(''); setFeeSettingsLoading(true); void getAdminPlatformFee(token).then((result) => { if (result.ok) setFeeSettings({ percentage: result.data.data.configuration.percentage, withdrawalPercentage: result.data.data.configuration.withdrawalPercentage }); else setFeeSettingsError(result.error.message || 'Fee settings could not be loaded.'); setFeeSettingsLoading(false); }); }}>Retry</button></p> : null}
-        {!feeSettingsLoading && feeSettings.percentage ? <form className="admin-fee-settings" onSubmit={(event) => void saveFeeSettings(event)}>
-          <label><span>Employer project funding charge</span><div><input type="number" min="0" max="100" step="0.01" inputMode="decimal" value={feeSettings.percentage} onChange={(event) => setFeeSettings((current) => ({ ...current, percentage: event.target.value }))} disabled={feeSettingsSaving} required /><span>%</span></div><small>Additive charge on top of the project amount.</small></label>
-          <label><span>Seeker withdrawal charge</span><div><input type="number" min="0" max="100" step="0.01" inputMode="decimal" value={feeSettings.withdrawalPercentage} onChange={(event) => setFeeSettings((current) => ({ ...current, withdrawalPercentage: event.target.value }))} disabled={feeSettingsSaving} required /><span>%</span></div><small>Deducted from the requested withdrawal; the net amount is paid to the seeker.</small></label>
+        <p className="payment-copy">{canViewFees ? 'These percentages are authoritative for new operations. Previously created contract funding snapshots are not repriced.' : 'Enter one or both fee percentages to update. Leave a field blank to keep its current setting unchanged.'}</p>
+        {canViewFees && feeSettingsLoading ? <div className="payment-fee-settings-skeleton" role="status">Loading fee settings…</div> : null}
+        {canViewFees && !feeSettingsLoading && feeSettingsError && !feeSettings.percentage ? <p className="payment-copy payment-copy--error" role="alert">{feeSettingsError} <button type="button" className="payment-filter-clear" onClick={() => { if (!token) return; setFeeSettingsError(''); setFeeSettingsLoading(true); void getAdminPlatformFee(token).then((result) => { if (result.ok) setFeeSettings({ percentage: result.data.data.configuration.percentage, withdrawalPercentage: result.data.data.configuration.withdrawalPercentage }); else setFeeSettingsError(result.error.message || 'Fee settings could not be loaded.'); setFeeSettingsLoading(false); }); }}>Retry</button></p> : null}
+        {!feeSettingsLoading && canManageFees && (!canViewFees || Boolean(feeSettings.percentage)) ? <form className="admin-fee-settings" onSubmit={(event) => void saveFeeSettings(event)}>
+          <label><span>Employer project funding charge</span><div><input type="number" min="0" max="100" step="0.01" inputMode="decimal" value={feeSettings.percentage} onChange={(event) => setFeeSettings((current) => ({ ...current, percentage: event.target.value }))} disabled={feeSettingsSaving} required={canViewFees} placeholder={canViewFees ? undefined : 'Leave unchanged'} /><span>%</span></div><small>Additive charge on top of the project amount.</small></label>
+          <label><span>Seeker withdrawal charge</span><div><input type="number" min="0" max="100" step="0.01" inputMode="decimal" value={feeSettings.withdrawalPercentage} onChange={(event) => setFeeSettings((current) => ({ ...current, withdrawalPercentage: event.target.value }))} disabled={feeSettingsSaving} required={canViewFees} placeholder={canViewFees ? undefined : 'Leave unchanged'} /><span>%</span></div><small>Deducted from the requested withdrawal; the net amount is paid to the seeker.</small></label>
           <div className="admin-fee-settings__actions"><button type="submit" className="payment-heading-action" disabled={feeSettingsSaving}>{feeSettingsSaving ? 'Saving…' : 'Save fee settings'}</button>{feeSettingsError ? <p className="payment-copy payment-copy--error" role="alert">{feeSettingsError}</p> : null}{feeSettingsNotice ? <p className="payment-notice" role="status">{feeSettingsNotice}</p> : null}</div>
         </form> : null}
-      </section>
+        {!feeSettingsLoading && canViewFees && feeSettings.percentage && !canManageFees ? <div className="admin-fee-settings">
+          <p>Employer project funding charge: <strong>{feeSettings.percentage}%</strong></p>
+          <p>Seeker withdrawal charge: <strong>{feeSettings.withdrawalPercentage}%</strong></p>
+        </div> : null}
+      </section> : null}
 
-      <section className="payment-panel admin-conversion-panel" aria-labelledby="conversion-operations-title" aria-busy={conversionOperationsLoading}>
+      {canViewConversionOperations ? <section className="payment-panel admin-conversion-panel" aria-labelledby="conversion-operations-title" aria-busy={conversionOperationsLoading}>
         <div className="payment-heading">
           <div><span><FaCoins /> Reconciliation view · currency-specific</span><h2 id="conversion-operations-title">Conversion operations</h2></div>
           <button type="button" className="payment-heading-action" onClick={() => setConversionRefreshKey((current) => current + 1)} disabled={conversionOperationsLoading}>Refresh</button>
@@ -372,9 +467,9 @@ function AdminPaymentsPage() {
             </li>)}</ol> : null}
           </article>)}
         </div> : null}
-      </section>
+      </section> : null}
 
-      <section className="payment-panel payment-history-panel" aria-labelledby="payment-history-title">
+      {canViewPayments ? <section className="payment-panel payment-history-panel" aria-labelledby="payment-history-title">
         <div className="payment-heading"><div><span><FaCoins /> Payment records</span><h2 id="payment-history-title">Payment History</h2></div><span className="payment-history-count">{payments.length} loaded</span></div>
         <form className="payment-filter-toolbar" onSubmit={(event) => { event.preventDefault(); applyFilters(); }}>
           <label className="payment-filter-search"><span>Search payments</span><div><FaSearch aria-hidden="true" /><input value={draftFilters.search} onChange={(event) => setDraftFilters((current) => ({ ...current, search: event.target.value }))} placeholder="Reference, transaction, payer" /></div></label>
@@ -401,13 +496,14 @@ function AdminPaymentsPage() {
           </article>)}
         </div> : null}
         {nextCursor ? <button type="button" className="payment-load-more" onClick={() => void loadPayments(nextCursor, true)} disabled={paymentsLoading}>{paymentsLoading ? 'Loading...' : 'Load more payments'} <FaChevronDown /></button> : null}
-      </section>
+      </section> : null}
 
+      {canViewReleaseCandidates ? <>
       {message ? <p className="payment-copy payment-copy--success" role="status">{message}</p> : null}
       {error ? <p className="payment-copy payment-copy--error" role="alert">{error}</p> : null}
       <section className="payment-panel" aria-labelledby="release-queue-title" aria-busy={isLoading}>
         <div className="payment-heading"><div><span><FaLock /> Authoritative escrow queue</span><h2 id="release-queue-title">Contracts Awaiting Release</h2><p className="payment-copy">Review completed freelance contracts before crediting seeker wallets.</p></div><button type="button" onClick={() => void loadCandidates()} disabled={isLoading}>Refresh</button></div>
-        {!escrowReleaseEnabled ? <p className="payment-copy" role="status">{paymentCapabilitiesError || 'New escrow releases are temporarily disabled. Existing payment history and escrow status remain available.'}</p> : null}
+        {canExecuteEscrowRelease && !escrowReleaseEnabled ? <p className="payment-copy" role="status">{paymentCapabilitiesError || 'New escrow releases are temporarily disabled. Existing payment history and escrow status remain available.'}</p> : null}
         {isLoading ? <AdminPageSkeleton showToolbar={false} statCards={0} rows={4} /> : null}
         {!isLoading && !contracts.length ? <p className="payment-copy">No freelance contracts are currently release eligible.</p> : null}
         <div className="payment-list">
@@ -430,13 +526,14 @@ function AdminPaymentsPage() {
                 {freelance.escrow.manualReviewIndicators.includes('MULTIPLE_FUNDING_ATTEMPTS') ? <span>Multiple funding attempts exist; verify all provider outcomes before release.</span> : null}
                 <span>Completion submitted: {formatDate(freelance.completionSubmittedAt)}</span><span>Employer confirmed: {formatDate(freelance.employerCompletionConfirmedAt)}</span><span>Release eligible: {formatDate(freelance.escrow.releaseEligibleAt)}</span>
               </div>
-              {isConfirming ? <div className="admin-release-confirmation" role="alert"><p><strong>Release {money(freelance.seekerNetAmount, freelance.currency)} to {fullName(candidate.seeker)}?</strong><br />This action will credit the seeker's wallet and cannot be reversed from this screen.</p><div><button type="button" onClick={() => void release(candidate)} disabled={Boolean(loadingId) || !escrowReleaseEnabled || !freelance.escrow.fundingVerified || releaseHasFinancialBlockers(candidate)}>{isReleasing ? 'Releasing...' : 'Confirm Release'}</button><button type="button" onClick={() => setConfirmingId(null)} disabled={Boolean(loadingId)}>Cancel</button></div></div> : <button type="button" className="button button--primary" onClick={() => setConfirmingId(candidate.contractId)} disabled={Boolean(loadingId) || !escrowReleaseEnabled || !freelance.escrow.fundingVerified || releaseHasFinancialBlockers(candidate)}><FaCheckCircle /> {!freelance.escrow.fundingVerified || releaseHasFinancialBlockers(candidate) ? 'Review funding' : !escrowReleaseEnabled ? 'Release unavailable' : 'Release Funds'}</button>}
+              {canExecuteEscrowRelease ? isConfirming ? <div className="admin-release-confirmation" role="alert"><p><strong>Release {money(freelance.seekerNetAmount, freelance.currency)} to {fullName(candidate.seeker)}?</strong><br />This action will credit the seeker's wallet and cannot be reversed from this screen.</p><div><button type="button" onClick={() => void release(candidate)} disabled={Boolean(loadingId) || !escrowReleaseEnabled || !freelance.escrow.fundingVerified || releaseHasFinancialBlockers(candidate)}>{isReleasing ? 'Releasing...' : 'Confirm Release'}</button><button type="button" onClick={() => setConfirmingId(null)} disabled={Boolean(loadingId)}>Cancel</button></div></div> : <button type="button" className="button button--primary" onClick={() => setConfirmingId(candidate.contractId)} disabled={Boolean(loadingId) || !escrowReleaseEnabled || !freelance.escrow.fundingVerified || releaseHasFinancialBlockers(candidate)}><FaCheckCircle /> {!freelance.escrow.fundingVerified || releaseHasFinancialBlockers(candidate) ? 'Review funding' : !escrowReleaseEnabled ? 'Release unavailable' : 'Release Funds'}</button> : null}
             </article>;
           })}
         </div>
       </section>
+      </> : null}
 
-      {selectedPayment ? <div className="payment-modal-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) closePaymentDetails(); }}><section className="payment-modal payment-details-modal" role="dialog" aria-modal="true" aria-labelledby="payment-details-title"><div className="payment-modal__header"><span>Payment details</span><button ref={paymentDetailsCloseRef} type="button" className="payment-modal__close" onClick={closePaymentDetails} aria-label="Close payment details"><FaTimes /></button></div><h2 id="payment-details-title">{selectedPayment.providerReference}</h2>{selectedPayment.manualReviewRequired ? <p className="payment-copy" role="status">The provider payment is verified, but the subscription remains {label(selectedPayment.context.subscriptionStatus ?? 'unknown')}. Manual review is required; no subscription access was activated.</p> : null}<div className="payment-details-grid"><div><span>Payment ID</span><strong>{selectedPayment.id}</strong></div><div><span>Provider reference</span><strong>{selectedPayment.providerReference}</strong></div><div><span>Transaction ID</span><strong>{selectedPayment.transactionId || 'Not recorded'}</strong></div><div><span>Payer</span><strong>{selectedPayment.payer.name}<small>{selectedPayment.payer.email}</small></strong></div><div><span>Payment type</span><strong>{label(selectedPayment.paymentType)}</strong></div><div><span>Amount</span><strong>{money(selectedPayment.amount, selectedPayment.currency)}</strong></div><div><span>Provider</span><strong>{label(selectedPayment.provider)}</strong></div><div><span>Status</span><strong>{label(selectedPayment.status)}</strong></div><div><span>Created</span><strong>{formatDate(selectedPayment.createdAt)}</strong></div><div><span>Verified</span><strong>{formatDate(selectedPayment.verifiedAt)}</strong></div><div><span>Related record</span><strong>{selectedPayment.context.jobTitle || selectedPayment.context.subscriptionPlan || 'Not linked'}</strong></div>{selectedPayment.context.subscriptionStatus ? <div><span>Subscription status</span><strong>{label(selectedPayment.context.subscriptionStatus)}</strong></div> : null}</div><button type="button" className="payment-heading-action" onClick={closePaymentDetails}>Close</button></section></div> : null}
+      {canViewPayments && selectedPayment ? <div className="payment-modal-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) closePaymentDetails(); }}><section className="payment-modal payment-details-modal" role="dialog" aria-modal="true" aria-labelledby="payment-details-title"><div className="payment-modal__header"><span>Payment details</span><button ref={paymentDetailsCloseRef} type="button" className="payment-modal__close" onClick={closePaymentDetails} aria-label="Close payment details"><FaTimes /></button></div><h2 id="payment-details-title">{selectedPayment.providerReference}</h2>{selectedPayment.manualReviewRequired ? <p className="payment-copy" role="status">The provider payment is verified, but the subscription remains {label(selectedPayment.context.subscriptionStatus ?? 'unknown')}. Manual review is required; no subscription access was activated.</p> : null}<div className="payment-details-grid"><div><span>Payment ID</span><strong>{selectedPayment.id}</strong></div><div><span>Provider reference</span><strong>{selectedPayment.providerReference}</strong></div><div><span>Transaction ID</span><strong>{selectedPayment.transactionId || 'Not recorded'}</strong></div><div><span>Payer</span><strong>{selectedPayment.payer.name}<small>{selectedPayment.payer.email}</small></strong></div><div><span>Payment type</span><strong>{label(selectedPayment.paymentType)}</strong></div><div><span>Amount</span><strong>{money(selectedPayment.amount, selectedPayment.currency)}</strong></div><div><span>Provider</span><strong>{label(selectedPayment.provider)}</strong></div><div><span>Status</span><strong>{label(selectedPayment.status)}</strong></div><div><span>Created</span><strong>{formatDate(selectedPayment.createdAt)}</strong></div><div><span>Verified</span><strong>{formatDate(selectedPayment.verifiedAt)}</strong></div><div><span>Related record</span><strong>{selectedPayment.context.jobTitle || selectedPayment.context.subscriptionPlan || 'Not linked'}</strong></div>{selectedPayment.context.subscriptionStatus ? <div><span>Subscription status</span><strong>{label(selectedPayment.context.subscriptionStatus)}</strong></div> : null}</div><button type="button" className="payment-heading-action" onClick={closePaymentDetails}>Close</button></section></div> : null}
     </div>
   );
 }

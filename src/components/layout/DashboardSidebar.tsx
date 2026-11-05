@@ -16,13 +16,24 @@ import {
   FaCrown,
   FaUser,
   FaCog,
+  FaChartLine,
+  FaBell,
+  FaBullhorn,
+  FaUsers,
+  FaChevronLeft,
+  FaChevronRight,
 } from 'react-icons/fa';
+import {
+  getVisibleAdminNavigationSections,
+  type AdminPermissionState,
+} from '../../utils/adminNavigation.js';
 
 type SidebarProps = {
   role: 'seeker' | 'employer' | 'admin';
   isOpen?: boolean;
   onToggle?: () => void;
   onNavigate?: () => void;
+  adminPermissionState?: AdminPermissionState;
 };
 
 const sidebarLinks = {
@@ -49,64 +60,54 @@ const sidebarLinks = {
     { label: 'Company Profile', to: '/employer/profile', icon: FaUser },
     { label: 'Settings', to: '/employer/settings', icon: FaCog },
   ],
-  admin: [
-    { label: 'Overview', to: '/admin/dashboard', icon: FaHome },
-    { label: 'Moderation', to: '/admin/moderation', icon: FaFlag },
-    { label: 'Job Posts', to: '/admin/jobs', icon: FaBriefcase },
-    { label: 'Page Content', to: '/admin/content', icon: FaEdit },
-    { label: 'Filters', to: '/admin/filters', icon: FaFilter },
-    { label: 'Recommendations', to: '/admin/recommendations', icon: FaStar },
-    { label: 'Users', to: '/admin/users', icon: FaUser },
-    { label: 'Companies', to: '/admin/companies', icon: FaBuilding },
-    { label: 'Payments', to: '/admin/payments', icon: FaMoneyBillWave },
-    { label: 'Subscriptions', to: '/admin/subscriptions', icon: FaCrown },
-    { label: 'Settings', to: '/admin/settings', icon: FaCog },
-  ],
 };
 
-const adminSidebarSections = [
-  {
-    heading: 'Main',
-    items: [{ label: 'Overview', to: '/admin/dashboard', icon: FaHome }],
-  },
-  {
-    heading: 'Job management',
-    items: [
-      { label: 'Job Posts', to: '/admin/jobs', icon: FaBriefcase },
-      { label: 'Moderation', to: '/admin/moderation', icon: FaFlag },
-    ],
-  },
-  {
-    heading: 'Users & companies',
-    items: [
-      { label: 'Users', to: '/admin/users', icon: FaUser },
-      { label: 'Companies', to: '/admin/companies', icon: FaBuilding },
-    ],
-  },
-  {
-    heading: 'Payments',
-    items: [
-      { label: 'Payments', to: '/admin/payments', icon: FaMoneyBillWave },
-      { label: 'Subscriptions', to: '/admin/subscriptions', icon: FaCrown },
-    ],
-  },
-  {
-    heading: 'Content & tools',
-    items: [
-      { label: 'Page Content', to: '/admin/content', icon: FaEdit },
-      { label: 'Filters', to: '/admin/filters', icon: FaFilter },
-      { label: 'Recommendations', to: '/admin/recommendations', icon: FaStar },
-    ],
-  },
-];
+const adminIcons = {
+  home: FaHome,
+  briefcase: FaBriefcase,
+  flag: FaFlag,
+  user: FaUser,
+  building: FaBuilding,
+  users: FaUsers,
+  chart: FaChartLine,
+  money: FaMoneyBillWave,
+  crown: FaCrown,
+  clipboard: FaClipboardList,
+  bullhorn: FaBullhorn,
+  bell: FaBell,
+  edit: FaEdit,
+  filter: FaFilter,
+  star: FaStar,
+  cog: FaCog,
+};
 
-function DashboardSidebar({ role, isOpen = true, onNavigate }: SidebarProps) {
-  const navItems = role === 'admin' ? adminSidebarSections : null;
+function DashboardSidebar({
+  role,
+  isOpen = true,
+  onToggle,
+  onNavigate,
+  adminPermissionState,
+}: SidebarProps) {
+  const navItems = role === 'admin' && adminPermissionState?.status === 'ready'
+    ? getVisibleAdminNavigationSections(adminPermissionState)
+    : null;
 
   return (
     <aside className={`dashboard-menu ${isOpen ? 'dashboard-menu--open' : 'dashboard-menu--closed'}`}>
       <div className="dashboard-menu__header">
         <Logo className="dashboard-menu__brand" tagline="Career menu" />
+        {role === 'admin' ? (
+          <button
+            type="button"
+            className="dashboard-menu__toggle"
+            aria-label={isOpen ? 'Collapse admin navigation' : 'Expand admin navigation'}
+            aria-expanded={isOpen}
+            title={isOpen ? 'Collapse navigation' : 'Expand navigation'}
+            onClick={onToggle}
+          >
+            {isOpen ? <FaChevronLeft aria-hidden="true" /> : <FaChevronRight aria-hidden="true" />}
+          </button>
+        ) : null}
       </div>
 
       {navItems ? (
@@ -114,23 +115,30 @@ function DashboardSidebar({ role, isOpen = true, onNavigate }: SidebarProps) {
           {navItems.map((section) => (
             <div key={section.heading} className="dashboard-menu__group">
               <span className="dashboard-menu__group-label">{section.heading}</span>
-              {section.items.map(({ icon: Icon, ...item }) => (
-                <NavLink
-                  key={item.to}
-                  to={item.to}
-                  className={({ isActive }) => `dashboard-menu__link ${isActive ? 'dashboard-menu__link--active' : ''}`}
-                  onClick={onNavigate}
-                  title={!isOpen ? item.label : undefined}
-                >
-                  <span className="dashboard-menu__icon">
-                    <Icon />
-                  </span>
-                  <span className="dashboard-menu__label">{item.label}</span>
-                </NavLink>
-              ))}
+              {section.items.map((item) => {
+                const Icon = adminIcons[item.icon as keyof typeof adminIcons];
+                return (
+                  <NavLink
+                    key={item.to}
+                    to={item.to}
+                    className={({ isActive }) => `dashboard-menu__link ${isActive ? 'dashboard-menu__link--active' : ''}`}
+                    onClick={onNavigate}
+                    title={item.label}
+                  >
+                    <span className="dashboard-menu__icon">
+                      <Icon />
+                    </span>
+                    <span className="dashboard-menu__label">{item.label}</span>
+                  </NavLink>
+                );
+              })}
             </div>
           ))}
         </nav>
+      ) : role === 'admin' ? (
+        <div className="dashboard-menu__loading" role="status">
+          {adminPermissionState?.status === 'forbidden' ? 'Access denied' : adminPermissionState?.status === 'error' ? 'Navigation unavailable' : 'Loading navigation…'}
+        </div>
       ) : (
         <nav className="dashboard-menu__nav" aria-label={`${role} navigation`}>
           {sidebarLinks[role].map(({ icon: Icon, ...item }) => (
