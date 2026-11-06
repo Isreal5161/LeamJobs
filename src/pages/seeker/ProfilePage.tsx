@@ -331,6 +331,22 @@ const createEmptyProfileState = (): ProfileState => ({
   projects: [],
 });
 
+const formatSubscriptionPrice = (price: number, currency: string | null) => {
+  if (!currency || !Number.isFinite(price)) return null;
+  try {
+    return new Intl.NumberFormat(undefined, { style: 'currency', currency }).format(price);
+  } catch {
+    return `${currency} ${price}`;
+  }
+};
+
+const formatSubscriptionDate = (value: string | null | undefined) => {
+  if (!value) return null;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return null;
+  return new Intl.DateTimeFormat(undefined, { dateStyle: 'medium' }).format(date);
+};
+
 type ProfilePageProps = {
   mode: 'cv' | 'settings';
 };
@@ -413,7 +429,17 @@ function ProfilePage({ mode }: ProfilePageProps) {
   const [aiManualOnlyModal, setAiManualOnlyModal] = useState<{ targetId: string; fieldLabel: string } | null>(null);
   const [profileStrength, setProfileStrength] = useState<{ score: number; dimensions: { label: string; score: number; complete: boolean }[]; strengths: string[]; recommendations: string[] } | null>(null);
   const [profileStrengthError, setProfileStrengthError] = useState('');
-  const { plans, getSubscription, refresh, trial, trialOffer, currentPlan } = useSubscriptions();
+  const {
+    plans,
+    subscriptions,
+    getSubscription,
+    refresh,
+    trial,
+    trialOffer,
+    currentPlan,
+    isLoading: isSubscriptionLoading,
+    subscriptionError,
+  } = useSubscriptions();
   const [isStartingTrial, setIsStartingTrial] = useState(false);
   const [isSettingsSaving, setIsSettingsSaving] = useState(false);
   const [pendingNavigation, setPendingNavigation] = useState<string | null>(null);
@@ -423,6 +449,11 @@ function ProfilePage({ mode }: ProfilePageProps) {
 
   const subscriptionUserId = user?.id || '';
   const subscription = subscriptionUserId ? getSubscription(subscriptionUserId) : { status: 'Expired' as const, planId: 'free', renewalDate: '', advancedCvEligible: false, aiEntitlements: [] as string[], seekerId: '', seekerName: '', email: '', startedAt: 'Not started', featured: false };
+  const currentSubscription = subscriptions.find((item) => item.seekerId === subscriptionUserId) ?? null;
+  const subscriptionRenewalDate = formatSubscriptionDate(currentSubscription?.renewalDate);
+  const subscriptionPrice = formatSubscriptionPrice(currentPlan.price, currentPlan.currency);
+  const subscriptionStatus = currentSubscription?.status ?? (trial ? 'Trial active' : 'No active subscription');
+  const trialEndDate = formatSubscriptionDate(trial?.endAt);
   const canonicalEntitlements = Array.isArray(currentPlan?.entitlements) && currentPlan.entitlements.length > 0
     ? currentPlan.entitlements
     : Array.isArray(subscription.aiEntitlements)
@@ -2630,22 +2661,40 @@ function ProfilePage({ mode }: ProfilePageProps) {
             </section>
 
             <section className="seeker-card seeker-settings-card" aria-labelledby="seeker-subscription-title">
-              <div className="seeker-editor-card__heading">
+              <div className="seeker-editor-card__heading seeker-settings-subscription__heading">
                 <div>
                   <span className="seeker-cv-summary__eyebrow">Subscription</span>
-                  <h2 id="seeker-subscription-title">{currentPlan.name}</h2>
-                  <p>{currentPlan.description}</p>
-                  {trial ? <p className="seeker-settings-subscription__status">Trial active{trial.endAt ? ` until ${new Date(trial.endAt).toLocaleDateString()}` : ''}.</p> : null}
+                  <h2 id="seeker-subscription-title">{!isSubscriptionLoading && !subscriptionError ? currentPlan.name : 'Subscription details'}</h2>
+                  {!isSubscriptionLoading && !subscriptionError ? (
+                    <p>{currentPlan.description}</p>
+                  ) : null}
                 </div>
-                {trialOffer.available ? (
+              </div>
+              {isSubscriptionLoading ? <p className="seeker-settings-empty" role="status">Loading subscription details…</p> : null}
+              {!isSubscriptionLoading && subscriptionError ? <p className="seeker-settings-subscription__error" role="alert">{subscriptionError}</p> : null}
+              {!isSubscriptionLoading && !subscriptionError ? (
+                <>
+                  <dl className="seeker-settings-subscription__details">
+                    <div><dt>Status</dt><dd><span className="seeker-subscription-status">{subscriptionStatus}</span></dd></div>
+                    {subscriptionPrice ? <div><dt>Plan price</dt><dd>{subscriptionPrice}{currentPlan.billingInterval ? ` / ${currentPlan.billingInterval.toLowerCase()}` : ''}</dd></div> : null}
+                    {subscriptionRenewalDate ? <div><dt>Renewal / expiry</dt><dd>{subscriptionRenewalDate}</dd></div> : null}
+                  </dl>
+                  {currentPlan.benefits.length > 0 ? (
+                    <div className="seeker-settings-subscription__benefits">
+                      <h3>Plan benefits</h3>
+                      <ul>{currentPlan.benefits.map((benefit) => <li key={benefit}>{benefit}</li>)}</ul>
+                    </div>
+                  ) : null}
+                  {trial ? <p className="seeker-settings-subscription__status">Trial active{trialEndDate ? ` until ${trialEndDate}` : ''}.</p> : null}
+                </>
+              ) : null}
+              <div className="seeker-settings-subscription__actions">
+                {!isSubscriptionLoading && !subscriptionError && trialOffer.available ? (
                   <button type="button" className="seeker-profile-account-card__action" onClick={() => void handleStartTrial()} disabled={isStartingTrial} aria-busy={isStartingTrial}>
                     {isStartingTrial ? 'Starting trial...' : `Start ${trialOffer.durationDays}-day free trial`}
                   </button>
-                ) : (
-                  <Link className="seeker-profile-account-card__action" to="/seeker/subscription">
-                    {getAccountTypeLabel(currentPlan.key ?? subscription.planId, 'Basic') === 'Basic' ? 'Upgrade plan' : 'Manage subscription'}
-                  </Link>
-                )}
+                ) : null}
+                <Link className="seeker-profile-account-card__action" to="/seeker/subscription">Subscribe for This Plan</Link>
               </div>
             </section>
           </div>

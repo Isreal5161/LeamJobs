@@ -1259,6 +1259,100 @@
   font-weight: 800;
 }
 
+.seeker-subscription-promotion {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.8rem;
+  width: min(100%, 560px);
+  margin: 0.65rem 0;
+  padding: 0.8rem 0.9rem;
+  border: 1px solid rgba(239, 80, 54, 0.2);
+  border-radius: 12px;
+  background: linear-gradient(110deg, #fff7f5, #f5f4ff);
+  box-shadow: 0 8px 18px rgba(50, 47, 106, 0.08);
+  animation: seeker-subscription-promotion-enter 320ms ease-out both;
+}
+
+.seeker-subscription-promotion__copy {
+  min-width: 0;
+}
+
+.seeker-subscription-promotion__copy > span {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: var(--brand-secondary);
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.seeker-subscription-promotion__copy > span svg {
+  color: var(--brand-primary);
+}
+
+.seeker-subscription-promotion__copy p {
+  margin: 0.2rem 0 0;
+  color: #475569;
+  font-size: 0.75rem;
+  line-height: 1.4;
+}
+
+.seeker-subscription-promotion__actions {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.seeker-subscription-promotion__actions a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 36px;
+  padding: 0.45rem 0.7rem;
+  border-radius: 8px;
+  background: var(--brand-primary);
+  color: #ffffff;
+  font-size: 0.7rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.seeker-subscription-promotion__actions a:hover {
+  background: var(--brand-primary-active);
+}
+
+.seeker-subscription-promotion__actions button {
+  display: grid;
+  flex: 0 0 32px;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border: 1px solid rgba(50, 47, 106, 0.16);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.75);
+  color: var(--brand-secondary);
+  cursor: pointer;
+}
+
+.seeker-subscription-promotion__actions a:focus-visible,
+.seeker-subscription-promotion__actions button:focus-visible {
+  outline: 3px solid rgba(50, 47, 106, 0.25);
+  outline-offset: 2px;
+}
+
+@keyframes seeker-subscription-promotion-enter {
+  from { opacity: 0; transform: translateX(-16px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .seeker-subscription-promotion {
+    animation: none;
+  }
+}
+
 .seeker-home__search {
   display: flex;
   align-items: center;
@@ -1949,6 +2043,21 @@ input:focus-visible,
 
   .seeker-home__identity h1 {
     font-size: 1.5rem;
+  }
+
+  .seeker-subscription-promotion {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 0.6rem;
+    width: 100%;
+  }
+
+  .seeker-subscription-promotion__actions {
+    width: 100%;
+  }
+
+  .seeker-subscription-promotion__actions a {
+    flex: 1;
   }
 
   .seeker-home__search {

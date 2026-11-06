@@ -100,6 +100,7 @@ type SubscriptionContextValue = {
   getVisibilityBoost: (seekerId: string) => number;
   getRecommendationScore: (seekerId: string) => number;
   isLoading: boolean;
+  subscriptionError: string | null;
   refresh: () => Promise<void>;
   currentPlan: SubscriptionPlan;
   trial: SeekerSubscriptionState['activeTrial'];
@@ -118,6 +119,7 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
   const [trialOffer, setTrialOffer] = useState<SeekerTrialOffer>({ available: false, durationDays: 7, trialPlanKey: 'PREMIUM' });
   const [aiUsage, setAiUsage] = useState<SeekerSubscriptionState['aiUsage']>({ userId: '', planKey: 'BASIC', source: 'FREE', limit: 5, used: 0, remaining: 5, allowed: true, unlimited: false });
   const [isLoading, setIsLoading] = useState(true);
+  const [subscriptionError, setSubscriptionError] = useState<string | null>(null);
 
   const refresh = useMemo(() => async () => {
     if (!token || !user || user.role !== 'SEEKER') {
@@ -127,11 +129,13 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
       setTrial(null);
       setTrialOffer({ available: false, durationDays: 7, trialPlanKey: 'PREMIUM' });
       setAiUsage({ userId: '', planKey: 'BASIC', source: 'FREE', limit: 5, used: 0, remaining: 5, allowed: true, unlimited: false });
+      setSubscriptionError(null);
       setIsLoading(false);
       return;
     }
 
     setIsLoading(true);
+    setSubscriptionError(null);
     const [plansResult, subscriptionsResult, trialOfferResult] = await Promise.all([
       getSeekerSubscriptionPlans(token),
       getSeekerSubscriptions(token),
@@ -185,6 +189,7 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
 
     if (subscriptionsResult.ok && subscriptionsResult.data?.data) {
       const state = subscriptionsResult.data.data;
+      setSubscriptionError(null);
       setTrial(state.activeTrial);
       setAiUsage(state.aiUsage);
       setCurrentPlan({
@@ -236,6 +241,9 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
     } else {
       setSubscriptions([]);
       setCurrentPlan(subscriptionPlans[0]);
+      setSubscriptionError(!subscriptionsResult.ok
+        ? subscriptionsResult.error.message || 'Subscription details could not be loaded.'
+        : 'Subscription details could not be loaded.');
       setAiUsage({ userId: user.id, planKey: 'BASIC', source: 'FREE', limit: 5, used: 0, remaining: 5, allowed: true, unlimited: false });
       setTrial(null);
       setTrialOffer({ available: false, durationDays: 7, trialPlanKey: 'PREMIUM' });
@@ -285,13 +293,14 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
       toggleFeatured: () => undefined,
       updatePlan: () => undefined,
       isLoading,
+      subscriptionError,
       refresh,
       currentPlan,
       trial,
       trialOffer,
       aiUsage,
     };
-  }, [plans, subscriptions, isLoading, refresh, currentPlan, trial, trialOffer, aiUsage]);
+  }, [plans, subscriptions, isLoading, subscriptionError, refresh, currentPlan, trial, trialOffer, aiUsage]);
 
   return <SubscriptionContext.Provider value={value}>{children}</SubscriptionContext.Provider>;
 }

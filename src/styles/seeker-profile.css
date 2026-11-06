@@ -3111,6 +3111,72 @@
   color: #64748b;
 }
 
+.seeker-profile-page .seeker-settings-card .seeker-settings-subscription__heading {
+  align-items: flex-start;
+}
+
+.seeker-settings-subscription__details {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 0.75rem;
+  margin: 0;
+}
+
+.seeker-settings-subscription__details > div {
+  min-width: 0;
+  padding: 0.8rem;
+  border: 1px solid #eff0f5;
+  border-radius: 10px;
+  background: var(--profile-subtle);
+}
+
+.seeker-settings-subscription__details dt {
+  margin-bottom: 0.25rem;
+  color: #64748b;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.seeker-settings-subscription__details dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+  color: #0f172a;
+  font-size: 0.9rem;
+  font-weight: 750;
+}
+
+.seeker-settings-subscription__benefits {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.seeker-settings-subscription__benefits h3 {
+  margin: 0;
+  color: var(--brand-secondary);
+  font-size: 0.88rem;
+}
+
+.seeker-settings-subscription__benefits ul {
+  display: grid;
+  gap: 0.35rem;
+  margin: 0;
+  padding-left: 1.2rem;
+  color: #475569;
+  font-size: 0.84rem;
+}
+
+.seeker-settings-subscription__error {
+  margin: 0;
+  color: #b91c1c;
+  font-size: 0.85rem;
+}
+
+.seeker-settings-subscription__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+}
+
 .seeker-cv-personal-summary .seeker-editor-card__heading {
   align-items: center;
 }
@@ -3147,6 +3213,14 @@
   .seeker-settings-card .seeker-editor-card__heading {
     align-items: stretch;
     flex-direction: column;
+  }
+
+  .seeker-settings-subscription__actions {
+    display: grid;
+  }
+
+  .seeker-settings-subscription__actions .seeker-profile-account-card__action {
+    width: 100%;
   }
 
   .seeker-profile-confirmation__actions {

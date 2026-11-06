@@ -3,10 +3,12 @@ import { Link, useNavigate } from 'react-router-dom';
 import {
   FaBriefcase,
   FaChevronRight,
+  FaCrown,
   FaDownload,
   FaEdit,
   FaFilePdf,
   FaSearch,
+  FaTimes,
   FaUserFriends,
 } from 'react-icons/fa';
 import SeekerJobCard from '../../components/jobs/SeekerJobCard';
@@ -49,6 +51,15 @@ function Homepage() {
   const [error, setError] = useState('');
   const [retryKey, setRetryKey] = useState(0);
   const [searchValue, setSearchValue] = useState('');
+  const [isSubscriptionPromotionVisible, setIsSubscriptionPromotionVisible] = useState(true);
+
+  useEffect(() => {
+    const interval = window.setInterval(() => {
+      setIsSubscriptionPromotionVisible(true);
+    }, 30000);
+
+    return () => window.clearInterval(interval);
+  }, []);
 
   useEffect(() => {
     let isMounted = true;
@@ -189,6 +200,24 @@ function Homepage() {
           )}
           <div className="seeker-home__identity">
             <p className="seeker-home__eyebrow">Welcome back</p>
+            {isSubscriptionPromotionVisible ? (
+              <aside className="seeker-subscription-promotion" aria-label="Subscription plans promotion">
+                <div className="seeker-subscription-promotion__copy">
+                  <span><FaCrown aria-hidden="true" /> Take your job search further</span>
+                  <p>Explore plans with tools to help you stand out and get noticed.</p>
+                </div>
+                <div className="seeker-subscription-promotion__actions">
+                  <Link to="/seeker/subscription">View Subscription Plans</Link>
+                  <button
+                    type="button"
+                    aria-label="Dismiss subscription promotion"
+                    onClick={() => setIsSubscriptionPromotionVisible(false)}
+                  >
+                    <FaTimes aria-hidden="true" />
+                  </button>
+                </div>
+              </aside>
+            ) : null}
             <h1>{fullName === 'Welcome back' ? fullName : `${fullName}`}</h1>
           </div>
         </div>
