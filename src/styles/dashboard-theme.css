@@ -73,6 +73,11 @@
   color: var(--brand-primary-active);
 }
 
+.seeker-layout .seeker-layout__main a.subscription-action-button:not(.seeker-button--primary):not(.button--primary),
+.seeker-layout .seeker-layout__main .seeker-subscription-promotion__actions a:not(.seeker-button--primary):not(.button--primary) {
+  color: #ffffff;
+}
+
 .seeker-layout .dashboard-topbar__link:hover,
 .employer-layout .dashboard-topbar__link:hover,
 .admin-layout .dashboard-topbar__link:hover {
