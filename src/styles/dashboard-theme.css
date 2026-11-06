@@ -73,9 +73,16 @@
   color: var(--brand-primary-active);
 }
 
-.seeker-layout .seeker-layout__main a.subscription-action-button:not(.seeker-button--primary):not(.button--primary),
+.seeker-layout .seeker-layout__main a.subscription-action-button:not(.subscription-action-button--secondary):not(.seeker-button--primary):not(.button--primary),
 .seeker-layout .seeker-layout__main .seeker-subscription-promotion__actions a:not(.seeker-button--primary):not(.button--primary) {
   color: #ffffff;
+}
+
+.seeker-layout .seeker-layout__main a.subscription-action-button--secondary,
+.seeker-layout .seeker-layout__main a.subscription-action-button--secondary:visited,
+.seeker-layout .seeker-layout__main a.subscription-action-button--secondary:hover,
+.seeker-layout .seeker-layout__main a.subscription-action-button--secondary:focus-visible {
+  color: var(--brand-secondary);
 }
 
 .seeker-layout .dashboard-topbar__link:hover,
