@@ -1305,7 +1305,8 @@
   gap: 0.45rem;
 }
 
-.seeker-subscription-promotion__actions a {
+.seeker-layout .seeker-layout__main .seeker-subscription-promotion__actions a,
+.seeker-layout .seeker-layout__main .seeker-subscription-promotion__actions a:visited {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -1319,8 +1320,13 @@
   white-space: nowrap;
 }
 
-.seeker-subscription-promotion__actions a:hover {
+.seeker-layout .seeker-layout__main .seeker-subscription-promotion__actions a:hover {
   background: var(--brand-primary-active);
+}
+
+.seeker-layout .seeker-layout__main .seeker-subscription-promotion__actions a:hover,
+.seeker-layout .seeker-layout__main .seeker-subscription-promotion__actions a:focus-visible {
+  color: #ffffff;
 }
 
 .seeker-subscription-promotion__actions button {
