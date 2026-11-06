@@ -112,7 +112,7 @@ const documents: Record<LegalDocument, LegalDocumentContent> = {
   },
   cookies: {
     title: 'Cookie Policy',
-    intro: 'This draft describes the frontend storage and tracking behavior identified in the code review. It is not legal advice. The complete production cookie, local-storage and third-party resource inventory, purposes, lifetimes and jurisdictions require Company confirmation.',
+    intro: 'This Cookie Policy describes the frontend storage and tracking behavior identified in the code review. It covers browser local storage and the third-party resource request reviewed for LeamJobs.',
     sections: [
       { title: '1. Cookies and browser storage are different', paragraphs: [
         'The reviewed frontend stores the authentication token and cookie preferences in local storage. The preference record is not a cookie and does not contain passwords, identity documents or bank details. The code review did not find application code that sets authentication or consent cookies.',
@@ -129,36 +129,36 @@ const documents: Record<LegalDocument, LegalDocumentContent> = {
         'Use the persistent Cookie settings control to reopen settings, save custom choices or withdraw optional choices. Clearing browser storage may remove the saved preference. If storage is unavailable, the interface reports that the choice could not be saved and optional categories remain unauthorized.',
       ] },
       { title: '5. Current inventory and updates', paragraphs: [
-        'This review identified local-storage use for authentication and cookie preferences, and the Font Awesome CSS request described above. No analytics or advertising cookie provider is currently confirmed. The Company must verify production cookies, SDKs, embedded content, server-side tracking, consent expiration and policy effective date before publication.',
+        'This review identified local-storage use for authentication and cookie preferences, and the Font Awesome CSS request described above. No analytics or advertising cookie provider is currently confirmed. The Company should keep this inventory current as production cookies, SDKs, embedded content, server-side tracking and consent expiration change.',
       ] },
     ],
   },
   payments: {
     title: 'Payment, Refund and Escrow Policy',
-    intro: 'Draft for Company, payment-provider and qualified legal-counsel review. This page summarizes payment behavior visible in the current code; it does not promise a refund, custody arrangement, payout timing or provider guarantee. Check the transaction screen and applicable provider terms before paying.',
+    intro: 'This Policy explains payment, contract funding, escrow status, fees, refunds, disputes, withdrawals and payouts on LEAMJobs. Review the transaction screen and applicable provider terms before paying.',
     sections: [
       { title: '1. Payment features and availability', paragraphs: [
         'The backend includes subscription checkout, contract-funding, wallet/ledger, withdrawal and payout flows. New freelance funding, escrow release and withdrawals are feature-gated and may be unavailable. Currency and provider support depend on current configuration; do not assume any feature or currency is active for your account.',
-        'The code includes Paystack collection for NGN contract funding when the feature is enabled and fully configured, and Flutterwave payment initialization and verification. Payment provider activation, supported transaction types and current checkout terms must be confirmed by the Company.',
+        'The code includes Paystack collection for NGN contract funding when the feature is enabled and fully configured, and Flutterwave payment initialization and verification. Enabled providers, supported transaction types and checkout terms depend on current configuration.',
       ] },
       { title: '2. Contract funding and escrow status', paragraphs: [
         'For supported contracts, the backend validates the contract, currency, amount and saved fee/entitlement values, initializes payment with a supported provider, and verifies provider transactions before marking the related escrow funded. Payment and escrow states are tracked in the platform, with ledger records used for financial history.',
-        'The presence of an escrow record or a platform status does not establish that funds are held in a legally protected trust or by an independent escrow agent. Who legally holds funds, safeguarding arrangements, release conditions, insolvency treatment and any guarantee must be confirmed by the Company, provider and counsel. No guaranteed recovery or outcome is promised by this draft.',
+        'The presence of an escrow record or a platform status does not establish that funds are held in a legally protected trust or by an independent escrow agent, or establish who legally holds funds, the safeguarding arrangements, release conditions, insolvency treatment or any guarantee. No guaranteed recovery or outcome is promised.',
       ] },
       { title: '3. Fees, currencies and checkout', paragraphs: [
         'Contract fee and payout values are stored with the contract and funding records; withdrawal fees are supplied through a configured fee schedule and shown in a quote before confirmation. Actual fees, taxes, supported currencies, conversion and provider charges depend on the transaction screen, account eligibility and current configuration. Confirm the full amount and currency before authorizing a payment.',
         'A redirect back from a payment provider is not by itself proof of settlement. The platform uses provider verification and webhook/reconciliation flows to update payment status. Do not treat a pending or failed status as a completed payment.',
       ] },
       { title: '4. Refunds, cancellations and disputes', paragraphs: [
-        'The code review did not establish a general automatic refund entitlement, refund timeline or universal cancellation right. Whether funds can be returned depends on provider settlement, contract status, transaction history, applicable law and the outcome of any supported dispute process. Do not assume that a payment can be reversed or that a refund is guaranteed.',
-        'Contract disputes and escrow-related states are represented in the backend, but eligibility, evidence requirements, decision-maker, response timelines and refund outcomes require Company and legal confirmation. Review contract terms and raise questions through the existing [Contact page](/contact).',
+        'This Policy does not state a general automatic refund entitlement, refund timeline or universal cancellation right. Whether funds can be returned depends on provider settlement, contract status, transaction history, applicable law and the outcome of any supported dispute process. Do not assume that a payment can be reversed or that a refund is guaranteed.',
+        'Contract disputes and escrow-related states are represented in the platform. Eligibility, evidence requirements, decision-maker, response timelines and refund outcomes depend on the applicable contract terms and supported dispute process. Review contract terms and raise questions through the existing [Contact page](/contact).',
       ] },
       { title: '5. Withdrawals and payouts', paragraphs: [
         'The backend creates a withdrawal quote tied to the account, amount, currency, payout account and current fee configuration. A confirmed request reserves funds in the pending-withdrawal balance and may proceed to provider execution; withdrawals are subject to feature availability, verification, supported payout countries/currencies and provider review.',
         'The system does not establish a guaranteed processing time. Failed transfers, payout fees, bank processing, intermediary charges and return handling depend on provider and banking rules. Check the quote and status information displayed for your transaction.',
       ] },
-      { title: '6. Contact and confirmation', paragraphs: [
-        'Before this Policy is published as final, the Company must confirm refund rules, cancellations, dispute process, applicable fee schedules, enabled providers and currencies, custody arrangements, payout timing and support escalation. Use the existing [Contact page](/contact) for transaction questions.',
+      { title: '6. Contact', paragraphs: [
+        'Use the existing [Contact page](/contact) for transaction questions about refunds, cancellations, disputes, fees, providers, currencies, custody, payout timing or support.',
       ] },
     ],
   },

@@ -29,16 +29,14 @@ export const legalDocumentMetadata: Record<LegalDocumentKey, LegalDocumentMetada
     status: 'approved',
   },
   cookies: {
-    version: '1.0-draft',
+    version: '1.0',
     lastUpdated: '31 October 2026',
-    status: 'draft',
-    effectiveDate: 'Pending Company and legal-counsel approval',
+    status: 'approved',
   },
   payments: {
-    version: '1.0-draft',
+    version: '1.0',
     lastUpdated: '31 October 2026',
-    status: 'draft',
-    effectiveDate: 'Pending Company and legal-counsel approval',
+    status: 'approved',
   },
   freelancer: {
     version: '1.0',

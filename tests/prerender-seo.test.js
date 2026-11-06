@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import test from 'node:test';
 import {
   escapeHtml,
@@ -6,7 +7,8 @@ import {
   renderSeoHtml,
   runPrerender,
 } from '../scripts/prerender-seo.mjs';
-import { getPageMetadata } from '../src/utils/seoMetadata.ts';
+import { getIndexablePublicPaths, getPageMetadata } from '../src/utils/seoMetadata.ts';
+import { legalDocumentMetadata } from '../src/utils/legalVersions.ts';
 
 const now = new Date('2026-10-16T12:00:00.000Z');
 const template = `<!doctype html><html><head>
@@ -76,6 +78,136 @@ test('homepage and Jobs page receive distinct initial metadata and canonical pat
   assert.equal((jobs.match(/name="description"/g) ?? []).length, 1);
   assert.match(jobs, /src="\/assets\/app\.js"/);
   assert.deepEqual(getPageMetadata('/jobs').canonicalUrl, 'https://leamjobs.com/jobs/');
+});
+
+test('public SEO descriptions preserve spacing and valid possessive encoding', () => {
+  const jobsDescription = getPageMetadata('/jobs').description;
+  const termsDescription = getPageMetadata('/terms').description;
+  const freelancerDescription = getPageMetadata('/freelancer-terms').description;
+  const employerDescription = getPageMetadata('/employer-terms').description;
+  const companyDescription = getPageMetadata('/companies/employer-id').description;
+
+  assert.ok(jobsDescription.includes('by title'));
+  assert.ok(termsDescription.includes('job and hiring platform'));
+  assert.ok(freelancerDescription.includes('freelancers using LeamJobs'));
+  assert.ok(employerDescription.includes('employers using LeamJobs'));
+  assert.ok(companyDescription.includes("employer's company profile"));
+});
+
+test('all indexable static public routes get route-specific HTML, metadata, and content', () => {
+  const generated = generatePrerenderedPages(template, [], now);
+  const routeContent = new Map([
+    ['/', ['index.html', /<h1>Find jobs and career opportunities in Nigeria<\/h1>/]],
+    ['/about', ['about/index.html', /<h2>Our mission<\/h2>[\s\S]*smarter, more human way to find and fill jobs/]],
+    ['/contact', ['contact/index.html', /mailto:admin@leamjobs\.com/]],
+    ['/cookies', ['cookies/index.html', /<h1>Cookie Policy<\/h1>[\s\S]*Accept all, Reject optional and Customize preferences/]],
+    ['/payment-policy', ['payment-policy/index.html', /<h1>Payment, Refund and Escrow Policy<\/h1>[\s\S]*Contract funding and escrow status[\s\S]*Withdrawals and payouts/]],
+    ['/features', ['features/index.html', /Discover job opportunities[\s\S]*Track applications/]],
+    ['/how-it-works', ['how-it-works/index.html', /Create your profile[\s\S]*Apply and track your applications/]],
+    ['/companies', ['companies/index.html', /Explore employer profiles[\s\S]*approved job opportunities/]],
+    ['/jobs', ['jobs/index.html', /<h1>Find jobs and vacancies in Nigeria<\/h1>/]],
+  ]);
+  const expectedPaths = getIndexablePublicPaths();
+
+  assert.deepEqual(new Set(expectedPaths), new Set(routeContent.keys()));
+  assert.deepEqual(new Set(generated.keys()), new Set([...routeContent.values()].map(([file]) => file)));
+
+  for (const [pathname, [file, contentPattern]] of routeContent) {
+    const html = generated.get(file);
+    const pageMetadata = getPageMetadata(pathname);
+    const canonical = pageMetadata.canonicalUrl;
+
+    assert.ok(html, `Expected generated HTML for ${pathname}`);
+    assert.match(
+      html,
+      new RegExp(`<title>${pageMetadata.title.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}<\\/title>`),
+    );
+    assert.ok(
+      html.includes(`<meta name="description" content="${pageMetadata.description}" />`),
+      `Expected route description for ${pathname}`,
+    );
+    assert.ok(
+      html.includes('<meta name="robots" content="index,follow" />'),
+      `Expected indexable robots for ${pathname}`,
+    );
+    assert.ok(canonical, `Expected canonical URL for ${pathname}`);
+    assert.ok(
+      html.includes(`<link rel="canonical" href="${canonical}" />`),
+      `Expected self-canonical for ${pathname}`,
+    );
+    assert.ok(
+      html.includes(`<meta property="og:url" content="${canonical}" />`),
+      `Expected Open Graph URL for ${pathname}`,
+    );
+    assert.ok(html.includes(`<meta property="og:title" content="${pageMetadata.title}" />`));
+    assert.ok(html.includes(`<meta property="og:description" content="${pageMetadata.description}" />`));
+    assert.ok(html.includes(`<meta name="twitter:title" content="${pageMetadata.title}" />`));
+    assert.ok(html.includes(`<meta name="twitter:description" content="${pageMetadata.description}" />`));
+    assert.match(html, contentPattern, `Expected route-specific content for ${pathname}`);
+    assert.equal(
+      (html.match(/<link rel="canonical"/g) ?? []).length,
+      1,
+      `Expected one canonical for ${pathname}`,
+    );
+    assert.equal(
+      (html.match(/<meta name="description"/g) ?? []).length,
+      1,
+      `Expected one description for ${pathname}`,
+    );
+    if (pathname !== '/') {
+      assert.doesNotMatch(html, /<link rel="canonical" href="https:\/\/leamjobs\.com\/" \/>/);
+    }
+  }
+});
+
+test('draft legal, private, and unknown routes are noindex and are not prerendered', () => {
+  const generated = generatePrerenderedPages(template, [], now);
+  const excludedPaths = [
+    '/terms',
+    '/privacy',
+    '/freelancer-terms',
+    '/employer-terms',
+    '/companies/employer-id',
+    '/login',
+    '/seeker/dashboard',
+    '/admin/dashboard',
+    '/not-a-public-route',
+  ];
+
+  for (const pathname of excludedPaths) {
+    const pageMetadata = getPageMetadata(pathname);
+    assert.equal(pageMetadata.robots, 'noindex,follow', `${pathname} should be noindex`);
+    assert.equal(pageMetadata.canonicalUrl, null, `${pathname} should not advertise an indexable canonical`);
+    assert.equal(getIndexablePublicPaths().includes(pathname), false);
+    assert.equal(generated.has(`${pathname.slice(1)}/index.html`), false);
+  }
+
+  assert.equal(legalDocumentMetadata.cookies.status, 'approved');
+  assert.equal(legalDocumentMetadata.cookies.version, '1.0');
+  assert.equal(getPageMetadata('/cookies').robots, 'index,follow');
+  assert.equal(getPageMetadata('/cookies').canonicalUrl, 'https://leamjobs.com/cookies');
+  assert.equal(getIndexablePublicPaths().includes('/cookies'), true);
+
+  assert.equal(legalDocumentMetadata.payments.status, 'approved');
+  assert.equal(legalDocumentMetadata.payments.version, '1.0');
+  assert.equal(getPageMetadata('/payment-policy').robots, 'index,follow');
+  assert.equal(getPageMetadata('/payment-policy').canonicalUrl, 'https://leamjobs.com/payment-policy');
+  assert.equal(getIndexablePublicPaths().includes('/payment-policy'), true);
+});
+
+test('static sitemap lists exactly the canonical indexable public page routes', () => {
+  const sitemap = readFileSync(new URL('../public/sitemap-pages.xml', import.meta.url), 'utf8');
+  const sitemapUrls = [...sitemap.matchAll(/<url><loc>([^<]+)<\/loc><\/url>/g)]
+    .map(([, url]) => url)
+    .sort();
+  const expectedUrls = getIndexablePublicPaths()
+    .map((pathname) => getPageMetadata(pathname).canonicalUrl)
+    .sort();
+
+  assert.deepEqual(sitemapUrls, expectedUrls);
+  assert.equal(new Set(sitemapUrls).size, sitemapUrls.length);
+  assert.equal(sitemapUrls.includes('https://leamjobs.com/cookies'), true);
+  assert.equal(sitemapUrls.includes('https://leamjobs.com/payment-policy'), true);
 });
 
 test('eligible jobs render real content, route metadata, canonical, and JSON-LD', () => {
@@ -199,6 +331,32 @@ test('successful API pagination writes the prerendered jobs and detail files', a
     assert.equal(requests[1].searchParams.get('cursor'), 'page-two');
     assert.match(await readFile(join(outputDir, 'jobs', 'index.html'), 'utf8'), /Backend Developer/);
     assert.match(await readFile(join(outputDir, 'jobs', 'job-second', 'index.html'), 'utf8'), /Support Analyst/);
+    const cookieHtml = await readFile(join(outputDir, 'cookies', 'index.html'), 'utf8');
+    assert.match(cookieHtml, /<link rel="canonical" href="https:\/\/leamjobs\.com\/cookies" \/>/);
+    assert.match(cookieHtml, /<meta name="robots" content="index,follow" \/>/);
+    assert.match(cookieHtml, /<h1>Cookie Policy<\/h1>/);
+    const paymentHtml = await readFile(join(outputDir, 'payment-policy', 'index.html'), 'utf8');
+    assert.match(paymentHtml, /<link rel="canonical" href="https:\/\/leamjobs\.com\/payment-policy" \/>/);
+    assert.match(paymentHtml, /<meta name="robots" content="index,follow" \/>/);
+    assert.match(paymentHtml, /<h1>Payment, Refund and Escrow Policy<\/h1>/);
+    assert.match(paymentHtml, /Contract funding and escrow status/);
+    assert.match(paymentHtml, /Paystack collection for NGN contract funding/);
+    assert.match(paymentHtml, /safeguarding arrangements, release conditions, insolvency treatment/);
+    assert.match(paymentHtml, /configured fee schedule/);
+    assert.match(paymentHtml, /provider settlement, contract status, transaction history/);
+    assert.match(paymentHtml, /pending-withdrawal balance/);
+    assert.doesNotMatch(paymentHtml, /Draft for Company|pending provider confirmation|before this Policy is published as final/i);
+
+    for (const pathname of getIndexablePublicPaths()) {
+      const relativePath = pathname === '/' ? 'index.html' : `${pathname.slice(1)}/index.html`;
+      const html = await readFile(join(outputDir, relativePath), 'utf8');
+      const canonical = getPageMetadata(pathname).canonicalUrl;
+      assert.ok(html.includes(`<link rel="canonical" href="${canonical}" />`), `Expected generated canonical for ${pathname}`);
+      assert.equal((html.match(/<link rel="canonical"/g) ?? []).length, 1);
+      assert.equal((html.match(/<meta name="description"/g) ?? []).length, 1);
+    }
+
+    await assert.rejects(readFile(join(outputDir, 'terms', 'index.html')), { code: 'ENOENT' });
   } finally {
     await rm(temporaryDirectory, { recursive: true, force: true });
   }

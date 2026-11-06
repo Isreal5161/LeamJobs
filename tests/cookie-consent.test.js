@@ -28,10 +28,12 @@ test('Terms, Privacy, Freelancer Terms, and Employer Terms use approved version 
     assert.equal(legalDocumentMetadata[document].effectiveDate, undefined);
   }
 
-  for (const document of ['cookies', 'payments']) {
-    assert.equal(legalDocumentMetadata[document].status, 'draft');
-    assert.equal(legalDocumentMetadata[document].version, '1.0-draft');
-  }
+  assert.equal(legalDocumentMetadata.cookies.status, 'approved');
+  assert.equal(legalDocumentMetadata.cookies.version, '1.0');
+  assert.equal(legalDocumentMetadata.cookies.effectiveDate, undefined);
+  assert.equal(legalDocumentMetadata.payments.status, 'approved');
+  assert.equal(legalDocumentMetadata.payments.version, '1.0');
+  assert.equal(legalDocumentMetadata.payments.effectiveDate, undefined);
 
   const [signupPage, legalPage] = await Promise.all([
     readFile(new URL('../src/pages/public/SignUpPage.tsx', import.meta.url), 'utf8'),
@@ -48,6 +50,43 @@ test('Terms, Privacy, Freelancer Terms, and Employer Terms use approved version 
   }
   assert.doesNotMatch(legalPage, /These draft supplemental terms apply to (?:freelancers|employers)/);
   assert.doesNotMatch(legalPage, /They require Company and qualified legal-counsel review/);
+});
+
+test('approved Cookie Policy has no draft label, disclaimer, or pending approval text', async () => {
+  const legalPage = await readFile(new URL('../src/pages/public/LegalPage.tsx', import.meta.url), 'utf8');
+  const cookieStart = legalPage.indexOf('  cookies: {');
+  const paymentsStart = legalPage.indexOf('  payments: {');
+  const cookiePolicy = legalPage.slice(cookieStart, paymentsStart);
+
+  assert.ok(cookieStart >= 0);
+  assert.ok(paymentsStart > cookieStart);
+  assert.match(cookiePolicy, /This Cookie Policy describes the frontend storage/);
+  assert.match(cookiePolicy, /The Company should keep this inventory current/);
+  assert.doesNotMatch(cookiePolicy, /draft|pending|before publication|not legal advice/i);
+});
+
+test('approved Payment Policy has no draft label, disclaimer, or pending provider confirmation', async () => {
+  const legalPage = await readFile(new URL('../src/pages/public/LegalPage.tsx', import.meta.url), 'utf8');
+  const paymentsStart = legalPage.indexOf('  payments: {');
+  const freelancerStart = legalPage.indexOf('  freelancer: {');
+  const paymentPolicy = legalPage.slice(paymentsStart, freelancerStart);
+
+  assert.ok(paymentsStart >= 0);
+  assert.ok(freelancerStart > paymentsStart);
+  assert.equal(legalDocumentMetadata.payments.status, 'approved');
+  assert.equal(legalDocumentMetadata.payments.version, '1.0');
+  assert.match(legalPage, /<div><dt>Version<\/dt><dd>\{metadata\.version\}<\/dd><\/div>/);
+  assert.match(paymentPolicy, /Payment features and availability/);
+  assert.match(paymentPolicy, /Contract funding and escrow status/);
+  assert.match(paymentPolicy, /Refunds, cancellations and disputes/);
+  assert.match(paymentPolicy, /Withdrawals and payouts/);
+  assert.match(paymentPolicy, /Paystack collection for NGN contract funding/);
+  assert.match(paymentPolicy, /Flutterwave payment initialization and verification/);
+  assert.match(paymentPolicy, /safeguarding arrangements, release conditions, insolvency treatment/);
+  assert.match(paymentPolicy, /fees are supplied through a configured fee schedule/);
+  assert.match(paymentPolicy, /provider settlement, contract status, transaction history/);
+  assert.match(paymentPolicy, /pending-withdrawal balance/);
+  assert.doesNotMatch(paymentPolicy, /draft|pending.{0,30}confirm|before this Policy is published|must be confirmed|require Company and legal confirmation/i);
 });
 
 test('new consent defaults deny optional categories and always enables necessary storage', () => {

@@ -12,7 +12,11 @@ export type PageMetadata = {
 const siteDescription = 'Find jobs and career opportunities in Nigeria with LeamJobs. Explore verified vacancies, compare roles, and connect with employers.';
 const jobsDescription = 'Search approved jobs and vacancies across Nigeria on LeamJobs. Explore real opportunities by title, skills, and location.';
 
-const publicRouteMetadata: Record<string, { title: string; description: string }> = {
+const publicRouteMetadata: Record<string, {
+  title: string;
+  description: string;
+  robots?: PageMetadata['robots'];
+}> = {
   '/': {
     title: 'LeamJobs | Find Jobs and Career Opportunities in Nigeria',
     description: siteDescription,
@@ -25,12 +29,12 @@ const publicRouteMetadata: Record<string, { title: string; description: string }
     title: 'Contact LeamJobs | Job Search and Hiring Support',
     description: 'Contact LeamJobs support for help with finding work, hiring, or using the platform.',
   },
-  '/terms': { title: 'Terms and Conditions | LeamJobs', description: 'Draft terms and conditions for the LeamJobs job and hiring platform; pending counsel and company review.' },
-  '/privacy': { title: 'Privacy Policy | LeamJobs', description: 'Draft privacy policy for LeamJobs; data inventory and company details require confirmation.' },
+  '/terms': { title: 'Terms and Conditions | LeamJobs', description: 'Draft terms and conditions for the LeamJobs job and hiring platform; pending counsel and company review.', robots: 'noindex,follow' },
+  '/privacy': { title: 'Privacy Policy | LeamJobs', description: 'Draft privacy policy for LeamJobs; data inventory and company details require confirmation.', robots: 'noindex,follow' },
   '/cookies': { title: 'Cookie Policy | LeamJobs', description: 'Read about browser storage and manage optional analytics and marketing preferences on LeamJobs.' },
-  '/payment-policy': { title: 'Payment, Refund and Escrow Policy | LeamJobs', description: 'Draft information on payment, contract funding, withdrawals and refunds; provider terms require confirmation.' },
-  '/freelancer-terms': { title: 'Freelancer Terms | LeamJobs', description: 'Draft supplemental terms for freelancers using LeamJobs.' },
-  '/employer-terms': { title: 'Employer Terms | LeamJobs', description: 'Draft supplemental terms for employers using LeamJobs.' },
+  '/payment-policy': { title: 'Payment, Refund and Escrow Policy | LeamJobs', description: 'Understand payment, contract funding, escrow status, fees, refunds, disputes, withdrawals and payouts on LeamJobs.' },
+  '/freelancer-terms': { title: 'Freelancer Terms | LeamJobs', description: 'Draft supplemental terms for freelancers using LeamJobs.', robots: 'noindex,follow' },
+  '/employer-terms': { title: 'Employer Terms | LeamJobs', description: 'Draft supplemental terms for employers using LeamJobs.', robots: 'noindex,follow' },
   '/features': {
     title: 'LeamJobs Features | Tools for Job Seekers and Employers',
     description: 'Explore LeamJobs tools for job discovery, career development, candidate matching, and hiring.',
@@ -55,6 +59,10 @@ const normalizePathname = (pathname: string) => {
   return withLeadingSlash.replace(/\/+$/, '');
 };
 
+export const getIndexablePublicPaths = () => Object.entries(publicRouteMetadata)
+  .filter(([, metadata]) => metadata.robots !== 'noindex,follow')
+  .map(([pathname]) => pathname);
+
 export const getPageMetadata = (pathname: string): PageMetadata => {
   const path = normalizePathname(pathname);
   const isJobDetail = /^\/jobs\/[^/]+$/.test(path);
@@ -63,7 +71,11 @@ export const getPageMetadata = (pathname: string): PageMetadata => {
     ?? (isJobDetail
       ? { title: 'Job opportunity | LeamJobs', description: jobsDescription }
       : isCompanyProfile
-        ? { title: 'Company Profile | LeamJobs', description: 'Explore this employer’s company profile and approved job opportunities on LeamJobs.' }
+        ? {
+          title: 'Company Profile | LeamJobs',
+          description: "Explore this employer's company profile and approved job opportunities on LeamJobs.",
+          robots: 'noindex,follow' as const,
+        }
         : null);
 
   if (!metadata) {
@@ -77,8 +89,10 @@ export const getPageMetadata = (pathname: string): PageMetadata => {
 
   return {
     ...metadata,
-    canonicalUrl: `${CANONICAL_SITE_ORIGIN}${path === '/jobs' || isJobDetail ? `${path}/` : path}`,
-    robots: 'index,follow',
+    canonicalUrl: metadata.robots === 'noindex,follow'
+      ? null
+      : `${CANONICAL_SITE_ORIGIN}${path === '/jobs' || isJobDetail ? `${path}/` : path}`,
+    robots: metadata.robots ?? 'index,follow',
   };
 };
 
