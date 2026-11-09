@@ -22,6 +22,7 @@ import {
   validateForm,
 } from '../../components/jobs/jobFormUtils';
 import { useAuth } from '../../context/AuthContext';
+import { clearAdminDraft, readAdminDraft, writeAdminDraft } from '../../utils/adminDrafts.js';
 import {
   createAdminJob,
   getAdminCompanies,
@@ -85,8 +86,39 @@ const focusField = (fieldId: string) => {
   }
 };
 
+type AdminJobCreationDraft = {
+  form: JobFormState;
+  postAsMode: 'LEAMJOBS' | 'EXISTING_EMPLOYER';
+  selectedEmployerId: string;
+};
+
+const isAdminJobCreationDraft = (value: unknown): value is AdminJobCreationDraft => {
+  if (!value || typeof value !== 'object') return false;
+  const draft = value as Record<string, unknown>;
+  if (!draft.form || typeof draft.form !== 'object') return false;
+  const form = draft.form as Record<string, unknown>;
+
+  return (draft.postAsMode === 'LEAMJOBS' || draft.postAsMode === 'EXISTING_EMPLOYER')
+    && typeof draft.selectedEmployerId === 'string'
+    && Object.entries(emptyJobForm).every(([key, defaultValue]) => (
+      Array.isArray(defaultValue)
+        ? Array.isArray(form[key]) && form[key].every((item) => typeof item === 'string')
+        : typeof form[key] === 'string'
+    ))
+    && ['REMOTE', 'HYBRID', 'ONSITE'].includes(String(form.workArrangement))
+    && ['MONTHLY', 'CONTRACT', 'FREELANCE'].includes(String(form.engagementType))
+    && ['IMMEDIATE', 'SCHEDULED'].includes(String(form.contractStartMode));
+};
+
 function AdminJobsPage() {
-  const { token } = useAuth();
+  const { token, user } = useAuth();
+  const adminUserId = user?.id ?? '';
+  const [initialDraftResult] = useState(() => readAdminDraft<AdminJobCreationDraft>(
+    adminUserId,
+    'job-creation',
+    isAdminJobCreationDraft,
+  ));
+  const initialDraft = initialDraftResult.draft;
   const [jobs, setJobs] = useState<AdminJob[]>([]);
   const [selectedJobId, setSelectedJobId] = useState('');
   const [isLoading, setIsLoading] = useState(true);
@@ -94,15 +126,15 @@ function AdminJobsPage() {
   const [reloadKey, setReloadKey] = useState(0);
 
   const [employers, setEmployers] = useState<AdminCompany[]>([]);
-  const [selectedEmployerId, setSelectedEmployerId] = useState('');
-  const [postAsMode, setPostAsMode] = useState<'LEAMJOBS' | 'EXISTING_EMPLOYER'>('LEAMJOBS');
+  const [selectedEmployerId, setSelectedEmployerId] = useState(initialDraft?.selectedEmployerId ?? '');
+  const [postAsMode, setPostAsMode] = useState<'LEAMJOBS' | 'EXISTING_EMPLOYER'>(initialDraft?.postAsMode ?? 'LEAMJOBS');
   const [isLoadingEmployers, setIsLoadingEmployers] = useState(true);
   const [employerError, setEmployerError] = useState('');
-  const [isCreating, setIsCreating] = useState(false);
+  const [isCreating, setIsCreating] = useState(Boolean(initialDraft));
   const [isEditing, setIsEditing] = useState(false);
   const [editingJobId, setEditingJobId] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
-  const [form, setForm] = useState<JobFormState>({
+  const [form, setForm] = useState<JobFormState>(initialDraft?.form ?? {
     ...emptyJobForm,
     requirements: [''],
     responsibilities: [''],
@@ -113,6 +145,17 @@ function AdminJobsPage() {
   const [submitFeedback, setSubmitFeedback] = useState<{ tone: 'success' | 'error'; message: string } | null>(null);
   const [jobPendingRemoval, setJobPendingRemoval] = useState<AdminJob | null>(null);
   const [isRemoving, setIsRemoving] = useState(false);
+  const [draftWarning, setDraftWarning] = useState(initialDraftResult.error ?? '');
+
+  useEffect(() => {
+    if (!isCreating || !adminUserId) return;
+    const result = writeAdminDraft(adminUserId, 'job-creation', {
+      form,
+      postAsMode,
+      selectedEmployerId,
+    });
+    setDraftWarning(result.error ?? '');
+  }, [adminUserId, form, isCreating, postAsMode, selectedEmployerId]);
 
   useEffect(() => {
     if (!submitFeedback) {
@@ -244,6 +287,7 @@ function AdminJobsPage() {
   };
 
   const startCreating = () => {
+    if (isCreating) return;
     if (!employers.length && postAsMode === 'EXISTING_EMPLOYER') {
       setSubmitFeedback({ tone: 'error', message: 'No employer accounts are available to assign a job to.' });
       return;
@@ -258,10 +302,12 @@ function AdminJobsPage() {
   };
 
   const cancelCreating = () => {
+    const result = clearAdminDraft(adminUserId, 'job-creation');
     setIsCreating(false);
     setSubmitFeedback(null);
     setValidationErrors({});
     setForm({ ...emptyJobForm, requirements: [''], responsibilities: [''], skills: [''], benefits: [] });
+    setDraftWarning(result.error ?? '');
   };
 
   const startEditing = (job: AdminJob) => {
@@ -314,11 +360,13 @@ function AdminJobsPage() {
       return;
     }
 
+    const draftClearResult = clearAdminDraft(adminUserId, 'job-creation');
     setIsCreating(false);
     setIsSaving(false);
     setSelectedEmployerId('');
     setForm({ ...emptyJobForm, requirements: [''], responsibilities: [''], skills: [''], benefits: [] });
     setValidationErrors({});
+    setDraftWarning(draftClearResult.error ?? '');
     setSubmitFeedback({
       tone: 'success',
       message: `Job created successfully for ${effectiveEmployerName} and it is already approved.`,
@@ -404,6 +452,8 @@ function AdminJobsPage() {
 
   return (
     <div className="admin-page">
+      {initialDraft ? <p className="admin-permission-state" role="status">Restored your unfinished job-post draft.</p> : null}
+      {draftWarning ? <p className="admin-permission-state admin-permission-state--error" role="alert">{draftWarning}</p> : null}
       <section className="admin-hero">
         <div>
           <span className="admin-eyebrow">Job control</span>

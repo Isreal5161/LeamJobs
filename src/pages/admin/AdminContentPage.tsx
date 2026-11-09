@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   FaCheckCircle,
   FaEdit,
@@ -10,12 +10,15 @@ import {
   FaTrash,
 } from 'react-icons/fa';
 import {
+  initialSiteContent,
   useSiteContent,
+  type SiteContent,
   type SitePageKey,
   type SiteStat,
 } from '../../context/SiteContentContext';
 import { useAuth } from '../../context/AuthContext';
 import { API_BASE_URL, updateAdminSiteContent, uploadAdminAboutTeamImage } from '../../services/api';
+import { clearAdminDraft, readAdminDraft, writeAdminDraft } from '../../utils/adminDrafts.js';
 import AdminPageSkeleton from './AdminPageSkeleton';
 
 type StatPageKey = 'welcome' | 'about' | 'how-it-works' | 'companies';
@@ -28,20 +31,75 @@ const pageLabels: Record<SitePageKey, { name: string; section: string }> = {
   companies: { name: 'Companies page', section: 'Hero, filters, company directory' },
 };
 
+const matchesContentShape = (template: unknown, value: unknown): boolean => {
+  if (Array.isArray(template)) {
+    if (!Array.isArray(value)) return false;
+    if (template.length === 0) return value.every((item) => typeof item === 'string');
+    return value.every((item) => matchesContentShape(template[0], item));
+  }
+  if (template && typeof template === 'object') {
+    if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
+    const templateRecord = template as Record<string, unknown>;
+    return Object.entries(value).every(([key, item]) => (
+      Object.prototype.hasOwnProperty.call(templateRecord, key) && matchesContentShape(templateRecord[key], item)
+    ));
+  }
+  return typeof template === typeof value;
+};
+
 function AdminContentPage() {
-  const { token } = useAuth();
-  const { content, updatePage, isLoading } = useSiteContent();
+  const { token, user } = useAuth();
+  const adminUserId = user?.id ?? '';
+  const { content, updatePage: updateSiteContentPage, isLoading } = useSiteContent();
+  const contentRef = useRef(content);
+  contentRef.current = content;
   const [selectedPage, setSelectedPage] = useState<SitePageKey>('welcome');
   const [saveNotice, setSaveNotice] = useState('No content changes saved yet');
   const [isSaving, setIsSaving] = useState(false);
   const [uploadingTeamImage, setUploadingTeamImage] = useState<number | null>(null);
   const [teamImageErrors, setTeamImageErrors] = useState<Record<number, string>>({});
+  const [draftWarning, setDraftWarning] = useState('');
+  const [restoredDraftPage, setRestoredDraftPage] = useState<SitePageKey | null>(null);
+
+  const updatePage = <K extends SitePageKey>(
+    page: K,
+    updater: (current: SiteContent[K]) => SiteContent[K],
+  ) => {
+    const updatedContent = updater(contentRef.current[page]);
+    contentRef.current = { ...contentRef.current, [page]: updatedContent };
+    updateSiteContentPage(page, () => updatedContent);
+    const result = writeAdminDraft(adminUserId, `site-content:${page}`, updatedContent);
+    setDraftWarning(result.error ?? '');
+  };
+
+  useEffect(() => {
+    if (isLoading || !adminUserId) return;
+    const result = readAdminDraft<Partial<SiteContent[typeof selectedPage]>>(
+      adminUserId,
+      `site-content:${selectedPage}`,
+      (value): value is Partial<SiteContent[typeof selectedPage]> => matchesContentShape(initialSiteContent[selectedPage], value),
+    );
+    setDraftWarning(result.error ?? '');
+    setRestoredDraftPage(result.draft ? selectedPage : null);
+    if (result.draft) {
+      const restoredContent = { ...contentRef.current[selectedPage], ...result.draft };
+      contentRef.current = { ...contentRef.current, [selectedPage]: restoredContent };
+      updateSiteContentPage(selectedPage, () => restoredContent);
+    }
+  }, [adminUserId, isLoading, selectedPage]);
 
   const saveChanges = async () => {
     if (!token || isSaving) return;
     setIsSaving(true);
     const result = await updateAdminSiteContent(token, selectedPage, content[selectedPage]);
-    setSaveNotice(result.ok ? `Saved ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` : result.error.message);
+    if (result.ok) {
+      const clearResult = clearAdminDraft(adminUserId, `site-content:${selectedPage}`);
+      setDraftWarning(clearResult.error ?? '');
+      setRestoredDraftPage(null);
+      setSaveNotice(`Saved ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`);
+    } else {
+      setSaveNotice(result.error.message);
+    }
     setIsSaving(false);
   };
 
@@ -103,6 +161,8 @@ function AdminContentPage() {
 
   return (
     <div className="admin-page">
+      {restoredDraftPage === selectedPage ? <p className="admin-permission-state" role="status">Restored your unsaved changes for this page.</p> : null}
+      {draftWarning ? <p className="admin-permission-state admin-permission-state--error" role="alert">{draftWarning}</p> : null}
       <section className="admin-hero">
         <div>
           <span className="admin-eyebrow">Website content</span>

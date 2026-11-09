@@ -22,7 +22,7 @@ const ROLE_DASHBOARD_PATH: Record<AuthRole, string> = {
 };
 
 function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) {
-  const { user, token, isLoading } = useAuth();
+  const { user, token, isLoading, authBootstrapError, retryAuthBootstrap } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const onboardingCheckRef = useRef<string | null>(null);
@@ -68,6 +68,16 @@ function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) {
       <div className="auth-loading" role="status" aria-live="polite" aria-label="Loading LeamJobs">
         <Logo className="auth-loading__brand" />
         <span className="leamjobs-spinner leamjobs-spinner--accent leamjobs-spinner--lg" aria-hidden="true" />
+      </div>
+    );
+  }
+
+  if (authBootstrapError) {
+    return (
+      <div className="auth-loading" role="alert">
+        <Logo className="auth-loading__brand" />
+        <p>{authBootstrapError}</p>
+        <button type="button" className="auth-submit" onClick={retryAuthBootstrap}>Retry session verification</button>
       </div>
     );
   }

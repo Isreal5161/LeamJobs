@@ -20,6 +20,8 @@ type AuthContextValue = {
   token: string | null;
   isAuthenticated: boolean;
   isLoading: boolean;
+  authBootstrapError: string | null;
+  retryAuthBootstrap: () => void;
   login: (email: string, password: string, requestedRole?: AuthRole) => Promise<AuthUser>;
   setAuthenticatedSession: (token: string, user: AuthUser) => void;
   logout: () => Promise<void>;
@@ -54,11 +56,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [authBootstrapError, setAuthBootstrapError] = useState<string | null>(null);
+  const [bootstrapAttempt, setBootstrapAttempt] = useState(0);
 
   const clearSession = useCallback(() => {
     setUser(null);
     setToken(null);
+    setAuthBootstrapError(null);
     writeStoredToken(null);
+  }, []);
+
+  const retryAuthBootstrap = useCallback(() => {
+    setAuthBootstrapError(null);
+    setIsLoading(true);
+    setBootstrapAttempt((attempt) => attempt + 1);
   }, []);
 
   const loadCurrentUser = useCallback(async (nextToken: string) => {
@@ -73,6 +84,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return null;
     }
 
+    setAuthBootstrapError(null);
     setToken(nextToken);
     setUser(result.data);
     return result.data;
@@ -116,6 +128,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     writeStoredToken(nextToken);
+    setAuthBootstrapError(null);
     setToken(nextToken);
     setUser(nextUser);
   }, []);
@@ -160,8 +173,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       if (result.ok) {
+        setAuthBootstrapError(null);
         setToken(storedToken);
         setUser(result.data);
+      } else if (result.status === 0 || result.status >= 500) {
+        setAuthBootstrapError(result.error.message || 'Your session could not be checked. Check your connection and retry.');
       } else {
         clearSession();
       }
@@ -174,17 +190,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => {
       isMounted = false;
     };
-  }, [clearSession]);
+  }, [bootstrapAttempt, clearSession]);
 
   const value = useMemo<AuthContextValue>(() => ({
     user,
     token,
     isAuthenticated: Boolean(token && user),
     isLoading,
+    authBootstrapError,
+    retryAuthBootstrap,
     login,
     setAuthenticatedSession,
     logout,
-  }), [login, logout, setAuthenticatedSession, token, user, isLoading]);
+  }), [login, logout, setAuthenticatedSession, token, user, isLoading, authBootstrapError, retryAuthBootstrap]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

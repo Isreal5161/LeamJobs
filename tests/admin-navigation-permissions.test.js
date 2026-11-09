@@ -138,13 +138,17 @@ test('direct nested routes require their actual permission combinations', () => 
   assert.equal(isAdminRouteAllowed('/admin/settings', staff(['notifications.view'])), false);
 });
 
-test('layout gates page rendering, reports retryable failures, and refreshes current permissions', async () => {
+test('layout keeps the admin route mounted during throttled background permission refreshes', async () => {
   const layout = await readSource('../src/layouts/AdminLayout.tsx');
   assert.match(layout, /getCurrentAdminPermissions\(token\)/);
   assert.match(layout, /adminPermissionState\.status === 'loading'[\s\S]*?Verifying admin access/);
   assert.match(layout, /adminPermissionState\.status === 'error'[\s\S]*?Retry/);
   assert.match(layout, /adminPermissionState\.status === 'forbidden'/);
   assert.match(layout, /routeAllowed \?[\s\S]*?<Outlet context={adminPermissionState} \/>/);
+  assert.match(layout, /permissionRequests\.has\(currentSession\)/);
+  assert.match(layout, /verifiedSession\.current === currentSession/);
+  assert.match(layout, /permissionRefreshError/);
+  assert.match(layout, />= 60_000/);
   assert.match(layout, /window\.addEventListener\('focus', refreshWhenVisible\)/);
   assert.match(layout, /document\.addEventListener\('visibilitychange', refreshWhenVisible\)/);
 });

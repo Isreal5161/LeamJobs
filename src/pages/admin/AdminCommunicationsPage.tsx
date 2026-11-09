@@ -29,6 +29,7 @@ import {
   type AdminEmailTemplate,
   type AdminCommunicationPurpose,
 } from "../../services/api";
+import { clearAdminDraft, readAdminDraft, writeAdminDraft } from "../../utils/adminDrafts.js";
 
 type Editor = AdminCommunicationFields & {
   key: string;
@@ -44,6 +45,42 @@ const blankCampaign: AdminCommunicationFields = {
   purpose: "PROMOTIONAL_MARKETING",
   segment: "ALL_MARKETING_USERS",
   operationalContentConfirmed: false,
+};
+
+const templateDraftIdFor = (key: string) => `communications-template:${key}`;
+
+type AdminCampaignDraft = {
+  campaign: AdminCommunicationFields;
+  campaignId: string | null;
+};
+
+const isAdminTemplateDraft = (value: unknown): value is Editor => {
+  if (!value || typeof value !== "object") return false;
+  const editor = value as Record<string, unknown>;
+  return (editor.key === "WELCOME_SEEKER" || editor.key === "WELCOME_EMPLOYER")
+    && typeof editor.name === "string"
+    && typeof editor.subject === "string"
+    && typeof editor.heading === "string"
+    && typeof editor.body === "string"
+    && typeof editor.isActive === "boolean"
+    && (editor.ctaLabel === undefined || editor.ctaLabel === null || typeof editor.ctaLabel === "string")
+    && (editor.ctaUrl === undefined || editor.ctaUrl === null || typeof editor.ctaUrl === "string");
+};
+
+const isAdminCampaignDraft = (value: unknown): value is AdminCampaignDraft => {
+  if (!value || typeof value !== "object") return false;
+  const draft = value as Record<string, unknown>;
+  if (!draft.campaign || typeof draft.campaign !== "object") return false;
+  const campaign = draft.campaign as Record<string, unknown>;
+  return typeof campaign.subject === "string"
+    && typeof campaign.heading === "string"
+    && typeof campaign.body === "string"
+    && (campaign.ctaLabel === undefined || campaign.ctaLabel === null || typeof campaign.ctaLabel === "string")
+    && (campaign.ctaUrl === undefined || campaign.ctaUrl === null || typeof campaign.ctaUrl === "string")
+    && typeof campaign.segment === "string"
+    && (campaign.purpose === "ESSENTIAL_ANNOUNCEMENT" || campaign.purpose === "PROMOTIONAL_MARKETING")
+    && (campaign.operationalContentConfirmed === undefined || typeof campaign.operationalContentConfirmed === "boolean")
+    && (draft.campaignId === null || typeof draft.campaignId === "string");
 };
 
 const audienceLabels: Record<string, string> = {
@@ -77,17 +114,46 @@ const reportStatusLabels: Record<string, string> = {
 const formatCampaignDate = (value: string | null) => value ? new Date(value).toLocaleString() : "Not available";
 
 function AdminCommunicationsPage() {
-  const { token } = useAuth();
+  const { token, user } = useAuth();
+  const adminUserId = user?.id ?? "";
+  const [initialCampaignDraftResult] = useState(() => readAdminDraft<AdminCampaignDraft>(
+    adminUserId,
+    "communications-campaign",
+    isAdminCampaignDraft,
+  ));
+  const initialCampaignDraft = initialCampaignDraftResult.draft;
+  const [initialTemplateDraftResults] = useState(() => ({
+    seeker: readAdminDraft<Editor>(
+      adminUserId,
+      templateDraftIdFor("WELCOME_SEEKER"),
+      isAdminTemplateDraft,
+    ),
+    employer: readAdminDraft<Editor>(
+      adminUserId,
+      templateDraftIdFor("WELCOME_EMPLOYER"),
+      isAdminTemplateDraft,
+    ),
+  }));
+  const initialTemplateDraft = initialTemplateDraftResults.seeker.draft ?? initialTemplateDraftResults.employer.draft;
   const [templates, setTemplates] = useState<AdminEmailTemplate[]>([]);
-  const [editor, setEditor] = useState<Editor | null>(null);
-  const [campaign, setCampaign] =
-    useState<AdminCommunicationFields>(blankCampaign);
+  const [editor, setEditor] = useState<Editor | null>(initialTemplateDraft);
+  const [templateDraftDirty, setTemplateDraftDirty] = useState(Boolean(initialTemplateDraft));
+  const [templateDraftId, setTemplateDraftId] = useState(
+    initialTemplateDraft ? templateDraftIdFor(initialTemplateDraft.key) : '',
+  );
+  const [campaign, setCampaign] = useState<AdminCommunicationFields>(() => {
+    const savedCampaign = initialCampaignDraft?.campaign;
+    if (!savedCampaign) return blankCampaign;
+    return savedCampaign.purpose === "ESSENTIAL_ANNOUNCEMENT"
+      ? { ...savedCampaign, operationalContentConfirmed: false }
+      : savedCampaign;
+  });
   const [recipientCount, setRecipientCount] = useState<number | null>(null);
   const [preview, setPreview] = useState<{
     subject: string;
     html: string;
   } | null>(null);
-  const [campaignId, setCampaignId] = useState<string | null>(null);
+  const [campaignId, setCampaignId] = useState<string | null>(initialCampaignDraft?.campaignId ?? null);
   const [campaignPreview, setCampaignPreview] = useState<{
     subject: string;
     html: string;
@@ -111,9 +177,41 @@ function AdminCommunicationsPage() {
   const [campaignReportPreviewLoading, setCampaignReportPreviewLoading] = useState(false);
   const [recipientCountLoading, setRecipientCountLoading] = useState(false);
   const [recipientCountError, setRecipientCountError] = useState("");
+  const [campaignDraftWarning, setCampaignDraftWarning] = useState(initialCampaignDraftResult.error ?? "");
+  const [templateDraftWarning, setTemplateDraftWarning] = useState(
+    initialTemplateDraftResults.seeker.error ?? initialTemplateDraftResults.employer.error ?? "",
+  );
+  const [hasRestoredCampaignDraft, setHasRestoredCampaignDraft] = useState(Boolean(initialCampaignDraft));
+  const [hasRestoredTemplateDraft, setHasRestoredTemplateDraft] = useState(Boolean(initialTemplateDraft));
   const campaignBodyRef = useRef<HTMLTextAreaElement>(null);
   const recipientCountRequestId = useRef(0);
   const campaignReportPreviewRequestId = useRef(0);
+  const campaignHasDraft = Boolean(
+    campaignId
+    || campaign.subject
+    || campaign.heading
+    || campaign.body
+    || campaign.ctaLabel
+    || campaign.ctaUrl
+    || campaign.purpose !== blankCampaign.purpose
+    || campaign.segment !== blankCampaign.segment
+    || campaign.operationalContentConfirmed,
+  );
+
+  useEffect(() => {
+    if (!campaignHasDraft) return;
+    const result = writeAdminDraft(adminUserId, "communications-campaign", {
+      campaign,
+      campaignId,
+    });
+    setCampaignDraftWarning(result.error ?? "");
+  }, [adminUserId, campaign, campaignHasDraft, campaignId]);
+
+  useEffect(() => {
+    if (!editor || !templateDraftDirty || !templateDraftId) return;
+    const result = writeAdminDraft(adminUserId, templateDraftId, editor);
+    setTemplateDraftWarning(result.error ?? "");
+  }, [adminUserId, editor, templateDraftDirty, templateDraftId]);
 
   const loadTemplates = async () => {
     if (!token) return;
@@ -142,15 +240,33 @@ function AdminCommunicationsPage() {
   }, [token]);
 
   const editTemplate = (template: AdminEmailTemplate) => {
-    setEditor({ ...template });
+    const draftId = templateDraftIdFor(template.key);
+    const savedDraft = readAdminDraft<Editor>(adminUserId, draftId, isAdminTemplateDraft);
+    setTemplateDraftId(draftId);
+    setEditor(savedDraft.draft?.key === template.key ? savedDraft.draft : { ...template });
+    setTemplateDraftDirty(Boolean(savedDraft.draft?.key === template.key));
+    setHasRestoredTemplateDraft(Boolean(savedDraft.draft?.key === template.key));
+    setTemplateDraftWarning(savedDraft.error ?? "");
     setPreview(null);
     setNotice("");
     setError("");
   };
-  const updateField = (field: keyof Editor, value: string | boolean) =>
-    setEditor((current) =>
-      current ? { ...current, [field]: value } : current,
-    );
+  const updateField = (field: keyof Editor, value: string | boolean) => {
+    setEditor((current) => current ? { ...current, [field]: value } : current);
+    setTemplateDraftDirty(true);
+  };
+  const closeTemplateEditor = () => {
+    setEditor(null);
+    setTemplateDraftDirty(false);
+    setHasRestoredTemplateDraft(false);
+  };
+  const discardTemplateDraft = () => {
+    const result = clearAdminDraft(adminUserId, templateDraftId);
+    setTemplateDraftWarning(result.error ?? "");
+    setEditor(null);
+    setTemplateDraftDirty(false);
+    setHasRestoredTemplateDraft(false);
+  };
   const saveTemplate = async () => {
     if (!token || !editor) return;
     setSaving(true);
@@ -158,6 +274,10 @@ function AdminCommunicationsPage() {
     setError("");
     const result = await updateAdminEmailTemplate(token, editor.key, editor);
     if (result.ok) {
+      const clearResult = clearAdminDraft(adminUserId, templateDraftId);
+      setTemplateDraftWarning(clearResult.error ?? "");
+      setTemplateDraftDirty(false);
+      setHasRestoredTemplateDraft(false);
       setTemplates((current) =>
         current.map((item) =>
           item.key === editor.key ? result.data.data.template : item,
@@ -249,7 +369,7 @@ function AdminCommunicationsPage() {
     if (!editor && !pendingSend) return undefined;
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape" && !saving) {
-        setEditor(null);
+        closeTemplateEditor();
         setPendingSend(null);
       }
     };
@@ -362,6 +482,9 @@ function AdminCommunicationsPage() {
     setNotice("");
     const sent = await sendAdminCampaign(token, pendingSend.id);
     if (sent.ok) {
+      const clearResult = clearAdminDraft(adminUserId, "communications-campaign");
+      setCampaignDraftWarning(clearResult.error ?? "");
+      setHasRestoredCampaignDraft(false);
       setNotice(
         `Communication queued for ${(sent.data.data.campaign.recipientCount ?? pendingSend.count).toLocaleString()} eligible recipients.`,
       );
@@ -377,6 +500,10 @@ function AdminCommunicationsPage() {
 
   return (
     <main className="admin-communications-page">
+      {hasRestoredCampaignDraft ? <div className="admin-communications-notice" role="status">Restored your unfinished communication draft. Operational confirmation must be checked again before sending.</div> : null}
+      {hasRestoredTemplateDraft ? <div className="admin-communications-notice" role="status">Restored your unsaved email-template changes.</div> : null}
+      {campaignDraftWarning ? <div className="admin-communications-error" role="alert">{campaignDraftWarning}</div> : null}
+      {templateDraftWarning ? <div className="admin-communications-error" role="alert">{templateDraftWarning}</div> : null}
       <header className="admin-communications-hero">
         <span>
           <FaBullhorn /> Admin communications
@@ -419,6 +546,16 @@ function AdminCommunicationsPage() {
               You are about to send this promotional email to {pendingSend.count.toLocaleString()} eligible recipients.
             </p>
             <div className="admin-communications-modal__actions">
+              {templateDraftDirty ? (
+                <button
+                  type="button"
+                  className="admin-button admin-button--secondary"
+                  disabled={saving}
+                  onClick={discardTemplateDraft}
+                >
+                  Discard changes
+                </button>
+              ) : null}
               <button
                 type="button"
                 className="admin-button admin-button--secondary"
@@ -657,11 +794,14 @@ function AdminCommunicationsPage() {
             >
               <FaPaperPlane /> {saving ? "Queueing..." : campaign.purpose === "ESSENTIAL_ANNOUNCEMENT" ? "Send announcement" : "Send promotion"}
             </button>
-            {campaignId ? <button
+            {campaignHasDraft ? <button
               type="button"
               className="admin-button admin-button--secondary"
               disabled={saving}
               onClick={() => {
+                const clearResult = clearAdminDraft(adminUserId, "communications-campaign");
+                setCampaignDraftWarning(clearResult.error ?? "");
+                setHasRestoredCampaignDraft(false);
                 setCampaign(blankCampaign);
                 setCampaignId(null);
                 setCampaignPreview(null);
@@ -669,7 +809,7 @@ function AdminCommunicationsPage() {
                 setError("");
               }}
             >
-              Start a new communication
+              {campaignId ? "Start a new communication" : "Discard draft"}
             </button> : null}
           </div>
         </form>
@@ -723,7 +863,7 @@ function AdminCommunicationsPage() {
           role="dialog"
           aria-modal="true"
           aria-labelledby="template-editor-title"
-          onMouseDown={(event) => { if (event.target === event.currentTarget && !saving) setEditor(null); }}
+          onMouseDown={(event) => { if (event.target === event.currentTarget && !saving) closeTemplateEditor(); }}
         >
           <div className="admin-communications-modal__panel">
             <div className="admin-communications-modal__header">
@@ -733,7 +873,7 @@ function AdminCommunicationsPage() {
               </div>
               <button
                 type="button"
-                onClick={() => setEditor(null)}
+                onClick={closeTemplateEditor}
                 aria-label="Close template editor"
               >
                 ×
