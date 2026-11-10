@@ -1875,6 +1875,140 @@ export type AdminPaymentsQuery = {
 
 export type AdminPaymentsResponse = { success: true; data: { items: AdminPayment[]; nextCursor: string | null } };
 
+export type AdminWithdrawalStatus = 'PENDING' | 'PROCESSING' | 'SUCCESSFUL' | 'FAILED' | 'REVERSED' | 'CANCELLED';
+export type AdminWithdrawalProvider = 'FLUTTERWAVE' | 'PAYSTACK';
+
+export type AdminWithdrawalSummary = {
+  currency: string;
+  totalWithdrawals: number;
+  pending: number;
+  processing: number;
+  successful: number;
+  failed: number;
+  reversed: number;
+  cancelled: number;
+  totalSuccessfullyPaid: string;
+  totalAwaitingProcessing: string;
+};
+
+export type AdminWithdrawal = {
+  id: string;
+  seeker: { id: string; name: string; email: string };
+  amount: string;
+  currency: string;
+  provider: AdminWithdrawalProvider | null;
+  status: AdminWithdrawalStatus;
+  requestedAt: string;
+  updatedAt: string;
+  providerReference: string | null;
+  providerTransferCode: string | null;
+};
+
+export type AdminWithdrawalQuery = {
+  limit?: number;
+  cursor?: string;
+  status?: AdminWithdrawalStatus;
+  provider?: AdminWithdrawalProvider;
+  currency?: string;
+  from?: string;
+  to?: string;
+  search?: string;
+  seeker?: string;
+};
+
+export type AdminWithdrawalDetails = {
+  id: string;
+  seeker: { id: string; name: string; email: string };
+  amount: string;
+  withdrawalFeeAmount: string;
+  payoutAmount: string;
+  currency: string;
+  status: AdminWithdrawalStatus;
+  provider: AdminWithdrawalProvider | null;
+  providerReference: string | null;
+  requestedAt: string;
+  processingAt: string | null;
+  completedAt: string | null;
+  failedAt: string | null;
+  updatedAt: string;
+  failureReason: string | null;
+  bankDestination: {
+    bankName: string | null;
+    accountHolderName: string | null;
+    maskedAccountNumber: string | null;
+    payoutMethod: string | null;
+    country: string | null;
+  };
+  providerInfo: {
+    transferReference: string | null;
+    transferCode: string | null;
+    status: string;
+    lastReconciliationAt: string | null;
+    reconciliationTimestampRecorded: boolean;
+  };
+  payout: {
+    id: string;
+    amount: string;
+    currency: string;
+    provider: AdminWithdrawalProvider;
+    providerReference: string | null;
+    status: string;
+    requestedAt: string;
+    processedAt: string | null;
+    failedAt: string | null;
+    createdAt: string;
+    updatedAt: string;
+    failureReason: string | null;
+    attempts: {
+      id: string;
+      attemptNumber: number;
+      providerReference: string | null;
+      status: string;
+      failureReason: string | null;
+      createdAt: string;
+      updatedAt: string | null;
+      processedAt: string | null;
+    }[];
+  } | null;
+  ledgerEntries: { id: string; entryType: string; amount: string; currency: string; createdAt: string }[];
+  auditEvents: { id: string; action: string; status: string | null; reason: string | null; createdAt: string }[];
+  webhookEvents: {
+    id: string;
+    provider: string;
+    eventType: string | null;
+    attempts: number;
+    lastError: string | null;
+    createdAt: string;
+    processedAt: string | null;
+  }[];
+  timeline: { id: string; type: string; title: string; status?: string | null; detail?: string | null; amount?: string; currency?: string; occurredAt: string }[];
+};
+
+export type AdminWithdrawalsResponse = {
+  success: true;
+  data: { items: AdminWithdrawal[]; nextCursor: string | null; summaryByCurrency: AdminWithdrawalSummary[] };
+};
+export type AdminWithdrawalDetailsResponse = { success: true; data: AdminWithdrawalDetails };
+
+export function getAdminWithdrawals(token: string, query: AdminWithdrawalQuery = {}) {
+  const params = new URLSearchParams();
+  if (query.limit !== undefined) params.set('limit', String(query.limit));
+  if (query.cursor) params.set('cursor', query.cursor);
+  if (query.status) params.set('status', query.status);
+  if (query.provider) params.set('provider', query.provider);
+  if (query.currency?.trim()) params.set('currency', query.currency.trim().toUpperCase());
+  if (query.from) params.set('from', query.from);
+  if (query.to) params.set('to', query.to);
+  if (query.search?.trim()) params.set('search', query.search.trim());
+  if (query.seeker?.trim()) params.set('seeker', query.seeker.trim());
+  const queryString = params.toString();
+  return request<AdminWithdrawalsResponse>({ method: 'GET', endpoint: `/admin/withdrawals${queryString ? `?${queryString}` : ''}`, token });
+}
+
+export function getAdminWithdrawal(token: string, id: string) {
+  return request<AdminWithdrawalDetailsResponse>({ method: 'GET', endpoint: `/admin/withdrawals/${encodeURIComponent(id)}`, token });
+}
+
 export type AdminConversionOperation = {
   id: string;
   escrowId: string;

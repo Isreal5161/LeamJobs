@@ -65,6 +65,36 @@ test('financial navigation requires its exact view permission and analytics ALL 
   assert.ok(!paths(staff(analyticsPermissions.slice(1))).includes('/admin/analytics'));
 });
 
+test('withdrawal monitoring is visible and directly accessible only with its dedicated permission', () => {
+  const navItem = ADMIN_NAVIGATION_ITEMS.find(({ to }) => to === '/admin/withdrawals');
+  assert.deepEqual(navItem?.permissions, ['finance.withdrawals.view']);
+  assert.ok(paths(superAdmin).includes('/admin/withdrawals'));
+  assert.ok(paths(staff(['finance.withdrawals.view'])).includes('/admin/withdrawals'));
+  assert.ok(paths(staff(['finance.withdrawals.execute'])).includes('/admin/withdrawals') === false);
+  assert.ok(!paths(staff(['finance.withdrawals.reconcile'])).includes('/admin/withdrawals'));
+  assert.equal(isAdminRouteAllowed('/admin/withdrawals', staff(['finance.withdrawals.view'])), true);
+  assert.equal(isAdminRouteAllowed('/admin/withdrawals/123', staff(['finance.withdrawals.view'])), true);
+  assert.equal(isAdminRouteAllowed('/admin/withdrawals', staff(['finance.withdrawals.execute'])), false);
+  assert.ok(ADMIN_MOBILE_LINK_PATHS.includes('/admin/withdrawals'));
+});
+
+test('withdrawal monitoring page uses the read-only Admin API and compact mobile navigation label', async () => {
+  const [page, api, mobileNav] = await Promise.all([
+    readSource('../src/pages/admin/AdminWithdrawalsPage.tsx'),
+    readSource('../src/services/api.ts'),
+    readSource('../src/components/layout/MobileBottomNav.tsx'),
+  ]);
+  assert.match(page, /getAdminWithdrawals\(token, query\)/);
+  assert.match(page, /getAdminWithdrawal\(token, selectedId\)/);
+  assert.match(page, /totalSuccessfullyPaid/);
+  assert.match(page, /totalAwaitingProcessing/);
+  assert.match(page, /aria-modal="true"/);
+  assert.match(api, /endpoint: `\/admin\/withdrawals\$\{queryString/);
+  assert.match(api, /endpoint: `\/admin\/withdrawals\/\$\{encodeURIComponent\(id\)\}`/);
+  assert.match(mobileNav, /item\.label === 'Withdrawal Monitoring'[\s\S]*?'Withdrawals'/);
+  assert.match(mobileNav, /aria-label=\{item\.label\}/);
+});
+
 test('communications and content navigation require the backend ALL-permission combinations', () => {
   assert.ok(!paths(staff(['communications.campaigns.view'])).includes('/admin/communications'));
   assert.ok(paths(staff([

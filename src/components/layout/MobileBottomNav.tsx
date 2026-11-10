@@ -72,6 +72,8 @@ function MobileBottomNav({ adminPermissionState }: MobileBottomNavProps) {
               ? 'Jobs'
               : item.label === 'Staff Management'
                 ? 'Staff'
+                : item.label === 'Withdrawal Monitoring'
+                  ? 'Withdrawals'
                 : item.label;
           return (
             <Link
