@@ -66,16 +66,23 @@ function MobileBottomNav({ adminPermissionState }: MobileBottomNavProps) {
       <nav className={`mobile-bottom-nav mobile-bottom-nav--admin ${showStaffManagement ? 'mobile-bottom-nav--admin-with-staff' : ''}`} aria-label="Admin mobile navigation">
         {links.map((item) => {
           const Icon = adminMobileIcons[item.icon as keyof typeof adminMobileIcons];
+          const label = item.label === 'Communications'
+            ? 'Comms'
+            : item.label === 'Job Posts'
+              ? 'Jobs'
+              : item.label === 'Staff Management'
+                ? 'Staff'
+                : item.label;
           return (
             <Link
               to={item.to}
               key={item.to}
-              aria-label={item.label === 'Communications' ? 'Communications' : item.label}
+              aria-label={item.label}
               title={item.label}
               className={`mobile-bottom-nav__item ${pathname === item.to || pathname.startsWith(`${item.to}/`) ? 'mobile-bottom-nav__item--active' : ''}`}
             >
               <Icon />
-              <span>{item.label === 'Job Posts' ? 'Jobs' : item.label === 'Staff Management' ? 'Staff' : item.label}</span>
+              <span>{label}</span>
             </Link>
           );
         })}

@@ -176,3 +176,10 @@ test('sidebar active-route, collapse, tablet rail, and shared navigation data re
   assert.match(css, /admin-layout--menu-closed/);
   assert.match(css, /@media \(min-width: 768px\) and \(max-width: 1024px\)/);
 });
+
+test('Admin mobile Communications label is compact while retaining its full accessible name', async () => {
+  const mobile = await readSource('../src/components/layout/MobileBottomNav.tsx');
+  assert.match(mobile, /item\.label === 'Communications'[\s\S]*?'Comms'/);
+  assert.match(mobile, /aria-label=\{item\.label\}/);
+  assert.match(mobile, /title=\{item\.label\}/);
+});
