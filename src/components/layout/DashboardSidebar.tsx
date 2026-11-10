@@ -125,11 +125,12 @@ function DashboardSidebar({
                     className={({ isActive }) => `dashboard-menu__link ${isActive ? 'dashboard-menu__link--active' : ''}`}
                     onClick={onNavigate}
                     title={item.label}
+                    aria-label={item.label}
                   >
                     <span className="dashboard-menu__icon">
                       <Icon />
                     </span>
-                    <span className="dashboard-menu__label">{item.label}</span>
+                    <span className="dashboard-menu__label">{item.sidebarLabel ?? item.label}</span>
                   </NavLink>
                 );
               })}

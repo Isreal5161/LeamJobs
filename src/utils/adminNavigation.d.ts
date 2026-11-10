@@ -15,6 +15,7 @@ export type AdminPermissionState =
 export type AdminNavigationItem = {
   section: string;
   label: string;
+  sidebarLabel?: string;
   to: string;
   icon: string;
   permissions?: string[];

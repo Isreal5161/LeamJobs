@@ -7,7 +7,7 @@ export const ADMIN_NAVIGATION_ITEMS = [
   { section: 'People', label: 'Seekers', to: '/admin/seekers', icon: 'users', permissions: ['users.view'] },
   { section: 'Operations', label: 'Analytics', to: '/admin/analytics', icon: 'chart', permissions: ['analytics.view', 'finance.payments.view', 'finance.contractFunding.view', 'fees.view'] },
   { section: 'Operations', label: 'Payments', to: '/admin/payments', icon: 'money', permissions: ['finance.payments.view'] },
-  { section: 'Operations', label: 'Withdrawal Monitoring', to: '/admin/withdrawals', icon: 'money', permissions: ['finance.withdrawals.view'] },
+  { section: 'Operations', label: 'Withdrawal Monitoring', sidebarLabel: 'Withdrawals', to: '/admin/withdrawals', icon: 'money', permissions: ['finance.withdrawals.view'] },
   { section: 'Operations', label: 'Contracts', to: '/admin/contracts', icon: 'fileContract', permissions: ['contracts.view', 'finance.contractFunding.view'] },
   { section: 'Operations', label: 'Subscriptions', to: '/admin/subscriptions', icon: 'crown', permissions: ['subscriptions.view'] },
   { section: 'Operations', label: 'Verifications', to: '/admin/verifications', icon: 'clipboard', permissions: ['verification.view'] },

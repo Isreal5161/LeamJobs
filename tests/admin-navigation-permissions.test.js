@@ -68,6 +68,7 @@ test('financial navigation requires its exact view permission and analytics ALL 
 test('withdrawal monitoring is visible and directly accessible only with its dedicated permission', () => {
   const navItem = ADMIN_NAVIGATION_ITEMS.find(({ to }) => to === '/admin/withdrawals');
   assert.deepEqual(navItem?.permissions, ['finance.withdrawals.view']);
+  assert.equal(navItem?.sidebarLabel, 'Withdrawals');
   assert.ok(paths(superAdmin).includes('/admin/withdrawals'));
   assert.ok(paths(staff(['finance.withdrawals.view'])).includes('/admin/withdrawals'));
   assert.ok(paths(staff(['finance.withdrawals.execute'])).includes('/admin/withdrawals') === false);
@@ -93,6 +94,22 @@ test('withdrawal monitoring page uses the read-only Admin API and compact mobile
   assert.match(api, /endpoint: `\/admin\/withdrawals\/\$\{encodeURIComponent\(id\)\}`/);
   assert.match(mobileNav, /item\.label === 'Withdrawal Monitoring'[\s\S]*?'Withdrawals'/);
   assert.match(mobileNav, /aria-label=\{item\.label\}/);
+});
+
+test('withdrawal sidebar label, mobile spacing, brand colors, and centered details dialog are wired', async () => {
+  const [sidebar, adminCss, withdrawalsCss] = await Promise.all([
+    readSource('../src/components/layout/DashboardSidebar.tsx'),
+    readSource('../src/styles/admin.css'),
+    readSource('../src/styles/admin-withdrawals.css'),
+  ]);
+  assert.match(sidebar, /item\.sidebarLabel \?\? item\.label/);
+  assert.match(sidebar, /aria-label=\{item\.label\}/);
+  assert.match(adminCss, /\.mobile-bottom-nav--admin \{[^}]*gap:\s*0\.3rem/s);
+  assert.match(adminCss, /\.mobile-bottom-nav--admin \.mobile-bottom-nav__item \{[^}]*flex:\s*0 0 auto/s);
+  assert.match(adminCss, /\.mobile-bottom-nav--admin \{[^}]*overflow-x:\s*auto/s);
+  assert.match(withdrawalsCss, /background:\s*var\(--brand-primary-active\)/);
+  assert.match(withdrawalsCss, /\.admin-withdrawal-dialog-backdrop \{[^}]*place-items:\s*center/s);
+  assert.match(withdrawalsCss, /\.admin-withdrawal-dialog \{[^}]*max-height:\s*min\(88dvh,\s*60rem\)/s);
 });
 
 test('communications and content navigation require the backend ALL-permission combinations', () => {
