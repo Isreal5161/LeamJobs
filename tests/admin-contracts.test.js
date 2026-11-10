@@ -65,6 +65,26 @@ test('Staff action controls require their exact permission and a backend eligibi
   assert.equal(canShowAdminContractAction(superAdmin, contract, 'cancel'), true);
 });
 
+test('Admin-created unfunded contracts show Cancel when the backend allows it, without payment details', () => {
+  const contract = {
+    employerArchivedAt: null,
+    funding: { paymentStatus: null },
+    availableActions: { cancel: true },
+  };
+  assert.equal(canShowAdminContractAction(staff(['contracts.cancel']), contract, 'cancel'), true);
+  assert.equal(canShowAdminContractAction(superAdmin, contract, 'cancel'), true);
+});
+
+test('ordinary employer contracts remain non-cancellable through Admin actions', () => {
+  const contract = {
+    employerArchivedAt: null,
+    funding: { paymentStatus: null },
+    availableActions: { cancel: false },
+  };
+  assert.equal(canShowAdminContractAction(staff(['contracts.cancel']), contract, 'cancel'), false);
+  assert.equal(canShowAdminContractAction(superAdmin, contract, 'cancel'), false);
+});
+
 test('Completed contracts expose Archive only when the backend marks it available', () => {
   const completed = {
     employerArchivedAt: null,
@@ -120,4 +140,6 @@ test('Cancel and archive use distinct confirmation warnings and refresh after su
   assert.match(page, /Archive is unavailable until completion and full financial settlement are verified/);
   assert.match(page, /role="alertdialog"/);
   assert.match(page, /setSelectedAction\(null\)[\s\S]*?setNotice\(action === 'cancel'/);
+  assert.match(page, /setReloadKey\(\(value\) => value \+ 1\)/);
+  assert.match(page, /canShowAdminContractAction\(permissionState, contract, 'cancel'\)/);
 });
