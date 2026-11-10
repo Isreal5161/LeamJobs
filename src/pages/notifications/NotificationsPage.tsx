@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { FaBell, FaCheck, FaChevronLeft, FaExclamationTriangle, FaInfoCircle } from 'react-icons/fa';
 import { useAuth } from '../../context/AuthContext';
@@ -19,10 +19,9 @@ function NotificationsPage({ role }: NotificationsPageProps) {
   const { token } = useAuth();
   const navigate = useNavigate();
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
+  const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-
-  const unreadCount = useMemo(() => notifications.filter((notification) => !notification.isRead).length, [notifications]);
 
   const loadNotifications = async () => {
     if (!token) {
@@ -34,6 +33,7 @@ function NotificationsPage({ role }: NotificationsPageProps) {
     const result = await getNotifications(token, role.toUpperCase() as 'SEEKER' | 'EMPLOYER' | 'ADMIN');
     if (result.ok) {
       setNotifications(result.data.data.notifications);
+      setUnreadCount(result.data.data.unreadCount);
       setError('');
     } else {
       setError(result.error.message || 'Unable to load notifications.');
@@ -52,6 +52,7 @@ function NotificationsPage({ role }: NotificationsPageProps) {
       const result = await markNotificationRead(token, role.toUpperCase() as 'SEEKER' | 'EMPLOYER' | 'ADMIN', notification.id);
       if (result.ok) {
         setNotifications((current) => current.map((item) => item.id === notification.id ? { ...item, isRead: true, readAt: new Date().toISOString() } : item));
+        setUnreadCount((current) => Math.max(0, current - 1));
       }
     }
 
@@ -71,6 +72,7 @@ function NotificationsPage({ role }: NotificationsPageProps) {
     const result = await markAllNotificationsRead(token, role.toUpperCase() as 'SEEKER' | 'EMPLOYER' | 'ADMIN');
     if (result.ok) {
       setNotifications((current) => current.map((item) => ({ ...item, isRead: true, readAt: new Date().toISOString() })));
+      setUnreadCount(0);
     }
   };
 

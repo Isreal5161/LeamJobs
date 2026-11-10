@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { FaBell, FaBars, FaCheck, FaTimes } from 'react-icons/fa';
 import AccountMenu from './AccountMenu';
@@ -90,8 +90,10 @@ function DashboardTopbar({
   const [profileImage, setProfileImage] = useState<UserScopedImage | null>(null);
   const [isImageLoading, setIsImageLoading] = useState(false);
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
+  const [unreadCount, setUnreadCount] = useState(0);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [isRefreshingNotifications, setIsRefreshingNotifications] = useState(false);
+  const notificationRequestRef = useRef<AbortController | null>(null);
   const [logoutError, setLogoutError] = useState('');
 
   const handleLogout = async () => {
@@ -103,7 +105,6 @@ function DashboardTopbar({
     }
   };
 
-  const unreadCount = useMemo(() => notifications.filter((item) => !item.isRead).length, [notifications]);
   const imageUrl = getUserScopedImageUrl(profileImage, user?.id);
   const canViewAdminNotifications = role !== 'admin'
     || hasAdminNavigationAccess(adminPermissionState ?? { status: 'loading' }, { permissions: ['notifications.view'] });
@@ -129,24 +130,46 @@ function DashboardTopbar({
   useEffect(() => {
     if (!role || !token || !canViewAdminNotifications) {
       setNotifications([]);
+      setUnreadCount(0);
       setIsRefreshingNotifications(false);
       return undefined;
     }
 
     let active = true;
     const loadNotifications = async () => {
+      if (notificationRequestRef.current) return;
+      const controller = new AbortController();
+      notificationRequestRef.current = controller;
       setIsRefreshingNotifications(true);
-      const result = await getNotifications(token, role.toUpperCase() as 'SEEKER' | 'EMPLOYER' | 'ADMIN');
-      if (!active) return;
-      if (result.ok) {
-        setNotifications(result.data.data.notifications);
+      try {
+        const result = await getNotifications(
+          token,
+          role.toUpperCase() as 'SEEKER' | 'EMPLOYER' | 'ADMIN',
+          20,
+          undefined,
+          controller.signal,
+        );
+        if (active && !controller.signal.aborted && result.ok) {
+          setNotifications(result.data.data.notifications);
+          setUnreadCount(result.data.data.unreadCount);
+        }
+      } finally {
+        if (notificationRequestRef.current === controller) {
+          notificationRequestRef.current = null;
+        }
+        if (active) setIsRefreshingNotifications(false);
       }
-      setIsRefreshingNotifications(false);
     };
 
     void loadNotifications();
+    const refreshInterval = window.setInterval(() => { void loadNotifications(); }, 30_000);
 
-    return () => { active = false; };
+    return () => {
+      active = false;
+      window.clearInterval(refreshInterval);
+      notificationRequestRef.current?.abort();
+      notificationRequestRef.current = null;
+    };
   }, [canViewAdminNotifications, role, token]);
 
   useEffect(() => {
@@ -224,6 +247,7 @@ function DashboardTopbar({
       const result = await markNotificationRead(token, role.toUpperCase() as 'SEEKER' | 'EMPLOYER' | 'ADMIN', notification.id);
       if (result.ok) {
         setNotifications((current) => current.map((item) => item.id === notification.id ? { ...item, isRead: true, readAt: new Date().toISOString() } : item));
+        setUnreadCount((current) => Math.max(0, current - 1));
       }
     }
 
@@ -244,6 +268,7 @@ function DashboardTopbar({
     const result = await markAllNotificationsRead(token, role.toUpperCase() as 'SEEKER' | 'EMPLOYER' | 'ADMIN');
     if (result.ok) {
       setNotifications((current) => current.map((item) => ({ ...item, isRead: true, readAt: new Date().toISOString() })));
+      setUnreadCount(0);
     }
   };
 
@@ -288,7 +313,7 @@ function DashboardTopbar({
                     <button type="button" className="dashboard-topbar__notification-mark-all" onClick={handleMarkAllRead}>Mark all read</button>
                   ) : null}
                 </div>
-                {isRefreshingNotifications ? <div className="dashboard-topbar__notification-empty">Loading…</div> : notifications.length === 0 ? (
+                {isRefreshingNotifications && notifications.length === 0 ? <div className="dashboard-topbar__notification-empty">Loading…</div> : notifications.length === 0 ? (
                   <div className="dashboard-topbar__notification-empty">No notifications yet.</div>
                 ) : (
                   <div className="dashboard-topbar__notification-list">

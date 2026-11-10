@@ -79,6 +79,14 @@ test('withdrawal monitoring is visible and directly accessible only with its ded
   assert.ok(ADMIN_MOBILE_LINK_PATHS.includes('/admin/withdrawals'));
 });
 
+test('payment release notification destination is restricted to Admins with contract funding view access', () => {
+  const permissions = ['notifications.view', 'contracts.view', 'finance.contractFunding.view'];
+  assert.equal(isAdminRouteAllowed('/admin/contracts/contract-123', staff(permissions)), true);
+  assert.equal(isAdminRouteAllowed('/admin/contracts/contract-123', staff(['notifications.view', 'contracts.view'])), false);
+  assert.equal(isAdminRouteAllowed('/admin/contracts/contract-123', staff(['notifications.view', 'finance.contractFunding.view'])), false);
+  assert.equal(isAdminRouteAllowed('/admin/contracts/contract-123', superAdmin), true);
+});
+
 test('withdrawal monitoring page uses the read-only Admin API and compact mobile navigation label', async () => {
   const [page, api, mobileNav] = await Promise.all([
     readSource('../src/pages/admin/AdminWithdrawalsPage.tsx'),
@@ -94,6 +102,21 @@ test('withdrawal monitoring page uses the read-only Admin API and compact mobile
   assert.match(api, /endpoint: `\/admin\/withdrawals\/\$\{encodeURIComponent\(id\)\}`/);
   assert.match(mobileNav, /item\.label === 'Withdrawal Monitoring'[\s\S]*?'Withdrawals'/);
   assert.match(mobileNav, /aria-label=\{item\.label\}/);
+});
+
+test('Admin notifications poll the existing API and use its unread count', async () => {
+  const [topbar, notificationsPage] = await Promise.all([
+    readSource('../src/components/layout/DashboardTopbar.tsx'),
+    readSource('../src/pages/notifications/NotificationsPage.tsx'),
+  ]);
+  assert.match(topbar, /getNotifications\([\s\S]*?controller\.signal[\s\S]*?\)/);
+  assert.match(topbar, /setUnreadCount\(result\.data\.data\.unreadCount\)/);
+  assert.match(topbar, /window\.setInterval\([\s\S]*?30_000/);
+  assert.match(topbar, /controller\.signal/);
+  assert.match(topbar, /notificationRequestRef\.current\?\.abort\(\)/);
+  assert.match(topbar, /\}, \[canViewAdminNotifications, role, token\]\);/);
+  assert.match(topbar, /setUnreadCount\(0\)/);
+  assert.match(notificationsPage, /setUnreadCount\(result\.data\.data\.unreadCount\)/);
 });
 
 test('withdrawal sidebar label, mobile spacing, brand colors, and centered details dialog are wired', async () => {

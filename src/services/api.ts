@@ -12,6 +12,7 @@ export type ApiRequestOptions = {
   endpoint: string;
   body?: unknown;
   token?: string;
+  signal?: AbortSignal;
   credentials?: RequestCredentials;
   headers?: HeadersInit;
   errorContext?: UserFacingErrorContext;
@@ -1113,6 +1114,7 @@ export async function request<T>({
   endpoint,
   body,
   token,
+  signal,
   credentials,
   headers: customHeaders,
   errorContext,
@@ -1132,6 +1134,7 @@ export async function request<T>({
       method,
       headers,
       body: body === undefined ? undefined : body instanceof FormData ? body : JSON.stringify(body),
+      signal,
       credentials,
     });
 
@@ -1472,7 +1475,7 @@ export function getEmployerCandidateDetails(candidateId: string, token: string) 
   });
 }
 
-export function getNotifications(token: string, role: 'SEEKER' | 'EMPLOYER' | 'ADMIN', limit = 20, cursor?: string) {
+export function getNotifications(token: string, role: 'SEEKER' | 'EMPLOYER' | 'ADMIN', limit = 20, cursor?: string, signal?: AbortSignal) {
   const params = new URLSearchParams();
   params.set('limit', String(limit));
   if (cursor) params.set('cursor', cursor);
@@ -1481,6 +1484,7 @@ export function getNotifications(token: string, role: 'SEEKER' | 'EMPLOYER' | 'A
     method: 'GET',
     endpoint: `/${role.toLowerCase()}/notifications?${params.toString()}`,
     token,
+    signal,
   });
 }
 
