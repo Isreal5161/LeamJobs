@@ -96,7 +96,7 @@ function DashboardSidebar({
   return (
     <aside className={`dashboard-menu ${isOpen ? 'dashboard-menu--open' : 'dashboard-menu--closed'}`}>
       <div className="dashboard-menu__header">
-        <Logo className="dashboard-menu__brand" tagline="Career menu" />
+        <Logo className="dashboard-menu__brand" tagline={role === 'admin' ? undefined : 'Career menu'} />
         {role === 'admin' ? (
           <button
             type="button"
