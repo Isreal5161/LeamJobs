@@ -50,6 +50,7 @@ import { JobStoreProvider } from './context/JobStoreContext';
 import { SiteContentProvider } from './context/SiteContentContext';
 import SeekerPaymentsPage from './pages/seeker/PaymentsPage';
 import AdminPaymentsPage from './pages/admin/AdminPaymentsPage';
+import AdminContractsPage from './pages/admin/AdminContractsPage';
 import AdminSubscriptionsPage from './pages/admin/AdminSubscriptionsPage';
 import AdminUsersPage from './pages/admin/AdminUsersPage';
 import AdminCompaniesPage from './pages/admin/AdminCompaniesPage';
@@ -190,6 +191,7 @@ function App() {
             <Route path="seekers" element={<AdminSeekersPage />} />
             <Route path="analytics" element={<AdminAnalyticsPage />} />
             <Route path="payments" element={<AdminPaymentsPage />} />
+            <Route path="contracts" element={<AdminContractsPage />} />
             <Route path="subscriptions" element={<AdminSubscriptionsPage />} />
             <Route path="verifications" element={<AdminVerificationPage />} />
             <Route path="notifications" element={<NotificationsPage role="admin" />} />

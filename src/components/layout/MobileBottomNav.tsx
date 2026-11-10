@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import {
   FaBriefcase,
+  FaFileContract,
   FaBullhorn,
   FaBuilding,
   FaClipboardList,
@@ -28,6 +29,7 @@ import {
 
 const adminMobileIcons = {
   home: FaHome,
+  fileContract: FaFileContract,
   briefcase: FaBriefcase,
   flag: FaFlag,
   user: FaUser,

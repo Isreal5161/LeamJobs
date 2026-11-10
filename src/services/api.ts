@@ -2494,6 +2494,7 @@ export type ContractData = {
   completedAt?: string | null;
   endedAt?: string | null;
   cancelledAt?: string | null;
+  employerArchivedAt?: string | null;
   job: { id: string; title: string; description?: string; jobType?: string; engagementType?: string };
   application?: { id: string; status: string; createdAt: string } | null;
   employer: { id: string; firstName: string; lastName: string };
@@ -2522,6 +2523,7 @@ export type ContractData = {
     cancel: boolean;
     confirmCompletion: boolean;
     delete: boolean;
+    archive?: boolean;
   };
   freelance: {
     id: string;
@@ -2664,10 +2666,35 @@ export async function downloadContractWorkAttachment(
 }
 
 export type ContractResponse = { success: true; data: { contract: ContractData } };
+export type AdminContractListEscrow = Pick<
+  NonNullable<NonNullable<ContractData['freelance']>['escrow']>,
+  'id' | 'grossAmount' | 'fundedAmount' | 'releasedAmount' | 'refundedAmount' | 'currency' | 'status' | 'fundedAt' | 'releaseEligibleAt' | 'releasedAt' | 'cancelledAt'
+>;
+export type AdminContractListItem = Omit<ContractData, 'freelance'> & {
+  freelance: {
+    id: string;
+    agreedAmount: string;
+    currency: string;
+    workStatus: string;
+    escrow: AdminContractListEscrow | null;
+  } | null;
+};
 export type EmployerContractListResponse = {
   success: true;
   data: {
     contracts: ContractData[];
+    pagination: {
+      page: number;
+      limit: number;
+      total: number;
+      totalPages: number;
+    };
+  };
+};
+export type AdminContractListResponse = {
+  success: true;
+  data: {
+    contracts: AdminContractListItem[];
     pagination: {
       page: number;
       limit: number;
@@ -2723,6 +2750,41 @@ export function getEmployerContracts(
 
 export function getAdminContract(contractId: string, token: string) {
   return request<ContractResponse>({ method: 'GET', endpoint: `/admin/contracts/${encodeURIComponent(contractId)}`, token });
+}
+
+export function getAdminContracts(
+  token: string,
+  options: { page?: number; limit?: number; search?: string; status?: string; escrowStatus?: string; workStatus?: string } = {},
+) {
+  const query = new URLSearchParams();
+  if (options.page !== undefined) query.set('page', String(options.page));
+  if (options.limit !== undefined) query.set('limit', String(options.limit));
+  if (options.search?.trim()) query.set('search', options.search.trim());
+  if (options.status) query.set('status', options.status);
+  if (options.escrowStatus) query.set('escrowStatus', options.escrowStatus);
+  if (options.workStatus) query.set('workStatus', options.workStatus);
+  const search = query.toString();
+  return request<AdminContractListResponse>({
+    method: 'GET',
+    endpoint: `/admin/contracts${search ? `?${search}` : ''}`,
+    token,
+  });
+}
+
+export function cancelAdminContract(contractId: string, token: string) {
+  return request<ContractResponse>({
+    method: 'POST',
+    endpoint: `/admin/contracts/${encodeURIComponent(contractId)}/cancel`,
+    token,
+  });
+}
+
+export function archiveAdminContract(contractId: string, token: string) {
+  return request<{ success: true; data: { archived: boolean; alreadyArchived: boolean } }>({
+    method: 'POST',
+    endpoint: `/admin/contracts/${encodeURIComponent(contractId)}/archive`,
+    token,
+  });
 }
 
 export function initializeEmployerContractPayment(contractId: string, token: string, idempotencyKey: string) {

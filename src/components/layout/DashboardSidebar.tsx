@@ -2,11 +2,11 @@ import { NavLink } from 'react-router-dom';
 import Logo from './Logo';
 import {
   FaBriefcase,
+  FaFileContract,
   FaBuilding,
   FaClipboardList,
   FaComments,
   FaEdit,
-  FaFileContract,
   FaFilter,
   FaFlag,
   FaHome,
@@ -64,6 +64,7 @@ const sidebarLinks = {
 
 const adminIcons = {
   home: FaHome,
+  fileContract: FaFileContract,
   briefcase: FaBriefcase,
   flag: FaFlag,
   user: FaUser,

@@ -1,5 +1,5 @@
 import { FormEvent, useEffect, useRef, useState } from 'react';
-import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { useNavigate, useOutletContext, useParams, useSearchParams } from 'react-router-dom';
 import { FaArrowLeft, FaBriefcase, FaCheckCircle, FaComments, FaCreditCard, FaFileUpload, FaLock, FaSpinner, FaTimes } from 'react-icons/fa';
 import { useAuth } from '../../context/AuthContext';
 import AuthenticatedImage from '../../components/common/AuthenticatedImage';
@@ -35,6 +35,8 @@ import {
   getPendingFreelanceConfirmationAction,
   hasSuccessfulContractFundingPayment,
 } from '../../utils/contractFundingEligibility';
+import type { AdminPermissionState } from '../../utils/adminNavigation.js';
+import { canExecuteAdminContractOperation } from '../admin/adminContractsPermissions';
 
 type ContractPageProps = { role: 'EMPLOYER' | 'SEEKER' | 'ADMIN' };
 
@@ -156,6 +158,11 @@ const statusLabel = (contract: ContractData) => {
 function ContractPage({ role }: ContractPageProps) {
   const { contractId } = useParams();
   const { token, user } = useAuth();
+  const adminPermissionState = useOutletContext<AdminPermissionState | undefined>();
+  const canAdminFund = role === 'ADMIN'
+    && canExecuteAdminContractOperation(adminPermissionState, 'finance.contractFunding.execute');
+  const canAdminConfirmCompletion = role === 'ADMIN'
+    && canExecuteAdminContractOperation(adminPermissionState, 'contracts.complete');
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [contract, setContract] = useState<ContractData | null>(null);
@@ -287,7 +294,7 @@ function ContractPage({ role }: ContractPageProps) {
   }, [contractId, role, token]);
 
   const verifyReturnedPayment = async (id: string, reference: string | null) => {
-    if (!token || !contractId || isVerifyingReturn) return;
+    if (!token || !contractId || (role === 'ADMIN' && !canAdminFund) || isVerifyingReturn) return;
     setIsVerifyingReturn(true);
     setError('');
     setMessage('Verifying payment with the server...');
@@ -335,6 +342,7 @@ function ContractPage({ role }: ContractPageProps) {
 
   useEffect(() => {
     if ((role !== 'EMPLOYER' && role !== 'ADMIN') || !token || !contractId) return;
+    if (role === 'ADMIN' && !canAdminFund) return;
     if (!transactionId && (providerReference || returnStatus)) {
       setMessage('Payment has not been confirmed. A transaction reference was not returned, so payment status cannot be checked here.');
       const next = new URLSearchParams(searchParams);
@@ -348,10 +356,10 @@ function ContractPage({ role }: ContractPageProps) {
     if (autoVerificationKey.current === attemptKey) return;
     autoVerificationKey.current = attemptKey;
     void verifyReturnedPayment(transactionId, providerReference);
-  }, [contractId, providerReference, returnStatus, role, searchParams, setSearchParams, token, transactionId]);
+  }, [canAdminFund, contractId, providerReference, returnStatus, role, searchParams, setSearchParams, token, transactionId]);
 
   const fundContract = async () => {
-    if (!token || !contractId || isMutating) return;
+    if (!token || !contractId || (role === 'ADMIN' && !canAdminFund) || isMutating) return;
     setIsMutating(true);
     setError('');
     setShowFundingReview(false);
@@ -546,7 +554,7 @@ function ContractPage({ role }: ContractPageProps) {
   };
 
   const confirmCompletion = async () => {
-    if (!token || !contractId || isMutating) return;
+    if (!token || !contractId || (role === 'ADMIN' && !canAdminConfirmCompletion) || isMutating) return;
     setIsMutating(true);
     setError('');
     try {
@@ -625,7 +633,7 @@ function ContractPage({ role }: ContractPageProps) {
   });
   const hasCompletedFunding = alreadyFunded || isVerifiedFundedEscrow;
   const contractFundingEnabled = paymentCapabilities?.contractFundingEnabled === true;
-  const canShowFundingAction = canShowContractFundingAction({
+  const canShowFundingAction = (role !== 'ADMIN' || canAdminFund) && canShowContractFundingAction({
     role,
     contractType: contract.type,
     contractStatus: contract.status,
@@ -680,7 +688,7 @@ function ContractPage({ role }: ContractPageProps) {
 
   return (
     <main className="contract-page">
-      <button type="button" className="contract-back" onClick={() => navigate(role === 'EMPLOYER' ? '/employer/contracts' : role === 'ADMIN' ? `/admin/jobs/${contract?.job.id ?? ''}/applicants` : '/seeker/applications')}><FaArrowLeft /> {role === 'EMPLOYER' ? 'Back to My Contracts' : 'Back to applications'}</button>
+      <button type="button" className="contract-back" onClick={() => navigate(role === 'EMPLOYER' ? '/employer/contracts' : role === 'ADMIN' ? '/admin/contracts' : '/seeker/applications')}><FaArrowLeft /> {role === 'EMPLOYER' ? 'Back to My Contracts' : role === 'ADMIN' ? 'Back to Contracts' : 'Back to applications'}</button>
       <header className="contract-header"><div><span className="contract-eyebrow">{isContractJob ? 'Contract Job' : 'Freelance Project'}</span><h1>{contract.job.title}</h1><p>{role === 'EMPLOYER' ? `${isContractJob ? 'Securing this contract' : 'Funding this project'} for ${displayName(contract.seeker)}` : role === 'ADMIN' ? `${isContractJob ? 'Managing this contract' : 'Managing this project'} for ${displayName(contract.seeker)}` : `${isContractJob ? 'Contract Job with' : 'Project with'} ${displayName(contract.employer)}`}</p></div><span className={`contract-status contract-status--${(paymentNeedsReview ? 'review' : escrow?.status ?? contract.status).toLowerCase()}`}>{paymentNeedsReview ? escrowStatusLabel : statusLabel(contract)}</span></header>
       {contract.type === 'FREELANCE_PROJECT' && contract.status === 'PENDING' ? (
         <section className="contract-panel" aria-live="polite">
@@ -773,7 +781,7 @@ function ContractPage({ role }: ContractPageProps) {
       {message ? (
         <div className="contract-result-status">
           <p className="contract-message" role="status" aria-busy={isVerifyingReturn}>{isVerifyingReturn ? <FaSpinner className="contract-spin" aria-hidden="true" /> : null}{message}</p>
-          {transactionId && (role === 'EMPLOYER' || role === 'ADMIN') && !hasCompletedFunding ? (
+          {transactionId && (role === 'EMPLOYER' || (role === 'ADMIN' && canAdminFund)) && !hasCompletedFunding ? (
             <button
               type="button"
               className="button button--secondary contract-action contract-status-check"
@@ -925,7 +933,7 @@ function ContractPage({ role }: ContractPageProps) {
             </>
           ) : null}{(role === 'EMPLOYER' || role === 'ADMIN') && hasCompletedFunding && !isReleased ? <p className="contract-message">Payment already completed. This contract has already been funded.</p> : null}</article>
       </section>
-      <section className="contract-panel contract-workflow"><div className="contract-panel-heading"><FaFileUpload /><div><h2>Work completion</h2><p>{isReleased ? 'Funds have been released for this project.' : isReleaseEligible ? 'Completed - awaiting admin release.' : hasSubmitted ? 'Completion submitted - waiting for employer review.' : isFunded ? 'Funded - work can begin.' : 'Waiting for employer payment.'}</p></div></div>{role === 'SEEKER' && isFunded && !hasSubmitted ? <form onSubmit={submitCompletion}><label htmlFor="completion-note">Completion note</label><textarea id="completion-note" value={note} onChange={(event) => setNote(event.target.value)} maxLength={5000} placeholder="Tell the employer what you completed..." required /><button type="submit" className="button button--primary" disabled={isMutating || !note.trim()}>{isMutating ? 'Submitting...' : 'Submit Work'}</button></form> : null}{(role === 'EMPLOYER' && contract.availableActions?.confirmCompletion) || (role === 'ADMIN' && isFunded && hasSubmitted && !isReleaseEligible && !isReleased) ? <div className="contract-review"><p><strong>Work completed</strong><br />{freelance.completionNote || 'No completion note provided.'}</p><p className="contract-muted">Submitted {freelance.completionSubmittedAt ? new Date(freelance.completionSubmittedAt).toLocaleString() : ''}</p><button type="button" className="button button--primary" onClick={() => role === 'EMPLOYER' ? setShowCompletionConfirmation(true) : void confirmCompletion()} disabled={isMutating}><FaCheckCircle /> {isMutating ? 'Confirming...' : role === 'EMPLOYER' ? 'Confirm Work & Request Admin Review' : 'Confirm Completion'}</button></div> : null}</section>
+      <section className="contract-panel contract-workflow"><div className="contract-panel-heading"><FaFileUpload /><div><h2>Work completion</h2><p>{isReleased ? 'Funds have been released for this project.' : isReleaseEligible ? 'Completed - awaiting admin release.' : hasSubmitted ? 'Completion submitted - waiting for employer review.' : isFunded ? 'Funded - work can begin.' : 'Waiting for employer payment.'}</p></div></div>{role === 'SEEKER' && isFunded && !hasSubmitted ? <form onSubmit={submitCompletion}><label htmlFor="completion-note">Completion note</label><textarea id="completion-note" value={note} onChange={(event) => setNote(event.target.value)} maxLength={5000} placeholder="Tell the employer what you completed..." required /><button type="submit" className="button button--primary" disabled={isMutating || !note.trim()}>{isMutating ? 'Submitting...' : 'Submit Work'}</button></form> : null}{(role === 'EMPLOYER' && contract.availableActions?.confirmCompletion) || (role === 'ADMIN' && canAdminConfirmCompletion && isFunded && hasSubmitted && !isReleaseEligible && !isReleased) ? <div className="contract-review"><p><strong>Work completed</strong><br />{freelance.completionNote || 'No completion note provided.'}</p><p className="contract-muted">Submitted {freelance.completionSubmittedAt ? new Date(freelance.completionSubmittedAt).toLocaleString() : ''}</p><button type="button" className="button button--primary" onClick={() => role === 'EMPLOYER' ? setShowCompletionConfirmation(true) : void confirmCompletion()} disabled={isMutating}><FaCheckCircle /> {isMutating ? 'Confirming...' : role === 'EMPLOYER' ? 'Confirm Work & Request Admin Review' : 'Confirm Completion'}</button></div> : null}</section>
       {role === 'EMPLOYER' && showCompletionConfirmation ? (
         <div className="employer-contract-dialog-backdrop" role="presentation" onMouseDown={(event) => {
           if (event.target === event.currentTarget && !isMutating) setShowCompletionConfirmation(false);
