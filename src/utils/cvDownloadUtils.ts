@@ -10,6 +10,9 @@ import {
   TextRun,
 } from 'docx';
 import type { CVData, CVTemplateId } from '../components/cv-templates/CVTemplateRenderer';
+import { createCvFileName } from './cvFileName.js';
+
+export { createCvFileName } from './cvFileName.js';
 
 const A4_WIDTH_MM = 210;
 const A4_HEIGHT_MM = 297;
@@ -111,18 +114,6 @@ function sanitizeFileName(fileName: string): string {
     .slice(0, 120);
   const baseName = cleaned || 'resume';
   return /\.pdf$/i.test(baseName) ? baseName : `${baseName}.pdf`;
-}
-
-export function createCvFileName(name: string, extension: 'pdf' | 'docx' | 'txt'): string {
-  const baseName = name
-    .replace(/\.(pdf|docx)$/i, '')
-    .replace(/[<>:"/\\|?*\u0000-\u001f]/g, '')
-    .trim()
-    .replace(/\s+/g, '-')
-    .replace(/[. ]+$/g, '')
-    .replace(/^[. ]+/g, '')
-    .slice(0, 120) || 'resume';
-  return `${baseName}-CV.${extension}`;
 }
 
 function triggerBlobDownload(blob: Blob, fileName: string): void {

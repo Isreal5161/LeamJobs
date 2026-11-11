@@ -1635,6 +1635,14 @@ export function subscribeToJobUpdates(email: string) {
   });
 }
 
+export function confirmJobUpdatesSubscription(token: string) {
+  return request<{ success: true; data: { message: string } }>({
+    method: 'POST',
+    endpoint: '/jobs/job-updates/confirm',
+    body: { token },
+  });
+}
+
 export function unsubscribeFromJobUpdates(token: string) {
   return request<{ success: true; data: { message: string } }>({ method: 'GET', endpoint: `/jobs/job-updates/unsubscribe?token=${encodeURIComponent(token)}` });
 }

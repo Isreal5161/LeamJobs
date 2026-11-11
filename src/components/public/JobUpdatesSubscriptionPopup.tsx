@@ -77,8 +77,8 @@ function JobUpdatesSubscriptionPopup({ enabled = true }: JobUpdatesSubscriptionP
         {status === 'success' ? (
           <div className="job-updates-popup__success">
             <span className="job-updates-popup__success-icon"><FaCheck aria-hidden="true" /></span>
-            <h2 id="job-updates-popup-title">You're subscribed</h2>
-            <p id="job-updates-popup-description">You'll receive updates about new jobs from LeamJobs.</p>
+            <h2 id="job-updates-popup-title">Check your inbox</h2>
+            <p id="job-updates-popup-description">If confirmation is needed, check your inbox for a message from LeamJobs and confirm your email address.</p>
             <button type="button" className="job-updates-popup__button" onClick={closePopup}>Done</button>
           </div>
         ) : (
@@ -91,7 +91,7 @@ function JobUpdatesSubscriptionPopup({ enabled = true }: JobUpdatesSubscriptionP
               <input ref={emailRef} id="job-updates-popup-email" type="email" value={email} onChange={(event) => setEmail(event.target.value)} autoComplete="email" required />
               {error ? <p className="job-updates-popup__error" role="alert">{error}</p> : null}
               <button type="submit" className="job-updates-popup__button" disabled={status === 'submitting'}>
-                {status === 'submitting' ? 'Subscribing...' : 'Subscribe'}
+                {status === 'submitting' ? 'Submitting...' : 'Subscribe'}
               </button>
             </form>
             <small>You can unsubscribe at any time.</small>

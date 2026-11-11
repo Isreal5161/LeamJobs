@@ -5,73 +5,73 @@ import PublicLayout from './layouts/PublicLayout';
 import SeekerLayout from './layouts/SeekerLayout';
 import EmployerLayout from './layouts/EmployerLayout';
 import AdminLayout from './layouts/AdminLayout';
-import AboutPage from './pages/public/AboutPage';
-import CompaniesPage from './pages/public/CompaniesPage';
-import FeaturesPage from './pages/public/FeaturesPage';
-import HowItWorksPage from './pages/public/HowItWorksPage';
-import WelcomePage from './pages/public/WelcomePage';
-import NotFoundPage from './pages/public/NotFoundPage';
-import SignInPage from './pages/public/SignInPage';
-import SignUpPage from './pages/public/SignUpPage';
-import VerifyEmailPage from './pages/public/VerifyEmailPage';
-import JobDetailsPage from './pages/public/JobDetailsPage';
-import CompanyProfilePage from './pages/public/CompanyProfilePage';
-import Homepage from './pages/seeker/Homepage';
-import JobsPage from './pages/seeker/JobsPage';
-import ApplicationsPage from './pages/seeker/ApplicationsPage';
-import InterviewsPage from './pages/interviews/InterviewsPage';
-import ProfilePage from './pages/seeker/ProfilePage';
-import SubscriptionPage from './pages/seeker/SubscriptionPage';
-import SubscriptionPaymentResultPage from './pages/seeker/SubscriptionPaymentResultPage';
-import PremiumOverviewPage from './pages/seeker/PremiumOverviewPage';
-import SavedJobsPage from './pages/seeker/SavedJobsPage';
-import JobAlertsPage from './pages/seeker/JobAlertsPage';
-import PremiumInsightsPage from './pages/seeker/PremiumInsightsPage';
-import OnboardingPage from './pages/seeker/OnboardingPage';
-import EmployerDashboardPage from './pages/employer/EmployerDashboardPage';
-import EmployerJobsPage from './pages/employer/EmployerJobsPage';
-import EmployerApplicantsPage from './pages/employer/EmployerApplicantsPage';
-import EmployerCandidatesPage from './pages/employer/EmployerCandidatesPage';
-import EmployerProfilePage from './pages/employer/EmployerProfilePage';
-import EmployerVerificationPage from './pages/employer/EmployerVerificationPage';
-import EmployerContractsPage from './pages/employer/EmployerContractsPage';
-import MessagesPage from './pages/messages/MessagesPage';
-import AdminDashboardPage from './pages/admin/AdminDashboardPage';
-import AdminOverviewPage from './pages/admin/AdminOverviewPage';
-import AdminModerationPage from './pages/admin/AdminModerationPage';
-import AdminJobsPage from './pages/admin/AdminJobsPage';
-import AdminApplicantsPage from './pages/admin/AdminApplicantsPage';
-import AdminApplicantDetailPage from './pages/admin/AdminApplicantDetailPage';
-import AdminLoginPage from './pages/admin/AdminLoginPage';
-import AdminContentPage from './pages/admin/AdminContentPage';
-import AdminSeekersPage from './pages/admin/AdminSeekersPage';
-import AdminAnalyticsPage from './pages/admin/AdminAnalyticsPage';
 import { JobStoreProvider } from './context/JobStoreContext';
 import { SiteContentProvider } from './context/SiteContentContext';
-import SeekerPaymentsPage from './pages/seeker/PaymentsPage';
-import AdminPaymentsPage from './pages/admin/AdminPaymentsPage';
-import AdminWithdrawalsPage from './pages/admin/AdminWithdrawalsPage';
-import AdminContractsPage from './pages/admin/AdminContractsPage';
-import AdminSubscriptionsPage from './pages/admin/AdminSubscriptionsPage';
-import AdminUsersPage from './pages/admin/AdminUsersPage';
-import AdminCompaniesPage from './pages/admin/AdminCompaniesPage';
-import AdminFiltersPage from './pages/admin/AdminFiltersPage';
-import AdminRecommendationsPage from './pages/admin/AdminRecommendationsPage';
-import ContractPage from './pages/contracts/ContractPage';
 import { SubscriptionProvider } from './context/SubscriptionContext';
-import NotificationsPage from './pages/notifications/NotificationsPage';
-import ForgotPasswordPage from './pages/public/ForgotPasswordPage';
-import ResetPasswordPage from './pages/public/ResetPasswordPage';
-import SettingsPage from './pages/settings/EmailPreferencesPage';
-import PublicJobUpdatesUnsubscribePage from './pages/public/PublicJobUpdatesUnsubscribePage';
-import MarketingUnsubscribePage from './pages/public/MarketingUnsubscribePage';
-import AdminCommunicationsPage from './pages/admin/AdminCommunicationsPage';
-import AdminVerificationPage from './pages/admin/AdminVerificationPage';
-import PublicJobsPage from './pages/public/PublicJobsPage';
-import ContactPage from './pages/public/ContactPage';
-import LegalPage from './pages/public/LegalPage';
 import CookieConsentManager from './components/public/CookieConsentManager';
 import { applyPageMetadata, getPageMetadata } from './utils/seoMetadata';
+
+const AboutPage = lazy(() => import('./pages/public/AboutPage'));
+const CompaniesPage = lazy(() => import('./pages/public/CompaniesPage'));
+const FeaturesPage = lazy(() => import('./pages/public/FeaturesPage'));
+const HowItWorksPage = lazy(() => import('./pages/public/HowItWorksPage'));
+const WelcomePage = lazy(() => import('./pages/public/WelcomePage'));
+const NotFoundPage = lazy(() => import('./pages/public/NotFoundPage'));
+const SignInPage = lazy(() => import('./pages/public/SignInPage'));
+const SignUpPage = lazy(() => import('./pages/public/SignUpPage'));
+const VerifyEmailPage = lazy(() => import('./pages/public/VerifyEmailPage'));
+const JobDetailsPage = lazy(() => import('./pages/public/JobDetailsPage'));
+const CompanyProfilePage = lazy(() => import('./pages/public/CompanyProfilePage'));
+const Homepage = lazy(() => import('./pages/seeker/Homepage'));
+const JobsPage = lazy(() => import('./pages/seeker/JobsPage'));
+const ApplicationsPage = lazy(() => import('./pages/seeker/ApplicationsPage'));
+const InterviewsPage = lazy(() => import('./pages/interviews/InterviewsPage'));
+const ProfilePage = lazy(() => import('./pages/seeker/ProfilePage'));
+const SubscriptionPage = lazy(() => import('./pages/seeker/SubscriptionPage'));
+const SubscriptionPaymentResultPage = lazy(() => import('./pages/seeker/SubscriptionPaymentResultPage'));
+const PremiumOverviewPage = lazy(() => import('./pages/seeker/PremiumOverviewPage'));
+const SavedJobsPage = lazy(() => import('./pages/seeker/SavedJobsPage'));
+const JobAlertsPage = lazy(() => import('./pages/seeker/JobAlertsPage'));
+const PremiumInsightsPage = lazy(() => import('./pages/seeker/PremiumInsightsPage'));
+const OnboardingPage = lazy(() => import('./pages/seeker/OnboardingPage'));
+const EmployerDashboardPage = lazy(() => import('./pages/employer/EmployerDashboardPage'));
+const EmployerJobsPage = lazy(() => import('./pages/employer/EmployerJobsPage'));
+const EmployerApplicantsPage = lazy(() => import('./pages/employer/EmployerApplicantsPage'));
+const EmployerCandidatesPage = lazy(() => import('./pages/employer/EmployerCandidatesPage'));
+const EmployerProfilePage = lazy(() => import('./pages/employer/EmployerProfilePage'));
+const EmployerVerificationPage = lazy(() => import('./pages/employer/EmployerVerificationPage'));
+const EmployerContractsPage = lazy(() => import('./pages/employer/EmployerContractsPage'));
+const MessagesPage = lazy(() => import('./pages/messages/MessagesPage'));
+const AdminOverviewPage = lazy(() => import('./pages/admin/AdminOverviewPage'));
+const AdminModerationPage = lazy(() => import('./pages/admin/AdminModerationPage'));
+const AdminJobsPage = lazy(() => import('./pages/admin/AdminJobsPage'));
+const AdminApplicantsPage = lazy(() => import('./pages/admin/AdminApplicantsPage'));
+const AdminApplicantDetailPage = lazy(() => import('./pages/admin/AdminApplicantDetailPage'));
+const AdminLoginPage = lazy(() => import('./pages/admin/AdminLoginPage'));
+const AdminContentPage = lazy(() => import('./pages/admin/AdminContentPage'));
+const AdminSeekersPage = lazy(() => import('./pages/admin/AdminSeekersPage'));
+const AdminAnalyticsPage = lazy(() => import('./pages/admin/AdminAnalyticsPage'));
+const SeekerPaymentsPage = lazy(() => import('./pages/seeker/PaymentsPage'));
+const AdminPaymentsPage = lazy(() => import('./pages/admin/AdminPaymentsPage'));
+const AdminWithdrawalsPage = lazy(() => import('./pages/admin/AdminWithdrawalsPage'));
+const AdminContractsPage = lazy(() => import('./pages/admin/AdminContractsPage'));
+const AdminSubscriptionsPage = lazy(() => import('./pages/admin/AdminSubscriptionsPage'));
+const AdminUsersPage = lazy(() => import('./pages/admin/AdminUsersPage'));
+const AdminCompaniesPage = lazy(() => import('./pages/admin/AdminCompaniesPage'));
+const AdminFiltersPage = lazy(() => import('./pages/admin/AdminFiltersPage'));
+const AdminRecommendationsPage = lazy(() => import('./pages/admin/AdminRecommendationsPage'));
+const ContractPage = lazy(() => import('./pages/contracts/ContractPage'));
+const NotificationsPage = lazy(() => import('./pages/notifications/NotificationsPage'));
+const ForgotPasswordPage = lazy(() => import('./pages/public/ForgotPasswordPage'));
+const ResetPasswordPage = lazy(() => import('./pages/public/ResetPasswordPage'));
+const SettingsPage = lazy(() => import('./pages/settings/EmailPreferencesPage'));
+const PublicJobUpdatesUnsubscribePage = lazy(() => import('./pages/public/PublicJobUpdatesUnsubscribePage'));
+const MarketingUnsubscribePage = lazy(() => import('./pages/public/MarketingUnsubscribePage'));
+const AdminCommunicationsPage = lazy(() => import('./pages/admin/AdminCommunicationsPage'));
+const AdminVerificationPage = lazy(() => import('./pages/admin/AdminVerificationPage'));
+const PublicJobsPage = lazy(() => import('./pages/public/PublicJobsPage'));
+const ContactPage = lazy(() => import('./pages/public/ContactPage'));
+const LegalPage = lazy(() => import('./pages/public/LegalPage'));
 
 const AdminStaffPage = lazy(() => import('./pages/admin/AdminStaffPage'));
 const AdminInvitationAcceptancePage = lazy(() => import('./pages/admin/AdminInvitationAcceptancePage'));
@@ -94,7 +94,8 @@ function App() {
           <SubscriptionProvider>
         <RouteMetadataController />
         <CookieConsentManager />
-        <Routes>
+        <Suspense fallback={<div role="status">Loading page...</div>}>
+          <Routes>
           <Route path="/" element={<PublicLayout />}>
             <Route index element={<WelcomePage />} />
             <Route path="about" element={<AboutPage />} />
@@ -208,7 +209,8 @@ function App() {
             />
             <Route path="settings" element={<SettingsPage role="admin" />} />
           </Route>
-        </Routes>
+          </Routes>
+        </Suspense>
           </SubscriptionProvider>
       </SiteContentProvider>
     </JobStoreProvider>

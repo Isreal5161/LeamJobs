@@ -47,7 +47,7 @@ import {
   requestCvOptimizer,
   getAdvancedProfileStrength,
 } from '../../services/api';
-import { createCvFileName, downloadCVAsDOCX, downloadCVAsPDF, downloadCVAsText } from '../../utils/cvDownloadUtils';
+import { createCvFileName } from '../../utils/cvFileName.js';
 import {
   cvExportSectionLabels,
   getAvailableCvExportSections,
@@ -2335,6 +2335,7 @@ function ProfilePage({ mode }: ProfilePageProps) {
     setIsDownloadingCv(true);
     setCvExportError('');
     try {
+      const { downloadCVAsDOCX, downloadCVAsPDF, downloadCVAsText } = await import('../../utils/cvDownloadUtils');
       const fileName = profile.personalInfo.fullName || 'profile';
       if (cvExportFormat === 'pdf') {
         await downloadCVAsPDF('cv-download-export-container', fileName);

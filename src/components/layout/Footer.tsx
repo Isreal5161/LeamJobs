@@ -82,7 +82,7 @@ function Footer({ variant = 'full' }: FooterProps) {
           </div>
           {status ? <small role="status">{status}</small> : null}
           {error ? <small role="alert">{error}</small> : null}
-          <small>Optional job updates. You can unsubscribe at any time.</small>
+          <small>Optional job updates. Confirm your email from your inbox before receiving updates. You can unsubscribe at any time.</small>
         </form>
       </div>
 
