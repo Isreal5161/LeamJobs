@@ -87,6 +87,51 @@ function RouteMetadataController() {
   return null;
 }
 
+function PageLoadingSkeleton() {
+  return (
+    <div className="page-loading" role="status" aria-label="Loading page" aria-busy="true">
+      <header className="page-loading__header" aria-hidden="true">
+        <div className="container page-loading__header-inner">
+          <span className="leamjobs-skeleton-block page-loading__brand" />
+          <nav className="page-loading__nav">
+            {[1, 2, 3, 4].map((item) => (
+              <span className="leamjobs-skeleton-line" key={item} />
+            ))}
+          </nav>
+          <div className="page-loading__actions">
+            <span className="leamjobs-skeleton-block" />
+            <span className="leamjobs-skeleton-block" />
+          </div>
+        </div>
+      </header>
+      <main className="container page-loading__main" aria-hidden="true">
+        <section className="page-loading__hero">
+          <div className="page-loading__hero-copy">
+            <span className="leamjobs-skeleton-line page-loading__eyebrow" />
+            <span className="leamjobs-skeleton-line page-loading__title" />
+            <span className="leamjobs-skeleton-line page-loading__title page-loading__title--short" />
+            <span className="leamjobs-skeleton-line page-loading__description" />
+            <span className="leamjobs-skeleton-line page-loading__description page-loading__description--short" />
+            <span className="leamjobs-skeleton-block page-loading__button" />
+          </div>
+          <span className="leamjobs-skeleton-block page-loading__visual" />
+        </section>
+        <section className="page-loading__cards">
+          {[1, 2, 3].map((item) => (
+            <div className="leamjobs-skeleton-card page-loading__card" key={item}>
+              <span className="leamjobs-skeleton-block page-loading__card-icon" />
+              <span className="leamjobs-skeleton-line page-loading__card-title" />
+              <span className="leamjobs-skeleton-line page-loading__card-line" />
+              <span className="leamjobs-skeleton-line page-loading__card-line page-loading__card-line--short" />
+            </div>
+          ))}
+        </section>
+      </main>
+      <span className="page-loading__sr-only">Loading page...</span>
+    </div>
+  );
+}
+
 function App() {
   return (
     <JobStoreProvider>
@@ -94,7 +139,7 @@ function App() {
           <SubscriptionProvider>
         <RouteMetadataController />
         <CookieConsentManager />
-        <Suspense fallback={<div role="status">Loading page...</div>}>
+        <Suspense fallback={<PageLoadingSkeleton />}>
           <Routes>
           <Route path="/" element={<PublicLayout />}>
             <Route index element={<WelcomePage />} />
