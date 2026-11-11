@@ -1,0 +1,23 @@
+RewriteEngine On
+
+# Keep API requests outside the frontend SPA fallback.
+RewriteRule ^api(?:/|$) - [L]
+
+# Serve existing frontend files and directories without rewriting them.
+RewriteCond %{REQUEST_FILENAME} -f [OR]
+RewriteCond %{REQUEST_FILENAME} -d
+RewriteRule ^ - [L]
+
+# Send remaining frontend routes to the React application.
+RewriteRule ^ index.html [L]
+
+<IfModule mod_headers.c>
+  <FilesMatch "\.html$">
+    Header set Strict-Transport-Security "max-age=31536000"
+    Header set Content-Security-Policy-Report-Only "default-src 'self'; base-uri 'self'; object-src 'none'; script-src 'self'; script-src-elem 'self'; script-src-attr 'none'; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; img-src 'self' blob: https://images.unsplash.com; font-src 'self' https://cdnjs.cloudflare.com; connect-src 'self'; frame-src 'self' blob:; form-action 'self'; frame-ancestors 'self'; upgrade-insecure-requests"
+    Header set X-Content-Type-Options "nosniff"
+    Header set Referrer-Policy "strict-origin-when-cross-origin"
+    Header set X-Frame-Options "SAMEORIGIN"
+    Header set Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(self)"
+  </FilesMatch>
+</IfModule>
