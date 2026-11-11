@@ -1,11 +1,11 @@
-import { useEffect, useMemo, useState } from 'react';
-import { Link, useOutletContext } from 'react-router-dom';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { Link, useLocation, useOutletContext } from 'react-router-dom';
 import Button from '../../components/common/Button';
 import Input from '../../components/common/Input';
 import RecommendedJobs from '../../components/jobs/RecommendedJobs';
 import type { AuthRoleModalMode } from '../../components/public/HomeAuthRoleModal';
-import { FaArrowRight, FaBriefcase, FaBuilding, FaUsers, FaWifi, FaClock, FaPencilAlt, FaMapMarkerAlt, FaDollarSign, FaCode, FaBullhorn } from 'react-icons/fa';
-import { useSiteContent } from '../../context/SiteContentContext';
+import { FaArrowRight, FaWifi, FaClock, FaPencilAlt, FaMapMarkerAlt, FaDollarSign, FaCode, FaBullhorn } from 'react-icons/fa';
+import { useSiteContent, type SiteStat } from '../../context/SiteContentContext';
 import { useAuth } from '../../context/AuthContext';
 import { getPublicJobs, type SeekerDashboardJob } from '../../services/api';
 import { sortJobsByNewest } from '../../utils/jobSorting';
@@ -63,9 +63,201 @@ const mapJob = (job: SeekerDashboardJob) => {
   };
 };
 
+type ParsedStatValue = {
+  prefix: string;
+  suffix: string;
+  target: number;
+  decimals: number;
+  decimalSeparator: string;
+  groupSeparator: string;
+};
+
+function parseStatValue(value: string): ParsedStatValue | null {
+  const match = /^([^0-9]*)(\d[\d,.]*)(.*)$/.exec(value);
+  if (!match) return null;
+
+  const [, prefix, rawNumber, suffix] = match;
+  const lastComma = rawNumber.lastIndexOf(',');
+  const isCommaDecimal = !rawNumber.includes('.')
+    && lastComma >= 0
+    && rawNumber.length - lastComma - 1 !== 3;
+  const decimalSeparator = rawNumber.includes('.') ? '.' : isCommaDecimal ? ',' : '';
+  const normalizedNumber = isCommaDecimal
+    ? rawNumber.replace(',', '.')
+    : rawNumber.replaceAll(',', '');
+  const target = Number(normalizedNumber);
+
+  if (!Number.isFinite(target)) return null;
+
+  const decimals = decimalSeparator
+    ? normalizedNumber.split(decimalSeparator)[1]?.length ?? 0
+    : 0;
+
+  return {
+    prefix,
+    suffix,
+    target,
+    decimals,
+    decimalSeparator,
+    groupSeparator: rawNumber.includes(',') && !isCommaDecimal ? ',' : '',
+  };
+}
+
+function formatStatCount(value: number, parsed: ParsedStatValue): string {
+  const fixed = Math.max(0, value).toFixed(parsed.decimals);
+  const [whole, fraction] = fixed.split('.');
+  const groupedWhole = parsed.groupSeparator
+    ? whole.replace(/\B(?=(\d{3})+(?!\d))/g, parsed.groupSeparator)
+    : whole;
+  const formattedNumber = fraction === undefined
+    ? groupedWhole
+    : `${groupedWhole}${parsed.decimalSeparator}${fraction}`;
+
+  return `${parsed.prefix}${formattedNumber}${parsed.suffix}`;
+}
+
+function HeroStatItem({
+  stat,
+  index,
+  animate,
+}: {
+  stat: SiteStat;
+  index: number;
+  animate: boolean;
+}) {
+  const cardRef = useRef<HTMLDivElement>(null);
+  const parsedValue = useMemo(() => parseStatValue(stat.value), [stat.value]);
+  const [displayValue, setDisplayValue] = useState(stat.value);
+  const [hasEntered, setHasEntered] = useState(false);
+  const reducedMotionEnabled = typeof window !== 'undefined'
+    && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const initialValue = animate && parsedValue && !hasEntered && !reducedMotionEnabled
+    ? formatStatCount(0, parsedValue)
+    : displayValue;
+
+  useEffect(() => {
+    const card = cardRef.current;
+    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+    let observer: IntersectionObserver | undefined;
+    let animationFrame = 0;
+    let animationDelay = 0;
+    let isActive = true;
+    let isInViewport = false;
+
+    const showFinalValue = () => {
+      setHasEntered(true);
+      setDisplayValue(stat.value);
+    };
+
+    if (!animate) {
+      setDisplayValue(stat.value);
+      return undefined;
+    }
+
+    if (!card || !('IntersectionObserver' in window)) {
+      showFinalValue();
+      return undefined;
+    }
+
+    const cancelCount = () => {
+      window.cancelAnimationFrame(animationFrame);
+      window.clearTimeout(animationDelay);
+    };
+
+    const startCount = () => {
+      if (!parsedValue || !isActive) return;
+
+      const startTime = performance.now();
+      const duration = 1800;
+
+      const updateCount = (now: number) => {
+        if (!isActive) return;
+        const progress = Math.min((now - startTime) / duration, 1);
+        const easedProgress = 1 - ((1 - progress) ** 3);
+
+        if (progress === 1) {
+          setDisplayValue(stat.value);
+          return;
+        }
+
+        setDisplayValue(formatStatCount(parsedValue.target * easedProgress, parsedValue));
+        animationFrame = window.requestAnimationFrame(updateCount);
+      };
+
+      animationFrame = window.requestAnimationFrame(updateCount);
+    };
+
+    const startWhenReady = () => {
+      setHasEntered(true);
+      if (!parsedValue) {
+        setDisplayValue(stat.value);
+        return;
+      }
+
+      setDisplayValue(formatStatCount(0, parsedValue));
+      if (!reducedMotion.matches) {
+        animationDelay = window.setTimeout(startCount, index * 100);
+      }
+    };
+
+    const handleMotionChange = (event: MediaQueryListEvent) => {
+      cancelCount();
+      if (event.matches) {
+        showFinalValue();
+      } else if (isInViewport) {
+        startWhenReady();
+      }
+    };
+
+    reducedMotion.addEventListener('change', handleMotionChange);
+    if (reducedMotion.matches) showFinalValue();
+    observer = new IntersectionObserver((entries) => {
+      for (const entry of entries) {
+        if (!isActive || entry.target !== card || entry.isIntersecting === isInViewport) continue;
+        isInViewport = entry.isIntersecting;
+
+        if (isInViewport) {
+          if (reducedMotion.matches) showFinalValue();
+          else startWhenReady();
+        } else {
+          cancelCount();
+          if (reducedMotion.matches) showFinalValue();
+          else {
+            setHasEntered(false);
+            if (parsedValue) setDisplayValue(formatStatCount(0, parsedValue));
+            else setDisplayValue(stat.value);
+          }
+        }
+      }
+    }, { threshold: 0.25 });
+    observer.observe(card);
+
+    return () => {
+      isActive = false;
+      observer?.disconnect();
+      reducedMotion.removeEventListener('change', handleMotionChange);
+      cancelCount();
+    };
+  }, [animate, index, parsedValue, stat.value]);
+
+  return (
+    <div
+      ref={cardRef}
+      className={`hero__stat-card${animate && !hasEntered ? ' hero__stat-card--pending' : ''}${hasEntered ? ' hero__stat-card--entered' : ''}`}
+      style={{ transitionDelay: `${index * 100}ms` }}
+    >
+      <dl className="hero__stat-content">
+        <dt>{stat.label}</dt>
+        <dd aria-label={stat.value} aria-live="off">{initialValue}</dd>
+      </dl>
+    </div>
+  );
+}
+
 function WelcomePage() {
   const { openAuthRoleModal } = useOutletContext<WelcomePageContext>();
-  const { content } = useSiteContent();
+  const { content, hasLoadedContent } = useSiteContent();
+  const location = useLocation();
   const { user, isAuthenticated } = useAuth();
   const {
     heroTitle,
@@ -205,17 +397,16 @@ function WelcomePage() {
               {/* CTA buttons moved to bottom row for horizontal alignment with search */}
             </div>
 
-            <div className="hero__stats">
+            <section className="hero__stats" aria-label="LeamJobs platform statistics">
               {stats.map((stat, index) => (
-                <div key={stat.label} className="hero__stat-card">
-                  <span className="hero__stat-icon">{index === 0 ? <FaBriefcase /> : index === 1 ? <FaBuilding /> : <FaUsers />}</span>
-                  <div>
-                    <p>{stat.value}</p>
-                    <span>{stat.label}</span>
-                  </div>
-                </div>
+                <HeroStatItem
+                  key={`${location.key}:${stat.label}:${stat.value}`}
+                  stat={stat}
+                  index={index}
+                  animate={hasLoadedContent}
+                />
               ))}
-            </div>
+            </section>
           </div>
 
           <div className="hero__bottom">

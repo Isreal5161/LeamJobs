@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { FaChevronDown } from 'react-icons/fa';
 import JobCard, { RecommendedJob } from './JobCard';
 import { useJobStore } from '../../context/JobStoreContext';
@@ -31,9 +31,38 @@ function RecommendedJobs({ jobs }: { jobs?: RecommendedJob[] }) {
   const { visibleJobs } = useJobStore();
   const [sortOption, setSortOption] = useState<SortOption>('newest');
   const [savedIds, setSavedIds] = useState<string[]>([]);
+  const listRef = useRef<HTMLDivElement>(null);
 
   const jobsToDisplay = jobs ?? visibleJobs;
   const sortedJobs = useMemo(() => sortJobs(jobsToDisplay, sortOption), [jobsToDisplay, sortOption]);
+
+  useEffect(() => {
+    const cards = listRef.current?.querySelectorAll<HTMLElement>('.job-card--pending');
+    if (!cards?.length) return undefined;
+
+    const showCards = () => cards.forEach((card) => {
+      card.classList.remove('job-card--pending');
+      card.classList.add('job-card--visible');
+    });
+
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches || !('IntersectionObserver' in window)) {
+      showCards();
+      return undefined;
+    }
+
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (!entry.isIntersecting) return;
+        const card = entry.target as HTMLElement;
+        card.classList.remove('job-card--pending');
+        card.classList.add('job-card--visible');
+        observer.unobserve(card);
+      });
+    }, { threshold: 0.12 });
+
+    cards.forEach((card) => observer.observe(card));
+    return () => observer.disconnect();
+  }, [sortedJobs]);
 
   const handleBookmarkToggle = (jobId: string) => {
     setSavedIds((current) =>
@@ -73,11 +102,12 @@ function RecommendedJobs({ jobs }: { jobs?: RecommendedJob[] }) {
         </div>
       </div>
 
-      <div className="recommended-jobs__list">
-        {sortedJobs.map((job) => (
+      <div className="recommended-jobs__list" ref={listRef}>
+        {sortedJobs.map((job, index) => (
           <JobCard
             key={job.id}
             {...job}
+            entranceIndex={index}
             saved={savedIds.includes(job.id)}
             onToggleBookmark={() => handleBookmarkToggle(job.id)}
             onApply={() => handleApply(job.company, job.role)}

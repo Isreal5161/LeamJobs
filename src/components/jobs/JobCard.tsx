@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import type { CSSProperties } from 'react';
 import CompanyLogo from './CompanyLogo';
 import BookmarkButton from '../common/BookmarkButton';
 import type { PublicJob } from '../../data/jobData';
@@ -18,6 +19,7 @@ type JobCardProps = {
   workType: string;
   level: string;
   description: string;
+  entranceIndex: number;
   saved?: boolean;
   onToggleBookmark?: () => void;
   onApply?: () => void;
@@ -46,13 +48,16 @@ function JobCard({
   workType,
   level,
   description,
+  entranceIndex,
   saved = false,
   onToggleBookmark,
   onApply,
   onViewDetails,
 }: JobCardProps) {
+  const revealStyle = { '--job-card-delay': `${Math.min(entranceIndex, 4) * 70}ms` } as CSSProperties;
+
   return (
-    <article className="job-card">
+    <article className="job-card job-card--pending" style={revealStyle}>
       <div className="job-card__inner">
         <div className="job-card__logo-column">
           <CompanyLogo company={company} logoUrl={logoUrl} logoText={logoText} logoClass={logoClass} />

@@ -266,6 +266,7 @@ export const initialSiteContent: SiteContent = {
 type SiteContentContextValue = {
   content: SiteContent;
   isLoading: boolean;
+  hasLoadedContent: boolean;
   updatePage: <K extends SitePageKey>(pageKey: K, updater: (current: SiteContent[K]) => SiteContent[K]) => void;
   setPageField: <K extends SitePageKey>(pageKey: K, field: keyof SiteContent[K], value: SiteContent[K][keyof SiteContent[K]]) => void;
 };
@@ -275,6 +276,7 @@ const SiteContentContext = createContext<SiteContentContextValue | undefined>(un
 export function SiteContentProvider({ children }: { children: ReactNode }) {
   const [content, setContent] = useState<SiteContent>(initialSiteContent);
   const [isLoading, setIsLoading] = useState(true);
+  const [hasLoadedContent, setHasLoadedContent] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -288,6 +290,7 @@ export function SiteContentProvider({ children }: { children: ReactNode }) {
           ...current,
           ...Object.fromEntries(Object.entries(result.data.data.content).map(([key, value]) => [key, { ...current[key as SitePageKey], ...(value as Partial<SiteContent[SitePageKey]>) }])) as Partial<SiteContent>,
         }));
+        setHasLoadedContent(true);
       }
 
       setIsLoading(false);
@@ -301,6 +304,7 @@ export function SiteContentProvider({ children }: { children: ReactNode }) {
   const value = useMemo<SiteContentContextValue>(() => ({
     content,
     isLoading,
+    hasLoadedContent,
     updatePage: (pageKey, updater) => {
       setContent((current) => ({
         ...current,
@@ -316,7 +320,7 @@ export function SiteContentProvider({ children }: { children: ReactNode }) {
         },
       }));
     },
-  }), [content, isLoading]);
+  }), [content, hasLoadedContent, isLoading]);
 
   return <SiteContentContext.Provider value={value}>{children}</SiteContentContext.Provider>;
 }
