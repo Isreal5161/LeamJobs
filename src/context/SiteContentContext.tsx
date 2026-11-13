@@ -106,7 +106,7 @@ export const initialSiteContent: SiteContent = {
   welcome: {
     heroTitle: 'Find a job that actually fits you.',
     heroSubtitle: 'Smart matching, better opportunities, and tools to help you grow your career.',
-    primaryCta: 'Create free account',
+    primaryCta: 'Build your profile',
     secondaryCta: 'Sign in',
     employerCta: 'Post a job',
     filterTitle: 'Filters',
@@ -286,10 +286,23 @@ export function SiteContentProvider({ children }: { children: ReactNode }) {
       if (!active) return;
 
       if (result.ok) {
-        setContent((current) => ({
-          ...current,
-          ...Object.fromEntries(Object.entries(result.data.data.content).map(([key, value]) => [key, { ...current[key as SitePageKey], ...(value as Partial<SiteContent[SitePageKey]>) }])) as Partial<SiteContent>,
-        }));
+        setContent((current) => {
+          const fetchedContent = Object.fromEntries(
+            Object.entries(result.data.data.content).map(([key, value]) => [
+              key,
+              { ...current[key as SitePageKey], ...(value as Partial<SiteContent[SitePageKey]>) },
+            ]),
+          ) as Partial<SiteContent>;
+
+          if (fetchedContent.welcome?.primaryCta === 'Create free account') {
+            fetchedContent.welcome = {
+              ...fetchedContent.welcome,
+              primaryCta: initialSiteContent.welcome.primaryCta,
+            };
+          }
+
+          return { ...current, ...fetchedContent };
+        });
         setHasLoadedContent(true);
       }
 
