@@ -48,6 +48,11 @@
 .public-layout .site-footer__subscribe button {
   background: var(--primary);
   color: #FFFFFF;
+  padding: 0 0.7rem;
+  font-size: 0.75rem;
+  line-height: 1.2;
+  text-decoration: none;
+  white-space: nowrap;
 }
 
 .public-layout .site-footer__subscribe button:hover,
