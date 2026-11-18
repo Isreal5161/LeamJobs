@@ -3,6 +3,7 @@ import BookmarkButton from '../common/BookmarkButton';
 import CompanyLogo from './CompanyLogo';
 import type { RecommendedJob } from './JobCard';
 import type { SeekerJobListItem } from '../../services/api';
+import { formatJobCompensation } from '../../utils/formatJobCompensation';
 
 type SeekerJobCardProps = {
   job: RecommendedJob | SeekerJobListItem;
@@ -32,6 +33,9 @@ function SeekerJobCard({ job, saved = false, listing = false, onToggleBookmark, 
           ? `${job.compensation.currency} ${job.compensation.salaryMin ?? '-'} - ${job.compensation.salaryMax ?? '-'}`
           : 'Compensation not specified'
     : job.salary;
+  const formattedCompensation = compensation === 'Compensation not specified'
+    ? compensation
+    : formatJobCompensation(compensation);
   const deadline = isBackendJob && job.applicationDeadline
     ? `Apply by ${new Intl.DateTimeFormat(undefined, { dateStyle: 'medium' }).format(new Date(job.applicationDeadline))}`
     : null;
@@ -49,7 +53,7 @@ function SeekerJobCard({ job, saved = false, listing = false, onToggleBookmark, 
           <h3>{title}</h3>
           <h4>{company}</h4>
           <div className="seeker-job-card__metadata">
-            <span className="seeker-job-card__compensation">{compensation}</span>
+            <span className="seeker-job-card__compensation">{formattedCompensation}</span>
             <span>{location}</span>
             {deadline && <span>{deadline}</span>}
           </div>

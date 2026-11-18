@@ -2046,8 +2046,9 @@
 }
 
 .jobs-section .job-card__salary {
-  color: #176b52;
-  font-weight: 700;
+  color: var(--brand-primary-active);
+  font-size: 0.88rem;
+  font-weight: 800;
 }
 
 .jobs-section .job-card__actions {
@@ -2111,6 +2112,10 @@
   .jobs-section .job-card__meta {
     font-size: 0.76rem;
     line-height: 1.4;
+  }
+
+  .jobs-section .job-card__salary {
+    font-size: 0.8rem;
   }
 
   .jobs-section .job-card__actions {

@@ -3,6 +3,7 @@ import type { CSSProperties } from 'react';
 import CompanyLogo from './CompanyLogo';
 import BookmarkButton from '../common/BookmarkButton';
 import type { PublicJob } from '../../data/jobData';
+import { formatJobCompensation } from '../../utils/formatJobCompensation';
 
 type JobCardProps = {
   id: string;
@@ -27,11 +28,6 @@ type JobCardProps = {
 };
 
 export type RecommendedJob = PublicJob;
-
-const formatSalary = (salary: string) => salary.replace(/\d+(?:\.\d+)?/g, (amount) => {
-  const value = Number(amount);
-  return Number.isFinite(value) ? new Intl.NumberFormat('en-NG', { maximumFractionDigits: 2 }).format(value) : amount;
-});
 
 function JobCard({
   id,
@@ -71,7 +67,7 @@ function JobCard({
             {featured && <span className="job-card__featured">Featured</span>}
           </div>
           <h3 className="job-card__role">{role}</h3>
-          <p className="job-card__meta"><strong className="job-card__salary">{formatSalary(salary)}</strong> · {location} · {workArrangement}</p>
+          <p className="job-card__meta"><strong className="job-card__salary">{formatJobCompensation(salary)}</strong> · {location} · {workArrangement}</p>
         </div>
 
         <div className="job-card__actions">
