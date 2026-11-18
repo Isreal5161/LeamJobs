@@ -126,7 +126,7 @@
 }
 
 .public-layout--welcome .job-card__salary {
-  color: var(--brand-primary-active);
+  color: var(--brand-secondary);
   font-size: 0.88rem;
   font-weight: 800;
 }
