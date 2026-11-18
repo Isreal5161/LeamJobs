@@ -1,10 +1,10 @@
-import { FormEvent, useState } from 'react';
+import { FormEvent, useEffect, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import Button from '../../components/common/Button';
 import Input from '../../components/common/Input';
 import { request } from '../../services/api';
 import { LEGAL_REGISTRATION_ACCEPTANCE, TERMS_POLICY_VERSION, PRIVACY_POLICY_VERSION } from '../../utils/legalVersions';
-import { FaBriefcase, FaBuilding, FaCheck, FaEnvelope, FaEye, FaEyeSlash, FaGoogle, FaLock, FaUser } from 'react-icons/fa';
+import { FaBriefcase, FaBuilding, FaCheck, FaEnvelope, FaExclamationCircle, FaEye, FaEyeSlash, FaGoogle, FaLock, FaTimes, FaUser } from 'react-icons/fa';
 
 type AuthRole = 'seeker' | 'employer';
 
@@ -86,8 +86,9 @@ const getPasswordError = (password: string) => {
 
 function SignUpPage({ role = 'seeker' }: SignUpPageProps) {
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const content = authContent[role];
+  const [showOAuthConflict, setShowOAuthConflict] = useState(false);
   const [form, setForm] = useState<RegistrationForm>({
     fullName: '',
     email: searchParams.get('email')?.trim() ?? '',
@@ -102,6 +103,15 @@ function SignUpPage({ role = 'seeker' }: SignUpPageProps) {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [errors, setErrors] = useState<RegistrationErrors>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (searchParams.get('oauth_error') !== 'email_already_registered') return;
+
+    setShowOAuthConflict(true);
+    const cleanedSearchParams = new URLSearchParams(searchParams);
+    cleanedSearchParams.delete('oauth_error');
+    setSearchParams(cleanedSearchParams, { replace: true });
+  }, [searchParams, setSearchParams]);
 
   const setField = <Field extends keyof RegistrationForm>(field: Field, value: RegistrationForm[Field]) => {
     setForm((current) => ({ ...current, [field]: value }));
@@ -227,6 +237,25 @@ function SignUpPage({ role = 'seeker' }: SignUpPageProps) {
             <span>{content.headingLabel}</span>
             <h2>{content.heading}</h2>
           </div>
+
+          {showOAuthConflict ? (
+            <div className="auth-oauth-conflict" role="alert" aria-live="assertive">
+              <span className="auth-oauth-conflict__icon" aria-hidden="true"><FaExclamationCircle /></span>
+              <div className="auth-oauth-conflict__content">
+                <strong>This email is already registered</strong>
+                <p>This email is already associated with a LeamJobs account. Please sign in to link Google or use a different email.</p>
+                <Link to="/login">Go to sign in</Link>
+              </div>
+              <button
+                type="button"
+                className="auth-oauth-conflict__dismiss"
+                aria-label="Dismiss notification"
+                onClick={() => setShowOAuthConflict(false)}
+              >
+                <FaTimes aria-hidden="true" />
+              </button>
+            </div>
+          ) : null}
 
           {(errors.terms || errors.privacy) ? <p role="alert">Accept both linked policies before continuing with Google.</p> : null}
           <button type="button" className="auth-social-button auth-social-button--full" onClick={handleGoogleSignup}>
