@@ -345,6 +345,11 @@ export type EmployerProfilePayload = {
   phone?: string | null;
 };
 
+export type EmployerProfileCompletionPayload = {
+  companyName: string;
+  phone: string;
+};
+
 export type EmployerJob = {
   id: string;
   employerId: string;
@@ -1284,6 +1289,10 @@ export function updateEmployerProfile(payload: EmployerProfilePayload, token: st
   return request<EmployerProfileResponse>({ method: 'PATCH', endpoint: '/employer/profile', body: payload, token });
 }
 
+export function completeEmployerProfile(payload: EmployerProfileCompletionPayload, token: string) {
+  return request<EmployerProfileResponse>({ method: 'PUT', endpoint: '/employer/profile/complete', body: payload, token });
+}
+
 export function getEmployerJobs(token: string, page = 1, limit = 20) {
   return request<EmployerJobsResponse>({ method: 'GET', endpoint: `/employer/jobs?page=${page}&limit=${limit}`, token });
 }
@@ -1588,8 +1597,6 @@ export function logoutAuthSession(token: string) {
 export type GoogleRegistrationCompletion = {
   pendingId: string;
   email: string;
-  companyName?: string;
-  phone?: string;
 };
 
 export function completeGoogleRegistration(completion: GoogleRegistrationCompletion) {

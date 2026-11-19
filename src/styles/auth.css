@@ -652,3 +652,140 @@
     gap: 0.5rem;
   }
 }
+
+.auth-page--verify-email {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: clamp(32rem, 68vh, 45rem);
+  padding: clamp(2rem, 6vh, 4rem) 0;
+}
+
+.auth-shell--verify-email {
+  display: block;
+  width: min(100%, 35rem);
+  min-height: 0;
+  margin: 0 auto;
+  border: 1px solid rgba(15, 23, 42, 0.09);
+  border-radius: 1.5rem;
+  background: #ffffff;
+  box-shadow: 0 24px 64px rgba(15, 23, 42, 0.1);
+}
+
+.auth-panel--verify-email {
+  align-items: stretch;
+  padding: clamp(1.75rem, 5vw, 3rem);
+}
+
+.auth-verify-icon {
+  display: grid;
+  place-items: center;
+  width: 3.75rem;
+  height: 3.75rem;
+  margin: 0 auto 1.25rem;
+  border: 1px solid rgba(191, 56, 38, 0.14);
+  border-radius: 1.2rem;
+  background: #fff4f1;
+  color: var(--brand-primary-active);
+  font-size: 1.45rem;
+}
+
+.auth-page--verify-email .auth-form-heading {
+  margin-bottom: 1.75rem;
+  text-align: center;
+}
+
+.auth-page--verify-email .auth-form-heading span {
+  letter-spacing: 0.08em;
+}
+
+.auth-verify-title {
+  margin: 0.55rem 0 0;
+  color: #0f172a;
+  font-size: clamp(1.65rem, 4vw, 2.15rem);
+  line-height: 1.2;
+  letter-spacing: -0.035em;
+}
+
+.auth-page--verify-email .auth-form-heading p {
+  max-width: 28rem;
+  margin: 0.75rem auto 0;
+  color: #64748b;
+  font-size: 0.98rem;
+  line-height: 1.6;
+}
+
+.auth-page--verify-email .auth-field {
+  margin-bottom: 0.85rem;
+}
+
+.auth-page--verify-email .auth-input-wrap--readonly {
+  display: flex;
+  align-items: center;
+  min-height: 3.25rem;
+  padding: 0.75rem 1rem 0.75rem 2.8rem;
+  border: 1px solid #dbe3ee;
+  border-radius: 0.8rem;
+  background: #f8fafc;
+  color: #1e293b;
+  font-size: 0.95rem;
+  font-weight: 650;
+  overflow-wrap: anywhere;
+}
+
+.auth-page--verify-email .auth-input-wrap--readonly svg {
+  left: 1rem;
+  color: #64748b;
+}
+
+.auth-page--verify-email .auth-code-inputs {
+  margin-inline: auto;
+}
+
+.auth-page--verify-email .auth-feedback {
+  margin: 0 0 1rem;
+  padding: 0.85rem 1rem;
+  border: 1px solid transparent;
+  border-radius: 0.8rem;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.auth-page--verify-email .auth-feedback--success {
+  border-color: #bbf7d0;
+  background: #f0fdf4;
+  color: #166534;
+}
+
+.auth-page--verify-email .auth-feedback--error {
+  border-color: #fecaca;
+  background: #fef2f2;
+  color: #991b1b;
+}
+
+.auth-page--verify-email .auth-secondary-actions {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.35rem;
+  margin-top: 0.85rem;
+}
+
+.auth-page--verify-email .auth-secondary-actions__signin {
+  min-height: 2.5rem;
+  padding: 0.45rem 0.75rem;
+}
+
+@media (max-width: 767px) {
+  .auth-page--verify-email {
+    min-height: 0;
+    padding: 1.25rem 0.75rem;
+  }
+
+  .auth-shell--verify-email {
+    width: 100%;
+    border-radius: 1.15rem;
+  }
+
+  .auth-panel--verify-email {
+    padding: 1.65rem 1.15rem;
+  }
+}

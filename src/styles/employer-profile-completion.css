@@ -1,0 +1,183 @@
+.employer-profile-completion {
+  width: min(100% - 2rem, 34rem);
+  max-height: min(90dvh, 48rem);
+  overflow: auto;
+  padding: clamp(1.25rem, 5vw, 2rem);
+  border: 1px solid color-mix(in srgb, var(--brand-secondary) 14%, #ffffff);
+  border-radius: 1.1rem;
+  background: #ffffff;
+  color: #0f172a;
+  box-shadow: 0 28px 80px rgb(15 23 42 / 28%);
+}
+
+.employer-profile-completion::backdrop {
+  background: rgb(15 23 42 / 62%);
+  backdrop-filter: blur(4px);
+}
+
+.employer-profile-completion__brand-mark {
+  display: grid;
+  place-items: center;
+  width: 3rem;
+  height: 3rem;
+  margin-bottom: 1rem;
+  border-radius: .85rem;
+  background: var(--brand-secondary-light);
+  color: var(--brand-secondary);
+  font-size: 1.2rem;
+}
+
+.employer-profile-completion__eyebrow {
+  color: var(--brand-secondary);
+  font-size: .72rem;
+  font-weight: 800;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.employer-profile-completion h2 {
+  margin: .35rem 2rem .55rem 0;
+  font-size: clamp(1.35rem, 4vw, 1.75rem);
+  line-height: 1.2;
+}
+
+.employer-profile-completion > p {
+  margin: 0 0 1.3rem;
+  color: #64748b;
+  line-height: 1.55;
+}
+
+.employer-profile-completion__form {
+  display: grid;
+  gap: .55rem;
+}
+
+.employer-profile-completion__form label {
+  margin-top: .35rem;
+  color: #334155;
+  font-size: .88rem;
+  font-weight: 700;
+}
+
+.employer-profile-completion__input-wrap {
+  display: flex;
+  align-items: center;
+  gap: .7rem;
+  min-height: 3rem;
+  padding: 0 .85rem;
+  border: 1px solid #d5deea;
+  border-radius: .65rem;
+  background: #fff;
+  color: var(--brand-secondary);
+}
+
+.employer-profile-completion__input-wrap:focus-within {
+  border-color: var(--brand-secondary);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand-secondary) 17%, transparent);
+}
+
+.employer-profile-completion__input-wrap input {
+  width: 100%;
+  min-width: 0;
+  height: 2.85rem;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: #0f172a;
+  font: inherit;
+}
+
+.employer-profile-completion__form small {
+  color: #b91c1c;
+  font-size: .8rem;
+}
+
+.employer-profile-completion__error {
+  margin: .25rem 0 0;
+  color: #b91c1c;
+  font-size: .88rem;
+}
+
+.employer-profile-completion__submit {
+  min-height: 3rem;
+  margin-top: .85rem;
+  border: 0;
+  border-radius: .65rem;
+  background: var(--brand-primary-active);
+  color: #fff;
+  font: inherit;
+  font-weight: 750;
+  cursor: pointer;
+}
+
+.employer-profile-completion__submit:hover:not(:disabled) {
+  background: var(--brand-primary-hover);
+}
+
+.employer-profile-completion__submit:disabled {
+  cursor: wait;
+  opacity: .7;
+}
+
+.employer-profile-completion__success {
+  display: flex;
+  align-items: flex-start;
+  gap: .7rem;
+  padding: .95rem;
+  border: 1px solid #bbf7d0;
+  border-radius: .7rem;
+  background: #f0fdf4;
+  color: #166534;
+  font-weight: 650;
+  line-height: 1.5;
+}
+
+.employer-profile-completion-check {
+  position: fixed;
+  inset: 0;
+  z-index: 1250;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  background: rgb(15 23 42 / 62%);
+  color: #0f172a;
+}
+
+.employer-profile-completion-check > div,
+.employer-profile-completion-check:not([role="status"]) {
+  text-align: center;
+}
+
+.employer-profile-completion-check > div {
+  width: min(100%, 30rem);
+  padding: 1.5rem;
+  border-radius: .9rem;
+  background: #fff;
+  box-shadow: 0 24px 70px rgb(15 23 42 / 25%);
+}
+
+.employer-profile-completion-check p {
+  color: #64748b;
+  line-height: 1.5;
+}
+
+.employer-profile-completion-check button {
+  min-height: 2.7rem;
+  padding: 0 1rem;
+  border: 0;
+  border-radius: .6rem;
+  background: var(--brand-secondary);
+  color: #fff;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+@media (max-width: 480px) {
+  .employer-profile-completion {
+    width: calc(100% - 1rem);
+    max-height: calc(100dvh - 1rem);
+    padding: 1.1rem;
+    border-radius: .85rem;
+  }
+}
