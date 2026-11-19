@@ -127,9 +127,10 @@
 }
 
 .auth-profile-preview__icon {
-  display: inline-flex;
+  display: flex;
   align-items: center;
   justify-content: center;
+  flex: 0 0 46px;
   width: 46px;
   height: 46px;
   border-radius: 8px;
@@ -137,8 +138,8 @@
   color: #ffffff;
 }
 
-.auth-profile-preview strong,
-.auth-profile-preview span {
+.auth-profile-preview > div > strong,
+.auth-profile-preview > div > span {
   display: block;
 }
 
