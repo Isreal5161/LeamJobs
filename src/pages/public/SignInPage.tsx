@@ -5,7 +5,8 @@ import Input from '../../components/common/Input';
 import { useAuth } from '../../context/AuthContext';
 import { API_BASE_URL } from '../../services/api';
 import { getUserFacingError } from '../../utils/userFacingError';
-import { FaApple, FaCheck, FaEnvelope, FaEye, FaEyeSlash, FaGoogle, FaLock } from 'react-icons/fa';
+import GoogleGMark from '../../components/common/GoogleGMark';
+import { FaCheck, FaEnvelope, FaEye, FaEyeSlash, FaLock } from 'react-icons/fa';
 
 type AuthRole = 'seeker' | 'employer';
 
@@ -159,21 +160,15 @@ function SignInPage({ role = 'seeker' }: SignInPageProps) {
             <h2>{content.heading}</h2>
           </div>
 
-          <div className="auth-social-grid">
-            <button
-              type="button"
-              className="auth-social-button"
-              onClick={handleGoogleSignIn}
-              disabled={isStartingGoogleSignIn || isSubmitting || isAuthLoading}
-            >
-              <FaGoogle />
-              {isStartingGoogleSignIn ? 'Connecting to Google...' : 'Google'}
-            </button>
-            <button type="button" className="auth-social-button">
-              <FaApple />
-              Apple
-            </button>
-          </div>
+          <button
+            type="button"
+            className="auth-social-button"
+            onClick={handleGoogleSignIn}
+            disabled={isStartingGoogleSignIn || isSubmitting || isAuthLoading}
+          >
+            <GoogleGMark />
+            {isStartingGoogleSignIn ? 'Connecting to Google...' : 'Continue with Google'}
+          </button>
 
           <div className="auth-divider">
             <span>or continue with email</span>

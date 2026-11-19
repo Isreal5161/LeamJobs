@@ -4,7 +4,8 @@ import Button from '../../components/common/Button';
 import Input from '../../components/common/Input';
 import { request } from '../../services/api';
 import { LEGAL_REGISTRATION_ACCEPTANCE, TERMS_POLICY_VERSION, PRIVACY_POLICY_VERSION } from '../../utils/legalVersions';
-import { FaBriefcase, FaBuilding, FaCheck, FaEnvelope, FaExclamationCircle, FaEye, FaEyeSlash, FaGoogle, FaLock, FaTimes, FaUser } from 'react-icons/fa';
+import GoogleGMark from '../../components/common/GoogleGMark';
+import { FaBriefcase, FaBuilding, FaCheck, FaEnvelope, FaExclamationCircle, FaEye, FaEyeSlash, FaLock, FaTimes, FaUser } from 'react-icons/fa';
 
 type AuthRole = 'seeker' | 'employer';
 
@@ -258,8 +259,8 @@ function SignUpPage({ role = 'seeker' }: SignUpPageProps) {
           ) : null}
 
           {(errors.terms || errors.privacy) ? <p role="alert">Accept both linked policies before continuing with Google.</p> : null}
-          <button type="button" className="auth-social-button auth-social-button--full" onClick={handleGoogleSignup}>
-            <FaGoogle />
+          <button type="button" className="auth-social-button" onClick={handleGoogleSignup}>
+            <GoogleGMark />
             Continue with Google
           </button>
 
