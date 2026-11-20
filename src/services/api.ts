@@ -274,7 +274,7 @@ export type EmployerDashboardData = {
     openRoles: number;
     newApplicants: number;
     interviews: number;
-    averageMatchScore: number | null;
+    totalApplicants: number;
   };
   pipeline: {
     applied: number;

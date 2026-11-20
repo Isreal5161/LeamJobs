@@ -8,7 +8,7 @@ import {
   FaEdit,
   FaEye,
   FaPlus,
-  FaStar,
+  FaUserPlus,
   FaUsers,
 } from 'react-icons/fa';
 import ApplicantAvatar from '../../components/employer/ApplicantAvatar';
@@ -186,9 +186,9 @@ function EmployerDashboardPage() {
 
   const stats = [
     { label: 'Open roles', value: String(dashboard.stats.openRoles), icon: <FaBriefcase />, tone: 'blue' },
-    { label: 'New applicants', value: String(dashboard.stats.newApplicants), icon: <FaUsers />, tone: 'green' },
+    { label: 'New applicants', value: String(dashboard.stats.newApplicants), icon: <FaUserPlus />, tone: 'green' },
     { label: 'Interviews', value: String(dashboard.stats.interviews), icon: <FaClipboardCheck />, tone: 'yellow' },
-    { label: 'Avg. match score', value: dashboard.stats.averageMatchScore === null ? '—' : `${dashboard.stats.averageMatchScore}%`, icon: <FaStar />, tone: 'purple' },
+    { label: 'Total applicants', value: String(dashboard.stats.totalApplicants), icon: <FaUsers />, tone: 'purple' },
   ];
   const pipelineMaximum = Math.max(...pipelineItems.map(({ key }) => dashboard.pipeline[key]), 1);
 
