@@ -3,7 +3,7 @@ import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-do
 import { FaEnvelope } from 'react-icons/fa';
 import Button from '../../components/common/Button';
 import { useAuth } from '../../context/AuthContext';
-import { completeGoogleRegistration, resendEmailVerification, verifyEmailCode } from '../../services/api';
+import { completeGoogleRegistration, getGoogleRegistrationStatus, resendEmailVerification, verifyEmailCode, verifyGoogleEmailCode } from '../../services/api';
 import { getUserFacingError } from '../../utils/userFacingError';
 
 export type VerifyEmailPageProps = {
@@ -14,7 +14,7 @@ const authCopy = {
   seeker: {
     eyebrow: 'Check your inbox',
     title: 'Verify your email address',
-    description: 'We sent a 6-digit code to your email so you can finish setting up your account.',
+    description: 'If this email needs verification, enter the 6-digit code sent to your inbox to finish setting up your account.',
     submitLabel: 'Verify email',
     signInPath: '/login',
     signInText: 'Back to sign in',
@@ -23,7 +23,7 @@ const authCopy = {
   employer: {
     eyebrow: 'Account verification',
     title: 'Verify your employer account',
-    description: 'Enter the 6-digit code from your inbox to activate your hiring workspace.',
+    description: 'If this email needs verification, enter the 6-digit code sent to your inbox to activate your hiring workspace.',
     submitLabel: 'Verify account',
     signInPath: '/employers/login',
     signInText: 'Back to employer sign in',
@@ -40,7 +40,8 @@ function VerifyEmailPage({ role = 'seeker' }: VerifyEmailPageProps) {
   const { setAuthenticatedSession } = useAuth();
   const googlePendingId = searchParams.get('pendingId')?.trim() ?? '';
   const callbackRole = searchParams.get('role')?.trim().toUpperCase();
-  const accountRole = callbackRole === 'EMPLOYER' || role === 'employer' ? 'employer' : 'seeker';
+  const initialAccountRole = callbackRole === 'EMPLOYER' || role === 'employer' ? 'employer' : 'seeker';
+  const [accountRole, setAccountRole] = useState<'seeker' | 'employer'>(initialAccountRole);
   const copy = authCopy[accountRole];
   const isGoogleFlow = searchParams.has('pendingId') || searchParams.has('role');
 
@@ -62,11 +63,51 @@ function VerifyEmailPage({ role = 'seeker' }: VerifyEmailPageProps) {
   const [isCompletingGoogleRegistration, setIsCompletingGoogleRegistration] = useState(false);
   const [googleVerificationRequired, setGoogleVerificationRequired] = useState(false);
   const [googleEmailVerified, setGoogleEmailVerified] = useState(false);
+  const [googleStatusLoaded, setGoogleStatusLoaded] = useState(!isGoogleFlow);
   const codeInputRefs = useRef<Array<HTMLInputElement | null>>([]);
 
   useEffect(() => {
     setEmail(initialEmail);
   }, [initialEmail]);
+
+  useEffect(() => {
+    if (!isGoogleFlow) return;
+    if (!googlePendingId) {
+      setGoogleStatusLoaded(true);
+      setError('Your Google sign-up session is incomplete or expired. Please start again.');
+      return;
+    }
+
+    let isMounted = true;
+    setGoogleStatusLoaded(false);
+
+    void getGoogleRegistrationStatus(googlePendingId).then((result) => {
+      if (!isMounted) return;
+      if (!result.ok) {
+        setEmail('');
+        setError(result.error.message || 'Your Google sign-up session is incomplete or expired. Please start again.');
+        setGoogleStatusLoaded(true);
+        return;
+      }
+
+      const { data: status } = result.data;
+      setEmail(normalizeEmail(status.email));
+      setAccountRole(status.role === 'EMPLOYER' ? 'employer' : 'seeker');
+      setGoogleVerificationRequired(status.requiresEmailVerification);
+      setGoogleEmailVerified(!status.requiresEmailVerification);
+      setError('');
+      setGoogleStatusLoaded(true);
+    }).catch((statusError: unknown) => {
+      if (!isMounted) return;
+      setEmail('');
+      setError(getUserFacingError(statusError, 'auth').message);
+      setGoogleStatusLoaded(true);
+    });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [googlePendingId, isGoogleFlow]);
 
   useEffect(() => {
     if (cooldownLeft <= 0) return;
@@ -196,8 +237,8 @@ function VerifyEmailPage({ role = 'seeker' }: VerifyEmailPageProps) {
         const result = await verifyEmailCode(email, code);
 
         if (result.ok) {
-          setMessage(result.data.message || 'Your email has been verified successfully.');
-          setCode('');
+          setAuthenticatedSession(result.data.token, result.data.user);
+          navigate(result.data.user.role === 'EMPLOYER' ? '/employer/jobs' : '/seeker/dashboard', { replace: true });
           return;
         }
 
@@ -206,14 +247,20 @@ function VerifyEmailPage({ role = 'seeker' }: VerifyEmailPageProps) {
       }
 
       if (googleVerificationRequired && !googleEmailVerified) {
-        const verification = await verifyEmailCode(email, code);
+        const verification = await verifyGoogleEmailCode(email, code, googlePendingId);
 
         if (!verification.ok) {
           setError(verification.error.message || 'We could not verify your email. Please try again.');
           return;
         }
-        setGoogleEmailVerified(true);
-        setCode('');
+        if (verification.data.user.role !== (accountRole === 'employer' ? 'EMPLOYER' : 'SEEKER')) {
+          setError('The verified account does not match this Google sign-up session. Please restart Google sign-up.');
+          return;
+        }
+        const user = verification.data.user;
+        setAuthenticatedSession(verification.data.token, user);
+        navigate(user.role === 'EMPLOYER' ? '/employer/jobs' : '/seeker/dashboard', { replace: true });
+        return;
       }
 
       await finishGoogleRegistration();
@@ -256,29 +303,6 @@ function VerifyEmailPage({ role = 'seeker' }: VerifyEmailPageProps) {
     }
   };
 
-  if (!hasUsableEmail) {
-    return (
-      <section className="auth-page auth-page--verify-email" aria-labelledby="verify-email-title">
-        <div className="auth-shell auth-shell--single auth-shell--verify-email">
-          <div className="auth-panel auth-panel--form auth-panel--verify-email">
-            <div className="auth-verify-icon" aria-hidden="true"><FaEnvelope /></div>
-            <div className="auth-form-heading">
-              <span>{copy.eyebrow}</span>
-              <h1 className="auth-verify-title" id="verify-email-title">{copy.title}</h1>
-              <p>We could not find the email tied to this verification request. Please start again and enter the correct email.</p>
-            </div>
-
-            <div className="auth-form-actions">
-              <Button type="button" variant="primary" onClick={() => navigate(copy.signupPath, { replace: true })}>
-                Return to sign up
-              </Button>
-            </div>
-          </div>
-        </div>
-      </section>
-    );
-  }
-
   if (isGoogleFlow && !googlePendingId) {
     return (
       <section className="auth-page auth-page--verify-email" aria-labelledby="verify-email-title">
@@ -295,6 +319,45 @@ function VerifyEmailPage({ role = 'seeker' }: VerifyEmailPageProps) {
                 Return to sign up
               </Button>
               <Link className="auth-secondary-actions__signin" to={copy.signInPath}>{copy.signInText}</Link>
+            </div>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  if (isGoogleFlow && !googleStatusLoaded) {
+    return (
+      <section className="auth-page auth-page--verify-email" aria-labelledby="verify-email-title">
+        <div className="auth-shell auth-shell--single auth-shell--verify-email">
+          <div className="auth-panel auth-panel--form auth-panel--verify-email" role="status" aria-live="polite">
+            <div className="auth-verify-icon" aria-hidden="true"><FaEnvelope /></div>
+            <div className="auth-form-heading">
+              <span>Google account setup</span>
+              <h1 className="auth-verify-title" id="verify-email-title">Checking your sign-up</h1>
+              <p>We are securely confirming your Google sign-up session.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  if (!hasUsableEmail) {
+    return (
+      <section className="auth-page auth-page--verify-email" aria-labelledby="verify-email-title">
+        <div className="auth-shell auth-shell--single auth-shell--verify-email">
+          <div className="auth-panel auth-panel--form auth-panel--verify-email">
+            <div className="auth-verify-icon" aria-hidden="true"><FaEnvelope /></div>
+            <div className="auth-form-heading">
+              <span>{copy.eyebrow}</span>
+              <h1 className="auth-verify-title" id="verify-email-title">{copy.title}</h1>
+              <p>{error || 'We could not verify this sign-up session. Please start again.'}</p>
+            </div>
+            <div className="auth-form-actions">
+              <Button type="button" variant="primary" onClick={() => navigate(copy.signupPath, { replace: true })}>
+                Restart sign-up
+              </Button>
             </div>
           </div>
         </div>

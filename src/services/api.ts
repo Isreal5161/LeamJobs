@@ -1578,11 +1578,35 @@ export function requestPasswordReset(email: string) {
   return request<{ message: string }>({ method: 'POST', endpoint: '/auth/forgot-password', body: { email } });
 }
 
+export type EmailVerificationResponse = {
+  success: true;
+  message: string;
+  token: string;
+  user: {
+    id: string;
+    email: string;
+    firstName: string;
+    lastName: string;
+    role: 'SEEKER' | 'EMPLOYER';
+    isVerified: boolean;
+    isActive: boolean;
+  };
+};
+
 export function verifyEmailCode(email: string, code: string) {
-  return request<{ success: true; message: string; user: { id: string; email: string; firstName: string; lastName: string; isVerified: boolean; isActive: boolean } }>({
+  return request<EmailVerificationResponse>({
     method: 'POST',
     endpoint: '/auth/verify-email',
     body: { email, code },
+  });
+}
+
+export function verifyGoogleEmailCode(email: string, code: string, pendingId: string) {
+  return request<EmailVerificationResponse>({
+    method: 'POST',
+    endpoint: '/auth/google/complete/verify-email',
+    body: { email, code, pendingId },
+    credentials: 'include',
   });
 }
 
@@ -1598,6 +1622,23 @@ export type GoogleRegistrationCompletion = {
   pendingId: string;
   email: string;
 };
+
+export type GoogleRegistrationStatus = {
+  email: string;
+  role: 'SEEKER' | 'EMPLOYER';
+  isVerified: boolean;
+  isActive: boolean;
+  requiresEmailVerification: boolean;
+  requiresEmployerProfile: boolean;
+};
+
+export function getGoogleRegistrationStatus(pendingId: string) {
+  return request<{ success: true; data: GoogleRegistrationStatus }>({
+    method: 'GET',
+    endpoint: `/auth/google/complete/status?pendingId=${encodeURIComponent(pendingId)}`,
+    credentials: 'include',
+  });
+}
 
 export function completeGoogleRegistration(completion: GoogleRegistrationCompletion) {
   return request<{

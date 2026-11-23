@@ -1,11 +1,11 @@
-import { FormEvent, useEffect, useState } from 'react';
+import { FormEvent, useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import Button from '../../components/common/Button';
 import Input from '../../components/common/Input';
 import { request } from '../../services/api';
 import { LEGAL_REGISTRATION_ACCEPTANCE, TERMS_POLICY_VERSION, PRIVACY_POLICY_VERSION } from '../../utils/legalVersions';
 import GoogleGMark from '../../components/common/GoogleGMark';
-import { FaBriefcase, FaBuilding, FaCheck, FaEnvelope, FaExclamationCircle, FaEye, FaEyeSlash, FaLock, FaTimes, FaUser } from 'react-icons/fa';
+import { FaBriefcase, FaBuilding, FaCheck, FaEnvelope, FaExclamationCircle, FaEye, FaEyeSlash, FaLock, FaUser } from 'react-icons/fa';
 
 type AuthRole = 'seeker' | 'employer';
 
@@ -90,6 +90,9 @@ function SignUpPage({ role = 'seeker' }: SignUpPageProps) {
   const [searchParams, setSearchParams] = useSearchParams();
   const content = authContent[role];
   const [showOAuthConflict, setShowOAuthConflict] = useState(false);
+  const [existingAccountRole, setExistingAccountRole] = useState<'SEEKER' | 'EMPLOYER' | null>(null);
+  const [showManualFeedback, setShowManualFeedback] = useState(false);
+  const manualFeedbackRef = useRef<HTMLDialogElement>(null);
   const [form, setForm] = useState<RegistrationForm>({
     fullName: '',
     email: searchParams.get('email')?.trim() ?? '',
@@ -109,10 +112,26 @@ function SignUpPage({ role = 'seeker' }: SignUpPageProps) {
     if (searchParams.get('oauth_error') !== 'email_already_registered') return;
 
     setShowOAuthConflict(true);
+    const existingRole = searchParams.get('existing_role');
+    setExistingAccountRole(existingRole === 'SEEKER' || existingRole === 'EMPLOYER' ? existingRole : null);
     const cleanedSearchParams = new URLSearchParams(searchParams);
     cleanedSearchParams.delete('oauth_error');
+    cleanedSearchParams.delete('existing_role');
     setSearchParams(cleanedSearchParams, { replace: true });
   }, [searchParams, setSearchParams]);
+
+  useEffect(() => {
+    const dialog = manualFeedbackRef.current;
+    if (!showManualFeedback || !dialog) return undefined;
+    if (!dialog.open) dialog.showModal();
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+
+    return () => {
+      if (dialog.open) dialog.close();
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [showManualFeedback]);
 
   const setField = <Field extends keyof RegistrationForm>(field: Field, value: RegistrationForm[Field]) => {
     setForm((current) => ({ ...current, [field]: value }));
@@ -146,6 +165,8 @@ function SignUpPage({ role = 'seeker' }: SignUpPageProps) {
     if (!firstName) nextErrors.fullName = 'Enter your first and last name.';
     else if (!lastName) nextErrors.fullName = 'Enter your last name.';
     if (!form.email.trim()) nextErrors.email = 'Enter your email address.';
+    if (role === 'employer' && !form.companyName.trim()) nextErrors.companyName = 'Enter your company name.';
+    if (role === 'employer' && !form.phone.trim()) nextErrors.phone = 'Enter your company phone number.';
     const passwordError = getPasswordError(form.password);
     if (passwordError) nextErrors.password = passwordError;
     if (form.password !== form.confirmPassword) nextErrors.confirmPassword = 'Passwords do not match.';
@@ -166,6 +187,7 @@ function SignUpPage({ role = 'seeker' }: SignUpPageProps) {
       email: form.email.trim(),
       password: form.password,
       ...(form.phone.trim() ? { phone: form.phone.trim() } : {}),
+      ...(role === 'employer' ? { companyName: form.companyName.trim() } : {}),
       role: roleValues[role],
       ...LEGAL_REGISTRATION_ACCEPTANCE,
     };
@@ -178,10 +200,8 @@ function SignUpPage({ role = 'seeker' }: SignUpPageProps) {
 
     setIsSubmitting(false);
 
-    if (result.ok) {
-      const nextPath = role === 'employer' ? '/employers/verify-email' : '/verify-email';
-      const email = encodeURIComponent(form.email.trim());
-      navigate(`${nextPath}?email=${email}`, { replace: true });
+    if (result.status === 202 || result.ok) {
+      setShowManualFeedback(true);
       return;
     }
 
@@ -196,7 +216,7 @@ function SignUpPage({ role = 'seeker' }: SignUpPageProps) {
       }, {});
       setErrors(Object.keys(fieldErrors).length > 0 ? fieldErrors : { form: result.error.message });
     } else if (result.status === 409) {
-      setErrors({ email: 'An account with this email already exists.' });
+      setShowManualFeedback(true);
     } else if (result.status === 0) {
       setErrors({ form: 'Unable to connect. Check your internet connection and try again.' });
     } else {
@@ -240,22 +260,86 @@ function SignUpPage({ role = 'seeker' }: SignUpPageProps) {
           </div>
 
           {showOAuthConflict ? (
-            <div className="auth-oauth-conflict" role="alert" aria-live="assertive">
-              <span className="auth-oauth-conflict__icon" aria-hidden="true"><FaExclamationCircle /></span>
-              <div className="auth-oauth-conflict__content">
-                <strong>This email is already registered</strong>
-                <p>This email is already associated with a LeamJobs account. Please sign in to link Google or use a different email.</p>
-                <Link to="/login">Go to sign in</Link>
+            <div className="auth-oauth-conflict__backdrop">
+              <div className="auth-oauth-conflict" role="dialog" aria-modal="true" aria-labelledby="oauth-conflict-title" aria-describedby="oauth-conflict-description">
+                <span className="auth-oauth-conflict__icon" aria-hidden="true"><FaExclamationCircle /></span>
+                <div className="auth-oauth-conflict__content">
+                  <strong id="oauth-conflict-title">This email is already registered</strong>
+                  <p id="oauth-conflict-description">
+                    {existingAccountRole === 'SEEKER'
+                      ? 'This email belongs to an existing Job Seeker account.'
+                      : existingAccountRole === 'EMPLOYER'
+                        ? 'This email belongs to an existing Employer account.'
+                        : 'This email is already associated with a LeamJobs account.'}
+                    {' '}Sign in to the existing account or use a different email.
+                  </p>
+                  <div className="auth-oauth-conflict__actions">
+                    <Link
+                      className="auth-oauth-conflict__signin"
+                      to={existingAccountRole === 'EMPLOYER' ? '/employers/login' : '/login'}
+                    >
+                      Sign in to existing account
+                    </Link>
+                    <button
+                      type="button"
+                      className="auth-oauth-conflict__another"
+                      onClick={() => {
+                        setShowOAuthConflict(false);
+                        setField('email', '');
+                        window.setTimeout(() => document.querySelector<HTMLInputElement>('input[name="email"]')?.focus(), 0);
+                      }}
+                    >
+                      Use another email
+                    </button>
+                  </div>
+                </div>
               </div>
-              <button
-                type="button"
-                className="auth-oauth-conflict__dismiss"
-                aria-label="Dismiss notification"
-                onClick={() => setShowOAuthConflict(false)}
-              >
-                <FaTimes aria-hidden="true" />
-              </button>
             </div>
+          ) : null}
+
+          {showManualFeedback ? (
+            <dialog
+              ref={manualFeedbackRef}
+              className="auth-manual-registration-feedback"
+              aria-labelledby="manual-registration-feedback-title"
+              aria-describedby="manual-registration-feedback-description"
+              onCancel={(event) => event.preventDefault()}
+            >
+              <span className="auth-manual-registration-feedback__icon" aria-hidden="true"><FaEnvelope /></span>
+              <div className="auth-manual-registration-feedback__content">
+                <span className="auth-manual-registration-feedback__eyebrow">Registration update</span>
+                <h2 id="manual-registration-feedback-title">Registration could not be completed immediately</h2>
+                <p id="manual-registration-feedback-description">
+                  We could not confirm a new account from this submission. If you already have an account, sign in. If you intended to use a different email, change it below. Keep this page open if you received verification instructions for this email.
+                </p>
+                <div className="auth-manual-registration-feedback__actions">
+                  <Link
+                    className="auth-manual-registration-feedback__signin"
+                    to="/login"
+                    autoFocus
+                  >
+                    Sign in
+                  </Link>
+                  <button
+                    type="button"
+                    className="auth-manual-registration-feedback__another"
+                    onClick={() => {
+                      setShowManualFeedback(false);
+                      setField('email', '');
+                      window.setTimeout(() => document.querySelector<HTMLInputElement>('input[name="email"]')?.focus(), 0);
+                    }}
+                  >
+                    Use another email
+                  </button>
+                  <Link
+                    className="auth-manual-registration-feedback__continue"
+                    to={`${role === 'employer' ? '/employers/verify-email' : '/verify-email'}?email=${encodeURIComponent(form.email.trim())}`}
+                  >
+                    Continue verification
+                  </Link>
+                </div>
+              </div>
+            </dialog>
           ) : null}
 
           {(errors.terms || errors.privacy) ? <p role="alert">Accept both linked policies before continuing with Google.</p> : null}
@@ -307,7 +391,7 @@ function SignUpPage({ role = 'seeker' }: SignUpPageProps) {
 
             {content.companyLabel ? (
               <label className="auth-field">
-                <span>{content.companyLabel}</span>
+                <span>{content.companyLabel} <small>(required)</small></span>
                 <div className="auth-input-wrap">
                   <FaBuilding />
                   <Input
@@ -317,20 +401,26 @@ function SignUpPage({ role = 'seeker' }: SignUpPageProps) {
                     autoComplete="organization"
                     value={form.companyName}
                     onChange={(event) => setField('companyName', event.target.value)}
+                    aria-invalid={Boolean(errors.companyName)}
+                    required
                   />
                 </div>
+                {errors.companyName ? <small role="alert">{errors.companyName}</small> : null}
               </label>
             ) : null}
 
             <label className="auth-field">
-              <span>Phone (optional)</span>
+              <span>{role === 'employer' ? 'Phone (required)' : 'Phone (optional)'}</span>
               <Input
                 type="tel"
                 name="phone"
                 autoComplete="tel"
                 value={form.phone}
                 onChange={(event) => setField('phone', event.target.value)}
+                aria-invalid={Boolean(errors.phone)}
+                required={role === 'employer'}
               />
+              {errors.phone ? <small role="alert">{errors.phone}</small> : null}
             </label>
 
             <label className="auth-field">
