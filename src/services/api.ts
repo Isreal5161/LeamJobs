@@ -1318,7 +1318,7 @@ export type EmployerVerificationSummary = {
   reviewedById: string | null;
   declineReason: string | null;
   registrationNumber: string | null;
-  registrationType: 'CAC' | 'BN' | 'OTHER' | null;
+  registrationType: string | null;
   submittedCompany: {
     companyName: string | null;
     companyDescription: string | null;
@@ -1396,7 +1396,7 @@ export function getEmployerVerification(token: string) {
   return request<EmployerVerificationResponse>({ method: 'GET', endpoint: '/employer/verification', token });
 }
 
-export function submitEmployerVerification(payload: { registrationNumber: string; registrationType: 'CAC' | 'BN' | 'OTHER'; company: EmployerVerificationSummary['submittedCompany'] }, token: string) {
+export function submitEmployerVerification(payload: { registrationNumber: string; registrationType: string; company: EmployerVerificationSummary['submittedCompany'] }, token: string) {
   return request<EmployerVerificationResponse>({ method: 'POST', endpoint: '/employer/verification', body: payload, token });
 }
 

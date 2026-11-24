@@ -1691,10 +1691,63 @@
   background: #f8fbff;
 }
 
+.employer-verification-details-heading {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.employer-verification-details-heading h3,
+.employer-verification-details-heading p {
+  margin: 0;
+}
+
+.employer-verification-details-heading h3 {
+  color: #0f172a;
+  font-size: 0.98rem;
+}
+
+.employer-verification-details-heading p {
+  color: #64748b;
+  font-size: 0.84rem;
+  line-height: 1.45;
+}
+
 .employer-verification-field-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0.85rem;
+}
+
+.employer-form-message {
+  margin-bottom: 1rem;
+  padding: 0.85rem 1rem;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.employer-form-message p {
+  margin: 0;
+}
+
+.employer-form-message ul {
+  display: grid;
+  gap: 0.2rem;
+  margin: 0.45rem 0 0;
+  padding-left: 1.2rem;
+}
+
+.employer-form-message--error {
+  border-color: #fecaca;
+  background: #fef2f2;
+  color: #991b1b;
+}
+
+.employer-form-message--success {
+  border-color: #bbf7d0;
+  background: #f0fdf4;
+  color: #166534;
 }
 
 .employer-verification-upload label {
@@ -1704,7 +1757,9 @@
 }
 
 .employer-verification-upload select,
-.employer-verification-upload input[type='text'] {
+.employer-verification-upload input[type='text'],
+.employer-verification-upload input[type='url'],
+.employer-verification-upload input[type='search'] {
   width: 100%;
   min-height: 44px;
   padding: 0.7rem 0.8rem;
@@ -1716,10 +1771,68 @@
 }
 
 .employer-verification-upload select:focus,
-.employer-verification-upload input[type='text']:focus {
+.employer-verification-upload input[type='text']:focus,
+.employer-verification-upload input[type='url']:focus,
+.employer-verification-upload input[type='search']:focus {
   border-color: #3b82f6;
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12);
   outline: none;
+}
+
+.employer-verification-upload [aria-invalid='true'] {
+  border-color: #dc2626;
+  background: #fff7f7;
+}
+
+.employer-verification-upload .employer-verification-field-error {
+  color: #b91c1c;
+  font-size: 0.8rem;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.employer-verification-industry {
+  position: relative;
+  display: grid;
+  align-content: start;
+  gap: 0.4rem;
+  min-width: 0;
+}
+
+.employer-verification-industry__options {
+  position: absolute;
+  top: 4.4rem;
+  z-index: 20;
+  display: grid;
+  width: 100%;
+  max-height: 240px;
+  overflow-y: auto;
+  padding: 0.35rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  background: #ffffff;
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.16);
+}
+
+.employer-verification-industry__options [role='option'] {
+  padding: 0.65rem 0.7rem;
+  border-radius: 7px;
+  color: #334155;
+  cursor: pointer;
+  font-size: 0.88rem;
+}
+
+.employer-verification-industry__options [role='option']:hover,
+.employer-verification-industry__options [role='option'].is-active {
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+
+.employer-verification-industry__empty {
+  margin: 0;
+  padding: 0.65rem 0.7rem;
+  color: #64748b;
+  font-size: 0.82rem;
 }
 
 .employer-verification-upload__heading {

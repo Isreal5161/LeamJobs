@@ -34,7 +34,7 @@ function AdminVerificationPage() {
     reviewedAt: string | null;
     declineReason: string | null;
     registrationNumber: string | null;
-    registrationType: 'CAC' | 'BN' | 'OTHER' | null;
+    registrationType: string | null;
     submittedCompany: EmployerVerificationSummary['submittedCompany'];
     submittedCompanySource: EmployerVerificationSummary['submittedCompanySource'];
     documents: EmployerVerificationDocument[];
