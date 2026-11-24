@@ -420,6 +420,14 @@
   font-weight: 750;
 }
 
+.auth-oauth-conflict__content a.auth-oauth-conflict__signin,
+.auth-oauth-conflict__content a.auth-oauth-conflict__signin:visited,
+.auth-oauth-conflict__content a.auth-oauth-conflict__signin:hover,
+.auth-oauth-conflict__content a.auth-oauth-conflict__signin:focus-visible,
+.auth-oauth-conflict__content a.auth-oauth-conflict__signin:active {
+  color: #fff;
+}
+
 .auth-oauth-conflict__dismiss {
   width: 2rem;
   height: 2rem;
