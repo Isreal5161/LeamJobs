@@ -27,6 +27,15 @@ type AuthContextValue = {
   logout: () => Promise<void>;
 };
 
+export class EmailVerificationRequiredError extends Error {
+  readonly code = 'EMAIL_VERIFICATION_REQUIRED';
+
+  constructor() {
+    super('Please verify your email address before signing in.');
+    this.name = 'EmailVerificationRequiredError';
+  }
+}
+
 const STORAGE_KEY = 'leamjobs_access_token';
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -102,6 +111,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
 
     if (!result.ok) {
+      if (result.error.code === 'EMAIL_VERIFICATION_REQUIRED') {
+        throw new EmailVerificationRequiredError();
+      }
       throw new Error(result.error.message);
     }
 

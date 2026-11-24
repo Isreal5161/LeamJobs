@@ -38,6 +38,7 @@ function VerifyEmailPage({ role = 'seeker' }: VerifyEmailPageProps) {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { setAuthenticatedSession } = useAuth();
+  const verificationRequiredFromLogin = (location.state as { verificationRequired?: boolean } | null)?.verificationRequired === true;
   const googlePendingId = searchParams.get('pendingId')?.trim() ?? '';
   const callbackRole = searchParams.get('role')?.trim().toUpperCase();
   const initialAccountRole = callbackRole === 'EMPLOYER' || role === 'employer' ? 'employer' : 'seeker';
@@ -386,6 +387,11 @@ function VerifyEmailPage({ role = 'seeker' }: VerifyEmailPageProps) {
             </div>
           </div>
 
+          {verificationRequiredFromLogin ? (
+            <p className="auth-feedback" role="status">
+              Your email must be verified before you can sign in. Enter the code sent to your email or request a new one.
+            </p>
+          ) : null}
           {message ? <p className="auth-feedback auth-feedback--success" role="status">{message}</p> : null}
           {error ? <p className="auth-feedback auth-feedback--error" role="alert">{error}</p> : null}
 

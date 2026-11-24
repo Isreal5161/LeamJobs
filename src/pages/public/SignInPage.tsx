@@ -2,7 +2,7 @@ import { FormEvent, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import Button from '../../components/common/Button';
 import Input from '../../components/common/Input';
-import { useAuth } from '../../context/AuthContext';
+import { EmailVerificationRequiredError, useAuth } from '../../context/AuthContext';
 import { API_BASE_URL } from '../../services/api';
 import { getUserFacingError } from '../../utils/userFacingError';
 import GoogleGMark from '../../components/common/GoogleGMark';
@@ -120,6 +120,14 @@ function SignInPage({ role = 'seeker' }: SignInPageProps) {
       const from = (location.state as { from?: Location } | null)?.from;
       navigate(from && from.pathname ? from.pathname : destinationMap[actualRole], { replace: true });
     } catch (loginError) {
+      if (loginError instanceof EmailVerificationRequiredError) {
+        const verificationPath = role === 'employer' ? '/employers/verify-email' : '/verify-email';
+        navigate(`${verificationPath}?email=${encodeURIComponent(email.trim())}`, {
+          replace: true,
+          state: { email: email.trim(), verificationRequired: true },
+        });
+        return;
+      }
       setError(getUserFacingError(loginError, 'auth').message);
     } finally {
       setIsSubmitting(false);
