@@ -43,7 +43,7 @@ function SeekerJobCard({ job, saved = false, listing = false, onToggleBookmark, 
   const visibleSkills = isBackendJob ? job.skills.slice(0, 3) : [job.level, job.workArrangement];
 
   return (
-    <article className={`seeker-job-card${listing ? ' seeker-job-card--listing' : ''}`}>
+    <article className={`seeker-job-card${listing ? ' seeker-job-card--listing' : ''}${showBookmark ? ' seeker-job-card--bookmarkable' : ''}`}>
       <Link className="seeker-job-card__body-link" to={detailPath} aria-label={`View ${title} at ${company}`}>
         <CompanyLogo company={company} logoUrl={logoUrl} logoText={company.slice(0, 2).toUpperCase()} logoClass="seeker-job-card__logo" />
         <div className="seeker-job-card__content">
