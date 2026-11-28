@@ -7,9 +7,10 @@ export type AuthRoleModalMode = 'signup' | 'signin';
 type HomeAuthRoleModalProps = {
   mode: AuthRoleModalMode;
   onClose: () => void;
+  notice?: string;
 };
 
-function HomeAuthRoleModal({ mode, onClose }: HomeAuthRoleModalProps) {
+function HomeAuthRoleModal({ mode, onClose, notice }: HomeAuthRoleModalProps) {
   const dialogRef = useRef<HTMLDialogElement>(null);
   const isSignup = mode === 'signup';
 
@@ -53,7 +54,7 @@ function HomeAuthRoleModal({ mode, onClose }: HomeAuthRoleModalProps) {
       ref={dialogRef}
       className="home-auth-modal"
       aria-labelledby="home-auth-modal-title"
-      aria-describedby="home-auth-modal-description"
+      aria-describedby={notice ? 'home-auth-modal-description home-auth-modal-notice' : 'home-auth-modal-description'}
       onClick={handleBackdropClick}
     >
       <section className="home-auth-modal__panel">
@@ -71,6 +72,7 @@ function HomeAuthRoleModal({ mode, onClose }: HomeAuthRoleModalProps) {
         <p id="home-auth-modal-description">
           {isSignup ? 'Choose how you want to use LeamJobs.' : 'Choose your account type to continue.'}
         </p>
+        {notice ? <p id="home-auth-modal-notice" className="auth-feedback auth-feedback--notice" role="status">{notice}</p> : null}
 
         <div className="home-auth-modal__roles">
           <Link className="home-auth-role" to={employerPath} onClick={onClose}>

@@ -1,8 +1,8 @@
 import { FormEvent, useState } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import Button from '../../components/common/Button';
 import Input from '../../components/common/Input';
-import { EmailVerificationRequiredError, useAuth } from '../../context/AuthContext';
+import { AccountRoleMismatchError, EmailVerificationRequiredError, useAuth } from '../../context/AuthContext';
 import { API_BASE_URL } from '../../services/api';
 import { getUserFacingError } from '../../utils/userFacingError';
 import GoogleGMark from '../../components/common/GoogleGMark';
@@ -60,14 +60,28 @@ type SignInPageProps = {
 function SignInPage({ role = 'seeker' }: SignInPageProps) {
   const navigate = useNavigate();
   const location = useLocation();
+  const [searchParams] = useSearchParams();
   const { login, isLoading: isAuthLoading } = useAuth();
   const content = authContent[role];
+  const expectedRole = role === 'employer' ? 'EMPLOYER' : 'SEEKER';
+  const roleLabels = { SEEKER: 'Seeker', EMPLOYER: 'Employer' } as const;
+  const roleDescriptions = { SEEKER: 'a Seeker', EMPLOYER: 'an Employer' } as const;
+  const signInPaths = { SEEKER: '/login', EMPLOYER: '/employers/login' } as const;
+  const queryRole = searchParams.get('existing_role');
+  const googleAccountRole = queryRole === 'SEEKER' || queryRole === 'EMPLOYER' ? queryRole : null;
+  const oauthError = searchParams.get('oauth_error');
+  const googleRoleMismatch = oauthError === 'role_mismatch' ? googleAccountRole : null;
+  const googleAccountExists = oauthError === 'account_exists' ? googleAccountRole : null;
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
+  const [manualRoleMismatch, setManualRoleMismatch] = useState<'SEEKER' | 'EMPLOYER' | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isStartingGoogleSignIn, setIsStartingGoogleSignIn] = useState(false);
+  const manualRoleConflictRole = manualRoleMismatch && manualRoleMismatch !== expectedRole ? manualRoleMismatch : null;
+  const googleRoleConflictRole = googleRoleMismatch && googleRoleMismatch !== expectedRole ? googleRoleMismatch : null;
+  const crossRoleConflictRole = manualRoleConflictRole ?? googleRoleConflictRole;
 
   const handleGoogleSignIn = () => {
     setError('');
@@ -98,7 +112,6 @@ function SignInPage({ role = 'seeker' }: SignInPageProps) {
         return;
       }
 
-      const expectedRole = role === 'employer' ? 'EMPLOYER' : 'SEEKER';
       const actualRole = user.role;
 
       const destinationMap = {
@@ -120,6 +133,11 @@ function SignInPage({ role = 'seeker' }: SignInPageProps) {
       const from = (location.state as { from?: Location } | null)?.from;
       navigate(from && from.pathname ? from.pathname : destinationMap[actualRole], { replace: true });
     } catch (loginError) {
+      if (loginError instanceof AccountRoleMismatchError) {
+        setManualRoleMismatch(loginError.accountRole);
+        setError('');
+        return;
+      }
       if (loginError instanceof EmailVerificationRequiredError) {
         const verificationPath = role === 'employer' ? '/employers/verify-email' : '/verify-email';
         navigate(`${verificationPath}?email=${encodeURIComponent(email.trim())}`, {
@@ -168,23 +186,47 @@ function SignInPage({ role = 'seeker' }: SignInPageProps) {
             <h2>{content.heading}</h2>
           </div>
 
-          <button
-            type="button"
-            className="auth-social-button"
-            onClick={handleGoogleSignIn}
-            disabled={isStartingGoogleSignIn || isSubmitting || isAuthLoading}
-          >
-            <GoogleGMark />
-            {isStartingGoogleSignIn ? 'Connecting to Google...' : 'Continue with Google'}
-          </button>
+          {crossRoleConflictRole ? (
+            <div className="auth-account-conflict" role="status" aria-live="polite">
+              <div>
+                <strong>This account is registered as {roleDescriptions[crossRoleConflictRole]}.</strong>
+                <p>Continue on the matching sign-in page to access your account.</p>
+                <Link className="auth-account-conflict__action" to={signInPaths[crossRoleConflictRole]}>
+                  Continue to {roleLabels[crossRoleConflictRole]} Sign In
+                </Link>
+              </div>
+            </div>
+          ) : (
+            <>
+              {googleRoleMismatch ? (
+                <p className="auth-feedback auth-feedback--notice" role="status">
+                  This Google account is registered as {roleDescriptions[googleRoleMismatch]}. Sign in here to continue with that account.
+                </p>
+              ) : null}
+              {googleAccountExists ? (
+                <p className="auth-feedback auth-feedback--notice" role="status">
+                  This email is already registered as {roleDescriptions[googleAccountExists]} account. Sign in using your existing account details.
+                </p>
+              ) : null}
+              {!googleAccountExists ? <button
+                type="button"
+                className="auth-social-button"
+                onClick={handleGoogleSignIn}
+                disabled={isStartingGoogleSignIn || isSubmitting || isAuthLoading}
+              >
+                <GoogleGMark />
+                {isStartingGoogleSignIn ? 'Connecting to Google...' : 'Continue with Google'}
+              </button> : null}
 
-          <div className="auth-divider">
-            <span>or continue with email</span>
-          </div>
+              {!googleAccountExists ? (
+                <div className="auth-divider">
+                  <span>or continue with email</span>
+                </div>
+              ) : null}
 
-          {error ? <p role="alert">{error}</p> : null}
+              {error ? <p role="alert">{error}</p> : null}
 
-          <form className="auth-form" onSubmit={handleSubmit} noValidate>
+              <form className="auth-form" onSubmit={handleSubmit} noValidate>
             <label className="auth-field">
               <span>{content.emailLabel}</span>
               <div className="auth-input-wrap">
@@ -236,11 +278,13 @@ function SignInPage({ role = 'seeker' }: SignInPageProps) {
             <Button type="submit" variant="primary" fullWidth className="auth-submit" disabled={isSubmitting || isAuthLoading}>
               {isSubmitting ? 'Signing in...' : content.submitLabel}
             </Button>
-          </form>
+              </form>
 
-          <p className="auth-switch">
-            {content.switchText} <Link to={content.switchPath}>{content.switchLink}</Link>
-          </p>
+              <p className="auth-switch">
+                {content.switchText} <Link to={content.switchPath}>{content.switchLink}</Link>
+              </p>
+            </>
+          )}
         </div>
       </div>
     </section>

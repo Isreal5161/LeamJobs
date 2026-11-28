@@ -19,6 +19,7 @@ const WelcomePage = lazy(() => import('./pages/public/WelcomePage'));
 const NotFoundPage = lazy(() => import('./pages/public/NotFoundPage'));
 const SignInPage = lazy(() => import('./pages/public/SignInPage'));
 const SignUpPage = lazy(() => import('./pages/public/SignUpPage'));
+const ChooseSignInPage = lazy(() => import('./pages/public/ChooseSignInPage'));
 const VerifyEmailPage = lazy(() => import('./pages/public/VerifyEmailPage'));
 const JobDetailsPage = lazy(() => import('./pages/public/JobDetailsPage'));
 const CompanyProfilePage = lazy(() => import('./pages/public/CompanyProfilePage'));
@@ -162,6 +163,7 @@ function App() {
             <Route path="unsubscribe-job-updates" element={<PublicJobUpdatesUnsubscribePage />} />
             <Route path="unsubscribe-marketing" element={<MarketingUnsubscribePage />} />
             <Route path="signin" element={<Navigate to="/login" replace />} />
+            <Route path="choose-sign-in" element={<ChooseSignInPage />} />
             <Route path="register" element={<SignUpPage />} />
             <Route path="signup" element={<Navigate to="/register" replace />} />
             <Route path="verify-email" element={<VerifyEmailPage />} />

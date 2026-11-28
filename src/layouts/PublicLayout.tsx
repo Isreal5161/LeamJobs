@@ -16,7 +16,7 @@ function PublicLayout() {
   const isFeaturesPage = pathname === '/features';
   const isHowPage = pathname === '/how-it-works';
   const isCompaniesPage = pathname === '/companies';
-  const isAuthPage = pathname === '/login' || pathname === '/register' || pathname.startsWith('/employers/');
+  const isAuthPage = pathname === '/login' || pathname === '/register' || pathname === '/choose-sign-in' || pathname.startsWith('/employers/');
   const isJobDetailsPage = pathname.startsWith('/jobs/');
   const layoutClasses = [
     'public-layout',

@@ -1,4 +1,4 @@
-export type UserFacingErrorContext = 'default' | 'upload' | 'payment' | 'auth' | 'job' | 'timeout';
+export type UserFacingErrorContext = 'default' | 'upload' | 'payment' | 'auth' | 'login' | 'job' | 'timeout';
 
 type ErrorDetails = unknown;
 
@@ -10,8 +10,13 @@ type NormalizeErrorInput = {
   context?: UserFacingErrorContext;
 };
 
+export const getPublicAccountRole = (details: unknown): 'SEEKER' | 'EMPLOYER' | undefined => {
+  if (!details || typeof details !== 'object' || !('role' in details)) return undefined;
+  return details.role === 'SEEKER' || details.role === 'EMPLOYER' ? details.role : undefined;
+};
+
 const technicalMessagePattern = /(failed to fetch|network error|network request|prisma|sql|database|stack trace|\bat\s+\w+\s+\(|internal server|endpoint|api\/?|axios|fetch\(|timeout|timed out|econn|enotfound|socket|syntaxerror|typeerror)/i;
-const safeBusinessMessagePattern = /(already applied|already closed|already exists|insufficient|exceeds|balance|not enough|invalid|expired|does not match|cannot be|can't|must be|is required|is unavailable|not available|not found|permission|unauthorized|forbidden|withdrawal amount|pending invitation)/i;
+const safeBusinessMessagePattern = /(already applied|already closed|already exists|registered as|insufficient|exceeds|balance|not enough|invalid|expired|does not match|cannot be|can't|must be|is required|is unavailable|not available|not found|permission|unauthorized|forbidden|withdrawal amount|pending invitation)/i;
 const safeVerificationMessages = new Set([
   'Your company verification is already under review.',
   'Your company is already verified.',
@@ -38,6 +43,7 @@ const contextForEndpoint = (endpoint: string): UserFacingErrorContext => {
   const normalized = endpoint.toLowerCase();
   if (normalized.includes('upload') || normalized.includes('/logo') || normalized.includes('/resume') || normalized.includes('/cv')) return 'upload';
   if (normalized.includes('payment') || normalized.includes('withdraw') || normalized.includes('escrow') || normalized.includes('subscription')) return 'payment';
+  if (normalized.includes('/auth/login')) return 'login';
   if (normalized.includes('/auth')) return 'auth';
   if (normalized.includes('/job')) return 'job';
   return 'default';
@@ -47,6 +53,7 @@ const fallbackFor = (context: UserFacingErrorContext) => {
   if (context === 'upload') return "We couldn't upload your file. Please try again.";
   if (context === 'payment') return "We couldn't complete the payment. Please try again.";
   if (context === 'auth') return 'Your session has expired. Please sign in again.';
+  if (context === 'login') return 'Invalid email or password.';
   if (context === 'job') return "We couldn't load the job right now. Please try again.";
   return 'Something went wrong. Please try again.';
 };
@@ -82,7 +89,11 @@ export const normalizeApiError = ({ status = 0, message, code, details, context 
     return { message: "We couldn't connect to LeamJobs. Please check your internet connection and try again.", code: code ?? 'NETWORK_ERROR', fieldErrors };
   }
 
-  if (status === 401) return { message: 'Your session has expired. Please sign in again.', code: code ?? 'UNAUTHORIZED', fieldErrors };
+  if (status === 401) return {
+    message: effectiveContext === 'login' ? 'Invalid email or password.' : 'Your session has expired. Please sign in again.',
+    code: code ?? 'UNAUTHORIZED',
+    fieldErrors,
+  };
   if (code === 'STORAGE_OBJECT_MISSING') {
     return { message: 'The uploaded CV file is no longer available.', code, fieldErrors };
   }

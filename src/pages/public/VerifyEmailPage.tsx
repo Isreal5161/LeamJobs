@@ -39,11 +39,16 @@ function VerifyEmailPage({ role = 'seeker' }: VerifyEmailPageProps) {
   const [searchParams] = useSearchParams();
   const { setAuthenticatedSession } = useAuth();
   const verificationRequiredFromLogin = (location.state as { verificationRequired?: boolean } | null)?.verificationRequired === true;
+  const manualRegistrationPending = ['pending', 'success'].includes(searchParams.get('registration') ?? '')
+    || (location.state as { registrationPending?: boolean; registrationComplete?: boolean } | null)?.registrationPending === true
+    || (location.state as { registrationComplete?: boolean } | null)?.registrationComplete === true;
   const googlePendingId = searchParams.get('pendingId')?.trim() ?? '';
   const callbackRole = searchParams.get('role')?.trim().toUpperCase();
   const initialAccountRole = callbackRole === 'EMPLOYER' || role === 'employer' ? 'employer' : 'seeker';
   const [accountRole, setAccountRole] = useState<'seeker' | 'employer'>(initialAccountRole);
   const copy = authCopy[accountRole];
+  const signInPath = manualRegistrationPending ? '/choose-sign-in' : copy.signInPath;
+  const signInText = manualRegistrationPending ? 'Choose account type to sign in' : copy.signInText;
   const isGoogleFlow = searchParams.has('pendingId') || searchParams.has('role');
 
   const initialEmail = useMemo(() => {
@@ -373,10 +378,16 @@ function VerifyEmailPage({ role = 'seeker' }: VerifyEmailPageProps) {
           <div className="auth-verify-icon" aria-hidden="true"><FaEnvelope /></div>
           <div className="auth-form-heading">
             <span>{copy.eyebrow}</span>
-            <h1 className="auth-verify-title" id="verify-email-title">{copy.title}</h1>
+            <h1 className="auth-verify-title" id="verify-email-title">
+              {manualRegistrationPending
+                ? accountRole === 'employer' ? 'Verify your employer email' : 'Verify your email address'
+                : copy.title}
+            </h1>
             <p>{isGoogleFlow && !googleVerificationRequired
               ? 'Continue with Google to finish signing in or creating your account.'
-              : copy.description}</p>
+              : manualRegistrationPending
+                ? 'Check your inbox for any verification instructions. If this email needs verification, enter the code or request another. If you already have an account, choose your account type to sign in.'
+                : copy.description}</p>
           </div>
 
           <div className="auth-field">
@@ -387,6 +398,11 @@ function VerifyEmailPage({ role = 'seeker' }: VerifyEmailPageProps) {
             </div>
           </div>
 
+          {manualRegistrationPending ? (
+            <p className="auth-feedback" role="status">
+              If this email needs verification, enter the code sent to <strong>{email}</strong> or request another code. If you already have an account, choose the account type you used to sign in.
+            </p>
+          ) : null}
           {verificationRequiredFromLogin ? (
             <p className="auth-feedback" role="status">
               Your email must be verified before you can sign in. Enter the code sent to your email or request a new one.
@@ -441,7 +457,7 @@ function VerifyEmailPage({ role = 'seeker' }: VerifyEmailPageProps) {
                   >
                     {isSubmitting || isCompletingGoogleRegistration
                       ? 'Completing sign-up...'
-                      : isGoogleFlow ? 'Verify and complete sign-up' : copy.submitLabel}
+                      : isGoogleFlow ? 'Verify and complete sign-up' : manualRegistrationPending ? 'Verify email' : copy.submitLabel}
                   </Button>
                 </form>
               ) : null}
@@ -461,7 +477,7 @@ function VerifyEmailPage({ role = 'seeker' }: VerifyEmailPageProps) {
                       <button type="button" className="auth-action-button auth-action-button--muted" onClick={handleChangeEmail}>
                         Change email
                       </button>
-                      <Link className="auth-secondary-actions__signin" to={copy.signInPath}>{copy.signInText}</Link>
+                      <Link className="auth-secondary-actions__signin" to={signInPath}>{signInText}</Link>
                     </>
                   ) : null}
                 </div>

@@ -1,5 +1,5 @@
 import type { CVData, CVTemplateId } from '../components/cv-templates/CVTemplateRenderer';
-import { errorContextForEndpoint, getUserFacingError, normalizeApiError, type UserFacingErrorContext } from '../utils/userFacingError';
+import { errorContextForEndpoint, getPublicAccountRole, getUserFacingError, normalizeApiError, type UserFacingErrorContext } from '../utils/userFacingError';
 import { parseCurrentAdminPermissionsResponse, type CurrentAdminPermissions } from '../utils/adminNavigation.js';
 
 export const API_BASE_URL = 'https://leamjobs.com/api';
@@ -30,6 +30,7 @@ export type ApiFailure = {
   error: {
     message: string;
     code?: string;
+    accountRole?: 'SEEKER' | 'EMPLOYER';
     details?: unknown;
     fieldErrors?: Record<string, string>;
     retryAfterSeconds?: number | null;
@@ -1147,8 +1148,9 @@ export async function request<T>({
 
     if (!response.ok) {
       const errorData = typeof data === 'object' && data !== null
-        ? data as { message?: string; errors?: unknown; error?: { message?: string; code?: string } }
+        ? data as { message?: string; errors?: unknown; error?: { message?: string; code?: string; details?: unknown } }
         : undefined;
+      const accountRole = getPublicAccountRole(errorData?.error?.details);
 
       const retryAfterHeader = response.headers.get('Retry-After');
       const retryAfterSeconds = parseRetryAfterHeader(retryAfterHeader);
@@ -1168,6 +1170,7 @@ export async function request<T>({
         status: response.status,
         error: {
           ...normalizedError,
+          accountRole,
           details: safeDetails,
           retryAfterSeconds,
           retryAfterHeader,
